@@ -15,8 +15,14 @@ import { Vector3, type PerspectiveCamera } from 'three';
  * 本项目直接沿用了这套划分，只把「棋盘」换成战斗桌的尺度。
  */
 
-/** 战斗桌含边框后的半跨度。用来算取景，不含那张更大的桌面大板。 */
-export const TABLE_RADIUS = 5.9;
+/**
+ * 取景用的半跨度。
+ *
+ * 取的是**内容**的外接半径，不是棋盘本身的半径：手牌移到盘外并抬到空中之后，
+ * 内容的范围由它决定（离盘面中心约 6.6，含悬停时再抬起的余量）。
+ * 只按棋盘算会把两边的牌切掉。
+ */
+export const TABLE_RADIUS = 6.9;
 
 /** 静置时的极角（自正上方量起）。等价于约 46° 的仰角。 */
 export const CAMERA_POLAR_ANGLE = Math.PI / 2 - (46 * Math.PI) / 180;
@@ -110,16 +116,28 @@ export function fitCameraTo(
   target: Vector3,
   {
     radius = TABLE_RADIUS,
-    /** 卡牌立起时的高度，给外接盒一点余量。 */
-    height = 1.6,
+    /**
+     * 内容的高度，给外接盒一点余量。
+     *
+     * 手牌抬到空中（`HAND.lift` 1.5）之后，内容不再是一张平摊的桌子。
+     * 取 2.2 够把手牌整个含进来；再往上加只是把镜头往后推、把棋盘缩小，
+     * 换来的是「悬停时牌顶不会超出画面上沿」——不值得。
+     */
+    height = 2.2,
     margin = 1.08,
     iterations = 6,
   }: { radius?: number; height?: number; margin?: number; iterations?: number } = {},
 ): number {
-  // 内容是平的，所以轮廓就是外接盒的四条竖棱的上下共 8 个角
+  /*
+    内容是平的，所以轮廓就是外接盒的四条竖棱的上下共 8 个角。
+
+    **盒子要以视线目标为中心，不是以世界原点为中心。** 盘面中心在 z=0.82，
+    内容相对它是正负对称的；按原点铺盒子的话，玩家这一侧（+z）会比盒子多伸出去 0.82，
+    取景算出来的距离就偏小——手牌会被下沿切掉半张（P3 实机就是这样）。
+  */
   const corners: Vector3[] = [];
-  for (const x of [-radius, radius]) {
-    for (const z of [-radius, radius]) {
+  for (const x of [target.x - radius, target.x + radius]) {
+    for (const z of [target.z - radius, target.z + radius]) {
       for (const y of [0, height]) {
         corners.push(new Vector3(x, y, z));
       }

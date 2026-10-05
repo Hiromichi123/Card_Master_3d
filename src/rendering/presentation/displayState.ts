@@ -38,9 +38,15 @@ export interface DisplayGroup {
 }
 
 export interface DisplaySide {
-  /** 牌堆剩余张数——只显示数量，不摆牌。 */
+  /** 牌堆剩余张数——牌堆是盖着的，只显示数量。 */
   deckCount: number;
-  discardCount: number;
+  /**
+   * 弃牌堆，按先后顺序存 instanceId。
+   *
+   * 存列表而不是计数，是因为**弃牌区要画出来**：最上面那张是明牌，
+   * 得知道它是哪一张。数量由 `discard.length` 得到。
+   */
+  discard: string[];
   /** 手牌，按顺序存 instanceId。 */
   hand: string[];
   /** 准备区，定长，`null` 表示空槽。 */
@@ -133,7 +139,7 @@ function sideZonesFromState(state: BattleState, side: SideId): DisplaySide {
   const zones = state.zones[side];
   return {
     deckCount: zones.deck.length,
-    discardCount: zones.discard.length,
+    discard: [...zones.discard],
     hand: [...zones.hand],
     prep: [...zones.prep],
     battle: [...zones.battle],
@@ -285,11 +291,10 @@ export function applyEventToDisplay(display: DisplayState, event: BattleEvent): 
 
     case 'CardMoved': {
       const side = display.zones[event.side];
+      // 先从原处拿掉（含从弃牌堆列表里摘掉），再放到新处。
+      // 还魂会把牌从弃牌堆捞回手牌，漏掉摘除这一步弃牌堆就只增不减。
       removeFromZone(side, event.instanceId);
-      // 牌堆与弃牌堆只显示数量，所以要跟着搬动一起增减。
-      // 还魂（不死/复活）会把牌从弃牌堆捞回手牌，漏掉这一步会让弃牌数只增不减。
       adjustCount(side, event.from, -1);
-      adjustCount(side, event.to, 1);
       placeInZone(side, event.to, event.slotIndex, event.instanceId);
       break;
     }
@@ -386,6 +391,7 @@ function indexOfInBoard(side: DisplaySide, instanceId: string): number | null {
 
 function removeFromZone(side: DisplaySide, instanceId: string): void {
   removeFromList(side.hand, instanceId);
+  removeFromList(side.discard, instanceId);
   clearSlot(side.prep, instanceId);
   clearSlot(side.battle, instanceId);
 }
@@ -410,14 +416,17 @@ function placeInZone(
         side.battle[slotIndex] = instanceId;
       }
       break;
-    // deck / discard 只有计数，由 `adjustCount` 统一处理
-    case 'deck':
     case 'discard':
+      // 进弃牌堆要记下是哪一张——弃牌区画的是最上面那张明牌
+      side.discard.push(instanceId);
+      break;
+    // 牌堆是盖着的，只有数量
+    case 'deck':
       break;
   }
 }
 
-/** 牌堆与弃牌堆的计数增减。这两个区只显示数量，不摆牌。 */
+/** 牌堆的计数增减。弃牌堆存的是列表，由 `placeInZone` 维护。 */
 function adjustCount(
   side: DisplaySide,
   zone: 'deck' | 'hand' | 'prep' | 'battle' | 'discard',
@@ -425,8 +434,6 @@ function adjustCount(
 ): void {
   if (zone === 'deck') {
     side.deckCount = Math.max(0, side.deckCount + delta);
-  } else if (zone === 'discard') {
-    side.discardCount = Math.max(0, side.discardCount + delta);
   }
 }
 

@@ -52,32 +52,47 @@ async function backToMenu(page: Page): Promise<void> {
   await expect(page.getByRole('button', { name: '开始对局' })).toBeVisible();
 }
 
-/** 手牌与准备区在画布里的相对位置（按画布高度取比例，避免写死像素）。 */
-function pointAt(box: { x: number; y: number; width: number; height: number }, ratio: number) {
-  return { x: box.x + box.width / 2, y: box.y + box.height * ratio };
+/**
+ * 画布里按比例取的一个点。用比例而不是像素，换视口尺寸时不用改。
+ *
+ * `xRatio` 可以偏开中线：手牌是**浮在准备行前面**的，
+ * 中间几个准备槽会被手牌挡住，只有两端的槽能直接点到。
+ */
+function pointAt(
+  box: { x: number; y: number; width: number; height: number },
+  ratio: number,
+  xRatio = 0.5,
+): { x: number; y: number } {
+  return { x: box.x + box.width * xRatio, y: box.y + box.height * ratio };
 }
 
 /**
- * 点画布上的某个位置，直到它生效。
+ * 依次尝试几个候选位置，直到其中一次点击生效。
  *
- * 3D 场景的命中检测是位置相关的，而画布里的东西会随取景与帧率微动；
- * 这个用例还要和一条两分钟的用例并行跑，GPU 争用时首次点击可能落空。
- * 重试几次比把等待时间调大更稳，也不会掩盖「点了完全没反应」的真问题。
+ * 两个原因让它必须容错：
+ *
+ * 1. 3D 场景的命中检测是位置相关的，而画布里的东西会随取景微动——
+ *    布局调一次（比如把手牌挪到盘外），写死的比例就全废了。
+ * 2. 这个用例还要和一条两分钟的用例并行跑，GPU 争用时首次点击也可能落空。
+ *
+ * 重试比把等待时间调大更稳，也不会掩盖「点了完全没反应」的真问题：
+ * 所有候选都试过还是没反应，用例就失败。
  */
-async function clickUntil(
+async function clickOneOf(
   page: Page,
-  at: { x: number; y: number },
+  box: { x: number; y: number; width: number; height: number },
+  ratios: readonly number[],
   settled: () => Promise<boolean>,
-  tries = 5,
 ): Promise<void> {
-  for (let attempt = 0; attempt < tries; attempt += 1) {
+  for (const ratio of ratios) {
+    const at = pointAt(box, ratio);
     await page.mouse.click(at.x, at.y);
-    await page.waitForTimeout(300);
+    await page.waitForTimeout(350);
     if (await settled()) {
       return;
     }
   }
-  throw new Error(`点了 ${tries} 次都没有生效：${JSON.stringify(at)}`);
+  throw new Error(`这些比例都没点中：${ratios.join(', ')}`);
 }
 
 test('出牌与结束回合：HUD 的数值与日志确实跟着变', async ({ page }) => {
@@ -96,28 +111,50 @@ test('出牌与结束回合：HUD 的数值与日志确实跟着变', async ({ p
   if (!box) return;
 
   const hintText = () => page.locator('.hud__hint').innerText();
+  const selected = async () => (await hintText()) === '点击高亮的准备区槽位放置';
 
-  // 点一张手牌。**选中态的提示文案要和未选中态区分开**：
-  // 未选中的提示里也含「准备区槽位」四个字，拿它当判据会一直通过。
-  const hand = pointAt(box, 0.86);
-  await clickUntil(page, hand, async () => (await hintText()) === '点击高亮的准备区槽位放置');
+  // 手牌在画布下方（盘外、悬空），准备行在它上面一行
+  const HAND_RATIOS = [0.84, 0.86, 0.82, 0.88, 0.8] as const;
+  // 先试两端（不会被手牌挡住），再试中间
+  const PREP_SPOTS = [
+    [0.76, 0.34],
+    [0.76, 0.66],
+    [0.74, 0.34],
+    [0.78, 0.66],
+    [0.72, 0.34],
+    [0.8, 0.66],
+    [0.78, 0.5],
+    [0.74, 0.5],
+  ] as const;
 
-  // 取消选中：点桌面上一处空位（敌方那半边的棋盘），提示回到初始态
-  const empty = pointAt(box, 0.32);
-  await clickUntil(
-    page,
-    empty,
-    async () => (await hintText()).startsWith('本回合必须先出一张牌'),
+  /*
+    点一张手牌。**选中态的提示文案要和未选中态区分开**：
+    未选中的提示里也含「准备区槽位」四个字，拿它当判据会一直通过。
+  */
+  await clickOneOf(page, box, HAND_RATIOS, selected);
+
+  // 取消选中：点桌面上一处空位（棋盘上半边），提示回到初始态
+  await clickOneOf(page, box, [0.32, 0.3, 0.36], async () =>
+    (await hintText()).startsWith('本回合必须先出一张牌'),
   );
 
-  // 再选一次，然后真的出牌
-  await clickUntil(page, hand, async () => (await hintText()) === '点击高亮的准备区槽位放置');
-  const prep = pointAt(box, 0.71);
-  await clickUntil(
-    page,
-    prep,
-    async () => (await page.locator('.hud__log').innerText()).includes('进入准备区'),
-  );
+  /*
+    把牌放到准备区。
+    每次换候选位置之前都要**重新选一次手牌**：点空了会被 `onPointerMissed`
+    当成「点空白取消选中」，选中态一没，后面的候选位置点了也没用。
+  */
+  const placed = async () =>
+    (await page.locator('.hud__log').innerText()).includes('进入准备区');
+  for (const [ratio, xRatio] of PREP_SPOTS) {
+    if (await placed()) {
+      break;
+    }
+    await clickOneOf(page, box, HAND_RATIOS, selected);
+    const prep = pointAt(box, ratio, xRatio);
+    await page.mouse.click(prep.x, prep.y);
+    await page.waitForTimeout(400);
+  }
+  expect(await placed(), '把牌放到准备区没有成功').toBe(true);
 
   // 出牌之后手牌少一张
   await expect(page.locator('.hud__side').nth(1)).toContainText('手牌 2');

@@ -72,10 +72,13 @@ export interface CardMeshProps {
   readonly onHoverChange?: ((card: CardDefinition, hovered: boolean) => void) | undefined;
 }
 
-const HOVER_LIFT = 0.22;
-const SELECTED_LIFT = 0.32;
+const HOVER_LIFT = 0.5;
+const SELECTED_LIFT = 0.95;
 /** 悬停时朝相机方向倾斜的角度。 */
-const HOVER_TILT = 0.16;
+const HOVER_TILT = 0.26;
+/** 悬停/选中时的放大倍数。牌桌视角下卡片本来就不大，放大要看得出来。 */
+const HOVER_SCALE = 1.12;
+const SELECTED_SCALE = 1.22;
 const DAMPING = 12;
 /** 翻面时长。 */
 const FLIP_DURATION = 0.42;
@@ -169,10 +172,14 @@ export function CardMesh({
   }, [faceDown]);
 
   // ---- 悬停/选中：追踪目标，用阻尼 ----
+  // 悬停与选中**同时**抬高并放大：在实机里试对局时，光靠一点点抬升
+  // 根本看不出「鼠标现在停在哪张牌上」，而手牌本来就小。
   const targetLift = (selected ? SELECTED_LIFT : 0) + (hovered ? HOVER_LIFT : 0);
   const targetTilt = hovered ? HOVER_TILT : 0;
+  const targetScale = selected ? SELECTED_SCALE : hovered ? HOVER_SCALE : 1;
   const liftRef = useRef(0);
   const tiltRef = useRef(0);
+  const scaleRef = useRef(1);
 
   useFrame((_, delta) => {
     const timeline = flipTimelineRef.current;
@@ -187,7 +194,9 @@ export function CardMesh({
 
     liftRef.current = damp(liftRef.current, targetLift, DAMPING, delta);
     tiltRef.current = damp(tiltRef.current, targetTilt, DAMPING, delta);
+    scaleRef.current = damp(scaleRef.current, targetScale, DAMPING, delta);
 
+    group.scale.setScalar(scale * scaleRef.current);
     group.position.y = position[1] + liftRef.current;
     group.rotation.x = rotationX + tiltRef.current;
     // 翻面绕自身长轴，与倾角叠加；欧拉顺序 XYZ 决定它先转、再躺平

@@ -13,17 +13,19 @@ import type { DisplayState } from '../presentation/displayState';
 import { statsOf } from '../presentation/displayState';
 import type { CardPlacement } from './BattleBoard';
 import {
+  BATTLE_CARD_SCALE,
   BATTLE_SLOT_COUNT,
   CARD_FLAT_ROTATION_X,
+  HAND_CARD_SCALE,
+  PILE_CARD_SCALE,
+  PREP_CARD_SCALE,
   PREP_SLOT_COUNT,
   buildSlots,
   handCardTransform,
+  pilePosition,
   type SlotZone,
 } from './layout';
 import { slotKey } from './SlotMarkers';
-
-/** 准备区的卡比战斗区小一圈。 */
-const PREP_SCALE = 0.86;
 
 /**
  * 每侧下标 → `buildSlots()` 的全局下标。
@@ -53,16 +55,6 @@ export function slotKeyFor(side: SideId, zone: SlotZone, perSideIndex: number): 
   return slotKey(side, zone, globalSlotIndex(side, zone, perSideIndex));
 }
 
-/**
- * 手牌位在世界里的坐标。
- *
- * 演出层要拿它当「出牌」这一下的起手点，所以单独开一个只给点的版本——
- * 牌是斜着立起来的，但弹体从哪个位置发出只关心中心点。
- */
-export function handPointOf(index: number, total: number): readonly [number, number, number] {
-  return handCardTransform(index, total).position;
-}
-
 /** 槽位中心的世界坐标。`slotIndex` 是**每侧**的下标。 */
 export function slotPosition(
   side: SideId,
@@ -74,10 +66,34 @@ export function slotPosition(
   return slot ? slot.position : [0, 0, 0];
 }
 
+/**
+ * 手牌位在世界里的坐标。
+ *
+ * 演出层要拿它当「出牌」这一下的起手点，所以单独开一个只给点的版本——
+ * 牌是斜着立起来的，但弹体从哪个位置发出只关心中心点。
+ */
+export function handPointOf(
+  index: number,
+  total: number,
+  side: SideId,
+): readonly [number, number, number] {
+  return handCardTransform(index, total, side).position;
+}
+
+/** 一个牌堆 / 弃牌堆在桌上的表示。 */
+export interface PileView {
+  readonly side: SideId;
+  readonly kind: 'deck' | 'discard';
+  /** 牌堆是盖着的；弃牌堆画最上面那张明牌。 */
+  readonly topCard: CardDefinition | null;
+  readonly count: number;
+}
+
 export interface BoardView {
   readonly entries: readonly CardPlacement[];
   readonly placeable: ReadonlySet<string>;
   readonly targeted: ReadonlySet<string>;
+  readonly piles: readonly PileView[];
 }
 
 export interface BuildBoardOptions {
@@ -88,6 +104,8 @@ export interface BuildBoardOptions {
   /** 选中手牌后，可放置的准备槽。 */
   readonly placeablePrepSlots?: readonly number[] | undefined;
 }
+
+const SIDES: readonly SideId[] = ['player', 'enemy'];
 
 export function buildBoard(display: DisplayState, options: BuildBoardOptions = {}): BoardView {
   const entries: CardPlacement[] = [];
@@ -105,7 +123,7 @@ export function buildBoard(display: DisplayState, options: BuildBoardOptions = {
         slotPosition(side, 'battle', index),
         undefined,
         undefined,
-        1,
+        BATTLE_CARD_SCALE,
         false,
       );
       if (placement) {
@@ -123,7 +141,7 @@ export function buildBoard(display: DisplayState, options: BuildBoardOptions = {
         slotPosition(side, 'prep', index),
         undefined,
         undefined,
-        PREP_SCALE,
+        PREP_CARD_SCALE,
         false,
       );
       if (placement) {
@@ -132,19 +150,15 @@ export function buildBoard(display: DisplayState, options: BuildBoardOptions = {
     });
 
     zones.hand.forEach((instanceId, index) => {
-      const hand = handCardTransform(index, zones.hand.length);
-      // 敌方手牌是镜像的：翻到对面去看这个扇形的样子
-      const mirrored = side === 'enemy';
+      const hand = handCardTransform(index, zones.hand.length, side);
       const placement = makePlacement(
         display,
         instanceId,
-        mirrored
-          ? [hand.position[0], hand.position[1], -hand.position[2]]
-          : hand.position,
-        mirrored ? -hand.rotationY : hand.rotationY,
-        mirrored ? -HAND_TILT_X : hand.rotationX,
-        1,
-        mirrored,
+        hand.position,
+        hand.rotationY,
+        hand.rotationX,
+        HAND_CARD_SCALE,
+        side === 'enemy',
         side === 'player' && options.playerCanPlay === true,
       );
       if (placement) {
@@ -158,13 +172,38 @@ export function buildBoard(display: DisplayState, options: BuildBoardOptions = {
     placeable.add(slotKeyFor('player', 'prep', index));
   }
 
-  return { entries, placeable, targeted: new Set<string>() };
+  return {
+    entries,
+    placeable,
+    targeted: new Set<string>(),
+    piles: buildPiles(display),
+  };
 }
 
-const SIDES: readonly SideId[] = ['player', 'enemy'];
+/** 双方的牌堆与弃牌堆。牌堆盖着，弃牌堆露出最上面那张。 */
+function buildPiles(display: DisplayState): PileView[] {
+  const piles: PileView[] = [];
+  for (const side of SIDES) {
+    const zones = display.zones[side];
+    const topId = zones.discard[zones.discard.length - 1];
+    const topIdentity = topId ? display.instances[topId] : undefined;
+    const topCard = topIdentity ? (cardById.get(topIdentity.definitionId) ?? null) : null;
 
-/** 手牌立起的角度；敌方取反，让两张牌朝各自的玩家。 */
-const HAND_TILT_X = -0.42;
+    piles.push(
+      { side, kind: 'deck', topCard: null, count: zones.deckCount },
+      { side, kind: 'discard', topCard, count: zones.discard.length },
+    );
+  }
+  return piles;
+}
+
+/** 牌堆/弃牌堆的位置与缩放。 */
+export function pilePlacement(pile: PileView): {
+  position: readonly [number, number, number];
+  scale: number;
+} {
+  return { position: pilePosition(pile.side, pile.kind), scale: PILE_CARD_SCALE };
+}
 
 function makePlacement(
   display: DisplayState,

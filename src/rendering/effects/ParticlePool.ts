@@ -79,6 +79,16 @@ export class ParticlePool {
    */
   frameScale = 1;
 
+  /**
+   * 粒子尺寸的整体倍数。
+   *
+   * 模板里的尺寸是**世界单位**，当初是照着 1.0 宽的卡牌标的。战斗区放大到 1.5 倍
+   * 之后，同样的尺寸打在卡片周围会显得又小又碎，所以由渲染系统按同一比例放大。
+   * 放在池子上而不是逐个模板改，是因为模板里写死了二十多处 `size: [min, max]`，
+   * 逐处改迟早会漏掉几个。
+   */
+  sizeScale = 1;
+
   // 复用的临时对象，避免每次发射都 new
   private readonly tmpDir = new Vector3();
   private readonly tmpPos = new Vector3();
@@ -174,7 +184,7 @@ export class ParticlePool {
       this.colors[i3 + 1] = clamp01(color.g + rand(-jitter, jitter) * MAX_JITTER_RGB);
       this.colors[i3 + 2] = clamp01(color.b + rand(-jitter, jitter) * MAX_JITTER_RGB);
 
-      const s = rand(size[0], size[1]);
+      const s = rand(size[0], size[1]) * this.sizeScale;
       this.baseSizes[index] = s;
       this.sizes[index] = s;
 

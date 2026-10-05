@@ -2,7 +2,13 @@ import { useMemo } from 'react';
 
 import type { SideId } from '../../domain/cards/types';
 import { useSettingsStore } from '../../state/settingsStore';
-import { buildSlots, CARD_SIZE, type SlotZone } from './layout';
+import {
+  BATTLE_CARD_SCALE,
+  CARD_SIZE,
+  PREP_CARD_SCALE,
+  buildSlots,
+  type SlotZone,
+} from './layout';
 
 /**
  * 槽位标记。
@@ -53,8 +59,10 @@ export function SlotMarkers({ placeable, targeted, onSlotClick }: Props) {
         const isTarget = targeted?.has(key) ?? false;
         const isPlaceable = placeable?.has(key) ?? false;
 
-        // 战斗槽用方角，准备槽用圆角，光靠形状就能区分两类区域
-        const inset = slot.zone === 'battle' ? 1.02 : 0.98;
+        // 战斗槽用方角，准备槽用圆角，光靠形状就能区分两类区域。
+        // 环的大小跟着该区的卡牌缩放走，否则卡片放大之后槽位会比牌小一圈。
+        const cardScale = slot.zone === 'battle' ? BATTLE_CARD_SCALE : PREP_CARD_SCALE;
+        const inset = (slot.zone === 'battle' ? 1.02 : 0.98) * cardScale;
         const color = isTarget
           ? colors.target
           : isPlaceable
@@ -75,10 +83,15 @@ export function SlotMarkers({ placeable, targeted, onSlotClick }: Props) {
             position={[slot.position[0], 0, slot.position[2]]}
           >
             <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.009, 0]}>
+              {/*
+                4 段圆环、起始角 π/4，画出来是一个**顶点落在半径上**的方框，
+                边长是半径的 √2 倍。所以要让方框正好框住卡牌，半径取 边长/√2——
+                照半径等于半个边长写的话，框会明显比牌小一圈。
+              */}
               <ringGeometry
                 args={[
-                  (CARD_SIZE.width * inset) / 2 - 0.06,
-                  (CARD_SIZE.width * inset) / 2,
+                  (CARD_SIZE.width * inset) / Math.SQRT2 - 0.06 * cardScale,
+                  (CARD_SIZE.width * inset) / Math.SQRT2,
                   4,
                   1,
                   Math.PI / 4,

@@ -31,6 +31,13 @@ export interface EffectSystemProps {
    * 相机与悬停仍要能操作。所以冻结发生在消费 delta 的这一层。
    */
   readonly paused?: boolean | undefined;
+  /**
+   * 特效的世界尺度。
+   *
+   * 模板里的尺寸是照着 1.0 宽的卡牌标的世界单位。战斗区放大到 1.5 倍之后，
+   * 同一套尺寸打在卡周围会显得又小又碎——传同一个倍数进来，特效跟着等比放大。
+   */
+  readonly worldScale?: number | undefined;
 }
 
 /** 一个正在播放的特效实例。 */
@@ -45,8 +52,13 @@ export function EffectSystem({
   capacity = 1000,
   pixelScale,
   paused = false,
+  worldScale = 1,
 }: EffectSystemProps) {
   const pool = useMemo(() => new ParticlePool(capacity), [capacity]);
+  // 模板里的尺寸是世界单位，按场上卡牌的尺度整体缩放，特效才跟得上放大后的战斗区
+  useEffect(() => {
+    pool.sizeScale = worldScale;
+  }, [pool, worldScale]);
   const activeRef = useRef<ActiveEffect[]>([]);
   const gl = useThree((state) => state.gl);
 

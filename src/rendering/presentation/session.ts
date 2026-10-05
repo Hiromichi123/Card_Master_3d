@@ -375,7 +375,7 @@ export class BattleSession {
       }
       const handIndex = zones.hand.indexOf(instanceId);
       if (handIndex >= 0) {
-        return handPointOf(handIndex, zones.hand.length);
+        return handPointOf(handIndex, zones.hand.length, side);
       }
     }
     // 已经离场、但代理还在画面上：用代理记下的槽位，弹体才不会追向空槽

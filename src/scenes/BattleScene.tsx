@@ -7,7 +7,7 @@ import { BattleBoard } from '../rendering/battle/BattleBoard';
 import { DepartingCard } from '../rendering/battle/DepartingCard';
 import { PresentationDriver } from '../rendering/battle/PresentationDriver';
 import { buildBoard } from '../rendering/battle/placements';
-import type { SlotZone } from '../rendering/battle/layout';
+import { BATTLE_CARD_SCALE, type SlotZone } from '../rendering/battle/layout';
 import { effectDirector } from '../rendering/effects/effectDirector';
 import { EffectSystem } from '../rendering/effects/EffectSystem';
 import { PerfSampler } from '../rendering/PerfSampler';
@@ -153,11 +153,16 @@ export function BattleScene() {
             演出的表现就是「点了结束回合，画面永远停在原地，且零报错」。
           */}
           <PresentationDriver session={session} />
-          <EffectSystem capacity={profile.particleCapacity} />
+          <EffectSystem
+            capacity={profile.particleCapacity}
+            // 战斗区放大到 1.5 倍，特效按同一比例放大才不会显得又小又碎
+            worldScale={BATTLE_CARD_SCALE}
+          />
           <PerfSampler />
 
           <BattleBoard
             placements={view.entries}
+            piles={view.piles}
             placeable={view.placeable}
             targeted={view.targeted}
             selectedInstanceId={snapshot.selectedInstanceId}

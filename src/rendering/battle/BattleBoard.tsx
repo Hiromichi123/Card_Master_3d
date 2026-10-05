@@ -1,6 +1,8 @@
 import type { CardDefinition, SideId } from '../../domain/cards/types';
 import type { StatKind } from '../cards/statBadge';
 import { CardMesh } from '../cards/CardMesh';
+import { Pile } from './Pile';
+import type { PileView } from './placements';
 import { useSettingsStore } from '../../state/settingsStore';
 import { CameraRig } from './CameraRig';
 import { SceneEnvironment } from './SceneEnvironment';
@@ -65,6 +67,8 @@ export interface BattleBoardProps {
   readonly onCardHover?: ((card: CardDefinition, hovered: boolean) => void) | undefined;
   /** 点击槽位。用于把手牌放到准备区。 */
   readonly onSlotClick?: ((side: SideId, zone: SlotZone, index: number) => void) | undefined;
+  /** 双方的牌堆与弃牌堆。 */
+  readonly piles?: readonly PileView[] | undefined;
 }
 
 export function BattleBoard({
@@ -75,6 +79,7 @@ export function BattleBoard({
   onCardClick,
   onCardHover,
   onSlotClick,
+  piles,
 }: BattleBoardProps) {
   const theme = useSettingsStore((state) => state.tableTheme);
   const quality = useSettingsStore((state) => state.quality);
@@ -103,6 +108,8 @@ export function BattleBoard({
         reduceMotion={reduceMotion}
       />
       <SlotMarkers placeable={placeable} targeted={targeted} onSlotClick={onSlotClick} />
+
+      {piles?.map((pile) => <Pile key={`${pile.side}-${pile.kind}`} pile={pile} />)}
 
       {placements?.map((placement) => (
         <CardMesh
