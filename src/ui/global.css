@@ -304,43 +304,63 @@ code {
   font-variant-numeric: tabular-nums;
 }
 
-/* ---------- 卡牌检视器 ---------- */
+/* ---------- 实验台 ---------- */
 
-.inspector {
+.lab {
   position: absolute;
   inset: 0;
 }
 
-.inspector canvas {
+.lab canvas {
   display: block;
   touch-action: none;
 }
 
-.inspector__panel {
+.lab__panel {
   position: absolute;
   top: 16px;
   right: 16px;
-  width: 290px;
+  bottom: 16px;
+  width: 320px;
   padding: 16px 18px;
-  background: rgba(22, 27, 38, 0.92);
+  overflow-y: auto;
+  background: rgba(22, 27, 38, 0.94);
   border: 1px solid var(--border-strong);
   border-radius: 10px;
   backdrop-filter: blur(6px);
 }
 
-.inspector__title {
-  margin: 0 0 12px;
+.lab__title {
+  margin: 0 0 14px;
   font-size: 15px;
 }
 
-.inspector__row {
+.lab__section {
+  margin-bottom: 16px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.lab__section:last-of-type {
+  border-bottom: none;
+}
+
+.lab__section h3 {
+  margin: 0 0 8px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-dim);
+  letter-spacing: 0.03em;
+}
+
+.lab__row {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 
-.inspector__row button {
+.lab__row button {
   appearance: none;
   border: 1px solid var(--border-strong);
   background: var(--bg-raised-hover);
@@ -352,11 +372,11 @@ code {
   cursor: pointer;
 }
 
-.inspector__row button:hover {
+.lab__row button:hover {
   border-color: var(--accent);
 }
 
-.inspector__name {
+.lab__name {
   flex: 1;
   text-align: center;
   font-weight: 600;
@@ -365,55 +385,117 @@ code {
   text-overflow: ellipsis;
 }
 
-.inspector__meta {
+.lab__meta {
   display: grid;
   grid-template-columns: auto 1fr;
   gap: 4px 10px;
-  margin: 0 0 14px;
+  margin: 0;
   font-size: 12.5px;
 }
 
-.inspector__meta dt {
+.lab__meta dt {
   color: var(--text-dim);
 }
 
-.inspector__meta dd {
+.lab__meta dd {
   margin: 0;
   font-variant-numeric: tabular-nums;
+  word-break: break-word;
 }
 
-.inspector__toggle,
-.inspector__slider {
+/* 触发按钮：等宽网格，按钮多了也不会挤成一条 */
+.lab__buttons {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+}
+
+.lab__buttons button {
+  appearance: none;
+  border: 1px solid var(--border-strong);
+  background: var(--bg-raised-hover);
+  color: var(--text);
+  padding: 6px 8px;
+  border-radius: 6px;
+  font: inherit;
+  font-size: 12.5px;
+  cursor: pointer;
+  text-align: center;
+}
+
+.lab__buttons button:hover {
+  border-color: var(--accent);
+  background: #24304a;
+}
+
+.lab__buttons button:active {
+  background: #2f3d5c;
+}
+
+.lab__toggle,
+.lab__slider {
   display: flex;
   gap: 8px;
   align-items: center;
-  margin-bottom: 10px;
-  font-size: 13px;
+  margin-bottom: 9px;
+  font-size: 12.5px;
   cursor: pointer;
 }
 
-.inspector__slider {
+.lab__slider {
   flex-direction: column;
   align-items: stretch;
-  gap: 4px;
+  gap: 3px;
 }
 
-.inspector__slider em {
-  display: block;
-  font-style: normal;
-  font-size: 11.5px;
+.lab__slider span {
   color: var(--text-dim);
 }
 
-.inspector__slider input {
+.lab__slider input {
   width: 100%;
   accent-color: var(--accent);
 }
 
-.inspector__hint {
-  margin: 12px 0 0;
-  padding-top: 10px;
-  border-top: 1px solid var(--border);
+.lab__palette {
+  display: flex;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.lab__swatch {
+  appearance: none;
+  width: 26px;
+  height: 22px;
+  border-radius: 5px;
+  border: 2px solid transparent;
+  cursor: pointer;
+}
+
+.lab__swatch--on {
+  border-color: var(--text);
+}
+
+.lab__wide {
+  appearance: none;
+  width: 100%;
+  margin-top: 4px;
+  border: 1px solid var(--border-strong);
+  background: var(--bg-raised-hover);
+  color: var(--text);
+  padding: 7px 10px;
+  border-radius: 6px;
+  font: inherit;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+
+.lab__wide:hover {
+  border-color: var(--accent);
+}
+
+.lab__hint {
+  margin: 10px 0 0;
   font-size: 11.5px;
   line-height: 1.6;
   color: var(--text-dim);

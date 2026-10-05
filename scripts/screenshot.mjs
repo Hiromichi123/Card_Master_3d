@@ -71,7 +71,7 @@ function parseArgs(argv) {
 const ROUTE_LABEL = {
   probe: '数据自检',
   battle: '战斗场景',
-  viewer: '开发查看器',
+  viewer: '实验台',
 };
 
 async function main() {

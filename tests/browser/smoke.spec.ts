@@ -50,13 +50,27 @@ test.describe('应用骨架', () => {
     await expect(firstCardName).toHaveText(/[一-鿿]/);
   });
 
-  test('开发查看器展示切片卡的真实数据，而不是空白', async ({ page }) => {
+  test('实验台展示切片卡的真实数据，并能手动触发特效', async ({ page }) => {
     await page.goto('/');
-    await page.getByRole('button', { name: '开发查看器' }).click();
+    await page.getByRole('button', { name: '实验台' }).click();
 
-    await expect(page.getByRole('heading', { name: '卡牌检视' })).toBeVisible();
-    // 面板里的数据必须来自导入结果，而不是写死的占位
-    await expect(page.locator('.inspector__meta')).toContainText('A_011');
-    await expect(page.locator('.inspector__meta')).toContainText('火球1、冰封1、闪电1');
+    await expect(page.getByRole('heading', { name: '实验台' })).toBeVisible();
+
+    // 面板数据必须来自导入结果，而不是写死的占位
+    const meta = page.locator('.lab__meta').first();
+    await expect(meta).toContainText('A_011');
+    await expect(meta).toContainText('火球1、冰封1、闪电1');
+
+    // 手动触发一个特效：活跃粒子数应当被推起来
+    const particleRow = page.locator('.lab__meta').last();
+    await expect(particleRow).toContainText('活跃粒子');
+    await page.getByRole('button', { name: '群体火球', exact: true }).click();
+    await expect
+      .poll(async () => {
+        const text = await particleRow.innerText();
+        const match = text.match(/活跃粒子\s*(\d+)/);
+        return match ? Number(match[1]) : 0;
+      }, { timeout: 5000 })
+      .toBeGreaterThan(20);
   });
 });

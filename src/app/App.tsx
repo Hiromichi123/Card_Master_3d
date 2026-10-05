@@ -1,7 +1,7 @@
 import { Suspense, useState } from 'react';
 
 import { BattleScene } from '../scenes/BattleScene';
-import { CardInspectorScene } from '../scenes/CardInspectorScene';
+import { EffectLabScene } from '../scenes/EffectLabScene';
 import { DataProbe } from './DataProbe';
 import { ErrorBoundary } from './ErrorBoundary';
 
@@ -15,7 +15,7 @@ export type RouteId = 'probe' | 'battle' | 'viewer';
 const ROUTES: { id: RouteId; label: string; hint: string }[] = [
   { id: 'probe', label: '数据自检', hint: '确认导入的数据能被应用读到' },
   { id: 'battle', label: '战斗场景', hint: 'P1 建立 3D 战桌与实体卡牌' },
-  { id: 'viewer', label: '开发查看器', hint: 'P1 切换卡牌与特效参数' },
+  { id: 'viewer', label: '实验台', hint: '手动触发卡牌特性与攻击特效，调参数' },
 ];
 
 export function App() {
@@ -50,7 +50,7 @@ export function App() {
                 <BattleScene />
               </div>
             )}
-            {route === 'viewer' && <CardInspectorScene />}
+            {route === 'viewer' && <EffectLabScene />}
           </Suspense>
         </ErrorBoundary>
       </main>
