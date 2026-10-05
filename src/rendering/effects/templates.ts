@@ -3,6 +3,14 @@ import { Color, Vector3 } from 'three';
 import { easeInOutCubic, easeOutCubic, easeOutExpo } from '../anim/easings';
 import { Timeline } from '../anim/Timeline';
 import type { ParticlePool } from './ParticlePool';
+import type { EffectTemplateId } from './familyMap';
+
+/**
+ * 模板 id 与「技能族 → 模板」的对照表定义在 `./familyMap`——
+ * 那个文件不 import three，演出层可以单独用它而不用拖进整个粒子模块。
+ * 这里原样转出，既有调用方（实验台等）不用改。
+ */
+export { FAMILY_TO_EFFECT, type EffectTemplateId } from './familyMap';
 
 /**
  * 技能特效模板（`VISUAL_SPEC.md` 第 4 节的 9 个模板 + 普通攻击）。
@@ -15,21 +23,6 @@ import type { ParticlePool } from './ParticlePool';
  * 表现，不再单独建一个弹体 Mesh。这样命中时机与轨迹天然一致，
  * 也不会出现「目标先消失、弹体追向空位置」（`V-FX-3`）。
  */
-
-export type EffectTemplateId =
-  | 'normalAttack'
-  | 'fireball'
-  | 'iceSeal'
-  | 'lightning'
-  | 'groupFireball'
-  | 'groupIceSeal'
-  | 'groupLightning'
-  | 'shield'
-  | 'heal'
-  | 'buff'
-  | 'debuff'
-  | 'flow'
-  | 'status';
 
 export interface EffectContext {
   readonly pool: ParticlePool;
@@ -1037,49 +1030,6 @@ export const EFFECT_RECIPES: Record<EffectTemplateId, EffectRecipe> = {
   status,
 };
 
-/**
- * 技能族 → 特效模板。
- *
- * 这是 `VISUAL_SPEC.md` 第 4 节那张对照表的代码形式。
- * P4 覆盖全部 35 族时，只需在这里补齐映射，不需要新写效果。
- */
-export const FAMILY_TO_EFFECT: Record<string, EffectTemplateId> = {
-  fireball: 'fireball',
-  bombard: 'fireball',
-  explodeOnDeath: 'fireball',
-  groupFireball: 'groupFireball',
-  groupBombard: 'groupFireball',
-  iceSeal: 'iceSeal',
-  groupIceSeal: 'groupIceSeal',
-  lightning: 'lightning',
-  groupLightning: 'groupLightning',
-  defense: 'shield',
-  armorBreak: 'shield',
-  dodge: 'shield',
-  immunity: 'shield',
-  healAlly: 'heal',
-  groupHeal: 'heal',
-  selfHeal: 'heal',
-  blessing: 'buff',
-  groupBlessing: 'buff',
-  inspire: 'buff',
-  groupInspire: 'buff',
-  curse: 'debuff',
-  injury: 'debuff',
-  vampire: 'debuff',
-  berserk: 'debuff',
-  selfDestruct: 'debuff',
-  drawCard: 'flow',
-  soulReturn: 'flow',
-  haste: 'flow',
-  delay: 'flow',
-  clone: 'flow',
-  copy: 'flow',
-  undying: 'flow',
-  rebirth: 'flow',
-  silence: 'status',
-  counter: 'normalAttack',
-};
 
 /** 默认主题色，供没有明确颜色的模板兜底。 */
 export const DEFAULT_EFFECT_COLOR = new Color(0.7, 0.8, 1);

@@ -57,7 +57,16 @@ export type SlotZone = 'battle' | 'prep';
 export interface SlotDescriptor {
   readonly side: SideId;
   readonly zone: SlotZone;
+  /**
+   * 全局下标（0..25），按「玩家战斗区 → 敌方战斗区 → 玩家准备区 → 敌方准备区」编号。
+   *
+   * 它只用于 `slotKey()` 这类**稳定标识**。别拿它当引擎里的槽位下标——
+   * `SideZones.battle` / `prep` 用的是**每侧**下标（0..4 / 0..7），
+   * 两者混用会把牌放到别人的槽里（P3 踩过：点准备槽报 `noEmptyPrepSlot`）。
+   */
   readonly index: number;
+  /** 每侧下标。进引擎、进布局，都用这个。 */
+  readonly rowIndex: number;
   /** 槽位中心的世界坐标。 */
   readonly position: readonly [number, number, number];
 }
@@ -80,38 +89,27 @@ const prepOffsets = rowOffsets(PREP_SLOT_COUNT, LAYOUT.prepSpacing);
 export function buildSlots(): SlotDescriptor[] {
   const slots: SlotDescriptor[] = [];
 
-  for (const offset of battleOffsets) {
-    slots.push({
-      side: 'player',
-      zone: 'battle',
-      index: slots.length,
-      position: [offset, 0, LAYOUT.battleZ],
+  const push = (
+    side: SideId,
+    zone: SlotZone,
+    offsets: readonly number[],
+    z: number,
+  ): void => {
+    offsets.forEach((offset, rowIndex) => {
+      slots.push({
+        side,
+        zone,
+        index: slots.length,
+        rowIndex,
+        position: [offset, 0, z],
+      });
     });
-  }
-  for (const offset of battleOffsets) {
-    slots.push({
-      side: 'enemy',
-      zone: 'battle',
-      index: slots.length,
-      position: [offset, 0, -LAYOUT.battleZ],
-    });
-  }
-  for (const offset of prepOffsets) {
-    slots.push({
-      side: 'player',
-      zone: 'prep',
-      index: slots.length,
-      position: [offset, 0, LAYOUT.prepZ],
-    });
-  }
-  for (const offset of prepOffsets) {
-    slots.push({
-      side: 'enemy',
-      zone: 'prep',
-      index: slots.length,
-      position: [offset, 0, -LAYOUT.prepZ],
-    });
-  }
+  };
+
+  push('player', 'battle', battleOffsets, LAYOUT.battleZ);
+  push('enemy', 'battle', battleOffsets, -LAYOUT.battleZ);
+  push('player', 'prep', prepOffsets, LAYOUT.prepZ);
+  push('enemy', 'prep', prepOffsets, -LAYOUT.prepZ);
 
   return slots;
 }

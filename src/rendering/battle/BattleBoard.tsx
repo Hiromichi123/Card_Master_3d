@@ -1,27 +1,48 @@
-import type { CardDefinition } from '../../domain/cards/types';
+import type { CardDefinition, SideId } from '../../domain/cards/types';
+import type { StatKind } from '../cards/statBadge';
 import { CardMesh } from '../cards/CardMesh';
 import { useSettingsStore } from '../../state/settingsStore';
 import { CameraRig } from './CameraRig';
 import { SceneEnvironment } from './SceneEnvironment';
 import { SceneGround } from './SceneGround';
 import { SlotMarkers } from './SlotMarkers';
+import type { SlotZone } from './layout';
 import { Table } from './Table';
 
-/** 一张卡在桌面上的位置与朝向。由上层（P3 的 BattleState 映射）产生。 */
+/**
+ * 一张卡在桌面上的位置与朝向。由上层（P3 的 `BattleState` 映射）产生。
+ *
+ * **身份是 `instanceId`，不是 `cardId`。** 同一张定义在一局里可以同时存在多份
+ * （重复 trait、分身、复制），按 `cardId` 做 key 会让它们共用同一个 React 元素、
+ * 一起高亮，卡牌换区时还会被当成新元素重放翻面动画。
+ */
 export interface CardPlacement {
+  readonly instanceId: string;
   readonly card: CardDefinition;
   readonly position: readonly [number, number, number];
-  readonly rotationY?: number;
-  readonly rotationX?: number;
-  readonly faceDown?: boolean;
-  readonly interactive?: boolean;
+  readonly rotationY?: number | undefined;
+  readonly rotationX?: number | undefined;
+  readonly faceDown?: boolean | undefined;
+  readonly interactive?: boolean | undefined;
+  /** 卡牌整体缩放（准备区的卡比战斗区小一圈）。 */
+  readonly scale?: number | undefined;
+  /**
+   * 当前数值。缺省用卡面定义里的初始值。
+   *
+   * 战斗中的 HP/ATK 会随祝福、破甲、受伤改动，且**要按命中节点才更新显示**，
+   * 所以这里必须能独立于 `card` 传入（`V-CARD-3`）。
+   */
+  readonly stats?:
+    | { readonly atk: number; readonly hp: number; readonly cd: number }
+    | undefined;
+  /** 刚刚变化过的项，会加白圈高亮。 */
+  readonly emphasisedStats?: ReadonlySet<StatKind> | undefined;
 }
 
 /**
  * 战桌场景的整体组装。
  *
- * `V-WORLD-5`：`cameraShake` 只影响表现，不参与规则；
- * 这里先放光照与相机，镜头反馈在 P3 接演出层时再加。
+ * `V-WORLD-5`：`cameraShake` 只影响表现，不参与规则。
  *
  * `V-TABLE-3`：一盏主光 + 环境光起步；主光方向固定，
  * 避免卡面在动画过程中忽明忽暗。
@@ -30,20 +51,30 @@ export interface BattleBoardProps {
   /** 可放置槽位键集合，由上层传入。 */
   readonly placeable?: ReadonlySet<string> | undefined;
   readonly targeted?: ReadonlySet<string> | undefined;
-  /** 桌面上的卡牌。P1 由演示布置提供，P3 换成 BattleState 的映射结果。 */
+  /** 桌面上的卡牌。由 `BattleState` 的映射结果提供。 */
   readonly placements?: readonly CardPlacement[] | undefined;
-  readonly selectedCardId?: string | null | undefined;
-  readonly onCardClick?: ((card: CardDefinition) => void) | undefined;
+  /**
+   * 当前选中的卡。
+   *
+   * 是 `instanceId` 而不是 `cardId`——场上可能同时有两张同定义的卡，
+   * 按定义比对会让它们一起亮。
+   */
+  readonly selectedInstanceId?: string | null | undefined;
+  /** 点击卡牌。第二个参数是该卡的 `instanceId`。 */
+  readonly onCardClick?: ((card: CardDefinition, instanceId: string) => void) | undefined;
   readonly onCardHover?: ((card: CardDefinition, hovered: boolean) => void) | undefined;
+  /** 点击槽位。用于把手牌放到准备区。 */
+  readonly onSlotClick?: ((side: SideId, zone: SlotZone, index: number) => void) | undefined;
 }
 
 export function BattleBoard({
   placeable,
   targeted,
   placements,
-  selectedCardId,
+  selectedInstanceId,
   onCardClick,
   onCardHover,
+  onSlotClick,
 }: BattleBoardProps) {
   const theme = useSettingsStore((state) => state.tableTheme);
   const quality = useSettingsStore((state) => state.quality);
@@ -71,19 +102,28 @@ export function BattleBoard({
         weatherId={theme.id}
         reduceMotion={reduceMotion}
       />
-      <SlotMarkers placeable={placeable} targeted={targeted} />
+      <SlotMarkers placeable={placeable} targeted={targeted} onSlotClick={onSlotClick} />
 
-      {placements?.map((placement, index) => (
+      {placements?.map((placement) => (
         <CardMesh
-          key={`${placement.card.cardId}#${index}`}
+          key={placement.instanceId}
           card={placement.card}
           position={placement.position}
           rotationY={placement.rotationY}
           rotationX={placement.rotationX}
           faceDown={placement.faceDown}
           interactive={placement.interactive}
-          selected={placement.card.cardId === selectedCardId}
-          onClick={onCardClick}
+          scale={placement.scale}
+          stats={placement.stats}
+          emphasisedStats={placement.emphasisedStats}
+          selected={placement.instanceId === selectedInstanceId}
+          // CardMesh 只认得卡牌定义，实例身份由这里补上——
+          // 直接透传 onCardClick 的话第二个参数会永远缺省。
+          onClick={
+            onCardClick
+              ? (card) => onCardClick(card, placement.instanceId)
+              : undefined
+          }
           onHoverChange={onCardHover}
         />
       ))}

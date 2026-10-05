@@ -1,7 +1,8 @@
 import { useMemo } from 'react';
 
+import type { SideId } from '../../domain/cards/types';
 import { useSettingsStore } from '../../state/settingsStore';
-import { buildSlots, CARD_SIZE } from './layout';
+import { buildSlots, CARD_SIZE, type SlotZone } from './layout';
 
 /**
  * 槽位标记。
@@ -23,6 +24,8 @@ interface Props {
   readonly placeable?: ReadonlySet<string> | undefined;
   /** 当前被选为目标的槽位键。 */
   readonly targeted?: ReadonlySet<string> | undefined;
+  /** 点击某个槽位。只有可放置/可选目标的槽位会发出这个事件。 */
+  readonly onSlotClick?: ((side: SideId, zone: SlotZone, index: number) => void) | undefined;
 }
 
 /** 槽位稳定键，供上层做集合查找。 */
@@ -30,7 +33,7 @@ export function slotKey(side: string, zone: string, index: number): string {
   return `${side}:${zone}:${index}`;
 }
 
-export function SlotMarkers({ placeable, targeted }: Props) {
+export function SlotMarkers({ placeable, targeted, onSlotClick }: Props) {
   const slots = useMemo(() => buildSlots(), []);
   // 槽位的三种状态色来自当前台面主题，换主题时整张桌子的配色一起变
   const accent = useSettingsStore((state) => state.tableTheme.accent);
@@ -61,23 +64,55 @@ export function SlotMarkers({ placeable, targeted }: Props) {
         // 全透明等于让人猜（V-TABLE-2 要求低对比，不是不可见）。
         const opacity = isTarget ? 0.95 : isPlaceable ? 0.8 : 0.34;
 
+        // 只有可放置/可选目标的槽位才接点击。
+        // 全都接的话，点桌面上任何一处都会命中一个槽位，`onPointerMissed`
+        // 再也不触发，点空白取消选中就废了。
+        const clickable = isPlaceable || isTarget;
+
         return (
-          <mesh
+          <group
             key={key}
-            rotation={[-Math.PI / 2, 0, 0]}
-            position={[slot.position[0], 0.009, slot.position[2]]}
+            position={[slot.position[0], 0, slot.position[2]]}
           >
-            <ringGeometry
-              args={[
-                (CARD_SIZE.width * inset) / 2 - 0.06,
-                (CARD_SIZE.width * inset) / 2,
-                4,
-                1,
-                Math.PI / 4,
-              ]}
-            />
-            <meshBasicMaterial color={color} transparent opacity={opacity} />
-          </mesh>
+            <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.009, 0]}>
+              <ringGeometry
+                args={[
+                  (CARD_SIZE.width * inset) / 2 - 0.06,
+                  (CARD_SIZE.width * inset) / 2,
+                  4,
+                  1,
+                  Math.PI / 4,
+                ]}
+              />
+              <meshBasicMaterial color={color} transparent opacity={opacity} />
+            </mesh>
+
+            {/*
+              命中区。
+              圆环本身只是一圈细线，直接拿它做点击目标会很难点中；
+              铺一张与卡面等大的透明平面，点击范围才符合直觉。
+              用 opacity 0 而不是 visible=false——不可见的物体不参与射线检测。
+            */}
+            {clickable && onSlotClick && (
+              <mesh
+                rotation={[-Math.PI / 2, 0, 0]}
+                position={[0, 0.012, 0]}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  // 传**每侧**下标：引擎的 prep/battle 数组是这个口径，
+                  // `slot.index` 是全局编号，混用会把牌放到别人的槽里
+                  onSlotClick(slot.side, slot.zone, slot.rowIndex);
+                }}
+              >
+                <planeGeometry args={[CARD_SIZE.width * inset, CARD_SIZE.height * inset]} />
+                <meshBasicMaterial
+                  transparent
+                  opacity={0}
+                  depthWrite={false}
+                />
+              </mesh>
+            )}
+          </group>
         );
       })}
     </group>

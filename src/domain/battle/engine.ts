@@ -1,4 +1,9 @@
-import type { CardDefinition, CardInstance, SideId } from '../cards/types';
+import type {
+  CardDefinition,
+  CardInstance,
+  CombatStateGroup,
+  SideId,
+} from '../cards/types';
 import {
   battleInstances,
   groupOf,
@@ -644,9 +649,81 @@ function removeDead(resolver: Resolver, state: BattleState): void {
     }
     if (!revived) {
       zones.discard.push(primary.instanceId);
+      /*
+        进弃牌堆也要说一声。
+        演出层只能靠事件知道「这张牌现在在弃牌堆」——不发的话，
+        它就分不清「真死了」和「不死/复活了」：两者都只有一条 `CardDied`，
+        而后者根本不该让弃牌数 +1（P3 的等价性测试抓到的第二处）。
+      */
+      resolver.emit({
+        type: 'CardMoved',
+        side,
+        instanceId: primary.instanceId,
+        from: 'battle',
+        to: 'discard',
+        slotIndex: -1,
+      });
     }
     group.deathHandled = false;
   }
+}
+
+/**
+ * 不死 / 复活把血补满时，要发一条 `Healed`。
+ *
+ * 这不是装饰：演出层只能通过事件与 patch 知道数值变了（PLAN 第 4.1 节
+ * 「目标、数值、源实例、旧值/新值、事件序号均写入事件」）。
+ * 先前这里只改了 `group.hp` 而没有事件，显示状态就永远停在 0，
+ * 复活回来的卡在画面上是一张血量为 0 的牌——P3 的等价性测试抓到的就是这个。
+ *
+ * 发在 `CardMoved` **之前**：这样治疗的表现落在它倒下的那个槽位上，
+ * 而不是等牌已经飞回手牌之后才在别处闪一下。
+ */
+function emitReviveHp(
+  resolver: Resolver,
+  side: SideId,
+  instanceId: string,
+  group: CombatStateGroup,
+): void {
+  if (group.hp >= group.maxHp) {
+    return;
+  }
+  resolver.emit({
+    type: 'Healed',
+    side,
+    instanceId,
+    amount: group.maxHp - group.hp,
+    hpBefore: group.hp,
+    hpAfter: group.maxHp,
+  });
+}
+
+/**
+ * 冷却被复位（打出手牌、复活回场）时补一条 `CooldownChanged`。
+ *
+ * 和 `emitReviveHp` 是同一个理由：演出层只认事件，改完不说，
+ * 卡面上的 CD 数字就会一直停在旧值。数值没有变化时就不发，免得日志全是噪声。
+ */
+function emitCooldownReset(
+  resolver: Resolver,
+  side: SideId,
+  instance: CardInstance,
+  next: number,
+  cause: 'deploy' | 'reset',
+): void {
+  const from = instance.cd;
+  instance.cd = next;
+  if (from === next) {
+    return;
+  }
+  resolver.emit({
+    type: 'CooldownChanged',
+    side,
+    instanceId: instance.instanceId,
+    from,
+    to: next,
+    cause,
+  });
 }
 
 /** 不死 / 复活。返回是否已经复活回场上（回场则不进弃牌堆）。 */
@@ -662,6 +739,7 @@ function reviveIfAble(
   if (traits.includes('不死')) {
     // 回**手牌**，旧版没有一次性标记，可以再次抽到再打出
     const group = groupOf(state, instance);
+    emitReviveHp(resolver, side, instance.instanceId, group);
     group.hp = group.maxHp;
     instance.zone = 'hand';
     zones.hand.push(instance.instanceId);
@@ -684,10 +762,18 @@ function reviveIfAble(
       return false;
     }
     const group = groupOf(state, instance);
+    emitReviveHp(resolver, side, instance.instanceId, group);
     group.hp = group.maxHp;
     const definition = state.definitions[instance.definitionId];
     instance.marks.revivedUsed = true;
-    instance.cd = definition?.cd ?? 0;
+    // 复活把冷却也复位了，同样要说一声——理由见 `emitReviveHp`
+    emitCooldownReset(
+      resolver,
+      side,
+      instance,
+      definition?.cd ?? 0,
+      'reset',
+    );
     instance.zone = 'prep';
     instance.slotIndex = slot;
     zones.prep[slot] = instance.instanceId;
@@ -979,7 +1065,7 @@ export function applyCommand(state: BattleState, command: Command): Resolution {
       instance.slotIndex = slot;
       // 进入准备区时重新套用卡牌原始 CD（旧版 `CMP:49-50`）
       const definition = working.definitions[instance.definitionId];
-      instance.cd = definition?.cd ?? 0;
+      emitCooldownReset(resolver, command.side, instance, definition?.cd ?? 0, 'deploy');
     }
     working.cardsPlayedThisTurn += 1;
     resolver.emit({
