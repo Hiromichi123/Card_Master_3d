@@ -17,17 +17,64 @@ peer 约束为注册表返回的实际值，不是推测。
 | GPU/浏览器 | Chrome / Edge 实际 WebGL2 页面 | 待 P1 记录具体型号 | 见第 5 节 |
 
 **Node 升级是本项唯一阻塞点。**升级前不能执行 `npm install`，也不能运行 Vite/Vitest。
-升级方式（任选一，需在本机手动执行）：
 
-```bash
-# 已有 nvm-windows
-nvm install lts && nvm use lts
+### 1.1 为什么不能自动完成（已实测）
 
-# 或从 https://nodejs.org/ 下载当前 LTS 安装包
+2026-10-05 尝试自动升级，结论是需要一次**提权**操作。事实如下：
+
+| 事实 | 值 | 影响 |
+| --- | --- | --- |
+| 现有 Node 安装位置 | `F:\Node.js\`（手工解压版，非 nvm） | — |
+| 当前用户 | `22716`，**属于 Administrators 组** | 具备提权能力 |
+| 当前进程是否提权 | **否**（UAC 下未提权） | 无法写入受保护目录 |
+| `F:\Node.js` 的 ACL | `Users: ReadAndExecute`，**普通用户无写权限** | 不能就地替换 |
+| `F:\Node.js\` 在 PATH 中的位置 | **Machine PATH 第 10 项**，也在 User PATH 中 | 见下 |
+| Windows 的 PATH 解析顺序 | **Machine 段在前，User 段在后** | Machine 里的旧路径永远先命中 |
+
+实测：即使用 `winget` 把 Node 24 装到用户级并加入 User PATH，新建进程仍然解析到
+`F:\Node.js\node.exe`（v22.11.0），因为 Machine PATH 里那条排在前面。
+
+因此，**只改 User PATH 无法生效**。可用的两条路都需要提权：
+
+1. 替换 `F:\Node.js` 的内容（推荐：不动任何环境变量，PATH 保持原样）；
+2. 从 **Machine PATH** 中删掉 `F:\Node.js\`（需改注册表，且要保留 `REG_EXPAND_SZ` 类型）。
+
+### 1.2 已完成的准备工作
+
+- 从 nodejs.org 下载 Node **v24.21.0 LTS**，SHA256 与官方 `SHASUMS256.txt` **校验通过**。
+- 用 `winget install --id OpenJS.NodeJS.LTS --scope user` 安装了 Node **24.19.0 LTS**
+  （npm 11.17.0），位于：
+  `C:\Users\22716\AppData\Local\Microsoft\WinGet\Packages\OpenJS.NodeJS.LTS_Microsoft.Winget.Source_8wekyb3d8bbwe\node-v24.19.0-win-x64`
+
+  这个副本目前**不生效**（被 Machine PATH 遮蔽），但可以当作替换源。
+
+### 1.3 待执行（需要一次提权）
+
+在**管理员** PowerShell 中执行（会先把旧安装完整备份）：
+
+```powershell
+$src = "C:\Users\22716\AppData\Local\Microsoft\WinGet\Packages\OpenJS.NodeJS.LTS_Microsoft.Winget.Source_8wekyb3d8bbwe\node-v24.19.0-win-x64"
+Copy-Item F:\Node.js F:\Node.js.bak-22.11.0 -Recurse
+robocopy $src F:\Node.js /MIR /NFL /NDL /NJH /NJS /NP
+& F:\Node.js\node.exe -v          # 期望 v24.19.0
 ```
 
-升级后请执行 `node -v` 确认输出 `>=22.12.0`，再进入 P1。当前 Node 22.11.0 与要求只差两个
-补丁版本，但 Vite 是按 `engines` 硬校验的，不会自动放宽。
+随后**新开**一个普通终端确认：
+
+```bash
+node -v     # 期望 v24.19.0
+npm -v      # 期望 11.x
+```
+
+确认无误后可以删除备份 `F:\Node.js.bak-22.11.0`，并考虑
+`winget uninstall OpenJS.NodeJS.LTS` 移除那份冗余副本。
+
+> 若不想提权：退路是把工程降到 Node 22.11 可用的工具链
+> （Vite 6.4.3 + Vitest 3.2.7 + @vitejs/plugin-react 5.2.0）。
+> 这会把工程基线整体压低一代，属于用户此前已否决的选项，仅在无法提权时采用。
+> 具体版本见本文件第 3 节表格的备选列（P1 若采用需回填）。
+
+升级后请把 `node -v` 的实际输出补进 `docs/validation/P1.md` 的环境记录。
 
 ## 2. 运行时依赖
 

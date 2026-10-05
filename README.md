@@ -37,14 +37,14 @@ P0 完成后新增的关键文档：
 ## 进入 P1 的前置条件
 
 **必须先把 Node 升级到 `>=22.12.0`（推荐 24.x LTS）。**
-当前机器是 22.11.0，不满足 Vite 8 的 `engines` 校验，`npm install` 无法执行。
+当前机器是 22.11.0，不满足 Vite 8 的 `engines` 校验。
 
-```bash
-nvm install lts && nvm use lts     # 或从 https://nodejs.org/ 安装
-node -v                            # 需要 >=22.12.0
-```
+自动升级试过一次，卡在权限上：现有 Node 装在 `F:\Node.js\`，该目录对普通用户只读，
+而它位于 **Machine PATH**，优先级高于 User PATH —— 所以只往 User PATH 里加新 Node 不生效。
+需要**一次提权操作**。Node 24 已经装好一份可用的副本，替换命令见
+[docs/VERSIONS.md](docs/VERSIONS.md) 第 1.3 节。
 
-升级后即可执行 `npm install` 并开始 P1。
+如果无法提权，退路是改用 Node 22.11 可跑的 Vite 6 工具链（见同文件第 1.3 节末尾）。
 
 ## P0 已完成的内容
 
