@@ -11,6 +11,10 @@ import { effectDirector } from '../rendering/effects/effectDirector';
 import { particleStats } from '../rendering/effects/particleStats';
 import { EffectSystem } from '../rendering/effects/EffectSystem';
 import { FAMILY_TO_EFFECT, type EffectTemplateId } from '../rendering/effects/templates';
+import { PerfSampler } from '../rendering/PerfSampler';
+import { PostEffects } from '../rendering/postprocessing/PostEffects';
+import { SPEED_SCALE, useSettingsStore } from '../state/settingsStore';
+import { PerfOverlay } from '../ui/PerfOverlay';
 import { WebGLGuard } from './WebGLGuard';
 
 /**
@@ -78,6 +82,9 @@ export function EffectLabScene() {
   const [countScale, setCountScale] = useState(1);
   const [durationScale, setDurationScale] = useState(1);
   const [color, setColor] = useState<string>('#ffb445');
+  const profile = useSettingsStore((state) => state.profile);
+  const presentationSpeed = useSettingsStore((state) => state.presentationSpeed);
+  const showPerf = useSettingsStore((state) => state.showPerf);
   const [paused, setPaused] = useState(false);
   const [lastEffect, setLastEffect] = useState('（尚未触发）');
   const [particles, setParticles] = useState({ alive: 0, capacity: 0, peak: 0 });
@@ -150,7 +157,8 @@ export function EffectLabScene() {
         color,
         intensity: overrideIntensity ?? intensity,
         countScale,
-        durationScale,
+        // 演出速度只压缩播放时长，不影响任何规则结果（V-FX-5）
+        durationScale: durationScale * SPEED_SCALE[presentationSpeed],
         onHit: () => setLastEffect(`${label} · 命中`),
       });
       setLastEffect(`${label} · 播放中`);
@@ -181,8 +189,13 @@ export function EffectLabScene() {
     <WebGLGuard>
       <div className="lab">
         <Canvas
-          shadows={{ type: PCFShadowMap }}
-          dpr={[1, 2]}
+          // flat = 关闭 tone mapping。
+          // R3F 默认用 ACESFilmic，但后处理链不会重复应用它，
+          // 于是「开/关后处理」会得到两套色调（实测差 10.9%）。
+          // 卡面插画本身就是按 sRGB 画好的，再过一遍 ACES 只会让它变灰。
+          flat
+          shadows={profile.shadows ? { type: PCFShadowMap } : false}
+          dpr={[1, profile.dprCap]}
           camera={{ position: [0, 3.2, 4.6], fov: 42, near: 0.1, far: 80 }}
           onCreated={({ gl }) => gl.setClearColor('#0d1018')}
         >
@@ -192,8 +205,8 @@ export function EffectLabScene() {
             position={[3, 6, 4]}
             intensity={1.5}
             castShadow
-            shadow-mapSize-width={2048}
-            shadow-mapSize-height={2048}
+            shadow-mapSize-width={profile.shadowMapSize}
+            shadow-mapSize-height={profile.shadowMapSize}
             shadow-camera-left={-6}
             shadow-camera-right={6}
             shadow-camera-top={6}
@@ -212,8 +225,12 @@ export function EffectLabScene() {
             holoEnabled={holoEnabled}
             holoScale={holoScale}
             paused={paused}
+            capacity={profile.particleCapacity}
             onCardClick={handleCardClick}
           />
+
+          <PerfSampler />
+          <PostEffects profile={profile} />
 
           <OrbitControls
             target={[0, 0.2, 0]}
@@ -405,6 +422,8 @@ export function EffectLabScene() {
             拖动可环绕旋转：全息色带应随视角移动，特效的轨迹与命中点也应随视角保持正确。
           </p>
         </aside>
+
+        <PerfOverlay visible={showPerf} />
       </div>
     </WebGLGuard>
   );
@@ -417,6 +436,7 @@ interface LabStageProps {
   readonly holoEnabled: boolean;
   readonly holoScale: number;
   readonly paused: boolean;
+  readonly capacity: number;
   readonly onCardClick: (card: CardDefinition) => void;
 }
 
@@ -428,6 +448,7 @@ function LabStage({
   holoEnabled,
   holoScale,
   paused,
+  capacity,
   onCardClick,
 }: LabStageProps) {
   const staged = useMemo(() => {
@@ -460,7 +481,7 @@ function LabStage({
           onClick={onCardClick}
         />
       ))}
-      <EffectSystem capacity={3000} paused={paused} />
+      <EffectSystem capacity={capacity} paused={paused} />
     </>
   );
 }

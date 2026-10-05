@@ -32,6 +32,9 @@ export interface BattleBoardProps {
   readonly placements?: readonly CardPlacement[] | undefined;
   readonly selectedCardId?: string | null | undefined;
   readonly onCardClick?: ((card: CardDefinition) => void) | undefined;
+  readonly onCardHover?: ((card: CardDefinition, hovered: boolean) => void) | undefined;
+  /** 阴影贴图边长，按画质档传入。 */
+  readonly shadowMapSize?: number | undefined;
 }
 
 export function BattleBoard({
@@ -40,6 +43,8 @@ export function BattleBoard({
   placements,
   selectedCardId,
   onCardClick,
+  onCardHover,
+  shadowMapSize = 2048,
 }: BattleBoardProps) {
   return (
     <>
@@ -58,8 +63,8 @@ export function BattleBoard({
         target-position={[0, 0, LAYOUT.tableCenterZ]}
         intensity={1.5}
         castShadow
-        shadow-mapSize-width={2048}
-        shadow-mapSize-height={2048}
+        shadow-mapSize-width={shadowMapSize}
+        shadow-mapSize-height={shadowMapSize}
         shadow-camera-near={1}
         shadow-camera-far={45}
         shadow-camera-left={-11}
@@ -83,6 +88,7 @@ export function BattleBoard({
           interactive={placement.interactive}
           selected={placement.card.cardId === selectedCardId}
           onClick={onCardClick}
+          onHoverChange={onCardHover}
         />
       ))}
     </>

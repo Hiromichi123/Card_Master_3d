@@ -5,6 +5,7 @@ import type { Group, MeshStandardMaterial } from 'three';
 import type { CardDefinition } from '../../domain/cards/types';
 import { CARD_BACK_URL, cardFaceUrl } from '../../data/assets';
 import { useManagedTexture } from '../../services/useManagedTexture';
+import { useSettingsStore } from '../../state/settingsStore';
 import { easeInOutCubic } from '../anim/easings';
 import { damp, flipAngle } from '../anim/motion';
 import { Timeline } from '../anim/Timeline';
@@ -15,6 +16,8 @@ import {
   getCardFaceGeometry,
 } from './cardGeometry';
 import { HoloLayer, holoIntensityForRarity } from './HoloLayer';
+import { StatBadges } from './StatBadges';
+import type { StatKind } from './statBadge';
 
 /**
  * 实体卡牌。
@@ -49,7 +52,24 @@ export interface CardMeshProps {
   readonly holo?: boolean | undefined;
   /** 全息强度倍数，用于查看器调参。默认 1。 */
   readonly holoScale?: number | undefined;
+  /**
+   * 动态数值。缺省用卡面定义里的初始值。
+   *
+   * 传入的是**当前**值而不是卡面上的静态值——祝福、破甲、受伤都会改动它们，
+   * 这正是「动态数值与烘焙卡面分离」的意义（`V-CARD-3`）。
+   */
+  readonly stats?:
+    | { readonly atk: number; readonly hp: number; readonly cd: number }
+    | undefined;
+  /** 刚刚变化过的项，会加白圈高亮。 */
+  readonly emphasisedStats?: ReadonlySet<StatKind> | undefined;
+  /** 是否显示数值徽标。 */
+  readonly showStats?: boolean | undefined;
+  /** 卡牌整体缩放（准备区的卡比战斗区小一圈）。 */
+  readonly scale?: number | undefined;
   readonly onClick?: ((card: CardDefinition) => void) | undefined;
+  /** 悬停状态变化。详情面板据此切换显示内容。 */
+  readonly onHoverChange?: ((card: CardDefinition, hovered: boolean) => void) | undefined;
 }
 
 const HOVER_LIFT = 0.22;
@@ -70,12 +90,22 @@ export function CardMesh({
   interactive = true,
   holo,
   holoScale = 1,
+  stats,
+  emphasisedStats,
+  showStats = true,
+  scale = 1,
   onClick,
+  onHoverChange,
 }: CardMeshProps) {
   const groupRef = useRef<Group>(null);
   const [hovered, setHovered] = useState(false);
 
-  const faceUrl = useMemo(() => cardFaceUrl(card.cardId, 'battle'), [card.cardId]);
+  // 纹理档跟随画质：低档用缩略图，减少核显上的显存与带宽压力
+  const cardTier = useSettingsStore((state) => state.profile.cardTier);
+  const faceUrl = useMemo(
+    () => cardFaceUrl(card.cardId, cardTier),
+    [card.cardId, cardTier],
+  );
   const faceTexture = useManagedTexture(faceUrl);
   const backTexture = useManagedTexture(CARD_BACK_URL);
 
@@ -170,6 +200,7 @@ export function CardMesh({
     }
     event.stopPropagation();
     setHovered(true);
+    onHoverChange?.(card, true);
   };
 
   const handleOut = (): void => {
@@ -177,6 +208,7 @@ export function CardMesh({
       return;
     }
     setHovered(false);
+    onHoverChange?.(card, false);
   };
 
   const bodyGeometry = getCardBodyGeometry();
@@ -188,12 +220,15 @@ export function CardMesh({
 
   // 只有正面朝上时才叠全息；盖着的牌不显示
   const showHolo = holoEnabled && holoVisible && holoIntensity > 0.001;
+  // 数值徽标只在正面朝上时显示，且与全息无关（关掉全息仍要看得到数值）
+  const showStatsNow = showStats && holoVisible;
 
   return (
     <group
       ref={groupRef}
       position={[position[0], position[1], position[2]]}
       rotation={[rotationX, rotationY, 0]}
+      scale={scale}
     >
       <mesh geometry={bodyGeometry} castShadow receiveShadow>
         <meshStandardMaterial color={edgeColor} roughness={0.6} metalness={0.15} />
@@ -226,6 +261,16 @@ export function CardMesh({
       </mesh>
 
       {showHolo && <HoloLayer intensity={holoIntensity} />}
+
+      {showStatsNow && (
+        <StatBadges
+          atk={stats?.atk ?? card.atk}
+          hp={stats?.hp ?? card.hp}
+          cd={stats?.cd ?? card.cd}
+          emphasised={emphasisedStats}
+          scale={scale}
+        />
+      )}
 
       {/* 命中盒：单独的不可见薄盒，避免挤出几何的面片与侧面分别触发指针事件 */}
       <mesh

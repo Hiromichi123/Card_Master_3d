@@ -2,6 +2,7 @@ import { Suspense, useState } from 'react';
 
 import { BattleScene } from '../scenes/BattleScene';
 import { EffectLabScene } from '../scenes/EffectLabScene';
+import { QualityControl } from '../ui/QualityControl';
 import { DataProbe } from './DataProbe';
 import { ErrorBoundary } from './ErrorBoundary';
 
@@ -38,6 +39,8 @@ export function App() {
             {item.label}
           </button>
         ))}
+        <span className="app-nav__spacer" />
+        <QualityControl />
       </nav>
 
       <main className="app-main">
