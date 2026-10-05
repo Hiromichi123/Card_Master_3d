@@ -99,8 +99,29 @@ python scripts/prepare-assets.py --check
 
 运行环境：Python 3.11 + Pillow 10（仅离线使用，不参与运行时）。
 
-## 开工方式
+## P1 已完成的内容
 
-P0 已完成。P1 从建立 Vite/React/TypeScript 工程骨架与 3D 视觉样机开始，
-先验证卡牌质感（透视、厚度、翻转、阴影）与三种代表特效（火球、闪电、护盾/治疗）。
-每阶段完成后记录演示截图/录像、验证结果和规则差异，再勾选任务并进入下一阶段。
+**工程**：Vite 8 + React 19 + TypeScript 7，严格模式类型检查零错误，
+生产构建通过。错误边界与 WebGL2 不可用提示都在。
+
+**战桌与卡牌**（`src/rendering/battle`、`src/rendering/cards`）：
+倾斜透视相机、世界坐标槽位（每方 5 战斗 + 8 准备）、圆角挤出的实体卡牌、
+正反面与翻面动画、阴影、悬停抬升与倾斜、手牌扇形。
+动态 ATK/HP/CD 用 Canvas 贴图与烘焙卡面分离显示。
+
+**全息与特效**（`src/rendering/cards/HoloLayer.tsx`、`src/rendering/effects`）：
+视角驱动的全息叠加层按稀有度分档；固定容量粒子池 + 13 类特效模板
+（普通攻击、火球/冰封/闪电及其群体版、护盾、治疗、祝福、诅咒、流转、状态）。
+
+**实验台**：手动触发任意特效或当前卡的任意 trait，调强度/数量/时长/配色，
+可暂停冻结在任意一帧、也可立即跳过。
+
+**性能**（Intel Arc 核显，1920×1080 实测）：中档 3.2 ms/帧、178 draw calls，
+60 FPS 预算下余量约 5 倍。完整数字与测量条件见
+[docs/validation/P1.md](docs/validation/P1.md) 第 3.13 节。
+
+## 下一步
+
+P2：不依赖渲染的战斗规则引擎。执行依据是
+[docs/rules.md](docs/rules.md)（含 15 条允许改动的差异与 7 项待复核）
+与 [docs/SLICE.md](docs/SLICE.md)（固定 seed 与 10 个验证场景）。
