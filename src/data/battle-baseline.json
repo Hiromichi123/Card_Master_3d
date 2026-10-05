@@ -1,0 +1,8 @@
+{
+  "battleSlotsPerSide": 5,
+  "prepSlotsPerSide": 8,
+  "baseHp": 20,
+  "openingDraw": 3,
+  "cardsPerTurn": 1,
+  "note": "来自 scenes/battle/battle_base_scene.py 的静态核查，P2 用样例对局复核"
+}

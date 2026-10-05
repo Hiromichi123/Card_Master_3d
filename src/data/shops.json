@@ -1,0 +1,266 @@
+{
+  "available": true,
+  "normalShop": {
+    "priceByRarity": {
+      "SSS": {
+        "currency": "crystal",
+        "amount": 551
+      },
+      "SS+": {
+        "currency": "crystal",
+        "amount": 430
+      },
+      "SS": {
+        "currency": "crystal",
+        "amount": 324
+      },
+      "S+": {
+        "currency": "crystal",
+        "amount": 200
+      },
+      "S": {
+        "currency": "crystal",
+        "amount": 120
+      },
+      "A+": {
+        "currency": "gold",
+        "amount": 5200
+      },
+      "A": {
+        "currency": "gold",
+        "amount": 4153
+      },
+      "B+": {
+        "currency": "gold",
+        "amount": 3100
+      },
+      "B": {
+        "currency": "gold",
+        "amount": 2589
+      },
+      "C+": {
+        "currency": "gold",
+        "amount": 1900
+      },
+      "C": {
+        "currency": "gold",
+        "amount": 1354
+      },
+      "D": {
+        "currency": "gold",
+        "amount": 690
+      }
+    },
+    "unknownRarityFallback": {
+      "currency": "gold",
+      "amount": 1000
+    },
+    "packs": [
+      {
+        "name": "天空典藏包",
+        "rarity": "SSS",
+        "currency": "crystal",
+        "amount": 1880,
+        "note": "必出SSS"
+      },
+      {
+        "name": "星辉补给包",
+        "rarity": "SS",
+        "currency": "crystal",
+        "amount": 520,
+        "note": "至少一张SS"
+      },
+      {
+        "name": "战术构筑包",
+        "rarity": "S",
+        "currency": "gold",
+        "amount": 15000,
+        "note": "高阶构筑素材"
+      }
+    ],
+    "shelves": {
+      "top": {
+        "label": "神话",
+        "rarities": [
+          "SSS",
+          "SS+",
+          "SS"
+        ],
+        "count_range": [
+          1,
+          2
+        ],
+        "allow_repeat": false
+      },
+      "middle": {
+        "label": "传承",
+        "rarities": [
+          "S+",
+          "S",
+          "A+",
+          "A"
+        ],
+        "count_range": [
+          3,
+          4
+        ],
+        "allow_repeat": false
+      },
+      "bottom": {
+        "label": "探索",
+        "rarities": [
+          "B+",
+          "B",
+          "C+",
+          "C",
+          "D"
+        ],
+        "count_range": [
+          5,
+          5
+        ],
+        "allow_repeat": true
+      }
+    },
+    "refresh": {
+      "dayKeyFormat": "%Y%m%d",
+      "seedDerivation": "int(dayKey)",
+      "seedReproducible": true
+    }
+  },
+  "activityShop": {
+    "priceByRarity": {
+      "#elna": 1080,
+      "SSS": 1354,
+      "SS+": 869,
+      "SS": 621,
+      "S+": 440,
+      "S": 287,
+      "A+": 198,
+      "A": 156,
+      "B+": 99,
+      "B": 85,
+      "C+": 51,
+      "C": 44,
+      "D": 30
+    },
+    "unknownRarityFallback": {
+      "currency": "badge",
+      "amount": 60
+    },
+    "shelves": {
+      "top": {
+        "label": "活动精选",
+        "rarities": [
+          "#elna"
+        ],
+        "count_range": [
+          2,
+          3
+        ],
+        "allow_repeat": false
+      },
+      "middle": {
+        "label": "稀有兑换",
+        "rarities": [
+          "SS+",
+          "SS",
+          "S+",
+          "S",
+          "A+",
+          "A"
+        ],
+        "count_range": [
+          3,
+          4
+        ],
+        "allow_repeat": false
+      },
+      "bottom": {
+        "label": "常规兑换",
+        "rarities": [
+          "A",
+          "B+",
+          "B",
+          "C+",
+          "C",
+          "D"
+        ],
+        "count_range": [
+          4,
+          5
+        ],
+        "allow_repeat": true
+      }
+    },
+    "refresh": {
+      "dayKeyFormat": "%Y%m%d",
+      "seedDerivation": "abs(hash('activity_' + dayKey)) % (2**31-1)",
+      "seedReproducible": false,
+      "note": "Python 字符串 hash 受 PYTHONHASHSEED 影响，跨进程不可复现；新版改用稳定哈希"
+    }
+  },
+  "fusion": {
+    "altarSlots": 5,
+    "baseWeight": 0.05,
+    "sameRarityBonus": 1.0,
+    "rarerNeighborBonus": 0.35,
+    "commonNeighborBonus": 0.2,
+    "currencyCost": 0,
+    "rarityOrder": [
+      "SSS",
+      "SS+",
+      "SS",
+      "S+",
+      "S",
+      "A+",
+      "A",
+      "B+",
+      "B",
+      "C+",
+      "C",
+      "D"
+    ],
+    "distributionRule": "每个稀有度基础权重 0.05；每张投入卡：自身稀有度 +1.0、更稀有的一档 +0.35、更常见的一档 +0.2；最后按总和归一化",
+    "displayMatchesDraw": true,
+    "evidence": "scenes/workshop_scene.py:475-493 计算，:495-518 使用同一个分布抽取"
+  },
+  "knownIssues": [
+    {
+      "area": "normalShop.card",
+      "issue": "购买卡牌只扣除货币并标记售罄，从未把卡加入库存",
+      "evidence": "scenes/shop_scene.py:612-635 无 inventory.add_card",
+      "newVersionDecision": "P5 必须补齐授予流程，并按新语义记录；不得照搬"
+    },
+    {
+      "area": "normalShop.packs",
+      "issue": "礼包只扣费，不发放任何物品，也不记录，可无限重复购买",
+      "evidence": "scenes/shop_scene.py:637-654",
+      "newVersionDecision": "P5 需要定义礼包内容或从界面移除"
+    },
+    {
+      "area": "activityShop.purchase",
+      "issue": "扣费、售罄、加卡分散在 4 次保存，非原子",
+      "evidence": "activity_shop_scene.py:493-525",
+      "newVersionDecision": "改为一次 EconomyTransaction"
+    },
+    {
+      "area": "fusion",
+      "issue": "抽取失败（该稀有度无可用卡）时，5 张投入卡仍被消耗并保存",
+      "evidence": "scenes/workshop_scene.py:507-516",
+      "newVersionDecision": "新版必须在一次事务内判定，失败则整个操作不生效"
+    },
+    {
+      "area": "fusion",
+      "issue": "新卡可能与刚消耗的卡是同一张，等于原地不动却消耗了 4 张",
+      "evidence": "scenes/workshop_scene.py:508-512",
+      "newVersionDecision": "P5 决定是否排除刚消耗的卡"
+    },
+    {
+      "area": "normalShop.refresh",
+      "issue": "「刷新货架」每次都重建同 seed 的随机源，货架内容不变",
+      "evidence": "scenes/shop_scene.py:245-256",
+      "newVersionDecision": "新版刷新必须真正重掷，或明确移除该按钮"
+    }
+  ]
+}

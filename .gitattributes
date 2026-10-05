@@ -1,0 +1,14 @@
+# 统一用 LF 入库与检出。
+#
+# 这不只是风格问题：scripts/import-legacy-data.py 的 --check 直接按文本比对
+# 自己生成的文件。如果 Git 在检出时把 LF 换成 CRLF，生成结果与磁盘内容就会
+# 不一致，新克隆的仓库跑 --check 会失败。所以生成物必须是确定的行尾。
+* text=auto eol=lf
+
+# 二进制素材不做行尾转换
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.ttf binary
+*.woff2 binary

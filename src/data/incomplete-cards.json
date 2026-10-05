@@ -1,0 +1,92 @@
+[
+  {
+    "cardId": "#yoroi_001",
+    "name": "EX 阿 斯 特 蕾 亚·裁 决",
+    "missingFields": [
+      "atk",
+      "hp",
+      "cd"
+    ],
+    "loadedByLegacy": false
+  },
+  {
+    "cardId": "#yoroi_002",
+    "name": "阿 斯 特 蕾 亚·光 铸",
+    "missingFields": [
+      "atk",
+      "hp",
+      "cd"
+    ],
+    "loadedByLegacy": false
+  },
+  {
+    "cardId": "#yoroi_003",
+    "name": "阿 斯 特 蕾 亚",
+    "missingFields": [
+      "atk",
+      "hp",
+      "cd"
+    ],
+    "loadedByLegacy": false
+  },
+  {
+    "cardId": "#yoroi_004",
+    "name": "阿 斯 特 蕾 亚·神 怒",
+    "missingFields": [
+      "atk",
+      "hp",
+      "cd"
+    ],
+    "loadedByLegacy": false
+  },
+  {
+    "cardId": "#yoroi_005",
+    "name": "蓝 羽 天 使",
+    "missingFields": [
+      "atk",
+      "hp",
+      "cd"
+    ],
+    "loadedByLegacy": false
+  },
+  {
+    "cardId": "#yoroi_006",
+    "name": "阿 努 比 斯·谜 题",
+    "missingFields": [
+      "atk",
+      "hp",
+      "cd"
+    ],
+    "loadedByLegacy": false
+  },
+  {
+    "cardId": "#yoroi_007",
+    "name": "阿 努 比 斯·灵 化",
+    "missingFields": [
+      "atk",
+      "hp",
+      "cd"
+    ],
+    "loadedByLegacy": false
+  },
+  {
+    "cardId": "#yoroi_008",
+    "name": "九 天 狐 帝",
+    "missingFields": [
+      "atk",
+      "hp",
+      "cd"
+    ],
+    "loadedByLegacy": false
+  },
+  {
+    "cardId": "#yoroi_009",
+    "name": "火 焰 狐 灵",
+    "missingFields": [
+      "atk",
+      "hp",
+      "cd"
+    ],
+    "loadedByLegacy": false
+  }
+]

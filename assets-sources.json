@@ -1,0 +1,59 @@
+{
+  "$comment": "素材来源、许可与转换产物登记。由 scripts/prepare-assets.py 生成。",
+  "policy": [
+    "优先使用原项目素材与自制程序几何/Shader。",
+    "第三方素材只用 CC0，下载后本地化，发布产物不依赖第三方 CDN。",
+    "GPL 素材只作视觉参考，不复制其源码或插画。",
+    "本轮规划阶段不批量下载第三方素材；下表 marked 字段记录实际状态。"
+  ],
+  "legacy": {
+    "root": "D:\\Github\\card_maker",
+    "license": "项目自有素材（由用户提供的原项目）",
+    "used": {
+      "assets/outputs": "成品卡面（已烘焙边框与名称），卡面三档的来源",
+      "assets/cards": "原画，后续重排卡框时使用；本轮只做三档派生",
+      "assets/ui": "卡背与图标，共 5 项",
+      "assets/skill": "技能图标，共 8 项",
+      "assets/poster": "关卡与章节海报，共 17 项",
+      "assets/bg": "背景图，共 26 项"
+    },
+    "excluded": [
+      "build/、dist/、__pycache__/：打包与缓存产物，不复制",
+      "assets/cards/#YAZIRI、assets/cards/二代：原画里存在但游戏数据未加载",
+      "assets/cards 下的零散 jpg（如 DLXXXI 581.jpg）：未与任何 cardId 关联"
+    ],
+    "unmapped": [
+      "assets/cards 下未关联到 cardId 的散图（含中文名与空格名）"
+    ]
+  },
+  "thirdParty": [
+    {
+      "name": "Poly Haven",
+      "url": "https://polyhaven.com/license",
+      "license": "CC0",
+      "purpose": "HDRI、桌面/石材 PBR、少量装饰模型",
+      "marked": "not-downloaded",
+      "note": "施工时按需下载适当分辨率并本地化到 public/assets/env/"
+    },
+    {
+      "name": "Kenney Particle Pack",
+      "url": "https://kenney.nl/assets/particle-pack",
+      "license": "CC0（页面标记）",
+      "purpose": "火花、烟、星光等粒子图集",
+      "marked": "not-downloaded",
+      "note": "整理成图集后本地加载，不使用在线地址"
+    },
+    {
+      "name": "pokemon-cards-css",
+      "url": "https://github.com/simeydotme/pokemon-cards-css",
+      "license": "GPL-3.0",
+      "purpose": "全息表现的视觉参考",
+      "marked": "reference-only",
+      "note": "只参考反光/闪点/色带的视觉规律，不复制其源码实现，也不使用 Pokémon 插画"
+    }
+  ],
+  "selfMade": [
+    "卡框、法阵、冰晶、护盾、电弧等程序几何与自有 Shader",
+    "自有全息 Shader（V-HOLO-1..4）"
+  ]
+}

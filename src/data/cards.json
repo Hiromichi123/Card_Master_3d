@@ -1,0 +1,7780 @@
+{
+  "contentVersion": "0fd985b79852",
+  "source": "assets/outputs/*/cards.json",
+  "definitions": [
+    {
+      "cardId": "SSS_001",
+      "rarity": "SSS",
+      "name": "飞 霄·沐 浴",
+      "level": 0,
+      "atk": 4,
+      "hp": 7,
+      "cd": 5,
+      "rawTraits": [
+        "防御1"
+      ],
+      "skills": [
+        {
+          "raw": "防御1",
+          "resolution": "implemented",
+          "family": "defense",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "和飞霄一起，体验最香艳的沐浴。",
+      "status": "complete",
+      "art": {
+        "artId": "card/sss/001",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "SSS_002",
+      "rarity": "SSS",
+      "name": "二 重 露 光",
+      "level": 0,
+      "atk": 1,
+      "hp": 9,
+      "cd": 5,
+      "rawTraits": [
+        "魅惑",
+        "防御1"
+      ],
+      "skills": [
+        {
+          "raw": "魅惑",
+          "resolution": "unimplemented",
+          "family": null,
+          "param": null,
+          "evidence": "全项目 .py 无该字符串",
+          "note": "无实现。"
+        },
+        {
+          "raw": "防御1",
+          "resolution": "implemented",
+          "family": "defense",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "在光与影的交织中，感受彼岸的曼陀罗梦华，意识变得迷离。",
+      "status": "complete",
+      "art": {
+        "artId": "card/sss/002",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "SSS_003",
+      "rarity": "SSS",
+      "name": "腐 败 之 梦",
+      "level": 0,
+      "atk": 3,
+      "hp": 6,
+      "cd": 3,
+      "rawTraits": [
+        "诅咒1"
+      ],
+      "skills": [
+        {
+          "raw": "诅咒1",
+          "resolution": "implemented",
+          "family": "curse",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "梦境中的腐朽与堕落，仿佛一场无法醒来的噩梦，侵蚀着心灵的每一个角落。",
+      "status": "complete",
+      "art": {
+        "artId": "card/sss/003",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "SSS_004",
+      "rarity": "SSS",
+      "name": "枝 上 の 梦 幻",
+      "level": 0,
+      "atk": 2,
+      "hp": 5,
+      "cd": 4,
+      "rawTraits": [
+        "飞行",
+        "群体冰封1"
+      ],
+      "skills": [
+        {
+          "raw": "飞行",
+          "resolution": "scene-rule",
+          "family": null,
+          "param": null,
+          "note": "战斗场景规则，非技能族"
+        },
+        {
+          "raw": "群体冰封1",
+          "resolution": "implemented",
+          "family": "groupIceSeal",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "在枝头上翱翔，感受梦幻般的自由与轻盈，仿佛置身于云端之上。",
+      "status": "complete",
+      "art": {
+        "artId": "card/sss/004",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "SSS_005",
+      "rarity": "SSS",
+      "name": "5th 的 纪 念",
+      "level": 0,
+      "atk": 1,
+      "hp": 99,
+      "cd": 5,
+      "rawTraits": [],
+      "skills": [],
+      "description": "纪念5th的特别时刻，回响着过去的五年的美好回忆。",
+      "status": "complete",
+      "art": {
+        "artId": "card/sss/005",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "SSS_006",
+      "rarity": "SSS",
+      "name": "EX 轰 雷",
+      "level": 0,
+      "atk": 0,
+      "hp": 5,
+      "cd": 6,
+      "rawTraits": [
+        "群体闪电1",
+        "即死1",
+        "自毁"
+      ],
+      "skills": [
+        {
+          "raw": "群体闪电1",
+          "resolution": "implemented",
+          "family": "groupLightning",
+          "param": 1,
+          "matchKind": "full"
+        },
+        {
+          "raw": "即死1",
+          "resolution": "unimplemented",
+          "family": null,
+          "param": null,
+          "evidence": "全项目 .py 无该字符串；不存在即死机制",
+          "note": "无实现。"
+        },
+        {
+          "raw": "自毁",
+          "resolution": "implemented",
+          "family": "selfDestruct",
+          "param": null,
+          "matchKind": "exact"
+        }
+      ],
+      "description": "撕毁万物的雷霆之力，以摧枯拉朽之势破坏地方防线，广域打击兼对单即死。",
+      "status": "complete",
+      "art": {
+        "artId": "card/sss/006",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "SSS_007",
+      "rarity": "SSS",
+      "name": "月 之 精 灵",
+      "level": 0,
+      "atk": 2,
+      "hp": 4,
+      "cd": 3,
+      "rawTraits": [
+        "治愈1",
+        "隐匿"
+      ],
+      "skills": [
+        {
+          "raw": "治愈1",
+          "resolution": "implemented",
+          "family": "healAlly",
+          "param": 1,
+          "matchKind": "full"
+        },
+        {
+          "raw": "隐匿",
+          "resolution": "unimplemented",
+          "family": null,
+          "param": null,
+          "evidence": "全项目 .py 无该字符串；不存在目标选择/潜行机制",
+          "note": "无实现。"
+        }
+      ],
+      "description": "现存最古老的精灵种之一，在月球的静海吸收日光，数千万年后具有不可名状的变化形态，其中也包括地球上的人形化身，它们被古代巫师们称为'月之精灵'。",
+      "status": "complete",
+      "art": {
+        "artId": "card/sss/007",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "SSS_008",
+      "rarity": "SSS",
+      "name": "EX 誓 约 胜 利 之 剑",
+      "level": 0,
+      "atk": 20,
+      "hp": 5,
+      "cd": 0,
+      "rawTraits": [
+        "即时",
+        "自毁"
+      ],
+      "skills": [
+        {
+          "raw": "即时",
+          "resolution": "unimplemented",
+          "family": null,
+          "param": null,
+          "evidence": "全项目 .py 无该字符串",
+          "note": "无实现。"
+        },
+        {
+          "raw": "自毁",
+          "resolution": "implemented",
+          "family": "selfDestruct",
+          "param": null,
+          "matchKind": "exact"
+        }
+      ],
+      "description": "骑士王阿尔托莉雅·潘德拉贡的宝具——誓约胜利之剑·誓约胜利之剑（Excalibur）。释放出压倒性的毁灭一击，瞬间击杀敌人。",
+      "status": "complete",
+      "art": {
+        "artId": "card/sss/008",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "SSS_009",
+      "rarity": "SSS",
+      "name": "羽 化 蝶",
+      "level": 0,
+      "atk": 3,
+      "hp": 6,
+      "cd": 4,
+      "rawTraits": [
+        "对空",
+        "群体禁飞"
+      ],
+      "skills": [
+        {
+          "raw": "对空",
+          "resolution": "unimplemented",
+          "family": null,
+          "param": null,
+          "evidence": "battle_base_scene.py:1348 只出现在注释「地面单位无法对空：伤害转移到防御者玩家」里",
+          "note": "注意：飞行规则只检查 `飞行`（battle_base_scene.py:1344-1345），带 `对空` 但不带 `飞行` 的卡没有任何对空收益。PLAN 第 4.3 节明确要求不擅自加入未实现对空技能。"
+        },
+        {
+          "raw": "群体禁飞",
+          "resolution": "unimplemented",
+          "family": null,
+          "param": null,
+          "evidence": "全项目 .py 无该字符串；飞行规则只读 `飞行`",
+          "note": "概念上是飞行规则的反制，但代码没有任何读取点。"
+        }
+      ],
+      "description": "蝶仙子的羽化九重天终极形态，灵力缠绕的羽翼，翱翔于天，且威慑一切飞行敌人，制造彻底的禁飞区",
+      "status": "complete",
+      "art": {
+        "artId": "card/sss/009",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "SSS_010",
+      "rarity": "SSS",
+      "name": "神 龙·黑",
+      "level": 0,
+      "atk": 5,
+      "hp": 14,
+      "cd": 19,
+      "rawTraits": [
+        "防御2",
+        "灭绝2"
+      ],
+      "skills": [
+        {
+          "raw": "防御2",
+          "resolution": "implemented",
+          "family": "defense",
+          "param": 2,
+          "matchKind": "full"
+        },
+        {
+          "raw": "灭绝2",
+          "resolution": "unimplemented",
+          "family": null,
+          "param": null,
+          "evidence": "全项目 .py 无该字符串",
+          "note": "无实现。"
+        }
+      ],
+      "description": "至尊神龙哈拉多尔德刚伽罗的黑暗面化身，是众多面化身中最强大的一面，身长数万公里，可以在太空以及亚空间中游走，预言中只是落下鳞片都将毁灭世界。",
+      "status": "complete",
+      "art": {
+        "artId": "card/sss/010",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "SSS_011",
+      "rarity": "SSS",
+      "name": "青 云 都 卫 使·神 魔",
+      "level": 0,
+      "atk": 2,
+      "hp": 7,
+      "cd": 5,
+      "rawTraits": [
+        "剑舞2"
+      ],
+      "skills": [
+        {
+          "raw": "剑舞2",
+          "resolution": "unimplemented",
+          "family": null,
+          "param": null,
+          "evidence": "全项目 .py 无该字符串",
+          "note": "无实现。"
+        }
+      ],
+      "description": "当信仰的真理被扭曲，正义与邪恶的界限变得模糊，一念之间，半神半魔的存在因此诞生。",
+      "status": "complete",
+      "art": {
+        "artId": "card/sss/011",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "SSS_012",
+      "rarity": "SSS",
+      "name": "泡 狐 龙·妖 艳 之 舞",
+      "level": 0,
+      "atk": 2,
+      "hp": 6,
+      "cd": 4,
+      "rawTraits": [
+        "群体减速1",
+        "溅射",
+        "破甲2"
+      ],
+      "skills": [
+        {
+          "raw": "群体减速1",
+          "resolution": "unimplemented",
+          "family": null,
+          "param": null,
+          "evidence": "全项目 .py 无该字符串",
+          "note": "`延迟n` 针对单个最左占用准备槽，不是群体减速，不作为别名。"
+        },
+        {
+          "raw": "溅射",
+          "resolution": "unimplemented",
+          "family": null,
+          "param": null,
+          "evidence": "全项目 .py 无该字符串",
+          "note": "无实现。"
+        },
+        {
+          "raw": "破甲2",
+          "resolution": "implemented",
+          "family": "armorBreak",
+          "param": 2,
+          "matchKind": "full"
+        }
+      ],
+      "description": "像花瓣形状大鳍的海龙，在溪流中绽放的鲜艳的白、紫、粉红色。体毛上摩擦特殊的分泌液，制造出能够封锁猎物动作的溅射泡沫。",
+      "status": "complete",
+      "art": {
+        "artId": "card/sss/012",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "SS+_001",
+      "rarity": "SS+",
+      "name": "繁 华 之 上",
+      "level": 0.5,
+      "atk": 0,
+      "hp": 7,
+      "cd": 4,
+      "rawTraits": [
+        "群体治愈1",
+        "免疫"
+      ],
+      "skills": [
+        {
+          "raw": "群体治愈1",
+          "resolution": "implemented",
+          "family": "groupHeal",
+          "param": 1,
+          "matchKind": "full"
+        },
+        {
+          "raw": "免疫",
+          "resolution": "implemented",
+          "family": "immunity",
+          "param": null,
+          "matchKind": "exact"
+        }
+      ],
+      "description": "繁华的未来都市，高空之上，俯瞰人类科技的高度发达，令魔法大陆和天界都不可企及。",
+      "status": "complete",
+      "art": {
+        "artId": "card/ss-plus/001",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "SS+_002",
+      "rarity": "SS+",
+      "name": "EX 红 日",
+      "level": 0.5,
+      "atk": 2,
+      "hp": 6,
+      "cd": 5,
+      "rawTraits": [
+        "传送1",
+        "反击2"
+      ],
+      "skills": [
+        {
+          "raw": "传送1",
+          "resolution": "unimplemented",
+          "family": null,
+          "param": null,
+          "evidence": "全项目 .py 无该字符串",
+          "note": "同上，数值形式同样无实现。"
+        },
+        {
+          "raw": "反击2",
+          "resolution": "implemented",
+          "family": "counter",
+          "param": 2,
+          "matchKind": "full"
+        }
+      ],
+      "description": "魔域中心的远古遗迹，上一代文明的产物，作为魔法祭坛运行至今，突出特征是上方终年维持的暗星黑洞发生器，无人知晓其运行的逻辑。",
+      "status": "complete",
+      "art": {
+        "artId": "card/ss-plus/002",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "SS+_003",
+      "rarity": "SS+",
+      "name": "即 使 化 作 尘 埃",
+      "level": 0.5,
+      "atk": 1,
+      "hp": 7,
+      "cd": 3,
+      "rawTraits": [
+        "吸血1",
+        "狂暴"
+      ],
+      "skills": [
+        {
+          "raw": "吸血1",
+          "resolution": "implemented",
+          "family": "vampire",
+          "param": 1,
+          "matchKind": "full"
+        },
+        {
+          "raw": "狂暴",
+          "resolution": "implemented",
+          "family": "berserk",
+          "param": null,
+          "matchKind": "exact"
+        }
+      ],
+      "description": "龙人族最强的剑士超限形态，损失生命等量转换为伤害，即使身体化作尘埃，灵魂依然会在风中飘荡。",
+      "status": "complete",
+      "art": {
+        "artId": "card/ss-plus/003",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "SS+_004",
+      "rarity": "SS+",
+      "name": "仿 生 双 子",
+      "level": 0.5,
+      "atk": 3,
+      "hp": 5,
+      "cd": 9,
+      "rawTraits": [
+        "分身",
+        "先攻"
+      ],
+      "skills": [
+        {
+          "raw": "分身",
+          "resolution": "implemented",
+          "family": "clone",
+          "param": null,
+          "matchKind": "exact"
+        },
+        {
+          "raw": "先攻",
+          "resolution": "unimplemented",
+          "family": null,
+          "param": null,
+          "evidence": "全项目 .py 无该字符串；攻击顺序固定左到右，无先攻排序",
+          "note": "无实现。"
+        }
+      ],
+      "description": "2135年由赛博科技公司制造的先进仿生人，拥有与人类无异的外貌和超越人类的思维，共享生命体。",
+      "status": "complete",
+      "art": {
+        "artId": "card/ss-plus/004",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "SS+_005",
+      "rarity": "SS+",
+      "name": "尸 骨 龙",
+      "level": 0.5,
+      "atk": 1,
+      "hp": 9,
+      "cd": 18,
+      "rawTraits": [
+        "飞行",
+        "毒雾5",
+        "爆裂"
+      ],
+      "skills": [
+        {
+          "raw": "飞行",
+          "resolution": "scene-rule",
+          "family": null,
+          "param": null,
+          "note": "战斗场景规则，非技能族"
+        },
+        {
+          "raw": "毒雾5",
+          "resolution": "unimplemented",
+          "family": null,
+          "param": null,
+          "evidence": "全项目 .py 无该字符串",
+          "note": "无实现。"
+        },
+        {
+          "raw": "爆裂",
+          "resolution": "implemented",
+          "family": "explodeOnDeath",
+          "param": null,
+          "matchKind": "exact"
+        }
+      ],
+      "description": "终结混沌时代的创世龙，死后化为尸骨，由亡灵法师科莫多复活并操控，死后其尸骨仍然散发着强大的魔法能量，拥有毁天灭地的力量。",
+      "status": "complete",
+      "art": {
+        "artId": "card/ss-plus/005",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "SS+_006",
+      "rarity": "SS+",
+      "name": "月 下 花 间 酒",
+      "level": 0.5,
+      "atk": 0,
+      "hp": 5,
+      "cd": 6,
+      "rawTraits": [
+        "祝福3",
+        "抽卡1",
+        "自毁"
+      ],
+      "skills": [
+        {
+          "raw": "祝福3",
+          "resolution": "implemented",
+          "family": "blessing",
+          "param": 3,
+          "matchKind": "full"
+        },
+        {
+          "raw": "抽卡1",
+          "resolution": "implemented",
+          "family": "drawCard",
+          "param": 1,
+          "matchKind": "full"
+        },
+        {
+          "raw": "自毁",
+          "resolution": "implemented",
+          "family": "selfDestruct",
+          "param": null,
+          "matchKind": "exact"
+        }
+      ],
+      "description": "月光下绽放的神秘花朵，花间酿造的美酒，将进酒的欢愉使人沉醉于梦华之中，此生只需尽此欢。",
+      "status": "complete",
+      "art": {
+        "artId": "card/ss-plus/006",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "SS+_007",
+      "rarity": "SS+",
+      "name": "真 相",
+      "level": 0.5,
+      "atk": 1,
+      "hp": 4,
+      "cd": 1,
+      "rawTraits": [
+        "洞察",
+        "免疫",
+        "抽卡3"
+      ],
+      "skills": [
+        {
+          "raw": "洞察",
+          "resolution": "unimplemented",
+          "family": null,
+          "param": null,
+          "evidence": "全项目 .py 无该字符串",
+          "note": "无实现。"
+        },
+        {
+          "raw": "免疫",
+          "resolution": "implemented",
+          "family": "immunity",
+          "param": null,
+          "matchKind": "exact"
+        },
+        {
+          "raw": "抽卡3",
+          "resolution": "implemented",
+          "family": "drawCard",
+          "param": 3,
+          "matchKind": "full"
+        }
+      ],
+      "description": "当拥有能看穿一切谎言的神秘之物，人们将不再被欺骗，真相永远不会被隐藏。",
+      "status": "complete",
+      "art": {
+        "artId": "card/ss-plus/007",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "SS+_008",
+      "rarity": "SS+",
+      "name": "哈 迪 斯 之 门",
+      "level": 0.5,
+      "atk": 0,
+      "hp": 5,
+      "cd": 7,
+      "rawTraits": [
+        "闪电2",
+        "群体火球1",
+        "冰封4"
+      ],
+      "skills": [
+        {
+          "raw": "闪电2",
+          "resolution": "implemented",
+          "family": "lightning",
+          "param": 2,
+          "matchKind": "full"
+        },
+        {
+          "raw": "群体火球1",
+          "resolution": "implemented",
+          "family": "groupFireball",
+          "param": 1,
+          "matchKind": "full"
+        },
+        {
+          "raw": "冰封4",
+          "resolution": "implemented",
+          "family": "iceSeal",
+          "param": 4,
+          "matchKind": "full"
+        }
+      ],
+      "description": "通往冥界的门户，一切生灵死后通过的隔断生死之门，冥界巫女阿迪特尔在一次仪式中意外开启，随后也因此得名。",
+      "status": "complete",
+      "art": {
+        "artId": "card/ss-plus/008",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "SS+_009",
+      "rarity": "SS+",
+      "name": "EX 王 龙 骑 士 Ω",
+      "level": 0.5,
+      "atk": 3,
+      "hp": 6,
+      "cd": 15,
+      "rawTraits": [
+        "防御2",
+        "反击3"
+      ],
+      "skills": [
+        {
+          "raw": "防御2",
+          "resolution": "implemented",
+          "family": "defense",
+          "param": 2,
+          "matchKind": "full"
+        },
+        {
+          "raw": "反击3",
+          "resolution": "implemented",
+          "family": "counter",
+          "param": 3,
+          "matchKind": "full"
+        }
+      ],
+      "description": "末法时代守护古老王国的最后骑士，身披由千人血液净化的王龙铠甲狂暴版，拥有近乎无敌的纯粹力量。",
+      "status": "complete",
+      "art": {
+        "artId": "card/ss-plus/009",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "SS+_010",
+      "rarity": "SS+",
+      "name": "钢 铁 龙",
+      "level": 0.5,
+      "atk": 2,
+      "hp": 18,
+      "cd": 20,
+      "rawTraits": [
+        "恢复2",
+        "飞行"
+      ],
+      "skills": [
+        {
+          "raw": "恢复2",
+          "resolution": "implemented",
+          "family": "selfHeal",
+          "param": 2,
+          "matchKind": "full"
+        },
+        {
+          "raw": "飞行",
+          "resolution": "scene-rule",
+          "family": null,
+          "param": null,
+          "note": "战斗场景规则，非技能族"
+        }
+      ],
+      "description": "由未来科技打造的终极智械，融合了龙族的的基因肉体与再生纳米材料，由东亚联邦不计代价倾国之力筑造。",
+      "status": "complete",
+      "art": {
+        "artId": "card/ss-plus/010",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "SS+_011",
+      "rarity": "SS+",
+      "name": "撕 裂 苍 穹 之 雷 霆",
+      "level": 0.5,
+      "atk": 1,
+      "hp": 5,
+      "cd": 7,
+      "rawTraits": [
+        "闪电3",
+        "爆裂1"
+      ],
+      "skills": [
+        {
+          "raw": "闪电3",
+          "resolution": "implemented",
+          "family": "lightning",
+          "param": 3,
+          "matchKind": "full"
+        },
+        {
+          "raw": "爆裂1",
+          "resolution": "alias",
+          "family": "explodeOnDeath",
+          "param": null,
+          "evidence": "skill_registry.py:268 用精确匹配注册 `爆裂`，没有 `爆裂(\\d+)` 正则；skill_effects.py:1013-1046 的机制与词干一致",
+          "note": "纯解析缺口：数值形式落空。置信度高。"
+        }
+      ],
+      "description": "",
+      "status": "complete",
+      "art": {
+        "artId": "card/ss-plus/011",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "SS+_012",
+      "rarity": "SS+",
+      "name": "亚 空 间 毁 灭 者",
+      "level": 0.5,
+      "atk": 1,
+      "hp": 8,
+      "cd": 2,
+      "rawTraits": [
+        "传送",
+        "防御2"
+      ],
+      "skills": [
+        {
+          "raw": "传送",
+          "resolution": "unimplemented",
+          "family": null,
+          "param": null,
+          "evidence": "全项目 .py 无该字符串",
+          "note": "无位移/换位机制。"
+        },
+        {
+          "raw": "防御2",
+          "resolution": "implemented",
+          "family": "defense",
+          "param": 2,
+          "matchKind": "full"
+        }
+      ],
+      "description": "神话中代表毁灭的神祇，双面六臂，拥有水货冰雷四象法器，拥有扭曲空间的能力，能瞬间移动并引发空间震荡。",
+      "status": "complete",
+      "art": {
+        "artId": "card/ss-plus/012",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "SS+_013",
+      "rarity": "SS+",
+      "name": "永 夜 十 三 剑",
+      "level": 0.5,
+      "atk": 6,
+      "hp": 6,
+      "cd": 9,
+      "rawTraits": [
+        "破甲3"
+      ],
+      "skills": [
+        {
+          "raw": "破甲3",
+          "resolution": "implemented",
+          "family": "armorBreak",
+          "param": 3,
+          "matchKind": "full"
+        }
+      ],
+      "description": "永夜时代的黄金剑帝，能够驾驭世界上一切宝剑，数千年后又传世十三把破军神剑。",
+      "status": "complete",
+      "art": {
+        "artId": "card/ss-plus/013",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "SS_001",
+      "rarity": "SS",
+      "name": "尼 禄·伟大繁荣",
+      "level": 1,
+      "atk": 2,
+      "hp": 8,
+      "cd": 5,
+      "rawTraits": [
+        "复活",
+        "防御1"
+      ],
+      "skills": [
+        {
+          "raw": "复活",
+          "resolution": "implemented",
+          "family": "rebirth",
+          "param": null,
+          "matchKind": "exact"
+        },
+        {
+          "raw": "防御1",
+          "resolution": "implemented",
+          "family": "defense",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "罗马帝国的第五任皇帝，以其宏伟的建筑和文化繁荣而闻名。",
+      "status": "complete",
+      "art": {
+        "artId": "card/ss/001",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "SS_002",
+      "rarity": "SS",
+      "name": "仿 无 限 剑 制",
+      "level": 1,
+      "atk": 0,
+      "hp": 6,
+      "cd": 8,
+      "rawTraits": [
+        "反击3",
+        "恢复1"
+      ],
+      "skills": [
+        {
+          "raw": "反击3",
+          "resolution": "implemented",
+          "family": "counter",
+          "param": 3,
+          "matchKind": "full"
+        },
+        {
+          "raw": "恢复1",
+          "resolution": "implemented",
+          "family": "selfHeal",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "源自虚构世界的强大武器，能够进行无限次的攻击。",
+      "status": "complete",
+      "art": {
+        "artId": "card/ss/002",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "SS_003",
+      "rarity": "SS",
+      "name": "吟 霖·夜 光",
+      "level": 1,
+      "atk": 3,
+      "hp": 5,
+      "cd": 4,
+      "rawTraits": [
+        "傀儡"
+      ],
+      "skills": [
+        {
+          "raw": "傀儡",
+          "resolution": "flavor",
+          "family": null,
+          "param": null,
+          "evidence": "全项目 .py 无该字符串；游戏中不存在召唤系统",
+          "note": "卡面描述提到召唤傀儡，但没有任何召唤机制。判断成分：若后续要做召唤系统，此项应重新归类。"
+        }
+      ],
+      "description": "潜入调查员，成熟可靠、深藏不露。擅长召唤傀儡并用雷电丝线操控傀儡。",
+      "status": "complete",
+      "art": {
+        "artId": "card/ss/003",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "SS_004",
+      "rarity": "SS",
+      "name": "彼 岸 花 之 雨",
+      "level": 1,
+      "atk": 3,
+      "hp": 7,
+      "cd": 5,
+      "rawTraits": [
+        "沉默"
+      ],
+      "skills": [
+        {
+          "raw": "沉默",
+          "resolution": "implemented",
+          "family": "silence",
+          "param": null,
+          "matchKind": "exact"
+        }
+      ],
+      "description": "传说中生长在彼岸世界花海中的神秘花朵，象征着生与死的轮回。",
+      "status": "complete",
+      "art": {
+        "artId": "card/ss/004",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "SS_005",
+      "rarity": "SS",
+      "name": "五 维 旅 行 者",
+      "level": 1,
+      "atk": 2,
+      "hp": 1,
+      "cd": 3,
+      "rawTraits": [
+        "不死"
+      ],
+      "skills": [
+        {
+          "raw": "不死",
+          "resolution": "implemented",
+          "family": "undying",
+          "param": null,
+          "matchKind": "exact"
+        }
+      ],
+      "description": "能够穿越五维空间的旅行猫，探索未知的领域和时间。",
+      "status": "complete",
+      "art": {
+        "artId": "card/ss/005",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "SS_006",
+      "rarity": "SS",
+      "name": "阿 米 娅·国 王",
+      "level": 1,
+      "atk": 1,
+      "hp": 11,
+      "cd": 11,
+      "rawTraits": [
+        "防御2"
+      ],
+      "skills": [
+        {
+          "raw": "防御2",
+          "resolution": "implemented",
+          "family": "defense",
+          "param": 2,
+          "matchKind": "full"
+        }
+      ],
+      "description": "博士走后，成为罗德岛的领袖，智慧与勇气并存，致力于保护同伴和实现和平。",
+      "status": "complete",
+      "art": {
+        "artId": "card/ss/006",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "SS_007",
+      "rarity": "SS",
+      "name": "山 花 漫 路",
+      "level": 1,
+      "atk": 0,
+      "hp": 8,
+      "cd": 3,
+      "rawTraits": [
+        "免疫",
+        "反击3"
+      ],
+      "skills": [
+        {
+          "raw": "免疫",
+          "resolution": "implemented",
+          "family": "immunity",
+          "param": null,
+          "matchKind": "exact"
+        },
+        {
+          "raw": "反击3",
+          "resolution": "implemented",
+          "family": "counter",
+          "param": 3,
+          "matchKind": "full"
+        }
+      ],
+      "description": "远离尘世的孤岛，暮春山间的小路，盛开的奇异花纷纷飘落，点缀着失落的古地。",
+      "status": "complete",
+      "art": {
+        "artId": "card/ss/007",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "SS_008",
+      "rarity": "SS",
+      "name": "转 移 终 端",
+      "level": 1,
+      "atk": 2,
+      "hp": 5,
+      "cd": 7,
+      "rawTraits": [
+        "法术反弹",
+        "火球1"
+      ],
+      "skills": [
+        {
+          "raw": "法术反弹",
+          "resolution": "unimplemented",
+          "family": null,
+          "param": null,
+          "evidence": "全项目 .py 无该字符串",
+          "note": "无实现。"
+        },
+        {
+          "raw": "火球1",
+          "resolution": "implemented",
+          "family": "fireball",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "魔域大将达莉托儿被委任守卫的传送法阵，能够在瞬间传送使用者到指定地点，但灵火会吞噬意志不足够强大之人的心智。",
+      "status": "complete",
+      "art": {
+        "artId": "card/ss/008",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "SS_009",
+      "rarity": "SS",
+      "name": "雪 国 圣 女",
+      "level": 1,
+      "atk": 2,
+      "hp": 8,
+      "cd": 6,
+      "rawTraits": [
+        "严霜2",
+        "防御1"
+      ],
+      "skills": [
+        {
+          "raw": "严霜2",
+          "resolution": "unimplemented",
+          "family": null,
+          "param": null,
+          "evidence": "全项目 .py 无该字符串",
+          "note": "读作机制关键词（冰霜类），无实现。"
+        },
+        {
+          "raw": "防御1",
+          "resolution": "implemented",
+          "family": "defense",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "北境帝国的圣女，拥有操控冰雪的神力，被誉为千年一遇的神子，本身的存在象征着冰雪的纯洁与力量。",
+      "status": "complete",
+      "art": {
+        "artId": "card/ss/009",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "SS_010",
+      "rarity": "SS",
+      "name": "树 海 龙",
+      "level": 1,
+      "atk": 2,
+      "hp": 12,
+      "cd": 10,
+      "rawTraits": [
+        "恢复2",
+        "治愈2"
+      ],
+      "skills": [
+        {
+          "raw": "恢复2",
+          "resolution": "implemented",
+          "family": "selfHeal",
+          "param": 2,
+          "matchKind": "full"
+        },
+        {
+          "raw": "治愈2",
+          "resolution": "implemented",
+          "family": "healAlly",
+          "param": 2,
+          "matchKind": "full"
+        }
+      ],
+      "description": "守护树海之龙，强大的治愈能力，唤起人类对自然的敬畏。",
+      "status": "complete",
+      "art": {
+        "artId": "card/ss/010",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "SS_011",
+      "rarity": "SS",
+      "name": "星 空 龙",
+      "level": 1,
+      "atk": 4,
+      "hp": 7,
+      "cd": 15,
+      "rawTraits": [],
+      "skills": [],
+      "description": "传说中守护星空的龙族，全身由透明魔力构成，以星辰与银河为羽翼。",
+      "status": "complete",
+      "art": {
+        "artId": "card/ss/011",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "SS_012",
+      "rarity": "SS",
+      "name": "青 云 都 卫 使·千 剑",
+      "level": 1,
+      "atk": 1,
+      "hp": 7,
+      "cd": 5,
+      "rawTraits": [
+        "群体斩击1"
+      ],
+      "skills": [
+        {
+          "raw": "群体斩击1",
+          "resolution": "unimplemented",
+          "family": null,
+          "param": null,
+          "evidence": "全项目 .py 无该字符串",
+          "note": "无实现。"
+        }
+      ],
+      "description": "东方王国的军事组织青云都卫使，代号千剑，以其卓越的剑术和无与伦比的战斗技巧闻名于世，在战场上如同一阵风暴，挥舞着无数剑刃，所向披靡。",
+      "status": "complete",
+      "art": {
+        "artId": "card/ss/012",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "SS_013",
+      "rarity": "SS",
+      "name": "人 马 座 β",
+      "level": 1,
+      "atk": 3,
+      "hp": 5,
+      "cd": 4,
+      "rawTraits": [
+        "斩杀3"
+      ],
+      "skills": [
+        {
+          "raw": "斩杀3",
+          "resolution": "unimplemented",
+          "family": null,
+          "param": null,
+          "evidence": "全项目 .py 无该字符串",
+          "note": "无实现。"
+        }
+      ],
+      "description": "地球联邦扩张时代，半人马座星系的机械造物，卓越的智识与强大的战斗能力使其成为联邦军队中的重要力量，虽然被称为傀儡，但它们拥有高度的自主意识。",
+      "status": "complete",
+      "art": {
+        "artId": "card/ss/013",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "S+_001",
+      "rarity": "S+",
+      "name": "苍 蓝 骑 士·荣 耀",
+      "level": 1.5,
+      "atk": 3,
+      "hp": 5,
+      "cd": 6,
+      "rawTraits": [
+        "圣盾1"
+      ],
+      "skills": [
+        {
+          "raw": "圣盾1",
+          "resolution": "unimplemented",
+          "family": null,
+          "param": null,
+          "evidence": "全项目 .py 无该字符串",
+          "note": "与 `防御n` 同域但词干不同，不作为别名。无实现。"
+        }
+      ],
+      "description": "西方王国守护王国的至高骑士，身披闪耀的蓝白铠甲，手持光辉圣剑，象征着绝对正义与无限荣耀。",
+      "status": "complete",
+      "art": {
+        "artId": "card/s-plus/001",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "S+_002",
+      "rarity": "S+",
+      "name": "超 体 繁 殖",
+      "level": 1.5,
+      "atk": 1,
+      "hp": 3,
+      "cd": 5,
+      "rawTraits": [
+        "复制"
+      ],
+      "skills": [
+        {
+          "raw": "复制",
+          "resolution": "implemented",
+          "family": "copy",
+          "param": null,
+          "matchKind": "exact"
+        }
+      ],
+      "description": "源自异星的生物，拥有惊人的繁殖能力，能够在短时间内迅速扩散，寄生沿途一切生物，迅速占据整个生态系统。",
+      "status": "complete",
+      "art": {
+        "artId": "card/s-plus/002",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "S+_003",
+      "rarity": "S+",
+      "name": "锦 都 花 魁·剑 咏",
+      "level": 1.5,
+      "atk": 4,
+      "hp": 4,
+      "cd": 5,
+      "rawTraits": [
+        "吸血2"
+      ],
+      "skills": [
+        {
+          "raw": "吸血2",
+          "resolution": "implemented",
+          "family": "vampire",
+          "param": 2,
+          "matchKind": "full"
+        }
+      ],
+      "description": "锦都的当红花魁，以其绝世容颜和闻名于东方。为人不知的是她的刺客身份，剑舞如行云流水，令无数英雄为之倾倒，却也在不经意间被取走性命。",
+      "status": "complete",
+      "art": {
+        "artId": "card/s-plus/003",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "S+_004",
+      "rarity": "S+",
+      "name": "灵 魂 献 祭",
+      "level": 1.5,
+      "atk": 1,
+      "hp": 9,
+      "cd": 5,
+      "rawTraits": [
+        "献祭3",
+        "振奋2"
+      ],
+      "skills": [
+        {
+          "raw": "献祭3",
+          "resolution": "unimplemented",
+          "family": null,
+          "param": null,
+          "evidence": "全项目 .py 无该字符串",
+          "note": "无实现。"
+        },
+        {
+          "raw": "振奋2",
+          "resolution": "implemented",
+          "family": "inspire",
+          "param": 2,
+          "matchKind": "full"
+        }
+      ],
+      "description": "平行宇宙伸出的献祭之手，通过献祭灵魂来召唤强大的力量。参与者将自己的灵魂献给黑暗，以换取短暂但强大的力量，然而代价是什么呢？",
+      "status": "complete",
+      "art": {
+        "artId": "card/s-plus/004",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "S+_005",
+      "rarity": "S+",
+      "name": "蒙 多 萨 拉 神",
+      "level": 1.5,
+      "atk": 2,
+      "hp": 7,
+      "cd": 7,
+      "rawTraits": [
+        "重伤1",
+        "破甲2"
+      ],
+      "skills": [
+        {
+          "raw": "重伤1",
+          "resolution": "unimplemented",
+          "family": null,
+          "param": null,
+          "evidence": "全项目 .py 无该字符串",
+          "note": "无实现。"
+        },
+        {
+          "raw": "破甲2",
+          "resolution": "implemented",
+          "family": "armorBreak",
+          "param": 2,
+          "matchKind": "full"
+        }
+      ],
+      "description": "前混沌时代的蒙多萨拉女神的复制体，掌控着大地与生命的力量。它的出现象征着自然的愤怒与复苏，带来丰饶的同时也带来毁灭。",
+      "status": "complete",
+      "art": {
+        "artId": "card/s-plus/005",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "S+_006",
+      "rarity": "S+",
+      "name": "阮 梅·可 摘",
+      "level": 1.5,
+      "atk": 2,
+      "hp": 6,
+      "cd": 6,
+      "rawTraits": [
+        "吸血1",
+        "恢复1"
+      ],
+      "skills": [
+        {
+          "raw": "吸血1",
+          "resolution": "implemented",
+          "family": "vampire",
+          "param": 1,
+          "matchKind": "full"
+        },
+        {
+          "raw": "恢复1",
+          "resolution": "implemented",
+          "family": "selfHeal",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "能够在最严酷的环境中绽放出最美丽的花朵，更像是带刺的玫瑰丽人。",
+      "status": "complete",
+      "art": {
+        "artId": "card/s-plus/006",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "S+_007",
+      "rarity": "S+",
+      "name": "上 升",
+      "level": 1.5,
+      "atk": 0,
+      "hp": 8,
+      "cd": 3,
+      "rawTraits": [
+        "飞行",
+        "反击2",
+        "加速1",
+        "闪电1"
+      ],
+      "skills": [
+        {
+          "raw": "飞行",
+          "resolution": "scene-rule",
+          "family": null,
+          "param": null,
+          "note": "战斗场景规则，非技能族"
+        },
+        {
+          "raw": "反击2",
+          "resolution": "implemented",
+          "family": "counter",
+          "param": 2,
+          "matchKind": "full"
+        },
+        {
+          "raw": "加速1",
+          "resolution": "implemented",
+          "family": "haste",
+          "param": 1,
+          "matchKind": "full"
+        },
+        {
+          "raw": "闪电1",
+          "resolution": "implemented",
+          "family": "lightning",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "通往天界的阶梯，肉体的升华与超脱。攀登与朝圣的人络绎不绝，成功将获得无尽的智慧与力量，失败则会迷失在无尽的虚空中。",
+      "status": "complete",
+      "art": {
+        "artId": "card/s-plus/007",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "S+_008",
+      "rarity": "S+",
+      "name": "灵 魂 收 割 者",
+      "level": 1.5,
+      "atk": 3,
+      "hp": 4,
+      "cd": 6,
+      "rawTraits": [
+        "防御1"
+      ],
+      "skills": [
+        {
+          "raw": "防御1",
+          "resolution": "implemented",
+          "family": "defense",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "代表死神的高阶使者，专程收割那些迷失之人的灵魂。它无情而冷酷，只有完成任务才能获得片刻的安宁。",
+      "status": "complete",
+      "art": {
+        "artId": "card/s-plus/008",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "S+_009",
+      "rarity": "S+",
+      "name": "天 灾 降 临",
+      "level": 1.5,
+      "atk": 0,
+      "hp": 5,
+      "cd": 5,
+      "rawTraits": [
+        "群体爆破2",
+        "自毁"
+      ],
+      "skills": [
+        {
+          "raw": "群体爆破2",
+          "resolution": "implemented",
+          "family": "groupBombard",
+          "param": 2,
+          "matchKind": "full"
+        },
+        {
+          "raw": "自毁",
+          "resolution": "implemented",
+          "family": "selfDestruct",
+          "param": null,
+          "matchKind": "exact"
+        }
+      ],
+      "description": "古老的预言中提到的末日灾难，象征着天地间的浩劫与重生。它的降临将带来毁灭性的破坏，但也预示着新纪元的开始。",
+      "status": "complete",
+      "art": {
+        "artId": "card/s-plus/009",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "S+_010",
+      "rarity": "S+",
+      "name": "异 星 泰 坦",
+      "level": 1.5,
+      "atk": 4,
+      "hp": 5,
+      "cd": 7,
+      "rawTraits": [
+        "破甲2",
+        "防御1"
+      ],
+      "skills": [
+        {
+          "raw": "破甲2",
+          "resolution": "implemented",
+          "family": "armorBreak",
+          "param": 2,
+          "matchKind": "full"
+        },
+        {
+          "raw": "防御1",
+          "resolution": "implemented",
+          "family": "defense",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "来自遥远星系的智械，外骨骼装甲和高度与硅基生命的融合，赋予了它防御与破坏的能力。",
+      "status": "complete",
+      "art": {
+        "artId": "card/s-plus/010",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "S+_011",
+      "rarity": "S+",
+      "name": "蒼 天 ノ 羽 衣",
+      "level": 1.5,
+      "atk": 0,
+      "hp": 5,
+      "cd": 2,
+      "rawTraits": [
+        "闪避赋予3",
+        "自毁"
+      ],
+      "skills": [
+        {
+          "raw": "闪避赋予3",
+          "resolution": "unimplemented",
+          "family": null,
+          "param": null,
+          "evidence": "全项目 .py 无该字符串；`闪避n`（skill_effects.py:683-714）只作用于自身",
+          "note": "「赋予」意味着把闪避给别的单位，与自身闪避是不同机制。若人工确认按 `闪避3` 处理，应显式改登记为 alias。"
+        },
+        {
+          "raw": "自毁",
+          "resolution": "implemented",
+          "family": "selfDestruct",
+          "param": null,
+          "matchKind": "exact"
+        }
+      ],
+      "description": "某带天界琉璃宫主留在凡间的苍天羽制成的衣袍，轻盈到感受不到重量，且赋予穿戴者掌控操控风与云的力量。",
+      "status": "complete",
+      "art": {
+        "artId": "card/s-plus/011",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "S+_012",
+      "rarity": "S+",
+      "name": "战 斗 人 偶 α型",
+      "level": 1.5,
+      "atk": 2,
+      "hp": 6,
+      "cd": 8,
+      "rawTraits": [
+        "流血2"
+      ],
+      "skills": [
+        {
+          "raw": "流血2",
+          "resolution": "unimplemented",
+          "family": null,
+          "param": null,
+          "evidence": "全项目 .py 无该字符串；`受伤n` 是同域但机制不同（攻击后自伤），不作为别名",
+          "note": "无实现。"
+        }
+      ],
+      "description": "战斗女仆的初代序列，拥有血肉之躯和近乎永生的寿命，普通人类少女的外表下是一台毫无感情的杀戮机器。",
+      "status": "complete",
+      "art": {
+        "artId": "card/s-plus/012",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "S+_013",
+      "rarity": "S+",
+      "name": "朝 圣",
+      "level": 1.5,
+      "atk": 0,
+      "hp": 12,
+      "cd": 2,
+      "rawTraits": [
+        "献祭1",
+        "恢复1",
+        "吸血1"
+      ],
+      "skills": [
+        {
+          "raw": "献祭1",
+          "resolution": "unimplemented",
+          "family": null,
+          "param": null,
+          "evidence": "全项目 .py 无该字符串",
+          "note": "无实现。"
+        },
+        {
+          "raw": "恢复1",
+          "resolution": "implemented",
+          "family": "selfHeal",
+          "param": 1,
+          "matchKind": "full"
+        },
+        {
+          "raw": "吸血1",
+          "resolution": "implemented",
+          "family": "vampire",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "原始恶魔信仰的崇拜者们，历史上每间隔特定的时间后，将自发聚集向地狱之门行进，完成献祭自身的朝圣。",
+      "status": "complete",
+      "art": {
+        "artId": "card/s-plus/013",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "S+_014",
+      "rarity": "S+",
+      "name": "sp 玛 修·舞 踊",
+      "level": 1.5,
+      "atk": 2,
+      "hp": 6,
+      "cd": 3,
+      "rawTraits": [
+        "治愈2"
+      ],
+      "skills": [
+        {
+          "raw": "治愈2",
+          "resolution": "implemented",
+          "family": "healAlly",
+          "param": 2,
+          "matchKind": "full"
+        }
+      ],
+      "description": "2026新春特别版，身着华丽舞蹈服装的玛修，献给大家的新年祝福。",
+      "status": "complete",
+      "art": {
+        "artId": "card/s-plus/014",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "S+_015",
+      "rarity": "S+",
+      "name": "琉 璃 の 夙 愿",
+      "level": 1.5,
+      "atk": 3,
+      "hp": 5,
+      "cd": 5,
+      "rawTraits": [
+        "防御2",
+        "不屈"
+      ],
+      "skills": [
+        {
+          "raw": "防御2",
+          "resolution": "implemented",
+          "family": "defense",
+          "param": 2,
+          "matchKind": "full"
+        },
+        {
+          "raw": "不屈",
+          "resolution": "flavor",
+          "family": null,
+          "param": null,
+          "evidence": "全项目 .py 无该字符串；不存在任何「致命伤害后保留」机制",
+          "note": "无参数形容词，卡面描述为纯散文。判断成分：可能是未实现的机制，也可能是设定文字。"
+        }
+      ],
+      "description": "纵使流干最后一滴血液，也顽强不屈地战斗到最后，所谓誓约，乃是天地间最坚韧的夙愿。",
+      "status": "complete",
+      "art": {
+        "artId": "card/s-plus/015",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "S_001",
+      "rarity": "S",
+      "name": "神 子·天 降",
+      "level": 2,
+      "atk": 2,
+      "hp": 5,
+      "cd": 5,
+      "rawTraits": [
+        "群体闪电1"
+      ],
+      "skills": [
+        {
+          "raw": "群体闪电1",
+          "resolution": "implemented",
+          "family": "groupLightning",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "自称天降神子的少女，拥有治愈众生的神力。",
+      "status": "complete",
+      "art": {
+        "artId": "card/s/001",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "S_002",
+      "rarity": "S",
+      "name": "红 枫 彼 岸 花",
+      "level": 2,
+      "atk": 2,
+      "hp": 4,
+      "cd": 5,
+      "rawTraits": [
+        "沉默"
+      ],
+      "skills": [
+        {
+          "raw": "沉默",
+          "resolution": "implemented",
+          "family": "silence",
+          "param": null,
+          "matchKind": "exact"
+        }
+      ],
+      "description": "生长在彼岸世界的红色枫叶花，象征着永恒的思念。",
+      "status": "complete",
+      "art": {
+        "artId": "card/s/002",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "S_003",
+      "rarity": "S",
+      "name": "EX 血 染 圣 剑",
+      "level": 2,
+      "atk": 5,
+      "hp": 5,
+      "cd": 10,
+      "rawTraits": [
+        "破甲5"
+      ],
+      "skills": [
+        {
+          "raw": "破甲5",
+          "resolution": "implemented",
+          "family": "armorBreak",
+          "param": 5,
+          "matchKind": "full"
+        }
+      ],
+      "description": "挥舞着被诅咒的圣剑，英雄王的力量被吞噬殆尽。",
+      "status": "complete",
+      "art": {
+        "artId": "card/s/003",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "S_004",
+      "rarity": "S",
+      "name": "月 影 青 霞",
+      "level": 2,
+      "atk": 3,
+      "hp": 6,
+      "cd": 6,
+      "rawTraits": [
+        "反击2"
+      ],
+      "skills": [
+        {
+          "raw": "反击2",
+          "resolution": "implemented",
+          "family": "counter",
+          "param": 2,
+          "matchKind": "full"
+        }
+      ],
+      "description": "如月光般柔和的青色霞光。",
+      "status": "complete",
+      "art": {
+        "artId": "card/s/004",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "S_005",
+      "rarity": "S",
+      "name": "美 食 庆 典",
+      "level": 2,
+      "atk": 1,
+      "hp": 7,
+      "cd": 4,
+      "rawTraits": [
+        "治愈2",
+        "恢复2"
+      ],
+      "skills": [
+        {
+          "raw": "治愈2",
+          "resolution": "implemented",
+          "family": "healAlly",
+          "param": 2,
+          "matchKind": "full"
+        },
+        {
+          "raw": "恢复2",
+          "resolution": "implemented",
+          "family": "selfHeal",
+          "param": 2,
+          "matchKind": "full"
+        }
+      ],
+      "description": "丰盛的美食盛宴，能治愈身心的疲惫。",
+      "status": "complete",
+      "art": {
+        "artId": "card/s/005",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "S_006",
+      "rarity": "S",
+      "name": "森 湖 精 灵",
+      "level": 2,
+      "atk": 2,
+      "hp": 5,
+      "cd": 5,
+      "rawTraits": [
+        "祝福1"
+      ],
+      "skills": [
+        {
+          "raw": "祝福1",
+          "resolution": "implemented",
+          "family": "blessing",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "栖息在永世之乡的森林湖泊中的守护精灵，拥有神迹的祝福力量。",
+      "status": "complete",
+      "art": {
+        "artId": "card/s/006",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "S_007",
+      "rarity": "S",
+      "name": "SP 俏 佳 人",
+      "level": 2,
+      "atk": 0,
+      "hp": 5,
+      "cd": 2,
+      "rawTraits": [
+        "还魂3",
+        "自毁"
+      ],
+      "skills": [
+        {
+          "raw": "还魂3",
+          "resolution": "implemented",
+          "family": "soulReturn",
+          "param": 3,
+          "matchKind": "full"
+        },
+        {
+          "raw": "自毁",
+          "resolution": "implemented",
+          "family": "selfDestruct",
+          "param": null,
+          "matchKind": "exact"
+        }
+      ],
+      "description": "优雅迷人的女性形象，散发着无法抗拒的魅力。",
+      "status": "complete",
+      "art": {
+        "artId": "card/s/007",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "S_008",
+      "rarity": "S",
+      "name": "龙 人 剑 圣",
+      "level": 2,
+      "atk": 3,
+      "hp": 5,
+      "cd": 6,
+      "rawTraits": [
+        "破甲3",
+        "反击2"
+      ],
+      "skills": [
+        {
+          "raw": "破甲3",
+          "resolution": "implemented",
+          "family": "armorBreak",
+          "param": 3,
+          "matchKind": "full"
+        },
+        {
+          "raw": "反击2",
+          "resolution": "implemented",
+          "family": "counter",
+          "param": 2,
+          "matchKind": "full"
+        }
+      ],
+      "description": "拥有龙族血统的龙人最强剑士，无人知道其姓名，持有着传说中的龙剑。",
+      "status": "complete",
+      "art": {
+        "artId": "card/s/008",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "S_009",
+      "rarity": "S",
+      "name": "秘 湖 龙",
+      "level": 2,
+      "atk": 2,
+      "hp": 9,
+      "cd": 10,
+      "rawTraits": [
+        "冰封2"
+      ],
+      "skills": [
+        {
+          "raw": "冰封2",
+          "resolution": "implemented",
+          "family": "iceSeal",
+          "param": 2,
+          "matchKind": "full"
+        }
+      ],
+      "description": "栖息在秘湖中的巨龙，全身璀璨无比的结晶鳞片闪耀着神秘的光辉，每一片都价值连城。",
+      "status": "complete",
+      "art": {
+        "artId": "card/s/009",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "S_010",
+      "rarity": "S",
+      "name": "终 焉 黑 洞",
+      "level": 2,
+      "atk": 0,
+      "hp": 10,
+      "cd": 7,
+      "rawTraits": [
+        "吞噬"
+      ],
+      "skills": [
+        {
+          "raw": "吞噬",
+          "resolution": "unimplemented",
+          "family": null,
+          "param": null,
+          "evidence": "全项目 .py 无该字符串",
+          "note": "无实现。"
+        }
+      ],
+      "description": "魔域核心天空发生的巨大黑洞，吞噬一切，众生平等。摧毁场上的一切。",
+      "status": "complete",
+      "art": {
+        "artId": "card/s/010",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "S_011",
+      "rarity": "S",
+      "name": "地 崩 の 終 撃",
+      "level": 2,
+      "atk": 0,
+      "hp": 5,
+      "cd": 10,
+      "rawTraits": [
+        "地崩",
+        "群体伤害2"
+      ],
+      "skills": [
+        {
+          "raw": "地崩",
+          "resolution": "unimplemented",
+          "family": null,
+          "param": null,
+          "evidence": "全项目 .py 无该字符串",
+          "note": "无实现。"
+        },
+        {
+          "raw": "群体伤害2",
+          "resolution": "unimplemented",
+          "family": null,
+          "param": null,
+          "evidence": "全项目 .py 无该字符串",
+          "note": "形态接近 `群体爆破n`（对全体造成 n 伤害）但词干不同，不作为纯拼写变体。若人工确认可复用，应显式改登记为 alias。"
+        }
+      ],
+      "description": "大地崩裂，岩石飞溅，魔王军的终极攻击，能够对敌人造成巨大的伤害。",
+      "status": "complete",
+      "art": {
+        "artId": "card/s/011",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "S_012",
+      "rarity": "S",
+      "name": "灰 烬 之 主",
+      "level": 2,
+      "atk": 2,
+      "hp": 6,
+      "cd": 3,
+      "rawTraits": [
+        "免疫"
+      ],
+      "skills": [
+        {
+          "raw": "免疫",
+          "resolution": "implemented",
+          "family": "immunity",
+          "param": null,
+          "matchKind": "exact"
+        }
+      ],
+      "description": "灰烬之地的统治者，亡魂的主宰，拥有强大的力量和无尽的复仇欲望。",
+      "status": "complete",
+      "art": {
+        "artId": "card/s/012",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "S_013",
+      "rarity": "S",
+      "name": "贯 穿 一 击",
+      "level": 2,
+      "atk": 0,
+      "hp": 5,
+      "cd": 6,
+      "rawTraits": [
+        "贯穿",
+        "伤害5",
+        "溅射"
+      ],
+      "skills": [
+        {
+          "raw": "贯穿",
+          "resolution": "unimplemented",
+          "family": null,
+          "param": null,
+          "evidence": "全项目 .py 无该字符串",
+          "note": "无实现。"
+        },
+        {
+          "raw": "伤害5",
+          "resolution": "unimplemented",
+          "family": null,
+          "param": null,
+          "evidence": "全项目 .py 无该字符串",
+          "note": "数值被编码进 trait 字符串，但无读取方。"
+        },
+        {
+          "raw": "溅射",
+          "resolution": "unimplemented",
+          "family": null,
+          "param": null,
+          "evidence": "全项目 .py 无该字符串",
+          "note": "无实现。"
+        }
+      ],
+      "description": "王龙弓的贯穿一箭，以极高的速度和力量进行一次攻击，无数敌人的防御。",
+      "status": "complete",
+      "art": {
+        "artId": "card/s/013",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "S_014",
+      "rarity": "S",
+      "name": "青 云 都 卫 使",
+      "level": 2,
+      "atk": 2,
+      "hp": 6,
+      "cd": 4,
+      "rawTraits": [
+        "剑舞1"
+      ],
+      "skills": [
+        {
+          "raw": "剑舞1",
+          "resolution": "unimplemented",
+          "family": null,
+          "param": null,
+          "evidence": "全项目 .py 无该字符串",
+          "note": "无实现。"
+        }
+      ],
+      "description": "东方王国的神秘力量，青云都的卫士，剑术高超，全员无一不是万里挑一的高手。",
+      "status": "complete",
+      "art": {
+        "artId": "card/s/014",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "S_015",
+      "rarity": "S",
+      "name": "孔 雀 精",
+      "level": 2,
+      "atk": 1,
+      "hp": 8,
+      "cd": 4,
+      "rawTraits": [
+        "飞行",
+        "斩击1"
+      ],
+      "skills": [
+        {
+          "raw": "飞行",
+          "resolution": "scene-rule",
+          "family": null,
+          "param": null,
+          "note": "战斗场景规则，非技能族"
+        },
+        {
+          "raw": "斩击1",
+          "resolution": "unimplemented",
+          "family": null,
+          "param": null,
+          "evidence": "全项目 .py 无该字符串",
+          "note": "无实现。"
+        }
+      ],
+      "description": "美丽而神秘的孔雀精灵，与人类友好，羽毛闪耀着五彩斑斓的光芒，且锐利如刀锋。",
+      "status": "complete",
+      "art": {
+        "artId": "card/s/015",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "A+_001",
+      "rarity": "A+",
+      "name": "sp小 龙 女·节 日",
+      "level": 2.5,
+      "atk": 2,
+      "hp": 5,
+      "cd": 7,
+      "rawTraits": [
+        "火球1",
+        "火球1"
+      ],
+      "skills": [
+        {
+          "raw": "火球1",
+          "resolution": "implemented",
+          "family": "fireball",
+          "param": 1,
+          "matchKind": "full"
+        },
+        {
+          "raw": "火球1",
+          "resolution": "implemented",
+          "family": "fireball",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "2025sp特典，节日里的小龙女，欢庆佳节。",
+      "status": "complete",
+      "art": {
+        "artId": "card/a-plus/001",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "A+_002",
+      "rarity": "A+",
+      "name": "赤 色 重 炮",
+      "level": 2.5,
+      "atk": 1,
+      "hp": 4,
+      "cd": 4,
+      "rawTraits": [
+        "炮击3",
+        "远射"
+      ],
+      "skills": [
+        {
+          "raw": "炮击3",
+          "resolution": "implemented",
+          "family": "bombard",
+          "param": 3,
+          "matchKind": "full"
+        },
+        {
+          "raw": "远射",
+          "resolution": "unimplemented",
+          "family": null,
+          "param": null,
+          "evidence": "全项目 .py 无该字符串",
+          "note": "无实现。"
+        }
+      ],
+      "description": "帝国特殊部队的强力支援特型武装，人形兵器，装备着强力火炮的战斗单位，能够进行远程打击。",
+      "status": "complete",
+      "art": {
+        "artId": "card/a-plus/002",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "A+_003",
+      "rarity": "A+",
+      "name": "狐 面·万 符 归 咒",
+      "level": 2.5,
+      "atk": 2,
+      "hp": 4,
+      "cd": 8,
+      "rawTraits": [
+        "还魂1",
+        "恢复1",
+        "加速2"
+      ],
+      "skills": [
+        {
+          "raw": "还魂1",
+          "resolution": "implemented",
+          "family": "soulReturn",
+          "param": 1,
+          "matchKind": "full"
+        },
+        {
+          "raw": "恢复1",
+          "resolution": "implemented",
+          "family": "selfHeal",
+          "param": 1,
+          "matchKind": "full"
+        },
+        {
+          "raw": "加速2",
+          "resolution": "implemented",
+          "family": "haste",
+          "param": 2,
+          "matchKind": "full"
+        }
+      ],
+      "description": "出手阴阳家世家的迷之少女，出现时往往戴着狐面，极为擅长使用符咒和各种灵器。",
+      "status": "complete",
+      "art": {
+        "artId": "card/a-plus/003",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "A+_004",
+      "rarity": "A+",
+      "name": "天 堂&地 狱",
+      "level": 2.5,
+      "atk": 3,
+      "hp": 6,
+      "cd": 6,
+      "rawTraits": [
+        "反击2"
+      ],
+      "skills": [
+        {
+          "raw": "反击2",
+          "resolution": "implemented",
+          "family": "counter",
+          "param": 2,
+          "matchKind": "full"
+        }
+      ],
+      "description": "",
+      "status": "complete",
+      "art": {
+        "artId": "card/a-plus/004",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "A+_005",
+      "rarity": "A+",
+      "name": "无 限 锁 链",
+      "level": 2.5,
+      "atk": 0,
+      "hp": 5,
+      "cd": 6,
+      "rawTraits": [
+        "群体治愈1",
+        "诅咒2"
+      ],
+      "skills": [
+        {
+          "raw": "群体治愈1",
+          "resolution": "implemented",
+          "family": "groupHeal",
+          "param": 1,
+          "matchKind": "full"
+        },
+        {
+          "raw": "诅咒2",
+          "resolution": "implemented",
+          "family": "curse",
+          "param": 2,
+          "matchKind": "full"
+        }
+      ],
+      "description": "古神罗斯凯米尔的天锁，传说中只有圣剑才能斩断。",
+      "status": "complete",
+      "art": {
+        "artId": "card/a-plus/005",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "A+_006",
+      "rarity": "A+",
+      "name": "蒸 汽 艺 术",
+      "level": 2.5,
+      "atk": 2,
+      "hp": 6,
+      "cd": 5,
+      "rawTraits": [
+        "飞行",
+        "火球1"
+      ],
+      "skills": [
+        {
+          "raw": "飞行",
+          "resolution": "scene-rule",
+          "family": null,
+          "param": null,
+          "note": "战斗场景规则，非技能族"
+        },
+        {
+          "raw": "火球1",
+          "resolution": "implemented",
+          "family": "fireball",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "人类国度在蒸汽时代发明的巨物奇迹，蒸汽动力驱动的巨大机械装置，起飞后覆盖半个城市的天空。",
+      "status": "complete",
+      "art": {
+        "artId": "card/a-plus/006",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "A+_007",
+      "rarity": "A+",
+      "name": "蛇 妖",
+      "level": 2.5,
+      "atk": 2,
+      "hp": 7,
+      "cd": 9,
+      "rawTraits": [
+        "剧毒2"
+      ],
+      "skills": [
+        {
+          "raw": "剧毒2",
+          "resolution": "unimplemented",
+          "family": null,
+          "param": null,
+          "evidence": "全项目 .py 无该字符串；不存在持续伤害/中毒状态",
+          "note": "无实现。"
+        }
+      ],
+      "description": "雾之湖中盘踞的巨大蛇妖族化为人形，靠近时会散发出迷雾与剧毒。",
+      "status": "complete",
+      "art": {
+        "artId": "card/a-plus/007",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "A+_008",
+      "rarity": "A+",
+      "name": "红 剑 士·勇 者",
+      "level": 2.5,
+      "atk": 2,
+      "hp": 8,
+      "cd": 6,
+      "rawTraits": [
+        "先锋",
+        "防御1"
+      ],
+      "skills": [
+        {
+          "raw": "先锋",
+          "resolution": "unimplemented",
+          "family": null,
+          "param": null,
+          "evidence": "全项目 .py 无该字符串",
+          "note": "无实现。"
+        },
+        {
+          "raw": "防御1",
+          "resolution": "implemented",
+          "family": "defense",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "勇者红剑士，挥舞着燃烧着赤红火焰的长剑，勇敢无畏地冲锋在队伍最前，已一人之躯承受全部攻击。",
+      "status": "complete",
+      "art": {
+        "artId": "card/a-plus/008",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "A+_009",
+      "rarity": "A+",
+      "name": "花 海 射 手",
+      "level": 2.5,
+      "atk": 0,
+      "hp": 9,
+      "cd": 9,
+      "rawTraits": [
+        "炮击1",
+        "重伤1",
+        "加速1"
+      ],
+      "skills": [
+        {
+          "raw": "炮击1",
+          "resolution": "implemented",
+          "family": "bombard",
+          "param": 1,
+          "matchKind": "full"
+        },
+        {
+          "raw": "重伤1",
+          "resolution": "unimplemented",
+          "family": null,
+          "param": null,
+          "evidence": "全项目 .py 无该字符串",
+          "note": "无实现。"
+        },
+        {
+          "raw": "加速1",
+          "resolution": "implemented",
+          "family": "haste",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "联邦王牌驾驶员的重炮一式机甲，作为三代前早已被淘汰的型号，传统的手动驾驶拥有极高的上限，被敌人称为“花海杀手”。",
+      "status": "complete",
+      "art": {
+        "artId": "card/a-plus/009",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "A+_010",
+      "rarity": "A+",
+      "name": "齐 天 大 圣·飞 行",
+      "level": 2.5,
+      "atk": 2,
+      "hp": 8,
+      "cd": 13,
+      "rawTraits": [
+        "飞行"
+      ],
+      "skills": [
+        {
+          "raw": "飞行",
+          "resolution": "scene-rule",
+          "family": null,
+          "param": null,
+          "note": "战斗场景规则，非技能族"
+        }
+      ],
+      "description": "史诗中的齐天大圣·美猴王，精通变化之术，手持如意金箍棒，腾云驾雾，所向披靡。",
+      "status": "complete",
+      "art": {
+        "artId": "card/a-plus/010",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "A+_011",
+      "rarity": "A+",
+      "name": "荣 耀 于 此",
+      "level": 2.5,
+      "atk": 0,
+      "hp": 5,
+      "cd": 10,
+      "rawTraits": [
+        "祝福1",
+        "恢复5",
+        "自毁"
+      ],
+      "skills": [
+        {
+          "raw": "祝福1",
+          "resolution": "implemented",
+          "family": "blessing",
+          "param": 1,
+          "matchKind": "full"
+        },
+        {
+          "raw": "恢复5",
+          "resolution": "implemented",
+          "family": "selfHeal",
+          "param": 5,
+          "matchKind": "full"
+        },
+        {
+          "raw": "自毁",
+          "resolution": "implemented",
+          "family": "selfDestruct",
+          "param": null,
+          "matchKind": "exact"
+        }
+      ],
+      "description": "战场上，纯净的圣女挥舞起圣光之剑，誓死捍卫王国的尊严与荣耀，向敌人发起最后的冲锋。",
+      "status": "complete",
+      "art": {
+        "artId": "card/a-plus/011",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "A+_012",
+      "rarity": "A+",
+      "name": "时 刻 沙 漏",
+      "level": 2.5,
+      "atk": 0,
+      "hp": 8,
+      "cd": 5,
+      "rawTraits": [
+        "拒止",
+        "加速1"
+      ],
+      "skills": [
+        {
+          "raw": "拒止",
+          "resolution": "unimplemented",
+          "family": null,
+          "param": null,
+          "evidence": "全项目 .py 无该字符串",
+          "note": "无实现。"
+        },
+        {
+          "raw": "加速1",
+          "resolution": "implemented",
+          "family": "haste",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "虚无之地的神灵操控时间的神秘装置，能够自由地停止时间流逝，只允许己方在时间的罅隙中存在。",
+      "status": "complete",
+      "art": {
+        "artId": "card/a-plus/012",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "A+_013",
+      "rarity": "A+",
+      "name": "天 雷 龙",
+      "level": 2.5,
+      "atk": 0,
+      "hp": 7,
+      "cd": 11,
+      "rawTraits": [
+        "闪电3",
+        "麻痹2"
+      ],
+      "skills": [
+        {
+          "raw": "闪电3",
+          "resolution": "implemented",
+          "family": "lightning",
+          "param": 3,
+          "matchKind": "full"
+        },
+        {
+          "raw": "麻痹2",
+          "resolution": "unimplemented",
+          "family": null,
+          "param": null,
+          "evidence": "全项目 .py 无该字符串；不存在跳过行动/眩晕机制",
+          "note": "无实现。"
+        }
+      ],
+      "description": "诞生于云层之间的龙族，自现世就通体覆盖闪电般的鳞片，从天空引来天雷实施无差别打击。",
+      "status": "complete",
+      "art": {
+        "artId": "card/a-plus/013",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "A+_014",
+      "rarity": "A+",
+      "name": "王 龙 骑 士",
+      "level": 2.5,
+      "atk": 2,
+      "hp": 5,
+      "cd": 9,
+      "rawTraits": [
+        "防御2"
+      ],
+      "skills": [
+        {
+          "raw": "防御2",
+          "resolution": "implemented",
+          "family": "defense",
+          "param": 2,
+          "matchKind": "full"
+        }
+      ],
+      "description": "末法时代守护古老王国的最后骑士，身披龙造型的白金铠甲，拥有近乎无敌的纯粹力量。",
+      "status": "complete",
+      "art": {
+        "artId": "card/a-plus/014",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "A_001",
+      "rarity": "A",
+      "name": "红 皇 后",
+      "level": 3,
+      "atk": 0,
+      "hp": 6,
+      "cd": 6,
+      "rawTraits": [
+        "群体振奋1"
+      ],
+      "skills": [
+        {
+          "raw": "群体振奋1",
+          "resolution": "implemented",
+          "family": "groupInspire",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "西方王国的新女王，其上位之路由无数鲜血铺就，人送外号“红皇后”。",
+      "status": "complete",
+      "art": {
+        "artId": "card/a/001",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "A_002",
+      "rarity": "A",
+      "name": "月 下 轮 舞 曲",
+      "level": 3,
+      "atk": 3,
+      "hp": 6,
+      "cd": 5,
+      "rawTraits": [
+        "破甲2"
+      ],
+      "skills": [
+        {
+          "raw": "破甲2",
+          "resolution": "implemented",
+          "family": "armorBreak",
+          "param": 2,
+          "matchKind": "full"
+        }
+      ],
+      "description": "在月光下翩翩起舞的两位少女，一个来自蓬莱，一个来自月之都。",
+      "status": "complete",
+      "art": {
+        "artId": "card/a/002",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "A_003",
+      "rarity": "A",
+      "name": "提 灯 魔 女",
+      "level": 3,
+      "atk": 2,
+      "hp": 5,
+      "cd": 5,
+      "rawTraits": [
+        "恢复2",
+        "反击1"
+      ],
+      "skills": [
+        {
+          "raw": "恢复2",
+          "resolution": "implemented",
+          "family": "selfHeal",
+          "param": 2,
+          "matchKind": "full"
+        },
+        {
+          "raw": "反击1",
+          "resolution": "implemented",
+          "family": "counter",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "手持提灯的魔女，能引导迷失在黑暗中的人们找到心中的归路。",
+      "status": "complete",
+      "art": {
+        "artId": "card/a/003",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "A_004",
+      "rarity": "A",
+      "name": "骸 骨 巨 鲸",
+      "level": 3,
+      "atk": 2,
+      "hp": 11,
+      "cd": 17,
+      "rawTraits": [
+        "免疫"
+      ],
+      "skills": [
+        {
+          "raw": "免疫",
+          "resolution": "implemented",
+          "family": "immunity",
+          "param": null,
+          "matchKind": "exact"
+        }
+      ],
+      "description": "海之守护者，2192年被联合大陆科考团在南极发现部分骸骨，其庞大的身躯堪比一艘战舰。",
+      "status": "complete",
+      "art": {
+        "artId": "card/a/004",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "A_005",
+      "rarity": "A",
+      "name": "精 英 冒 险 团",
+      "level": 3,
+      "atk": 2,
+      "hp": 6,
+      "cd": 5,
+      "rawTraits": [
+        "恢复1",
+        "反击1",
+        "防御1"
+      ],
+      "skills": [
+        {
+          "raw": "恢复1",
+          "resolution": "implemented",
+          "family": "selfHeal",
+          "param": 1,
+          "matchKind": "full"
+        },
+        {
+          "raw": "反击1",
+          "resolution": "implemented",
+          "family": "counter",
+          "param": 1,
+          "matchKind": "full"
+        },
+        {
+          "raw": "防御1",
+          "resolution": "implemented",
+          "family": "defense",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "由各路精英组成的冒险小队，专门接受高难度任务，其成员个个身怀绝技。",
+      "status": "complete",
+      "art": {
+        "artId": "card/a/005",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "A_006",
+      "rarity": "A",
+      "name": "瓶 中 蔷 薇",
+      "level": 3,
+      "atk": 0,
+      "hp": 7,
+      "cd": 3,
+      "rawTraits": [
+        "加速2"
+      ],
+      "skills": [
+        {
+          "raw": "加速2",
+          "resolution": "implemented",
+          "family": "haste",
+          "param": 2,
+          "matchKind": "full"
+        }
+      ],
+      "description": "盛开在瓶中的蔷薇花，满月时化作少女的形态，传说只要得到它的祝福，便能获得无尽的好运。",
+      "status": "complete",
+      "art": {
+        "artId": "card/a/006",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "A_007",
+      "rarity": "A",
+      "name": "骑 士 团 长",
+      "level": 3,
+      "atk": 3,
+      "hp": 4,
+      "cd": 9,
+      "rawTraits": [
+        "防御1"
+      ],
+      "skills": [
+        {
+          "raw": "防御1",
+          "resolution": "implemented",
+          "family": "defense",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "骑士团的领袖，誓死守护王国的和平与安宁。",
+      "status": "complete",
+      "art": {
+        "artId": "card/a/007",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "A_008",
+      "rarity": "A",
+      "name": "画 中 世 界",
+      "level": 3,
+      "atk": 0,
+      "hp": 8,
+      "cd": 4,
+      "rawTraits": [
+        "延迟2",
+        "治愈1"
+      ],
+      "skills": [
+        {
+          "raw": "延迟2",
+          "resolution": "implemented",
+          "family": "delay",
+          "param": 2,
+          "matchKind": "full"
+        },
+        {
+          "raw": "治愈1",
+          "resolution": "implemented",
+          "family": "healAlly",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "一幅神秘的画作，画中的世界栩栩如生，仿佛能将人吸入其中。",
+      "status": "complete",
+      "art": {
+        "artId": "card/a/008",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "A_009",
+      "rarity": "A",
+      "name": "史 诗 吟 唱 者",
+      "level": 3,
+      "atk": 1,
+      "hp": 4,
+      "cd": 8,
+      "rawTraits": [
+        "火球4"
+      ],
+      "skills": [
+        {
+          "raw": "火球4",
+          "resolution": "implemented",
+          "family": "fireball",
+          "param": 4,
+          "matchKind": "full"
+        }
+      ],
+      "description": "史诗魔法的吟唱者，燃烧的灭尽之龙息，能将敌人化为灰烬。",
+      "status": "complete",
+      "art": {
+        "artId": "card/a/009",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "A_010",
+      "rarity": "A",
+      "name": "血 恶 魔",
+      "level": 3,
+      "atk": 1,
+      "hp": 7,
+      "cd": 5,
+      "rawTraits": [
+        "吸血2",
+        "破甲2"
+      ],
+      "skills": [
+        {
+          "raw": "吸血2",
+          "resolution": "implemented",
+          "family": "vampire",
+          "param": 2,
+          "matchKind": "full"
+        },
+        {
+          "raw": "破甲2",
+          "resolution": "implemented",
+          "family": "armorBreak",
+          "param": 2,
+          "matchKind": "full"
+        }
+      ],
+      "description": "来自地狱深渊的高阶恶魔，嗜血成性，唯有鲜血能满足它的渴望。",
+      "status": "complete",
+      "art": {
+        "artId": "card/a/010",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "A_011",
+      "rarity": "A",
+      "name": "元 素 法 师",
+      "level": 3,
+      "atk": 2,
+      "hp": 6,
+      "cd": 7,
+      "rawTraits": [
+        "火球1",
+        "冰封1",
+        "闪电1"
+      ],
+      "skills": [
+        {
+          "raw": "火球1",
+          "resolution": "implemented",
+          "family": "fireball",
+          "param": 1,
+          "matchKind": "full"
+        },
+        {
+          "raw": "冰封1",
+          "resolution": "implemented",
+          "family": "iceSeal",
+          "param": 1,
+          "matchKind": "full"
+        },
+        {
+          "raw": "闪电1",
+          "resolution": "implemented",
+          "family": "lightning",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "精通四大元素魔法的法师。",
+      "status": "complete",
+      "art": {
+        "artId": "card/a/011",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "A_012",
+      "rarity": "A",
+      "name": "匹 克 蒙 怪 物",
+      "level": 3,
+      "atk": 4,
+      "hp": 5,
+      "cd": 13,
+      "rawTraits": [],
+      "skills": [],
+      "description": "来自地心克拉门的恐怖怪物，联合国的舰队在海洋空洞被全灭，至今不知道它的去向。",
+      "status": "complete",
+      "art": {
+        "artId": "card/a/012",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "A_013",
+      "rarity": "A",
+      "name": "战 争 帝",
+      "level": 3,
+      "atk": 2,
+      "hp": 6,
+      "cd": 8,
+      "rawTraits": [
+        "防御1",
+        "反击1"
+      ],
+      "skills": [
+        {
+          "raw": "防御1",
+          "resolution": "implemented",
+          "family": "defense",
+          "param": 1,
+          "matchKind": "full"
+        },
+        {
+          "raw": "反击1",
+          "resolution": "implemented",
+          "family": "counter",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "混乱纪元的战争之王，为后人传颂为战争帝，无与伦比的战斗技巧与统治头脑。",
+      "status": "complete",
+      "art": {
+        "artId": "card/a/013",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "A_014",
+      "rarity": "A",
+      "name": "雅 典 娜·战 意",
+      "level": 3,
+      "atk": 2,
+      "hp": 4,
+      "cd": 9,
+      "rawTraits": [
+        "防御2"
+      ],
+      "skills": [
+        {
+          "raw": "防御2",
+          "resolution": "implemented",
+          "family": "defense",
+          "param": 2,
+          "matchKind": "full"
+        }
+      ],
+      "description": "智慧与战争女神雅典娜的化身，在战场上无所畏惧，无往不胜。",
+      "status": "complete",
+      "art": {
+        "artId": "card/a/014",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "A_015",
+      "rarity": "A",
+      "name": "矮 人 将 军",
+      "level": 3,
+      "atk": 3,
+      "hp": 5,
+      "cd": 10,
+      "rawTraits": [
+        "防御1",
+        "闪电1"
+      ],
+      "skills": [
+        {
+          "raw": "防御1",
+          "resolution": "implemented",
+          "family": "defense",
+          "param": 1,
+          "matchKind": "full"
+        },
+        {
+          "raw": "闪电1",
+          "resolution": "implemented",
+          "family": "lightning",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "混沌编年史中矮人国的将军，身材魁梧庞大，勇猛异常，擅长使用带有雷电的巨锤。",
+      "status": "complete",
+      "art": {
+        "artId": "card/a/015",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "A_016",
+      "rarity": "A",
+      "name": "旧 日 支 配 者·完 全 体",
+      "level": 3,
+      "atk": 4,
+      "hp": 12,
+      "cd": 25,
+      "rawTraits": [
+        "免疫"
+      ],
+      "skills": [
+        {
+          "raw": "免疫",
+          "resolution": "implemented",
+          "family": "immunity",
+          "param": null,
+          "matchKind": "exact"
+        }
+      ],
+      "description": "传说中来自宇宙深渊的古老存在，拥有支配一切的力量，其完全体形态更是无敌于世。",
+      "status": "complete",
+      "art": {
+        "artId": "card/a/016",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "A_017",
+      "rarity": "A",
+      "name": "决 斗",
+      "level": 3,
+      "atk": 0,
+      "hp": 5,
+      "cd": 8,
+      "rawTraits": [
+        "决斗",
+        "自毁"
+      ],
+      "skills": [
+        {
+          "raw": "决斗",
+          "resolution": "flavor",
+          "family": null,
+          "param": null,
+          "evidence": "全项目 .py 无该字符串；该卡的有效机制只有同列的 `自毁`",
+          "note": "trait 与卡名重复。判断成分较高。"
+        },
+        {
+          "raw": "自毁",
+          "resolution": "implemented",
+          "family": "selfDestruct",
+          "param": null,
+          "matchKind": "exact"
+        }
+      ],
+      "description": "强制发起的一场生死决斗，只有胜者才能有生存的权利。",
+      "status": "complete",
+      "art": {
+        "artId": "card/a/017",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "A_018",
+      "rarity": "A",
+      "name": "傀 影 三",
+      "level": 3,
+      "atk": 2,
+      "hp": 6,
+      "cd": 12,
+      "rawTraits": [
+        "隐匿",
+        "破甲1",
+        "必杀1"
+      ],
+      "skills": [
+        {
+          "raw": "隐匿",
+          "resolution": "unimplemented",
+          "family": null,
+          "param": null,
+          "evidence": "全项目 .py 无该字符串；不存在目标选择/潜行机制",
+          "note": "无实现。"
+        },
+        {
+          "raw": "破甲1",
+          "resolution": "implemented",
+          "family": "armorBreak",
+          "param": 1,
+          "matchKind": "full"
+        },
+        {
+          "raw": "必杀1",
+          "resolution": "unimplemented",
+          "family": null,
+          "param": null,
+          "evidence": "全项目 .py 无该字符串",
+          "note": "无实现。"
+        }
+      ],
+      "description": "来自暗影的刺客傀影，擅长潜行与突袭，行同鬼魅难以捕捉其实体。",
+      "status": "complete",
+      "art": {
+        "artId": "card/a/018",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "A_019",
+      "rarity": "A",
+      "name": "太 初 秘 境",
+      "level": 3,
+      "atk": 0,
+      "hp": 10,
+      "cd": 6,
+      "rawTraits": [
+        "还魂1",
+        "免疫",
+        "流血2"
+      ],
+      "skills": [
+        {
+          "raw": "还魂1",
+          "resolution": "implemented",
+          "family": "soulReturn",
+          "param": 1,
+          "matchKind": "full"
+        },
+        {
+          "raw": "免疫",
+          "resolution": "implemented",
+          "family": "immunity",
+          "param": null,
+          "matchKind": "exact"
+        },
+        {
+          "raw": "流血2",
+          "resolution": "unimplemented",
+          "family": null,
+          "param": null,
+          "evidence": "全项目 .py 无该字符串；`受伤n` 是同域但机制不同（攻击后自伤），不作为别名",
+          "note": "无实现。"
+        }
+      ],
+      "description": "太初宇宙诞生的子境，千万年来不曾与现世交汇，近千年来被发现，只有极少数隐者的后代掌握进入之法。",
+      "status": "complete",
+      "art": {
+        "artId": "card/a/019",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "A_020",
+      "rarity": "A",
+      "name": "火 石 电 光",
+      "level": 3,
+      "atk": 0,
+      "hp": 5,
+      "cd": 5,
+      "rawTraits": [
+        "闪电3",
+        "加速3",
+        "加速3"
+      ],
+      "skills": [
+        {
+          "raw": "闪电3",
+          "resolution": "implemented",
+          "family": "lightning",
+          "param": 3,
+          "matchKind": "full"
+        },
+        {
+          "raw": "加速3",
+          "resolution": "implemented",
+          "family": "haste",
+          "param": 3,
+          "matchKind": "full"
+        },
+        {
+          "raw": "加速3",
+          "resolution": "implemented",
+          "family": "haste",
+          "param": 3,
+          "matchKind": "full"
+        }
+      ],
+      "description": "天下武功，唯快不破；火石电光，兵贵神速。",
+      "status": "complete",
+      "art": {
+        "artId": "card/a/020",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "A_021",
+      "rarity": "A",
+      "name": "菲 比",
+      "level": 3,
+      "atk": 2,
+      "hp": 5,
+      "cd": 3,
+      "rawTraits": [
+        "恢复1",
+        "狂暴1"
+      ],
+      "skills": [
+        {
+          "raw": "恢复1",
+          "resolution": "implemented",
+          "family": "selfHeal",
+          "param": 1,
+          "matchKind": "full"
+        },
+        {
+          "raw": "狂暴1",
+          "resolution": "alias",
+          "family": "berserk",
+          "param": null,
+          "evidence": "skill_registry.py:244 用 `trait == \"狂暴\"` 精确匹配；skill_effects.py:769-815 的机制与词干一致",
+          "note": "纯解析缺口：数值形式落空。置信度高。"
+        }
+      ],
+      "description": "隐海修会的教士，以亲近神使的祝福而闻名。可若是受到恶魔觊觎？",
+      "status": "complete",
+      "art": {
+        "artId": "card/a/021",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "A_022",
+      "rarity": "A",
+      "name": "大 犬 神",
+      "level": 3,
+      "atk": 1,
+      "hp": 7,
+      "cd": 13,
+      "rawTraits": [
+        "防御2"
+      ],
+      "skills": [
+        {
+          "raw": "防御2",
+          "resolution": "implemented",
+          "family": "defense",
+          "param": 2,
+          "matchKind": "full"
+        }
+      ],
+      "description": "四海之一的守护神兽，灵力凝聚而成的符文漂浮在其身周，即使夜晚也会显现光辉。",
+      "status": "complete",
+      "art": {
+        "artId": "card/a/022",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "A_023",
+      "rarity": "A",
+      "name": "炽 炎 终 结 者",
+      "level": 3,
+      "atk": 4,
+      "hp": 3,
+      "cd": 15,
+      "rawTraits": [
+        "火球3",
+        "燃烧2"
+      ],
+      "skills": [
+        {
+          "raw": "火球3",
+          "resolution": "implemented",
+          "family": "fireball",
+          "param": 3,
+          "matchKind": "full"
+        },
+        {
+          "raw": "燃烧2",
+          "resolution": "unimplemented",
+          "family": null,
+          "param": null,
+          "evidence": "全项目 .py 无该字符串；火球n 是即时伤害，不是持续燃烧",
+          "note": "无实现。"
+        }
+      ],
+      "description": "炎神化身，不具备实体但依旧带来恐怖与终结的使者，能将一切敌人化为灰烬。",
+      "status": "complete",
+      "art": {
+        "artId": "card/a/023",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "A_024",
+      "rarity": "A",
+      "name": "叢 雲 掲 示 板",
+      "level": 3,
+      "atk": 2,
+      "hp": 8,
+      "cd": 4,
+      "rawTraits": [
+        "抽卡2"
+      ],
+      "skills": [
+        {
+          "raw": "抽卡2",
+          "resolution": "implemented",
+          "family": "drawCard",
+          "param": 2,
+          "matchKind": "full"
+        }
+      ],
+      "description": "操控云术和小灵兽的迷之少年，被上天选中成为神域与人间的联系，被人们称为'揭示者'",
+      "status": "complete",
+      "art": {
+        "artId": "card/a/024",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "B+_001",
+      "rarity": "B+",
+      "name": "八 雷 大 神",
+      "level": 3.5,
+      "atk": 1,
+      "hp": 5,
+      "cd": 7,
+      "rawTraits": [
+        "闪电2"
+      ],
+      "skills": [
+        {
+          "raw": "闪电2",
+          "resolution": "implemented",
+          "family": "lightning",
+          "param": 2,
+          "matchKind": "full"
+        }
+      ],
+      "description": "神话中的雷神，掌控着雷电的力量，能够召唤强大的闪电攻击敌人。",
+      "status": "complete",
+      "art": {
+        "artId": "card/b-plus/001",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "B+_002",
+      "rarity": "B+",
+      "name": "大 魔 法 世 界",
+      "level": 3.5,
+      "atk": 0,
+      "hp": 7,
+      "cd": 5,
+      "rawTraits": [
+        "延迟1",
+        "火球1",
+        "冰封1"
+      ],
+      "skills": [
+        {
+          "raw": "延迟1",
+          "resolution": "implemented",
+          "family": "delay",
+          "param": 1,
+          "matchKind": "full"
+        },
+        {
+          "raw": "火球1",
+          "resolution": "implemented",
+          "family": "fireball",
+          "param": 1,
+          "matchKind": "full"
+        },
+        {
+          "raw": "冰封1",
+          "resolution": "implemented",
+          "family": "iceSeal",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "人界与魔界的交界处，充满了神秘的魔法能量和掌握魔法奥秘的女巫、精灵们，这里是魔法师们学习和研究的圣地。",
+      "status": "complete",
+      "art": {
+        "artId": "card/b-plus/002",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "B+_003",
+      "rarity": "B+",
+      "name": "蛋 宇 宙",
+      "level": 3.5,
+      "atk": 2,
+      "hp": 3,
+      "cd": 2,
+      "rawTraits": [
+        "加速3"
+      ],
+      "skills": [
+        {
+          "raw": "加速3",
+          "resolution": "implemented",
+          "family": "haste",
+          "param": 3,
+          "matchKind": "full"
+        }
+      ],
+      "description": "母世界蛋的碎片，含有孕育生命的神秘物质。",
+      "status": "complete",
+      "art": {
+        "artId": "card/b-plus/003",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "B+_004",
+      "rarity": "B+",
+      "name": "狐 面·灵 能 子 弹",
+      "level": 3.5,
+      "atk": 2,
+      "hp": 6,
+      "cd": 8,
+      "rawTraits": [
+        "反击2"
+      ],
+      "skills": [
+        {
+          "raw": "反击2",
+          "resolution": "implemented",
+          "family": "counter",
+          "param": 2,
+          "matchKind": "full"
+        }
+      ],
+      "description": "出手阴阳家世家的迷之少女，出现时往往戴着狐面，极为擅长使用符咒和各种灵器。",
+      "status": "complete",
+      "art": {
+        "artId": "card/b-plus/004",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "B+_005",
+      "rarity": "B+",
+      "name": "幻 想 森 林",
+      "level": 3.5,
+      "atk": 2,
+      "hp": 7,
+      "cd": 5,
+      "rawTraits": [
+        "治愈1"
+      ],
+      "skills": [
+        {
+          "raw": "治愈1",
+          "resolution": "implemented",
+          "family": "healAlly",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "充满魔力的森林，栖息着各种极度危险的幻想生物。",
+      "status": "complete",
+      "art": {
+        "artId": "card/b-plus/005",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "B+_006",
+      "rarity": "B+",
+      "name": "解 构 大 脑",
+      "level": 3.5,
+      "atk": 0,
+      "hp": 5,
+      "cd": 5,
+      "rawTraits": [
+        "还魂2",
+        "延迟5",
+        "自毁"
+      ],
+      "skills": [
+        {
+          "raw": "还魂2",
+          "resolution": "implemented",
+          "family": "soulReturn",
+          "param": 2,
+          "matchKind": "full"
+        },
+        {
+          "raw": "延迟5",
+          "resolution": "implemented",
+          "family": "delay",
+          "param": 5,
+          "matchKind": "full"
+        },
+        {
+          "raw": "自毁",
+          "resolution": "implemented",
+          "family": "selfDestruct",
+          "param": null,
+          "matchKind": "exact"
+        }
+      ],
+      "description": "解构主义泛滥，不少人认为万物皆需要被解构，直到人类的大脑。",
+      "status": "complete",
+      "art": {
+        "artId": "card/b-plus/006",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "B+_007",
+      "rarity": "B+",
+      "name": "女 巫 森 林",
+      "level": 3.5,
+      "atk": 1,
+      "hp": 4,
+      "cd": 4,
+      "rawTraits": [
+        "诅咒1"
+      ],
+      "skills": [
+        {
+          "raw": "诅咒1",
+          "resolution": "implemented",
+          "family": "curse",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "魔法森林的一侧，居住着许多强大的女巫，任何进入的人类都会被施加诅咒。",
+      "status": "complete",
+      "art": {
+        "artId": "card/b-plus/007",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "B+_008",
+      "rarity": "B+",
+      "name": "深 夜 酒 吧",
+      "level": 3.5,
+      "atk": 0,
+      "hp": 5,
+      "cd": 3,
+      "rawTraits": [
+        "治愈2",
+        "治愈3",
+        "自毁"
+      ],
+      "skills": [
+        {
+          "raw": "治愈2",
+          "resolution": "implemented",
+          "family": "healAlly",
+          "param": 2,
+          "matchKind": "full"
+        },
+        {
+          "raw": "治愈3",
+          "resolution": "implemented",
+          "family": "healAlly",
+          "param": 3,
+          "matchKind": "full"
+        },
+        {
+          "raw": "自毁",
+          "resolution": "implemented",
+          "family": "selfDestruct",
+          "param": null,
+          "matchKind": "exact"
+        }
+      ],
+      "description": "城市角落的酒吧，深夜治愈心灵的港湾，如果觉得累了就休憩一下吧。",
+      "status": "complete",
+      "art": {
+        "artId": "card/b-plus/008",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "B+_009",
+      "rarity": "B+",
+      "name": "前 往 圣 山",
+      "level": 3.5,
+      "atk": 2,
+      "hp": 6,
+      "cd": 6,
+      "rawTraits": [
+        "加速2"
+      ],
+      "skills": [
+        {
+          "raw": "加速2",
+          "resolution": "implemented",
+          "family": "haste",
+          "param": 2,
+          "matchKind": "full"
+        }
+      ],
+      "description": "传说中通往神灵居所的圣山，只有心怀虔诚之人才能到达山顶。",
+      "status": "complete",
+      "art": {
+        "artId": "card/b-plus/009",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "B+_010",
+      "rarity": "B+",
+      "name": "树 海 守 护·智 械",
+      "level": 3.5,
+      "atk": 2,
+      "hp": 9,
+      "cd": 17,
+      "rawTraits": [
+        "防御1",
+        "免疫"
+      ],
+      "skills": [
+        {
+          "raw": "防御1",
+          "resolution": "implemented",
+          "family": "defense",
+          "param": 1,
+          "matchKind": "full"
+        },
+        {
+          "raw": "免疫",
+          "resolution": "implemented",
+          "family": "immunity",
+          "param": null,
+          "matchKind": "exact"
+        }
+      ],
+      "description": "守护树海的机械生命体，拥有强大的防御能力和智慧，近未来版的森林之神。",
+      "status": "complete",
+      "art": {
+        "artId": "card/b-plus/010",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "B+_011",
+      "rarity": "B+",
+      "name": "挑 战 者",
+      "level": 3.5,
+      "atk": 3,
+      "hp": 8,
+      "cd": 10,
+      "rawTraits": [
+        "破甲2"
+      ],
+      "skills": [
+        {
+          "raw": "破甲2",
+          "resolution": "implemented",
+          "family": "armorBreak",
+          "param": 2,
+          "matchKind": "full"
+        }
+      ],
+      "description": "无畏的挑战者，渴望通过不断的挑战强敌来提升自己的实力和技能。",
+      "status": "complete",
+      "art": {
+        "artId": "card/b-plus/011",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "B+_012",
+      "rarity": "B+",
+      "name": "微 缩 表 盘",
+      "level": 3.5,
+      "atk": 0,
+      "hp": 5,
+      "cd": 4,
+      "rawTraits": [
+        "加速5",
+        "延迟5"
+      ],
+      "skills": [
+        {
+          "raw": "加速5",
+          "resolution": "implemented",
+          "family": "haste",
+          "param": 5,
+          "matchKind": "full"
+        },
+        {
+          "raw": "延迟5",
+          "resolution": "implemented",
+          "family": "delay",
+          "param": 5,
+          "matchKind": "full"
+        }
+      ],
+      "description": "神秘的微缩表盘，能够操控时间的流逝，让持有者在战斗中占据先手优势。",
+      "status": "complete",
+      "art": {
+        "artId": "card/b-plus/012",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "B+_013",
+      "rarity": "B+",
+      "name": "巫 蛊 剑 冢",
+      "level": 3.5,
+      "atk": 2,
+      "hp": 7,
+      "cd": 12,
+      "rawTraits": [
+        "反击1"
+      ],
+      "skills": [
+        {
+          "raw": "反击1",
+          "resolution": "implemented",
+          "family": "counter",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "巫王炼制魔剑的剑冢，残留的巫蛊之力至今未散，十分危险。",
+      "status": "complete",
+      "art": {
+        "artId": "card/b-plus/013",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "B+_014",
+      "rarity": "B+",
+      "name": "血 魔 龙",
+      "level": 3.5,
+      "atk": 2,
+      "hp": 6,
+      "cd": 10,
+      "rawTraits": [
+        "吸血2"
+      ],
+      "skills": [
+        {
+          "raw": "吸血2",
+          "resolution": "implemented",
+          "family": "vampire",
+          "param": 2,
+          "matchKind": "full"
+        }
+      ],
+      "description": "高阶血恶魔的坐骑，拥有生命力和吸血能力，能够在战斗中迅速恢复自身的生命值，生存能力极强。",
+      "status": "complete",
+      "art": {
+        "artId": "card/b-plus/014",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "B_001",
+      "rarity": "B",
+      "name": "阿 尔 托 莉 雅",
+      "level": 4,
+      "atk": 2,
+      "hp": 5,
+      "cd": 6,
+      "rawTraits": [
+        "防御1"
+      ],
+      "skills": [
+        {
+          "raw": "防御1",
+          "resolution": "implemented",
+          "family": "defense",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "历史上的圣剑士，作为英灵被召唤，参加过多次圣杯战争。",
+      "status": "complete",
+      "art": {
+        "artId": "card/b/001",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "B_002",
+      "rarity": "B",
+      "name": "喀 斯 玛 神 祇",
+      "level": 4,
+      "atk": 1,
+      "hp": 7,
+      "cd": 7,
+      "rawTraits": [
+        "延时1"
+      ],
+      "skills": [
+        {
+          "raw": "延时1",
+          "resolution": "alias",
+          "family": "delay",
+          "param": null,
+          "evidence": "skill_registry.py:134 注册 `延迟(\\d+)`；skill_effects.py:1259-1290 为对敌方最左占用准备槽 CD+n",
+          "note": "延时/延迟是同义异形词，不是解析缺口。置信度中：本轮不自动建立别名规则，需人工确认后再决定是否实现。"
+        }
+      ],
+      "description": "古老圣地的神祇喀斯玛，历史上一度作为人类支配者降临在福地喀斯玛。",
+      "status": "complete",
+      "art": {
+        "artId": "card/b/002",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "B_003",
+      "rarity": "B",
+      "name": "女 剑 士",
+      "level": 4,
+      "atk": 2,
+      "hp": 4,
+      "cd": 2,
+      "rawTraits": [
+        "防御1",
+        "破甲1"
+      ],
+      "skills": [
+        {
+          "raw": "防御1",
+          "resolution": "implemented",
+          "family": "defense",
+          "param": 1,
+          "matchKind": "full"
+        },
+        {
+          "raw": "破甲1",
+          "resolution": "implemented",
+          "family": "armorBreak",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "年轻的女剑士，手持长剑，战败后也许会有意想不到的事情？",
+      "status": "complete",
+      "art": {
+        "artId": "card/b/003",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "B_004",
+      "rarity": "B",
+      "name": "红 繁 香 满",
+      "level": 4,
+      "atk": 2,
+      "hp": 5,
+      "cd": 4,
+      "rawTraits": [
+        "恢复1"
+      ],
+      "skills": [
+        {
+          "raw": "恢复1",
+          "resolution": "implemented",
+          "family": "selfHeal",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "某位强大英灵的投影。",
+      "status": "complete",
+      "art": {
+        "artId": "card/b/004",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "B_005",
+      "rarity": "B",
+      "name": "尤 诺",
+      "level": 4,
+      "atk": 2,
+      "hp": 6,
+      "cd": 5,
+      "rawTraits": [
+        "治愈1"
+      ],
+      "skills": [
+        {
+          "raw": "治愈1",
+          "resolution": "implemented",
+          "family": "healAlly",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "古老神话中的天界女神，拥有强大治愈能力。",
+      "status": "complete",
+      "art": {
+        "artId": "card/b/005",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "B_006",
+      "rarity": "B",
+      "name": "神 圣 骑 士",
+      "level": 4,
+      "atk": 3,
+      "hp": 4,
+      "cd": 7,
+      "rawTraits": [
+        "防御1"
+      ],
+      "skills": [
+        {
+          "raw": "防御1",
+          "resolution": "implemented",
+          "family": "defense",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "受封为神圣骑士的勇士，天界的执行人，在下界近乎无敌的存在。",
+      "status": "complete",
+      "art": {
+        "artId": "card/b/006",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "B_007",
+      "rarity": "B",
+      "name": "时 之 轮",
+      "level": 4,
+      "atk": 0,
+      "hp": 6,
+      "cd": 6,
+      "rawTraits": [
+        "延时1",
+        "加速1"
+      ],
+      "skills": [
+        {
+          "raw": "延时1",
+          "resolution": "alias",
+          "family": "delay",
+          "param": null,
+          "evidence": "skill_registry.py:134 注册 `延迟(\\d+)`；skill_effects.py:1259-1290 为对敌方最左占用准备槽 CD+n",
+          "note": "延时/延迟是同义异形词，不是解析缺口。置信度中：本轮不自动建立别名规则，需人工确认后再决定是否实现。"
+        },
+        {
+          "raw": "加速1",
+          "resolution": "implemented",
+          "family": "haste",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "掌控时间流逝的神秘远古法阵，借用神明操纵时间的力量。",
+      "status": "complete",
+      "art": {
+        "artId": "card/b/007",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "B_008",
+      "rarity": "B",
+      "name": "千 眼 剑 士·血",
+      "level": 4,
+      "atk": 4,
+      "hp": 3,
+      "cd": 8,
+      "rawTraits": [
+        "吸血1",
+        "受伤1"
+      ],
+      "skills": [
+        {
+          "raw": "吸血1",
+          "resolution": "implemented",
+          "family": "vampire",
+          "param": 1,
+          "matchKind": "full"
+        },
+        {
+          "raw": "受伤1",
+          "resolution": "implemented",
+          "family": "injury",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "千眼神秘剑士，处于狂暴状态，战斗力不容小觑。",
+      "status": "complete",
+      "art": {
+        "artId": "card/b/008",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "B_009",
+      "rarity": "B",
+      "name": "赤 霄",
+      "level": 4,
+      "atk": 2,
+      "hp": 6,
+      "cd": 7,
+      "rawTraits": [
+        "闪电1",
+        "破甲1"
+      ],
+      "skills": [
+        {
+          "raw": "闪电1",
+          "resolution": "implemented",
+          "family": "lightning",
+          "param": 1,
+          "matchKind": "full"
+        },
+        {
+          "raw": "破甲1",
+          "resolution": "implemented",
+          "family": "armorBreak",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "来自东方大陆的女战士，器宇不凡，斩杀一切阻挡在前方的敌人。",
+      "status": "complete",
+      "art": {
+        "artId": "card/b/009",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "B_010",
+      "rarity": "B",
+      "name": "拉 普 兰 德·温 泉",
+      "level": 4,
+      "atk": 1,
+      "hp": 3,
+      "cd": 5,
+      "rawTraits": [
+        "恢复1",
+        "防御2"
+      ],
+      "skills": [
+        {
+          "raw": "恢复1",
+          "resolution": "implemented",
+          "family": "selfHeal",
+          "param": 1,
+          "matchKind": "full"
+        },
+        {
+          "raw": "防御2",
+          "resolution": "implemented",
+          "family": "defense",
+          "param": 2,
+          "matchKind": "full"
+        }
+      ],
+      "description": "兽人拉普兰德，泡在舒服的温泉中，这是冬季最美好的享受。",
+      "status": "complete",
+      "art": {
+        "artId": "card/b/010",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "B_011",
+      "rarity": "B",
+      "name": "清 水·幽 幽 子",
+      "level": 4,
+      "atk": 2,
+      "hp": 4,
+      "cd": 4,
+      "rawTraits": [
+        "冰封1"
+      ],
+      "skills": [
+        {
+          "raw": "冰封1",
+          "resolution": "implemented",
+          "family": "iceSeal",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "住在灵异现象频发的白玉楼的幽幽子，擅长吃。",
+      "status": "complete",
+      "art": {
+        "artId": "card/b/011",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "B_012",
+      "rarity": "B",
+      "name": "不 动 的 大 图 书 馆",
+      "level": 4,
+      "atk": 2,
+      "hp": 5,
+      "cd": 6,
+      "rawTraits": [
+        "抽卡1",
+        "防御1"
+      ],
+      "skills": [
+        {
+          "raw": "抽卡1",
+          "resolution": "implemented",
+          "family": "drawCard",
+          "param": 1,
+          "matchKind": "full"
+        },
+        {
+          "raw": "防御1",
+          "resolution": "implemented",
+          "family": "defense",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "红魔馆的深处，暗藏玄机的大图书馆，中的大图书馆？",
+      "status": "complete",
+      "art": {
+        "artId": "card/b/012",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "B_013",
+      "rarity": "B",
+      "name": "藤 原 妹 红 ",
+      "level": 4,
+      "atk": 1,
+      "hp": 5,
+      "cd": 8,
+      "rawTraits": [
+        "火球2"
+      ],
+      "skills": [
+        {
+          "raw": "火球2",
+          "resolution": "implemented",
+          "family": "fireball",
+          "param": 2,
+          "matchKind": "full"
+        }
+      ],
+      "description": "拥有操控火焰能力的蓬莱少女，性格火爆但内心善良，偷吃月之都的仙药而具有不死之身。",
+      "status": "complete",
+      "art": {
+        "artId": "card/b/013",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "B_014",
+      "rarity": "B",
+      "name": "漆 黑 杀 手",
+      "level": 4,
+      "atk": 5,
+      "hp": 2,
+      "cd": 5,
+      "rawTraits": [
+        "破甲3"
+      ],
+      "skills": [
+        {
+          "raw": "破甲3",
+          "resolution": "implemented",
+          "family": "armorBreak",
+          "param": 3,
+          "matchKind": "full"
+        }
+      ],
+      "description": "神秘的狗头人刺客，擅长潜行与暗杀，行动如同黑夜中的幽灵。",
+      "status": "complete",
+      "art": {
+        "artId": "card/b/014",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "B_015",
+      "rarity": "B",
+      "name": "暗 阳 葛 温 德 林",
+      "level": 4,
+      "atk": 2,
+      "hp": 5,
+      "cd": 6,
+      "rawTraits": [
+        "吸血1"
+      ],
+      "skills": [
+        {
+          "raw": "吸血1",
+          "resolution": "implemented",
+          "family": "vampire",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "堕落的女骑士，曾是光明的守护者，如今被黑暗力量侵蚀，成为吸血鬼。",
+      "status": "complete",
+      "art": {
+        "artId": "card/b/015",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "B_016",
+      "rarity": "B",
+      "name": "黑 炎 龙",
+      "level": 4,
+      "atk": 2,
+      "hp": 7,
+      "cd": 7,
+      "rawTraits": [
+        "破甲1"
+      ],
+      "skills": [
+        {
+          "raw": "破甲1",
+          "resolution": "implemented",
+          "family": "armorBreak",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "传说中的黑炎龙，拥有毁灭一切的火焰力量，居住在炽热的火山深处。",
+      "status": "complete",
+      "art": {
+        "artId": "card/b/016",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "B_017",
+      "rarity": "B",
+      "name": "森 林 之 心",
+      "level": 4,
+      "atk": 3,
+      "hp": 8,
+      "cd": 19,
+      "rawTraits": [
+        "治愈1"
+      ],
+      "skills": [
+        {
+          "raw": "治愈1",
+          "resolution": "implemented",
+          "family": "healAlly",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "古老森林的守护灵，自然生命的终极形态。",
+      "status": "complete",
+      "art": {
+        "artId": "card/b/017",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "B_018",
+      "rarity": "B",
+      "name": "审 判",
+      "level": 4,
+      "atk": 0,
+      "hp": 5,
+      "cd": 4,
+      "rawTraits": [
+        "群体闪电2",
+        "自毁"
+      ],
+      "skills": [
+        {
+          "raw": "群体闪电2",
+          "resolution": "implemented",
+          "family": "groupLightning",
+          "param": 2,
+          "matchKind": "full"
+        },
+        {
+          "raw": "自毁",
+          "resolution": "implemented",
+          "family": "selfDestruct",
+          "param": null,
+          "matchKind": "exact"
+        }
+      ],
+      "description": "天界的审判者，执行神的旨意，惩戒世间一切罪恶。",
+      "status": "complete",
+      "art": {
+        "artId": "card/b/018",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "B_019",
+      "rarity": "B",
+      "name": "天 南",
+      "level": 4,
+      "atk": 1,
+      "hp": 5,
+      "cd": 5,
+      "rawTraits": [
+        "反击2"
+      ],
+      "skills": [
+        {
+          "raw": "反击2",
+          "resolution": "implemented",
+          "family": "counter",
+          "param": 2,
+          "matchKind": "full"
+        }
+      ],
+      "description": "不断修行终于抵达飞升境界，才能接触到的天界南方的一角。",
+      "status": "complete",
+      "art": {
+        "artId": "card/b/019",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "B_020",
+      "rarity": "B",
+      "name": "血 海 石 滩",
+      "level": 4,
+      "atk": 1,
+      "hp": 5,
+      "cd": 4,
+      "rawTraits": [
+        "吸血2"
+      ],
+      "skills": [
+        {
+          "raw": "吸血2",
+          "resolution": "implemented",
+          "family": "vampire",
+          "param": 2,
+          "matchKind": "full"
+        }
+      ],
+      "description": "至今无人知晓，为什么海滩的一角常年血染。",
+      "status": "complete",
+      "art": {
+        "artId": "card/b/020",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "B_021",
+      "rarity": "B",
+      "name": "太 刀·樱 火 龙",
+      "level": 4,
+      "atk": 1,
+      "hp": 3,
+      "cd": 6,
+      "rawTraits": [
+        "群体火球1"
+      ],
+      "skills": [
+        {
+          "raw": "群体火球1",
+          "resolution": "implemented",
+          "family": "groupFireball",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "蕴含着樱花与火焰的力量，挥舞时如同樱火龙般绚丽。",
+      "status": "complete",
+      "art": {
+        "artId": "card/b/021",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "B_022",
+      "rarity": "B",
+      "name": "炽 炎 天 使",
+      "level": 4,
+      "atk": 2,
+      "hp": 8,
+      "cd": 14,
+      "rawTraits": [
+        "飞行"
+      ],
+      "skills": [
+        {
+          "raw": "飞行",
+          "resolution": "scene-rule",
+          "family": null,
+          "param": null,
+          "note": "战斗场景规则，非技能族"
+        }
+      ],
+      "description": "巨大的守护天使，没有实际形态，世人只能看到宛如地狱的烈焰。",
+      "status": "complete",
+      "art": {
+        "artId": "card/b/022",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "B_023",
+      "rarity": "B",
+      "name": "旧 日 支 配 者",
+      "level": 4,
+      "atk": 3,
+      "hp": 6,
+      "cd": 14,
+      "rawTraits": [
+        "防御1"
+      ],
+      "skills": [
+        {
+          "raw": "防御1",
+          "resolution": "implemented",
+          "family": "defense",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "来自宇宙深处的古老存在，其力量超越人类的理解范围。",
+      "status": "complete",
+      "art": {
+        "artId": "card/b/023",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "B_024",
+      "rarity": "B",
+      "name": "世 界 树",
+      "level": 4,
+      "atk": 0,
+      "hp": 10,
+      "cd": 5,
+      "rawTraits": [
+        "治愈2",
+        "防御1"
+      ],
+      "skills": [
+        {
+          "raw": "治愈2",
+          "resolution": "implemented",
+          "family": "healAlly",
+          "param": 2,
+          "matchKind": "full"
+        },
+        {
+          "raw": "防御1",
+          "resolution": "implemented",
+          "family": "defense",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "里世界中连接天地万物的神树，躯干直径十公里，其根系深入地底，枝叶伸展至天空。",
+      "status": "complete",
+      "art": {
+        "artId": "card/b/024",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "B_025",
+      "rarity": "B",
+      "name": "祥 瑞 之 兆",
+      "level": 4,
+      "atk": 0,
+      "hp": 5,
+      "cd": 4,
+      "rawTraits": [
+        "抽卡2",
+        "祝福1",
+        "自毁"
+      ],
+      "skills": [
+        {
+          "raw": "抽卡2",
+          "resolution": "implemented",
+          "family": "drawCard",
+          "param": 2,
+          "matchKind": "full"
+        },
+        {
+          "raw": "祝福1",
+          "resolution": "implemented",
+          "family": "blessing",
+          "param": 1,
+          "matchKind": "full"
+        },
+        {
+          "raw": "自毁",
+          "resolution": "implemented",
+          "family": "selfDestruct",
+          "param": null,
+          "matchKind": "exact"
+        }
+      ],
+      "description": "天空出现彩云与祥龙，预示着好运与繁荣的神秘现象，常被视为神的祝福。",
+      "status": "complete",
+      "art": {
+        "artId": "card/b/025",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "B_026",
+      "rarity": "B",
+      "name": "眼 天 使",
+      "level": 4,
+      "atk": 2,
+      "hp": 5,
+      "cd": 2,
+      "rawTraits": [
+        "破甲2"
+      ],
+      "skills": [
+        {
+          "raw": "破甲2",
+          "resolution": "implemented",
+          "family": "armorBreak",
+          "param": 2,
+          "matchKind": "full"
+        }
+      ],
+      "description": "一颗巨大的眼球镶嵌在象征天使的白羽上，洞察一切虚伪与谎言，但深处隐藏着令人不安的恐惧。",
+      "status": "complete",
+      "art": {
+        "artId": "card/b/026",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "B_027",
+      "rarity": "B",
+      "name": "克 苏 鲁 孢 子",
+      "level": 4,
+      "atk": 2,
+      "hp": 4,
+      "cd": 1,
+      "rawTraits": [],
+      "skills": [],
+      "description": "来自深海的克苏鲁孢子，能够迅速繁殖并感染其他生物，疯狂与毁灭的化身。",
+      "status": "complete",
+      "art": {
+        "artId": "card/b/027",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "C+_001",
+      "rarity": "C+",
+      "name": "极 武 士",
+      "level": 4.5,
+      "atk": 2,
+      "hp": 5,
+      "cd": 3,
+      "rawTraits": [
+        "破甲1"
+      ],
+      "skills": [
+        {
+          "raw": "破甲1",
+          "resolution": "implemented",
+          "family": "armorBreak",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "战国时代的传奇武士后裔，有着超凡的武艺和坚韧的意志。",
+      "status": "complete",
+      "art": {
+        "artId": "card/c-plus/001",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "C+_002",
+      "rarity": "C+",
+      "name": "并 肩 作 战",
+      "level": 4.5,
+      "atk": 0,
+      "hp": 5,
+      "cd": 4,
+      "rawTraits": [
+        "加速2",
+        "祝福1",
+        "自毁"
+      ],
+      "skills": [
+        {
+          "raw": "加速2",
+          "resolution": "implemented",
+          "family": "haste",
+          "param": 2,
+          "matchKind": "full"
+        },
+        {
+          "raw": "祝福1",
+          "resolution": "implemented",
+          "family": "blessing",
+          "param": 1,
+          "matchKind": "full"
+        },
+        {
+          "raw": "自毁",
+          "resolution": "implemented",
+          "family": "selfDestruct",
+          "param": null,
+          "matchKind": "exact"
+        }
+      ],
+      "description": "互相守护的背后，生死交情的战斗伙伴。无论何时何地，他们都能并肩作战，克服一切困难。",
+      "status": "complete",
+      "art": {
+        "artId": "card/c-plus/002",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "C+_003",
+      "rarity": "C+",
+      "name": "冬 城 废 墟",
+      "level": 4.5,
+      "atk": 0,
+      "hp": 3,
+      "cd": 3,
+      "rawTraits": [
+        "反击1",
+        "防御1",
+        "冰封2"
+      ],
+      "skills": [
+        {
+          "raw": "反击1",
+          "resolution": "implemented",
+          "family": "counter",
+          "param": 1,
+          "matchKind": "full"
+        },
+        {
+          "raw": "防御1",
+          "resolution": "implemented",
+          "family": "defense",
+          "param": 1,
+          "matchKind": "full"
+        },
+        {
+          "raw": "冰封2",
+          "resolution": "implemented",
+          "family": "iceSeal",
+          "param": 2,
+          "matchKind": "full"
+        }
+      ],
+      "description": "北境帝国的城市废墟，曾经辉煌的城市如今只剩下冰冷的残骸，和其中尚在运行的魔法防御机构。",
+      "status": "complete",
+      "art": {
+        "artId": "card/c-plus/003",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "C+_004",
+      "rarity": "C+",
+      "name": "古 族 战 斧 手",
+      "level": 4.5,
+      "atk": 3,
+      "hp": 4,
+      "cd": 10,
+      "rawTraits": [
+        "防御1"
+      ],
+      "skills": [
+        {
+          "raw": "防御1",
+          "resolution": "implemented",
+          "family": "defense",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "延续至今的古老人族，其中最勇敢的战斧手军团，擅长使用锋利的原始战斧对敌人进行斩杀。",
+      "status": "complete",
+      "art": {
+        "artId": "card/c-plus/004",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "C+_005",
+      "rarity": "C+",
+      "name": "海 之 城",
+      "level": 4.5,
+      "atk": 0,
+      "hp": 7,
+      "cd": 5,
+      "rawTraits": [
+        "治愈1",
+        "治愈1"
+      ],
+      "skills": [
+        {
+          "raw": "治愈1",
+          "resolution": "implemented",
+          "family": "healAlly",
+          "param": 1,
+          "matchKind": "full"
+        },
+        {
+          "raw": "治愈1",
+          "resolution": "implemented",
+          "family": "healAlly",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "王国海边坐落的小城镇，拥有丰富的海洋资源和独特的文化，传说中有神秘的海神守护着他们。",
+      "status": "complete",
+      "art": {
+        "artId": "card/c-plus/005",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "C+_006",
+      "rarity": "C+",
+      "name": "虹 魔 女",
+      "level": 4.5,
+      "atk": 0,
+      "hp": 6,
+      "cd": 2,
+      "rawTraits": [
+        "加速2",
+        "闪电1"
+      ],
+      "skills": [
+        {
+          "raw": "加速2",
+          "resolution": "implemented",
+          "family": "haste",
+          "param": 2,
+          "matchKind": "full"
+        },
+        {
+          "raw": "闪电1",
+          "resolution": "implemented",
+          "family": "lightning",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "代表色为彩虹的魔女，居住在不为人知的女巫森林。",
+      "status": "complete",
+      "art": {
+        "artId": "card/c-plus/006",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "C+_007",
+      "rarity": "C+",
+      "name": "秘 境",
+      "level": 4.5,
+      "atk": 1,
+      "hp": 4,
+      "cd": 2,
+      "rawTraits": [
+        "沉默"
+      ],
+      "skills": [
+        {
+          "raw": "沉默",
+          "resolution": "implemented",
+          "family": "silence",
+          "param": null,
+          "matchKind": "exact"
+        }
+      ],
+      "description": "隐藏在异星GK8791号上的神秘秘境，只有极其少数人知道其存在。",
+      "status": "complete",
+      "art": {
+        "artId": "card/c-plus/007",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "C+_008",
+      "rarity": "C+",
+      "name": "生 命 之 舟",
+      "level": 4.5,
+      "atk": 1,
+      "hp": 3,
+      "cd": 6,
+      "rawTraits": [
+        "飞行",
+        "治愈1"
+      ],
+      "skills": [
+        {
+          "raw": "飞行",
+          "resolution": "scene-rule",
+          "family": null,
+          "param": null,
+          "note": "战斗场景规则，非技能族"
+        },
+        {
+          "raw": "治愈1",
+          "resolution": "implemented",
+          "family": "healAlly",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "未来科技公司生产的诺亚方舟号星际飞船，能够在大毁灭中保护人类的生命。",
+      "status": "complete",
+      "art": {
+        "artId": "card/c-plus/008",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "C+_009",
+      "rarity": "C+",
+      "name": "时 刻 沙 漏",
+      "level": 4.5,
+      "atk": 0,
+      "hp": 5,
+      "cd": 3,
+      "rawTraits": [
+        "加速2",
+        "延迟1"
+      ],
+      "skills": [
+        {
+          "raw": "加速2",
+          "resolution": "implemented",
+          "family": "haste",
+          "param": 2,
+          "matchKind": "full"
+        },
+        {
+          "raw": "延迟1",
+          "resolution": "implemented",
+          "family": "delay",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "古老的神器，能够操控时间的流逝，使得持有者可以在关键时刻暂停时间。",
+      "status": "complete",
+      "art": {
+        "artId": "card/c-plus/009",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "C+_010",
+      "rarity": "C+",
+      "name": "食 灵 者",
+      "level": 4.5,
+      "atk": 4,
+      "hp": 2,
+      "cd": 4,
+      "rawTraits": [
+        "吸血1"
+      ],
+      "skills": [
+        {
+          "raw": "吸血1",
+          "resolution": "implemented",
+          "family": "vampire",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "在虚无之地出现的死灵，以吞噬灵魂为生，拥有诡异的外貌。",
+      "status": "complete",
+      "art": {
+        "artId": "card/c-plus/010",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "C+_011",
+      "rarity": "C+",
+      "name": "星 秘 巫 师",
+      "level": 4.5,
+      "atk": 2,
+      "hp": 4,
+      "cd": 5,
+      "rawTraits": [
+        "闪电1",
+        "闪避1"
+      ],
+      "skills": [
+        {
+          "raw": "闪电1",
+          "resolution": "implemented",
+          "family": "lightning",
+          "param": 1,
+          "matchKind": "full"
+        },
+        {
+          "raw": "闪避1",
+          "resolution": "implemented",
+          "family": "dodge",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "星秘海域中的强大巫师，精通星辰魔法，能够一定程度上操控宇宙。",
+      "status": "complete",
+      "art": {
+        "artId": "card/c-plus/011",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "C+_012",
+      "rarity": "C+",
+      "name": "移 动 迷 宫",
+      "level": 4.5,
+      "atk": 0,
+      "hp": 6,
+      "cd": 3,
+      "rawTraits": [
+        "闪避3",
+        "反击1"
+      ],
+      "skills": [
+        {
+          "raw": "闪避3",
+          "resolution": "implemented",
+          "family": "dodge",
+          "param": 3,
+          "matchKind": "full"
+        },
+        {
+          "raw": "反击1",
+          "resolution": "implemented",
+          "family": "counter",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "由古代文明建造的神秘迷宫，能够随意改变结构，困住入侵者。",
+      "status": "complete",
+      "art": {
+        "artId": "card/c-plus/012",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "C+_013",
+      "rarity": "C+",
+      "name": "云 海 天 际",
+      "level": 4.5,
+      "atk": 0,
+      "hp": 5,
+      "cd": 4,
+      "rawTraits": [
+        "冰封2",
+        "冰封2",
+        "自毁"
+      ],
+      "skills": [
+        {
+          "raw": "冰封2",
+          "resolution": "implemented",
+          "family": "iceSeal",
+          "param": 2,
+          "matchKind": "full"
+        },
+        {
+          "raw": "冰封2",
+          "resolution": "implemented",
+          "family": "iceSeal",
+          "param": 2,
+          "matchKind": "full"
+        },
+        {
+          "raw": "自毁",
+          "resolution": "implemented",
+          "family": "selfDestruct",
+          "param": null,
+          "matchKind": "exact"
+        }
+      ],
+      "description": "一望无际的云海之，其中隐藏着通往天界的秘密通道。",
+      "status": "complete",
+      "art": {
+        "artId": "card/c-plus/013",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "C+_014",
+      "rarity": "C+",
+      "name": "斩 铁 一 刀 闪",
+      "level": 4.5,
+      "atk": 2,
+      "hp": 7,
+      "cd": 8,
+      "rawTraits": [
+        "破甲2",
+        "闪避1"
+      ],
+      "skills": [
+        {
+          "raw": "破甲2",
+          "resolution": "implemented",
+          "family": "armorBreak",
+          "param": 2,
+          "matchKind": "full"
+        },
+        {
+          "raw": "闪避1",
+          "resolution": "implemented",
+          "family": "dodge",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "手握神兵利器，拥有斩断一切的锋利刀刃，缠绕着斩断梦魇的灵活。",
+      "status": "complete",
+      "art": {
+        "artId": "card/c-plus/014",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "C_001",
+      "rarity": "C",
+      "name": "翼 骑 士",
+      "level": 5,
+      "atk": 2,
+      "hp": 5,
+      "cd": 5,
+      "rawTraits": [
+        "飞行"
+      ],
+      "skills": [
+        {
+          "raw": "飞行",
+          "resolution": "scene-rule",
+          "family": null,
+          "param": null,
+          "note": "战斗场景规则，非技能族"
+        }
+      ],
+      "description": "旧大陆的不死英灵翼骑士，拥有翱翔的战马，对空特战型。",
+      "status": "complete",
+      "art": {
+        "artId": "card/c/001",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "C_002",
+      "rarity": "C",
+      "name": "喀 拉 加 德 摩",
+      "level": 5,
+      "atk": 2,
+      "hp": 4,
+      "cd": 6,
+      "rawTraits": [
+        "防御1"
+      ],
+      "skills": [
+        {
+          "raw": "防御1",
+          "resolution": "implemented",
+          "family": "defense",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "神祇喀拉加德摩，标志性的黑色鳞甲搭配死亡气息，支配者。",
+      "status": "complete",
+      "art": {
+        "artId": "card/c/002",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "C_003",
+      "rarity": "C",
+      "name": "宠 物 大 师",
+      "level": 5,
+      "atk": 1,
+      "hp": 5,
+      "cd": 4,
+      "rawTraits": [
+        "还魂1"
+      ],
+      "skills": [
+        {
+          "raw": "还魂1",
+          "resolution": "implemented",
+          "family": "soulReturn",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "精通各种宠物的驯养与指挥，能够召唤出强力的宠物伙伴。",
+      "status": "complete",
+      "art": {
+        "artId": "card/c/003",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "C_004",
+      "rarity": "C",
+      "name": "奇 迹 歌 声",
+      "level": 5,
+      "atk": 1,
+      "hp": 4,
+      "cd": 5,
+      "rawTraits": [
+        "治愈2"
+      ],
+      "skills": [
+        {
+          "raw": "治愈2",
+          "resolution": "implemented",
+          "family": "healAlly",
+          "param": 2,
+          "matchKind": "full"
+        }
+      ],
+      "description": "拥有治愈奇迹之歌的贤者，使用歌声治愈友方，强力辅助。",
+      "status": "complete",
+      "art": {
+        "artId": "card/c/004",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "C_005",
+      "rarity": "C",
+      "name": "无 限 图 书 馆",
+      "level": 5,
+      "atk": 0,
+      "hp": 6,
+      "cd": 7,
+      "rawTraits": [
+        "抽卡1",
+        "防御1"
+      ],
+      "skills": [
+        {
+          "raw": "抽卡1",
+          "resolution": "implemented",
+          "family": "drawCard",
+          "param": 1,
+          "matchKind": "full"
+        },
+        {
+          "raw": "防御1",
+          "resolution": "implemented",
+          "family": "defense",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "蕴藏无限知识的图书馆，能够为你提供源源不断的卡牌资源。",
+      "status": "complete",
+      "art": {
+        "artId": "card/c/005",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "C_006",
+      "rarity": "C",
+      "name": "静 谧 摇 光",
+      "level": 5,
+      "atk": 2,
+      "hp": 4,
+      "cd": 5,
+      "rawTraits": [
+        "破甲2"
+      ],
+      "skills": [
+        {
+          "raw": "破甲2",
+          "resolution": "implemented",
+          "family": "armorBreak",
+          "param": 2,
+          "matchKind": "full"
+        }
+      ],
+      "description": "极北的七星军团，其中最强的破军星，少女摇光。",
+      "status": "complete",
+      "art": {
+        "artId": "card/c/006",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "C_007",
+      "rarity": "C",
+      "name": "蛮 骑 士",
+      "level": 5,
+      "atk": 2,
+      "hp": 5,
+      "cd": 5,
+      "rawTraits": [
+        "防御1",
+        "破甲1"
+      ],
+      "skills": [
+        {
+          "raw": "防御1",
+          "resolution": "implemented",
+          "family": "defense",
+          "param": 1,
+          "matchKind": "full"
+        },
+        {
+          "raw": "破甲1",
+          "resolution": "implemented",
+          "family": "armorBreak",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "来自荒原的蛮族骑士，坐骑是骁勇的鬣猪，擅长近战冲锋，勇猛无畏。",
+      "status": "complete",
+      "art": {
+        "artId": "card/c/007",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "C_008",
+      "rarity": "C",
+      "name": "琉 璃 宫 殿 ",
+      "level": 5,
+      "atk": 0,
+      "hp": 5,
+      "cd": 6,
+      "rawTraits": [
+        "反击1",
+        "防御1"
+      ],
+      "skills": [
+        {
+          "raw": "反击1",
+          "resolution": "implemented",
+          "family": "counter",
+          "param": 1,
+          "matchKind": "full"
+        },
+        {
+          "raw": "防御1",
+          "resolution": "implemented",
+          "family": "defense",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "神话中加拉帕克斯居住的琉璃宫殿，无限回廊，使所有入侵者耗尽一生无法逃脱。",
+      "status": "complete",
+      "art": {
+        "artId": "card/c/008",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "C_009",
+      "rarity": "C",
+      "name": "龙 人 战 士",
+      "level": 5,
+      "atk": 3,
+      "hp": 4,
+      "cd": 6,
+      "rawTraits": [
+        "破甲1"
+      ],
+      "skills": [
+        {
+          "raw": "破甲1",
+          "resolution": "implemented",
+          "family": "armorBreak",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "龙人族的勇士，拥有龙的血脉，擅长使用长柄战斧。",
+      "status": "complete",
+      "art": {
+        "artId": "card/c/009",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "C_010",
+      "rarity": "C",
+      "name": "四 瓶 の 世 界",
+      "level": 5,
+      "atk": 0,
+      "hp": 5,
+      "cd": 6,
+      "rawTraits": [
+        "抽卡4",
+        "自毁"
+      ],
+      "skills": [
+        {
+          "raw": "抽卡4",
+          "resolution": "implemented",
+          "family": "drawCard",
+          "param": 4,
+          "matchKind": "full"
+        },
+        {
+          "raw": "自毁",
+          "resolution": "implemented",
+          "family": "selfDestruct",
+          "param": null,
+          "matchKind": "exact"
+        }
+      ],
+      "description": "封印着四个不同世界的神秘瓶子,使用者获得无限可能。",
+      "status": "complete",
+      "art": {
+        "artId": "card/c/010",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "C_011",
+      "rarity": "C",
+      "name": "坠 落 都 市",
+      "level": 5,
+      "atk": 0,
+      "hp": 4,
+      "cd": 3,
+      "rawTraits": [
+        "反击2"
+      ],
+      "skills": [
+        {
+          "raw": "反击2",
+          "resolution": "implemented",
+          "family": "counter",
+          "param": 2,
+          "matchKind": "full"
+        }
+      ],
+      "description": "曾经繁荣的现代都市，在突如其来的大灾害中崩塌坠落。",
+      "status": "complete",
+      "art": {
+        "artId": "card/c/011",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "C_012",
+      "rarity": "C",
+      "name": "大 魔 法 师·前 进",
+      "level": 5,
+      "atk": 2,
+      "hp": 4,
+      "cd": 6,
+      "rawTraits": [
+        "火球2"
+      ],
+      "skills": [
+        {
+          "raw": "火球2",
+          "resolution": "implemented",
+          "family": "fireball",
+          "param": 2,
+          "matchKind": "full"
+        }
+      ],
+      "description": "大魔法师，掌握强大魔法力量，能够施放毁灭性的火球法术。",
+      "status": "complete",
+      "art": {
+        "artId": "card/c/012",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "C_013",
+      "rarity": "C",
+      "name": "双 翼 天 使",
+      "level": 5,
+      "atk": 2,
+      "hp": 5,
+      "cd": 5,
+      "rawTraits": [
+        "飞行"
+      ],
+      "skills": [
+        {
+          "raw": "飞行",
+          "resolution": "scene-rule",
+          "family": null,
+          "param": null,
+          "note": "战斗场景规则，非技能族"
+        }
+      ],
+      "description": "拥有双翼的天使，守护着天空与大地，上位天使的前置形态。",
+      "status": "complete",
+      "art": {
+        "artId": "card/c/013",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "C_014",
+      "rarity": "C",
+      "name": "千 眼 诡 术",
+      "level": 5,
+      "atk": 0,
+      "hp": 5,
+      "cd": 4,
+      "rawTraits": [
+        "火球6",
+        "自毁"
+      ],
+      "skills": [
+        {
+          "raw": "火球6",
+          "resolution": "implemented",
+          "family": "fireball",
+          "param": 6,
+          "matchKind": "full"
+        },
+        {
+          "raw": "自毁",
+          "resolution": "implemented",
+          "family": "selfDestruct",
+          "param": null,
+          "matchKind": "exact"
+        }
+      ],
+      "description": "掌握千眼诡术的神秘刺客，使用致命一击。",
+      "status": "complete",
+      "art": {
+        "artId": "card/c/014",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "C_015",
+      "rarity": "C",
+      "name": "最 大 魔 力",
+      "level": 5,
+      "atk": 3,
+      "hp": 4,
+      "cd": 9,
+      "rawTraits": [
+        "破甲3"
+      ],
+      "skills": [
+        {
+          "raw": "破甲3",
+          "resolution": "implemented",
+          "family": "armorBreak",
+          "param": 3,
+          "matchKind": "full"
+        }
+      ],
+      "description": "拥有强大魔力的女魔法师，能够释放出毁灭性的魔法攻击，威力足以击杀龙族。",
+      "status": "complete",
+      "art": {
+        "artId": "card/c/015",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "C_016",
+      "rarity": "C",
+      "name": "空 天 巨 蝠",
+      "level": 5,
+      "atk": 3,
+      "hp": 8,
+      "cd": 15,
+      "rawTraits": [
+        "飞行"
+      ],
+      "skills": [
+        {
+          "raw": "飞行",
+          "resolution": "scene-rule",
+          "family": null,
+          "param": null,
+          "note": "战斗场景规则，非技能族"
+        }
+      ],
+      "description": "巨大的天空蝙蝠，栖息在高空平流层与近地轨道之间，其巨大的身躯一度使人以为是千年鲲兽降临。",
+      "status": "complete",
+      "art": {
+        "artId": "card/c/016",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "C_017",
+      "rarity": "C",
+      "name": "灵 梦·新 年",
+      "level": 5,
+      "atk": 1,
+      "hp": 5,
+      "cd": 5,
+      "rawTraits": [
+        "火球1"
+      ],
+      "skills": [
+        {
+          "raw": "火球1",
+          "resolution": "implemented",
+          "family": "fireball",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "博丽灵梦的SP新年特别版。",
+      "status": "complete",
+      "art": {
+        "artId": "card/c/017",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "C_018",
+      "rarity": "C",
+      "name": "博 丽 灵 梦",
+      "level": 5,
+      "atk": 0,
+      "hp": 5,
+      "cd": 4,
+      "rawTraits": [
+        "火球1",
+        "火球1"
+      ],
+      "skills": [
+        {
+          "raw": "火球1",
+          "resolution": "implemented",
+          "family": "fireball",
+          "param": 1,
+          "matchKind": "full"
+        },
+        {
+          "raw": "火球1",
+          "resolution": "implemented",
+          "family": "fireball",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "博丽灵梦，幻想乡的某个神社巫女，赛前箱为什么总是空空呢？",
+      "status": "complete",
+      "art": {
+        "artId": "card/c/018",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "C_019",
+      "rarity": "C",
+      "name": "琪 露 诺·冰 封",
+      "level": 5,
+      "atk": 1,
+      "hp": 4,
+      "cd": 5,
+      "rawTraits": [
+        "冰封2"
+      ],
+      "skills": [
+        {
+          "raw": "冰封2",
+          "resolution": "implemented",
+          "family": "iceSeal",
+          "param": 2,
+          "matchKind": "full"
+        }
+      ],
+      "description": "冰之妖精琪露诺，能够操控冰雪的力量，将敌人冻结。",
+      "status": "complete",
+      "art": {
+        "artId": "card/c/019",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "C_020",
+      "rarity": "C",
+      "name": "冲 向 胜 利",
+      "level": 5,
+      "atk": 3,
+      "hp": 3,
+      "cd": 4,
+      "rawTraits": [],
+      "skills": [],
+      "description": "勇往直前，冲向胜利的骑士，象征着无畏与荣耀。",
+      "status": "complete",
+      "art": {
+        "artId": "card/c/020",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "C_021",
+      "rarity": "C",
+      "name": "骨 龙",
+      "level": 5,
+      "atk": 2,
+      "hp": 7,
+      "cd": 9,
+      "rawTraits": [
+        "防御1"
+      ],
+      "skills": [
+        {
+          "raw": "防御1",
+          "resolution": "implemented",
+          "family": "defense",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "由无数骸骨组成的恐怖龙族，不死之身发出的毁灭火焰，消灭敌人。",
+      "status": "complete",
+      "art": {
+        "artId": "card/c/021",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "C_022",
+      "rarity": "C",
+      "name": "急 先 锋",
+      "level": 5,
+      "atk": 2,
+      "hp": 4,
+      "cd": 5,
+      "rawTraits": [
+        "加速1"
+      ],
+      "skills": [
+        {
+          "raw": "加速1",
+          "resolution": "implemented",
+          "family": "haste",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "巨狼族的先锋，加速友方的CD，兵贵神速。",
+      "status": "complete",
+      "art": {
+        "artId": "card/c/022",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "C_023",
+      "rarity": "C",
+      "name": "灵 兽·白 虎",
+      "level": 5,
+      "atk": 3,
+      "hp": 5,
+      "cd": 10,
+      "rawTraits": [
+        "破甲1"
+      ],
+      "skills": [
+        {
+          "raw": "破甲1",
+          "resolution": "implemented",
+          "family": "armorBreak",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "四灵之一白虎。",
+      "status": "complete",
+      "art": {
+        "artId": "card/c/023",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "C_024",
+      "rarity": "C",
+      "name": "自由 和平 繁荣",
+      "level": 5,
+      "atk": 0,
+      "hp": 3,
+      "cd": 7,
+      "rawTraits": [
+        "恢复1",
+        "治愈1",
+        "加速1"
+      ],
+      "skills": [
+        {
+          "raw": "恢复1",
+          "resolution": "implemented",
+          "family": "selfHeal",
+          "param": 1,
+          "matchKind": "full"
+        },
+        {
+          "raw": "治愈1",
+          "resolution": "implemented",
+          "family": "healAlly",
+          "param": 1,
+          "matchKind": "full"
+        },
+        {
+          "raw": "加速1",
+          "resolution": "implemented",
+          "family": "haste",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "象征着自由、和平与繁荣的守护阵。",
+      "status": "complete",
+      "art": {
+        "artId": "card/c/024",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "C_025",
+      "rarity": "C",
+      "name": "灵 兽·火 虎",
+      "level": 5,
+      "atk": 3,
+      "hp": 4,
+      "cd": 7,
+      "rawTraits": [],
+      "skills": [],
+      "description": "四灵之一火虎。",
+      "status": "complete",
+      "art": {
+        "artId": "card/c/025",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "C_026",
+      "rarity": "C",
+      "name": "无 头 骑 士",
+      "level": 5,
+      "atk": 1,
+      "hp": 2,
+      "cd": 3,
+      "rawTraits": [
+        "不死"
+      ],
+      "skills": [
+        {
+          "raw": "不死",
+          "resolution": "implemented",
+          "family": "undying",
+          "param": null,
+          "matchKind": "exact"
+        }
+      ],
+      "description": "可以不断复活的恐怖骑士。",
+      "status": "complete",
+      "art": {
+        "artId": "card/c/026",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "C_027",
+      "rarity": "C",
+      "name": "云 海 守 望 者",
+      "level": 5,
+      "atk": 2,
+      "hp": 5,
+      "cd": 6,
+      "rawTraits": [
+        "防御1"
+      ],
+      "skills": [
+        {
+          "raw": "防御1",
+          "resolution": "implemented",
+          "family": "defense",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "守护云海的非人类生物，拥有坚固的防御。",
+      "status": "complete",
+      "art": {
+        "artId": "card/c/027",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "C_028",
+      "rarity": "C",
+      "name": "战 争 狼 人",
+      "level": 5,
+      "atk": 2,
+      "hp": 3,
+      "cd": 5,
+      "rawTraits": [
+        "吸血1"
+      ],
+      "skills": [
+        {
+          "raw": "吸血1",
+          "resolution": "implemented",
+          "family": "vampire",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "拥有强大战斗力的狼人，擅长近战攻击，吸血。",
+      "status": "complete",
+      "art": {
+        "artId": "card/c/028",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "C_029",
+      "rarity": "C",
+      "name": "六 翼 龙",
+      "level": 5,
+      "atk": 1,
+      "hp": 6,
+      "cd": 12,
+      "rawTraits": [
+        "飞行",
+        "火球1"
+      ],
+      "skills": [
+        {
+          "raw": "飞行",
+          "resolution": "scene-rule",
+          "family": null,
+          "param": null,
+          "note": "战斗场景规则，非技能族"
+        },
+        {
+          "raw": "火球1",
+          "resolution": "implemented",
+          "family": "fireball",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "拥有六翼的强大龙族，能够在空中自由翱翔，施展强力火球或近战撕裂。",
+      "status": "complete",
+      "art": {
+        "artId": "card/c/029",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "C_030",
+      "rarity": "C",
+      "name": "星 辰 化 身",
+      "level": 5,
+      "atk": 0,
+      "hp": 5,
+      "cd": 6,
+      "rawTraits": [
+        "闪电8",
+        "自毁"
+      ],
+      "skills": [
+        {
+          "raw": "闪电8",
+          "resolution": "implemented",
+          "family": "lightning",
+          "param": 8,
+          "matchKind": "full"
+        },
+        {
+          "raw": "自毁",
+          "resolution": "implemented",
+          "family": "selfDestruct",
+          "param": null,
+          "matchKind": "exact"
+        }
+      ],
+      "description": "星辰之主的下位化身，能部分掌控宇宙力量，但尚未完全觉醒。",
+      "status": "complete",
+      "art": {
+        "artId": "card/c/030",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "C_031",
+      "rarity": "C",
+      "name": "火 树 银 花",
+      "level": 5,
+      "atk": 0,
+      "hp": 5,
+      "cd": 4,
+      "rawTraits": [
+        "治愈2",
+        "治愈2",
+        "治愈2",
+        "自毁"
+      ],
+      "skills": [
+        {
+          "raw": "治愈2",
+          "resolution": "implemented",
+          "family": "healAlly",
+          "param": 2,
+          "matchKind": "full"
+        },
+        {
+          "raw": "治愈2",
+          "resolution": "implemented",
+          "family": "healAlly",
+          "param": 2,
+          "matchKind": "full"
+        },
+        {
+          "raw": "治愈2",
+          "resolution": "implemented",
+          "family": "healAlly",
+          "param": 2,
+          "matchKind": "full"
+        },
+        {
+          "raw": "自毁",
+          "resolution": "implemented",
+          "family": "selfDestruct",
+          "param": null,
+          "matchKind": "exact"
+        }
+      ],
+      "description": "新年与庆典的火树银花，绽放出美丽的光辉，释放的万千孔明灯，治愈友方全体。",
+      "status": "complete",
+      "art": {
+        "artId": "card/c/031",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "C_032",
+      "rarity": "C",
+      "name": "西 王 母",
+      "level": 5,
+      "atk": 2,
+      "hp": 6,
+      "cd": 4,
+      "rawTraits": [],
+      "skills": [],
+      "description": "西天昆仑的主人西王母，掌管长生与不老，赐予万物生命力。",
+      "status": "complete",
+      "art": {
+        "artId": "card/c/032",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "C_033",
+      "rarity": "C",
+      "name": "白 龙",
+      "level": 5,
+      "atk": 1,
+      "hp": 5,
+      "cd": 8,
+      "rawTraits": [
+        "冰封2"
+      ],
+      "skills": [
+        {
+          "raw": "冰封2",
+          "resolution": "implemented",
+          "family": "iceSeal",
+          "param": 2,
+          "matchKind": "full"
+        }
+      ],
+      "description": "四灵之一白龙，掌管水域与雨露，拥有强大的水系力量。",
+      "status": "complete",
+      "art": {
+        "artId": "card/c/033",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "C_034",
+      "rarity": "C",
+      "name": "精 钢 骑 士",
+      "level": 5,
+      "atk": 2,
+      "hp": 5,
+      "cd": 6,
+      "rawTraits": [
+        "防御1"
+      ],
+      "skills": [
+        {
+          "raw": "防御1",
+          "resolution": "implemented",
+          "family": "defense",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "身穿精钢打造甲胄的骑士状灵体，据说是人族初代勇者死后，拥有强大的防御与攻击力的盔甲聚合形成。",
+      "status": "complete",
+      "art": {
+        "artId": "card/c/034",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "C_035",
+      "rarity": "C",
+      "name": "近 海 守 卫",
+      "level": 5,
+      "atk": 1,
+      "hp": 9,
+      "cd": 7,
+      "rawTraits": [
+        "反击1"
+      ],
+      "skills": [
+        {
+          "raw": "反击1",
+          "resolution": "implemented",
+          "family": "counter",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "守护人族王国近海安宁的龙族，高大的身躯超越城墙。",
+      "status": "complete",
+      "art": {
+        "artId": "card/c/035",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "C_036",
+      "rarity": "C",
+      "name": "救 世 主·血 镰",
+      "level": 5,
+      "atk": 2,
+      "hp": 4,
+      "cd": 6,
+      "rawTraits": [
+        "反击1",
+        "破甲2"
+      ],
+      "skills": [
+        {
+          "raw": "反击1",
+          "resolution": "implemented",
+          "family": "counter",
+          "param": 1,
+          "matchKind": "full"
+        },
+        {
+          "raw": "破甲2",
+          "resolution": "implemented",
+          "family": "armorBreak",
+          "param": 2,
+          "matchKind": "full"
+        }
+      ],
+      "description": "混沌时代的救世主，手持血色镰刀，斩断邪恶与黑暗。",
+      "status": "complete",
+      "art": {
+        "artId": "card/c/036",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "C_037",
+      "rarity": "C",
+      "name": "石 中 剑",
+      "level": 5,
+      "atk": 1,
+      "hp": 5,
+      "cd": 5,
+      "rawTraits": [
+        "吸血1",
+        "加速1"
+      ],
+      "skills": [
+        {
+          "raw": "吸血1",
+          "resolution": "implemented",
+          "family": "vampire",
+          "param": 1,
+          "matchKind": "full"
+        },
+        {
+          "raw": "加速1",
+          "resolution": "implemented",
+          "family": "haste",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "传说中插在石中的神剑祭坛，只有真正的王者才能拔出，拥有强大的力量。",
+      "status": "complete",
+      "art": {
+        "artId": "card/c/037",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "C_038",
+      "rarity": "C",
+      "name": "天 使 长 乌 列 尔",
+      "level": 5,
+      "atk": 2,
+      "hp": 5,
+      "cd": 7,
+      "rawTraits": [
+        "闪电1"
+      ],
+      "skills": [
+        {
+          "raw": "闪电1",
+          "resolution": "implemented",
+          "family": "lightning",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "乌列尔，六翼天使，掌管雷电与审判，拥有强大的雷电力量。",
+      "status": "complete",
+      "art": {
+        "artId": "card/c/038",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "D_001",
+      "rarity": "D",
+      "name": "星 蝶",
+      "level": 6,
+      "atk": 1,
+      "hp": 4,
+      "cd": 3,
+      "rawTraits": [
+        "飞行"
+      ],
+      "skills": [
+        {
+          "raw": "飞行",
+          "resolution": "scene-rule",
+          "family": null,
+          "param": null,
+          "note": "战斗场景规则，非技能族"
+        }
+      ],
+      "description": "悠久大陆亚特兰蒂斯的天然矿洞深处，栖息着一种飞舞的星蝶，使探险者迷惑，但令矿洞内光芒闪烁，璀璨如星河。",
+      "status": "complete",
+      "art": {
+        "artId": "card/d/001",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "D_002",
+      "rarity": "D",
+      "name": "机 动 部 队",
+      "level": 6,
+      "atk": 2,
+      "hp": 2,
+      "cd": 4,
+      "rawTraits": [
+        "防御1"
+      ],
+      "skills": [
+        {
+          "raw": "防御1",
+          "resolution": "implemented",
+          "family": "defense",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "基因复制的远古龙族，由高智能机械组成的机动改装，专为执行复杂任务而设计，具备强大的战斗力和适应能力。",
+      "status": "complete",
+      "art": {
+        "artId": "card/d/002",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "D_003",
+      "rarity": "D",
+      "name": "两 仪 式·竹 林",
+      "level": 6,
+      "atk": 1,
+      "hp": 4,
+      "cd": 4,
+      "rawTraits": [],
+      "skills": [],
+      "description": "太极生两仪，两仪生四象，四象生八卦。",
+      "status": "complete",
+      "art": {
+        "artId": "card/d/003",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "D_004",
+      "rarity": "D",
+      "name": "龙 蜥 与 少 女",
+      "level": 6,
+      "atk": 2,
+      "hp": 3,
+      "cd": 5,
+      "rawTraits": [],
+      "skills": [],
+      "description": "龙蜥与少女之间建立了深厚的友谊。少女以温柔的心灵驯服了龙蜥，而龙蜥则以强大的力量保护着少女。",
+      "status": "complete",
+      "art": {
+        "artId": "card/d/004",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "D_005",
+      "rarity": "D",
+      "name": "海 岸 线",
+      "level": 6,
+      "atk": 0,
+      "hp": 5,
+      "cd": 3,
+      "rawTraits": [
+        "防御1"
+      ],
+      "skills": [
+        {
+          "raw": "防御1",
+          "resolution": "implemented",
+          "family": "defense",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "海岸线是陆地与海洋的交界处，象征着自然的力量与生命的起源。它见证了无数生物的诞生与繁衍，是生态系统的重要组成部分。",
+      "status": "complete",
+      "art": {
+        "artId": "card/d/005",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "D_006",
+      "rarity": "D",
+      "name": "夜 海 繁 星",
+      "level": 6,
+      "atk": 0,
+      "hp": 5,
+      "cd": 4,
+      "rawTraits": [
+        "闪避1"
+      ],
+      "skills": [
+        {
+          "raw": "闪避1",
+          "resolution": "implemented",
+          "family": "dodge",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "在宁静的夜晚，海面上闪烁着无数繁星，宛如天空的倒影。",
+      "status": "complete",
+      "art": {
+        "artId": "card/d/006",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "D_007",
+      "rarity": "D",
+      "name": "千 眼 剑 士",
+      "level": 6,
+      "atk": 1,
+      "hp": 4,
+      "cd": 5,
+      "rawTraits": [
+        "反击1"
+      ],
+      "skills": [
+        {
+          "raw": "反击1",
+          "resolution": "implemented",
+          "family": "counter",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "拥有无数双眼睛的异能剑士，能够洞察敌人的一举一动，使其在战斗中占据绝对优势。",
+      "status": "complete",
+      "art": {
+        "artId": "card/d/007",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "D_008",
+      "rarity": "D",
+      "name": "精 灵 剑 士",
+      "level": 6,
+      "atk": 2,
+      "hp": 4,
+      "cd": 4,
+      "rawTraits": [],
+      "skills": [],
+      "description": "古老种族的剑士，精灵以其敏捷的身手和高超的剑术闻名，能够迅速接近敌人并发动致命一击。",
+      "status": "complete",
+      "art": {
+        "artId": "card/d/008",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "D_009",
+      "rarity": "D",
+      "name": "结 晶 领 域",
+      "level": 6,
+      "atk": 1,
+      "hp": 3,
+      "cd": 2,
+      "rawTraits": [
+        "防御1"
+      ],
+      "skills": [
+        {
+          "raw": "防御1",
+          "resolution": "implemented",
+          "family": "defense",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "操纵结晶能量的少女，速攻。",
+      "status": "complete",
+      "art": {
+        "artId": "card/d/009",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "D_010",
+      "rarity": "D",
+      "name": "蓝 龙·人 形",
+      "level": 6,
+      "atk": 2,
+      "hp": 3,
+      "cd": 8,
+      "rawTraits": [
+        "飞行"
+      ],
+      "skills": [
+        {
+          "raw": "飞行",
+          "resolution": "scene-rule",
+          "family": null,
+          "param": null,
+          "note": "战斗场景规则，非技能族"
+        }
+      ],
+      "description": "蓝龙化身为人形，拥有强大的魔法力量和战斗技巧，是传说中的守护者。",
+      "status": "complete",
+      "art": {
+        "artId": "card/d/010",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "D_011",
+      "rarity": "D",
+      "name": "启 示 梦 录",
+      "level": 6,
+      "atk": 0,
+      "hp": 4,
+      "cd": 5,
+      "rawTraits": [
+        "吸血1"
+      ],
+      "skills": [
+        {
+          "raw": "吸血1",
+          "resolution": "implemented",
+          "family": "vampire",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "梦境中的启示录，揭示了未来的秘密和命运的走向。",
+      "status": "complete",
+      "art": {
+        "artId": "card/d/011",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "D_012",
+      "rarity": "D",
+      "name": "狼 女 战 士",
+      "level": 6,
+      "atk": 2,
+      "hp": 5,
+      "cd": 7,
+      "rawTraits": [
+        "破甲1"
+      ],
+      "skills": [
+        {
+          "raw": "破甲1",
+          "resolution": "implemented",
+          "family": "armorBreak",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "纯粹的野性与力量的化身。",
+      "status": "complete",
+      "art": {
+        "artId": "card/d/012",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "D_013",
+      "rarity": "D",
+      "name": "防 御 屏 障",
+      "level": 6,
+      "atk": 0,
+      "hp": 3,
+      "cd": 6,
+      "rawTraits": [
+        "防御2"
+      ],
+      "skills": [
+        {
+          "raw": "防御2",
+          "resolution": "implemented",
+          "family": "defense",
+          "param": 2,
+          "matchKind": "full"
+        }
+      ],
+      "description": "通过高能灵力形成的领域，保护使用者极大减少受击伤害。",
+      "status": "complete",
+      "art": {
+        "artId": "card/d/013",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "D_014",
+      "rarity": "D",
+      "name": "机 械 腾 龙",
+      "level": 6,
+      "atk": 1,
+      "hp": 5,
+      "cd": 5,
+      "rawTraits": [],
+      "skills": [],
+      "description": "机械龙融合了先进的科技与古老的龙族力量。",
+      "status": "complete",
+      "art": {
+        "artId": "card/d/014",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "D_015",
+      "rarity": "D",
+      "name": "山 羊 人·祭 祀",
+      "level": 6,
+      "atk": 1,
+      "hp": 4,
+      "cd": 6,
+      "rawTraits": [
+        "恢复1"
+      ],
+      "skills": [
+        {
+          "raw": "恢复1",
+          "resolution": "implemented",
+          "family": "selfHeal",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "山羊人的祭祀者，拥有神秘的力量，能够与自然界和死灵界沟通。",
+      "status": "complete",
+      "art": {
+        "artId": "card/d/015",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "D_016",
+      "rarity": "D",
+      "name": "齐 拉 克 齐 吉 尔",
+      "level": 6,
+      "atk": 2,
+      "hp": 5,
+      "cd": 7,
+      "rawTraits": [],
+      "skills": [],
+      "description": "魔兽人，拥有强大的力量和坚不可摧的防御，当代无人见过的传说。",
+      "status": "complete",
+      "art": {
+        "artId": "card/d/016",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "D_017",
+      "rarity": "D",
+      "name": "大 漠 剑 客",
+      "level": 6,
+      "atk": 1,
+      "hp": 3,
+      "cd": 4,
+      "rawTraits": [
+        "闪避1"
+      ],
+      "skills": [
+        {
+          "raw": "闪避1",
+          "resolution": "implemented",
+          "family": "dodge",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "大漠中的孤独剑客，凭借卓越的剑术和坚韧的意志，在荒凉的沙漠中生存并守护着自己的信念。",
+      "status": "complete",
+      "art": {
+        "artId": "card/d/017",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "D_018",
+      "rarity": "D",
+      "name": "红 龙",
+      "level": 6,
+      "atk": 2,
+      "hp": 4,
+      "cd": 8,
+      "rawTraits": [
+        "飞行"
+      ],
+      "skills": [
+        {
+          "raw": "飞行",
+          "resolution": "scene-rule",
+          "family": null,
+          "param": null,
+          "note": "战斗场景规则，非技能族"
+        }
+      ],
+      "description": "传说中的红龙，拥有炽热的火焰和强大的力量，曾经是一方霸主。",
+      "status": "complete",
+      "art": {
+        "artId": "card/d/018",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "D_019",
+      "rarity": "D",
+      "name": "幻 想 曲",
+      "level": 6,
+      "atk": 2,
+      "hp": 3,
+      "cd": 5,
+      "rawTraits": [
+        "破甲1"
+      ],
+      "skills": [
+        {
+          "raw": "破甲1",
+          "resolution": "implemented",
+          "family": "armorBreak",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "幻想武士，蓝色的灵魂之炎。",
+      "status": "complete",
+      "art": {
+        "artId": "card/d/019",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "D_020",
+      "rarity": "D",
+      "name": "克 劳 德 之 剑",
+      "level": 6,
+      "atk": 0,
+      "hp": 5,
+      "cd": 2,
+      "rawTraits": [
+        "反击1"
+      ],
+      "skills": [
+        {
+          "raw": "反击1",
+          "resolution": "implemented",
+          "family": "counter",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "FF7的克劳德之剑，拥有反击之力，防御法阵。",
+      "status": "complete",
+      "art": {
+        "artId": "card/d/020",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "D_021",
+      "rarity": "D",
+      "name": "异 星 研 究 所",
+      "level": 6,
+      "atk": 0,
+      "hp": 4,
+      "cd": 3,
+      "rawTraits": [
+        "吸血1"
+      ],
+      "skills": [
+        {
+          "raw": "吸血1",
+          "resolution": "implemented",
+          "family": "vampire",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "异星研究所，古代科技文明的遗产，汲取大地生命力。",
+      "status": "complete",
+      "art": {
+        "artId": "card/d/021",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "D_022",
+      "rarity": "D",
+      "name": "里 恶 魔",
+      "level": 6,
+      "atk": 3,
+      "hp": 3,
+      "cd": 6,
+      "rawTraits": [
+        "受伤1"
+      ],
+      "skills": [
+        {
+          "raw": "受伤1",
+          "resolution": "implemented",
+          "family": "injury",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "里恶魔，强力高攻，不断流失生命。",
+      "status": "complete",
+      "art": {
+        "artId": "card/d/022",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "D_023",
+      "rarity": "D",
+      "name": "海 士",
+      "level": 6,
+      "atk": 1,
+      "hp": 6,
+      "cd": 6,
+      "rawTraits": [],
+      "skills": [],
+      "description": "海士，不畏惧风浪的战士，能够召唤海浪和风暴来攻击敌人。",
+      "status": "complete",
+      "art": {
+        "artId": "card/d/023",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "D_024",
+      "rarity": "D",
+      "name": "灵 兽·雪 熊",
+      "level": 6,
+      "atk": 5,
+      "hp": 1,
+      "cd": 6,
+      "rawTraits": [
+        "防御1"
+      ],
+      "skills": [
+        {
+          "raw": "防御1",
+          "resolution": "implemented",
+          "family": "defense",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "生活在寒冷地区的强大灵兽，拥有厚实的毛皮和强壮的体魄，能够抵御严寒并在冰雪中自由行动。",
+      "status": "complete",
+      "art": {
+        "artId": "card/d/024",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "D_025",
+      "rarity": "D",
+      "name": "绿 元 素",
+      "level": 6,
+      "atk": 2,
+      "hp": 4,
+      "cd": 5,
+      "rawTraits": [],
+      "skills": [],
+      "description": "掌控自然力量的元素生物，能够操纵植物和大地的力量进行攻击和防御。",
+      "status": "complete",
+      "art": {
+        "artId": "card/d/025",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "D_026",
+      "rarity": "D",
+      "name": "铁 骑 校 尉",
+      "level": 6,
+      "atk": 2,
+      "hp": 3,
+      "cd": 7,
+      "rawTraits": [
+        "防御1"
+      ],
+      "skills": [
+        {
+          "raw": "防御1",
+          "resolution": "implemented",
+          "family": "defense",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "身披重甲的骑士，驰骋沙场，综合战斗力强。",
+      "status": "complete",
+      "art": {
+        "artId": "card/d/026",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "D_027",
+      "rarity": "D",
+      "name": "战 场 女 武 神",
+      "level": 6,
+      "atk": 3,
+      "hp": 2,
+      "cd": 7,
+      "rawTraits": [
+        "破甲2"
+      ],
+      "skills": [
+        {
+          "raw": "破甲2",
+          "resolution": "implemented",
+          "family": "armorBreak",
+          "param": 2,
+          "matchKind": "full"
+        }
+      ],
+      "description": "战场女武神，勇敢无畏，统领战场。",
+      "status": "complete",
+      "art": {
+        "artId": "card/d/027",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "D_028",
+      "rarity": "D",
+      "name": "竹 灵 少 女",
+      "level": 6,
+      "atk": 1,
+      "hp": 5,
+      "cd": 4,
+      "rawTraits": [
+        "恢复1"
+      ],
+      "skills": [
+        {
+          "raw": "恢复1",
+          "resolution": "implemented",
+          "family": "selfHeal",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "竹灵少女，守护竹林的精灵，能够利用竹子的力量进行攻击和防御，同时具备治愈能力。",
+      "status": "complete",
+      "art": {
+        "artId": "card/d/028",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "D_029",
+      "rarity": "D",
+      "name": "变 异 蜥 蜴 人",
+      "level": 6,
+      "atk": 2,
+      "hp": 4,
+      "cd": 5,
+      "rawTraits": [],
+      "skills": [],
+      "description": "浴血沙场的蜥蜴人勇士，拥有强大的力量和适应能力，能够在各种环境中生存并进行战斗。",
+      "status": "complete",
+      "art": {
+        "artId": "card/d/029",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "D_030",
+      "rarity": "D",
+      "name": "往 生 门",
+      "level": 6,
+      "atk": 0,
+      "hp": 2,
+      "cd": 4,
+      "rawTraits": [
+        "还魂1"
+      ],
+      "skills": [
+        {
+          "raw": "还魂1",
+          "resolution": "implemented",
+          "family": "soulReturn",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "往生门，连接生死两界的神秘门户，能够复活右方单位。",
+      "status": "complete",
+      "art": {
+        "artId": "card/d/030",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "D_031",
+      "rarity": "D",
+      "name": "兔 剑 士",
+      "level": 6,
+      "atk": 1,
+      "hp": 4,
+      "cd": 4,
+      "rawTraits": [],
+      "skills": [],
+      "description": "敏捷灵巧，擅长近战攻击和快速移动的可爱小兔兔。",
+      "status": "complete",
+      "art": {
+        "artId": "card/d/031",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "D_032",
+      "rarity": "D",
+      "name": "兔 法 师",
+      "level": 6,
+      "atk": 2,
+      "hp": 2,
+      "cd": 4,
+      "rawTraits": [],
+      "skills": [],
+      "description": "精通魔法，能够施展强大的法术攻击敌人的可爱小兔兔。",
+      "status": "complete",
+      "art": {
+        "artId": "card/d/032",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "D_033",
+      "rarity": "D",
+      "name": "机 甲 龙 王",
+      "level": 6,
+      "atk": 3,
+      "hp": 8,
+      "cd": 22,
+      "rawTraits": [
+        "飞行"
+      ],
+      "skills": [
+        {
+          "raw": "飞行",
+          "resolution": "scene-rule",
+          "family": null,
+          "param": null,
+          "note": "战斗场景规则，非技能族"
+        }
+      ],
+      "description": "融合了机械科技与龙族力量的强大存在，拥有无与伦比的战斗力和生存能力。",
+      "status": "complete",
+      "art": {
+        "artId": "card/d/033",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "D_034",
+      "rarity": "D",
+      "name": "穷 奇",
+      "level": 6,
+      "atk": 2,
+      "hp": 5,
+      "cd": 7,
+      "rawTraits": [],
+      "skills": [],
+      "description": "传说中的凶兽，拥有强大的力量和凶猛的攻击性，是古代神话中的重要角色。",
+      "status": "complete",
+      "art": {
+        "artId": "card/d/034",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "D_035",
+      "rarity": "D",
+      "name": "石 龙 阵",
+      "level": 6,
+      "atk": 0,
+      "hp": 3,
+      "cd": 8,
+      "rawTraits": [
+        "防御3"
+      ],
+      "skills": [
+        {
+          "raw": "防御3",
+          "resolution": "implemented",
+          "family": "defense",
+          "param": 3,
+          "matchKind": "full"
+        }
+      ],
+      "description": "由坚硬的岩石构成的龙形山，下有水流蜿蜒曲折，古老的水迷阵，能够提供强大的防御力，保护己方玩家免受伤害。",
+      "status": "complete",
+      "art": {
+        "artId": "card/d/035",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "#elna_001",
+      "rarity": "#elna",
+      "name": "EX 冰 湖 魔 女·超 仙",
+      "level": 0,
+      "atk": 3,
+      "hp": 6,
+      "cd": 9,
+      "rawTraits": [
+        "群体冰封1"
+      ],
+      "skills": [
+        {
+          "raw": "群体冰封1",
+          "resolution": "implemented",
+          "family": "groupIceSeal",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "冰封之沉睡的湖之地，白魔女超限界形态，对敌方全体冰封。仅限活动获取！",
+      "status": "complete",
+      "art": {
+        "artId": "card/elna/001",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "#elna_002",
+      "rarity": "#elna",
+      "name": "冰 湖 魔 女·人 形",
+      "level": 2,
+      "atk": 2,
+      "hp": 5,
+      "cd": 7,
+      "rawTraits": [
+        "冰封1",
+        "冰封1"
+      ],
+      "skills": [
+        {
+          "raw": "冰封1",
+          "resolution": "implemented",
+          "family": "iceSeal",
+          "param": 1,
+          "matchKind": "full"
+        },
+        {
+          "raw": "冰封1",
+          "resolution": "implemented",
+          "family": "iceSeal",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "冰封之沉睡的湖之地，白魔女的人类形态，对敌方使用多重冰封。仅限活动获取！",
+      "status": "complete",
+      "art": {
+        "artId": "card/elna/002",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "#elna_003",
+      "rarity": "#elna",
+      "name": "洄 流 逆 转 术",
+      "level": 3,
+      "atk": 0,
+      "hp": 5,
+      "cd": 5,
+      "rawTraits": [
+        "群体冰封1",
+        "还魂2"
+      ],
+      "skills": [
+        {
+          "raw": "群体冰封1",
+          "resolution": "implemented",
+          "family": "groupIceSeal",
+          "param": 1,
+          "matchKind": "full"
+        },
+        {
+          "raw": "还魂2",
+          "resolution": "implemented",
+          "family": "soulReturn",
+          "param": 2,
+          "matchKind": "full"
+        }
+      ],
+      "description": "冰湖魔女释放的秘术，使时间洄流逆转，并带来战场的封冻。仅限活动获取！",
+      "status": "complete",
+      "art": {
+        "artId": "card/elna/003",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "#elna_004",
+      "rarity": "#elna",
+      "name": "白 魔·血 之 枪",
+      "level": 4,
+      "atk": 2,
+      "hp": 4,
+      "cd": 3,
+      "rawTraits": [
+        "吸血1"
+      ],
+      "skills": [
+        {
+          "raw": "吸血1",
+          "resolution": "implemented",
+          "family": "vampire",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "白魔女的血之魔法凝结为长枪，汲取生命力，过于强力的作用同样也会反噬自身。仅限活动获取！",
+      "status": "complete",
+      "art": {
+        "artId": "card/elna/004",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "#elna_005",
+      "rarity": "#elna",
+      "name": "白 魔·击 碎 星 辰",
+      "level": 2,
+      "atk": 3,
+      "hp": 5,
+      "cd": 8,
+      "rawTraits": [
+        "破甲5",
+        "冰封1"
+      ],
+      "skills": [
+        {
+          "raw": "破甲5",
+          "resolution": "implemented",
+          "family": "armorBreak",
+          "param": 5,
+          "matchKind": "full"
+        },
+        {
+          "raw": "冰封1",
+          "resolution": "implemented",
+          "family": "iceSeal",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "白魔女半超限形态，由魔力聚合的长枪汇聚星辰之力，彻底贯穿敌人防御。强力对甲。仅限活动获取！",
+      "status": "complete",
+      "art": {
+        "artId": "card/elna/005",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "#elna_006",
+      "rarity": "#elna",
+      "name": "白 魔·吟 蝶",
+      "level": 3,
+      "atk": 2,
+      "hp": 4,
+      "cd": 7,
+      "rawTraits": [
+        "恢复1"
+      ],
+      "skills": [
+        {
+          "raw": "恢复1",
+          "resolution": "implemented",
+          "family": "selfHeal",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "白魔女的吟唱使得魔蝶起舞，带来复苏。仅限活动获取！",
+      "status": "complete",
+      "art": {
+        "artId": "card/elna/006",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "#elna_007",
+      "rarity": "#elna",
+      "name": "织 子 挽 歌",
+      "level": 4,
+      "atk": 0,
+      "hp": 5,
+      "cd": 4,
+      "rawTraits": [
+        "还魂2",
+        "沉默",
+        "自毁"
+      ],
+      "skills": [
+        {
+          "raw": "还魂2",
+          "resolution": "implemented",
+          "family": "soulReturn",
+          "param": 2,
+          "matchKind": "full"
+        },
+        {
+          "raw": "沉默",
+          "resolution": "implemented",
+          "family": "silence",
+          "param": null,
+          "matchKind": "exact"
+        },
+        {
+          "raw": "自毁",
+          "resolution": "implemented",
+          "family": "selfDestruct",
+          "param": null,
+          "matchKind": "exact"
+        }
+      ],
+      "description": "死灵织子的挽歌，慰藉友方的亡魂，束缚对手。仅限活动获取！",
+      "status": "complete",
+      "art": {
+        "artId": "card/elna/007",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "#elna_008",
+      "rarity": "#elna",
+      "name": "天 使 医 官",
+      "level": 3,
+      "atk": 2,
+      "hp": 4,
+      "cd": 7,
+      "rawTraits": [
+        "恢复2",
+        "治疗1"
+      ],
+      "skills": [
+        {
+          "raw": "恢复2",
+          "resolution": "implemented",
+          "family": "selfHeal",
+          "param": 2,
+          "matchKind": "full"
+        },
+        {
+          "raw": "治疗1",
+          "resolution": "alias",
+          "family": "healAlly",
+          "param": null,
+          "evidence": "skill_registry.py:202 注册 `治愈(\\d+)`；skill_effects.py:414-498 为治疗随机受伤友方（无友方时治疗自己）",
+          "note": "治疗/治愈是同义异形词。卡面描述「对自身和友方进行治疗」与治愈n 语义一致。置信度中。"
+        }
+      ],
+      "description": "年轻的大天使医官，拥有强力的治疗能力，对自身和友方进行治疗。仅限活动获取！",
+      "status": "complete",
+      "art": {
+        "artId": "card/elna/008",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "#elna_009",
+      "rarity": "#elna",
+      "name": "EX 白 魔·红 梦",
+      "level": 1,
+      "atk": 2,
+      "hp": 7,
+      "cd": 10,
+      "rawTraits": [
+        "吸血1",
+        "破甲3"
+      ],
+      "skills": [
+        {
+          "raw": "吸血1",
+          "resolution": "implemented",
+          "family": "vampire",
+          "param": 1,
+          "matchKind": "full"
+        },
+        {
+          "raw": "破甲3",
+          "resolution": "implemented",
+          "family": "armorBreak",
+          "param": 3,
+          "matchKind": "full"
+        }
+      ],
+      "description": "白魔女的堕落超限界形态，贯穿彼世的红梦之枪，汲取生命力并贯穿防御。强力对单破甲。仅限活动获取！",
+      "status": "complete",
+      "art": {
+        "artId": "card/elna/009",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "#elna_010",
+      "rarity": "#elna",
+      "name": "小 蓝 龙",
+      "level": 5,
+      "atk": 2,
+      "hp": 4,
+      "cd": 6,
+      "rawTraits": [
+        "飞行"
+      ],
+      "skills": [
+        {
+          "raw": "飞行",
+          "resolution": "scene-rule",
+          "family": null,
+          "param": null,
+          "note": "战斗场景规则，非技能族"
+        }
+      ],
+      "description": "白魔女的宠物使魔，一只可爱的小蓝龙，在白魔女神化后进化为龙人形态。仅限活动获取！",
+      "status": "complete",
+      "art": {
+        "artId": "card/elna/010",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "#elna_011",
+      "rarity": "#elna",
+      "name": "白 魔·贯 穿",
+      "level": 4,
+      "atk": 2,
+      "hp": 5,
+      "cd": 6,
+      "rawTraits": [
+        "破甲1"
+      ],
+      "skills": [
+        {
+          "raw": "破甲1",
+          "resolution": "implemented",
+          "family": "armorBreak",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "白魔女的人形形态，凝聚魔力的血长枪，但此时还无法熟练使用。仅限活动获取！",
+      "status": "complete",
+      "art": {
+        "artId": "card/elna/011",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "#elna_012",
+      "rarity": "#elna",
+      "name": "银 魔 女",
+      "level": 5,
+      "atk": 1,
+      "hp": 6,
+      "cd": 9,
+      "rawTraits": [
+        "冰封1"
+      ],
+      "skills": [
+        {
+          "raw": "冰封1",
+          "resolution": "implemented",
+          "family": "iceSeal",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "冰湖魔女的人类形态，被世人称作银。仅限活动获取！",
+      "status": "complete",
+      "art": {
+        "artId": "card/elna/012",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "#elna_013",
+      "rarity": "#elna",
+      "name": "克 蕾 希 娅·爱 汀",
+      "level": 5,
+      "atk": 3,
+      "hp": 5,
+      "cd": 7,
+      "rawTraits": [
+        "操控1"
+      ],
+      "skills": [
+        {
+          "raw": "操控1",
+          "resolution": "unimplemented",
+          "family": null,
+          "param": null,
+          "evidence": "全项目 .py 无该字符串；不存在控制权转移机制",
+          "note": "无实现。"
+        }
+      ],
+      "description": "冰湖魔女的大弟子，天赋万里挑一，日后成为了西方王国的首席大魔法师。",
+      "status": "complete",
+      "art": {
+        "artId": "card/elna/013",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "#yoroi_001",
+      "rarity": "#yoroi",
+      "name": "EX 阿 斯 特 蕾 亚·裁 决",
+      "level": 0,
+      "atk": 0,
+      "hp": 0,
+      "cd": 0,
+      "rawTraits": [],
+      "skills": [],
+      "description": "",
+      "status": "incomplete",
+      "art": {
+        "artId": "card/yoroi/001",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "#yoroi_002",
+      "rarity": "#yoroi",
+      "name": "阿 斯 特 蕾 亚·光 铸",
+      "level": 2,
+      "atk": 0,
+      "hp": 0,
+      "cd": 0,
+      "rawTraits": [],
+      "skills": [],
+      "description": "",
+      "status": "incomplete",
+      "art": {
+        "artId": "card/yoroi/002",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "#yoroi_003",
+      "rarity": "#yoroi",
+      "name": "阿 斯 特 蕾 亚",
+      "level": 2.5,
+      "atk": 0,
+      "hp": 0,
+      "cd": 0,
+      "rawTraits": [],
+      "skills": [],
+      "description": "",
+      "status": "incomplete",
+      "art": {
+        "artId": "card/yoroi/003",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "#yoroi_004",
+      "rarity": "#yoroi",
+      "name": "阿 斯 特 蕾 亚·神 怒",
+      "level": 0.5,
+      "atk": 0,
+      "hp": 0,
+      "cd": 0,
+      "rawTraits": [],
+      "skills": [],
+      "description": "",
+      "status": "incomplete",
+      "art": {
+        "artId": "card/yoroi/004",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "#yoroi_005",
+      "rarity": "#yoroi",
+      "name": "蓝 羽 天 使",
+      "level": 4,
+      "atk": 0,
+      "hp": 0,
+      "cd": 0,
+      "rawTraits": [],
+      "skills": [],
+      "description": "",
+      "status": "incomplete",
+      "art": {
+        "artId": "card/yoroi/005",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "#yoroi_006",
+      "rarity": "#yoroi",
+      "name": "阿 努 比 斯·谜 题",
+      "level": 3,
+      "atk": 0,
+      "hp": 0,
+      "cd": 0,
+      "rawTraits": [],
+      "skills": [],
+      "description": "",
+      "status": "incomplete",
+      "art": {
+        "artId": "card/yoroi/006",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "#yoroi_007",
+      "rarity": "#yoroi",
+      "name": "阿 努 比 斯·灵 化",
+      "level": 4.5,
+      "atk": 0,
+      "hp": 0,
+      "cd": 0,
+      "rawTraits": [],
+      "skills": [],
+      "description": "",
+      "status": "incomplete",
+      "art": {
+        "artId": "card/yoroi/007",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "#yoroi_008",
+      "rarity": "#yoroi",
+      "name": "九 天 狐 帝",
+      "level": 2.5,
+      "atk": 0,
+      "hp": 0,
+      "cd": 0,
+      "rawTraits": [],
+      "skills": [],
+      "description": "",
+      "status": "incomplete",
+      "art": {
+        "artId": "card/yoroi/008",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "#yoroi_009",
+      "rarity": "#yoroi",
+      "name": "火 焰 狐 灵",
+      "level": 4,
+      "atk": 0,
+      "hp": 0,
+      "cd": 0,
+      "rawTraits": [],
+      "skills": [],
+      "description": "",
+      "status": "incomplete",
+      "art": {
+        "artId": "card/yoroi/009",
+        "sourcePresent": true
+      }
+    }
+  ]
+}

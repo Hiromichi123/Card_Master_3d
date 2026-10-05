@@ -1,0 +1,110 @@
+{
+  "$comment": [
+    "人工挑选的切片卡牌与演示牌组，供 scripts/import-legacy-data.py 校验并导出到 src/data/slice.json。",
+    "挑选依据：PLAN 第 4.3 节「P3 先做火球、冰封、闪电、防御、治愈、祝福、沉默、飞行 等代表玩法」，",
+    "外加 P2 需要用到的边界规则（死亡/复活、分身共享/复制独立、反击、CD 改动、群体目标）。",
+    "这里只声明意图；每张牌的 ATK/HP/CD/traits 由导入脚本从 cards.json 取真实值填入，",
+    "不在本文件里手抄数值，避免与数据源漂移。",
+    "",
+    "scenarios 的 covers 用族 slug（flying 为场景规则），由导入脚本校验该族确实出现在切片里。",
+    "不在本切片中的技能族留给 P4 覆盖，见 docs/SLICE.md 的缺口清单。"
+  ],
+  "seedBase": 20261005,
+  "cards": [
+    { "cardId": "A_011", "why": "一张牌同时带 火球1+冰封1+闪电1，是三种元素表现的最小对照" },
+    { "cardId": "B+_002", "why": "延迟1+火球1+冰封1，覆盖准备区 CD 改动" },
+    { "cardId": "B_021", "why": "群体火球1，群体目标 + 低消耗" },
+    { "cardId": "S_001", "why": "群体闪电1，群体电弧的对照" },
+    { "cardId": "SSS_004", "why": "飞行+群体冰封1，同时覆盖飞行与群体冰封" },
+    { "cardId": "A+_013", "why": "闪电3 只有单一技能，用于观察参数 n 对强度的影响" },
+    { "cardId": "SSS_001", "why": "防御1，受击减伤的代表" },
+    { "cardId": "C+_014", "why": "破甲2+闪避1，破甲与防御的相互作用 + 闪避判定" },
+    { "cardId": "S+_014", "why": "治愈2，单体治疗的基准" },
+    { "cardId": "B_025", "why": "抽卡2+祝福1+自毁，一张牌覆盖三种不同触发点的族" },
+    { "cardId": "S+_004", "why": "振奋2，上场时只加 ATK 的对照（祝福是 ATK+HP）" },
+    { "cardId": "A_001", "why": "群体振奋1，上场群体增益" },
+    { "cardId": "D_001", "why": "飞行 纯飞行卡，最低稀有度，用于地对空规则" },
+    { "cardId": "A+_006", "why": "飞行+火球1，飞行单位带技能时的目标归属" },
+    { "cardId": "S+_007", "why": "飞行+反击2+加速1+闪电1，一张牌覆盖四个族与飞行" },
+    { "cardId": "SS+_010", "why": "恢复2+飞行，18 HP 高血量飞行，地对空的极端情况" },
+    { "cardId": "C+_007", "why": "沉默，位置相关的技能压制（看对位槽位）" },
+    { "cardId": "C_026", "why": "不死，死亡后回手牌且无一次性标记" },
+    { "cardId": "SS_001", "why": "复活+防御1，死亡后回准备区且带一次性标记，与不死对照" },
+    { "cardId": "SS+_011", "why": "闪电3+爆裂1，同时覆盖死亡触发与 爆裂1 别名" },
+    { "cardId": "SS+_004", "why": "分身，多槽共享同一状态组的代表" },
+    { "cardId": "S+_002", "why": "复制，独立状态 + 每方每回合一次的限制" },
+    { "cardId": "SS+_002", "why": "反击2，受击后触发且伤害在旧版由动画回调交付" }
+  ],
+  "decks": [
+    {
+      "id": "demo-player",
+      "name": "演示·玩家",
+      "purpose": "P3 首个可玩切片的玩家默认牌组：元素输出 + 防御治疗 + 飞行 + 状态规则",
+      "cardIds": [
+        "A_011", "B+_002", "B_021", "SSS_001", "C+_014", "S+_014",
+        "B_025", "A+_006", "SSS_004", "C_026", "SS+_004", "S+_002"
+      ]
+    },
+    {
+      "id": "demo-enemy",
+      "name": "演示·敌方",
+      "purpose": "P3 的 AI 对手：控制（沉默/反击）+ 群体输出 + 死亡与复活，与玩家牌组形成机制对照",
+      "cardIds": [
+        "S_001", "A+_013", "SS+_011", "SS+_002", "C+_007", "A_001",
+        "S+_004", "SS_001", "SS+_010", "D_001", "S+_007", "B+_002"
+      ]
+    }
+  ],
+  "scenarios": [
+    {
+      "id": "S1-elements",
+      "goal": "三种元素单体技能各自命中一个敌方卡，伤害值与 ATK 来源可区分",
+      "covers": ["fireball", "iceSeal", "lightning"]
+    },
+    {
+      "id": "S2-group-targeting",
+      "goal": "群体技能对全部敌方生效，重叠特效不遮挡数值",
+      "covers": ["groupFireball", "groupLightning", "groupIceSeal"]
+    },
+    {
+      "id": "S3-defense-stack",
+      "goal": "防御n 减伤、破甲n 削减防御、闪避判定成功与失败各出现一次",
+      "covers": ["defense", "armorBreak", "dodge"]
+    },
+    {
+      "id": "S4-flying",
+      "goal": "地对空只能打本体；飞行攻击者打地面单位走正常卡对卡流程",
+      "covers": ["flying"]
+    },
+    {
+      "id": "S5-silence",
+      "goal": "被沉默的卡技能不触发，但死亡系技能仍触发",
+      "covers": ["silence"]
+    },
+    {
+      "id": "S6-death-revive",
+      "goal": "死亡、弃牌、不死回手牌、复活回准备区、爆裂死亡触发各自只发生一次",
+      "covers": ["undying", "rebirth", "explodeOnDeath"]
+    },
+    {
+      "id": "S7-clone-vs-copy",
+      "goal": "分身多槽共享状态组（一处受伤处处可见）；复制独立状态，且每方每回合一次限制生效",
+      "covers": ["clone", "copy"]
+    },
+    {
+      "id": "S8-cooldown",
+      "goal": "双方准备区 CD 在每次结束回合时同时递减；加速/延迟改变部署时机",
+      "covers": ["haste", "delay"]
+    },
+    {
+      "id": "S9-buff-heal",
+      "goal": "祝福加 ATK 与 HP，振奋只加 ATK，治愈只作用于受伤单位，恢复作用于自身",
+      "covers": ["blessing", "inspire", "healAlly", "selfHeal"]
+    },
+    {
+      "id": "S10-draw-selfdestruct",
+      "goal": "抽卡在牌堆不足时整条失败；自毁移除自身且不取消同回合后续流程",
+      "covers": ["drawCard", "selfDestruct"]
+    }
+  ]
+}

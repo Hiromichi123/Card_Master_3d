@@ -1,0 +1,299 @@
+{
+  "$comment": [
+    "人工判定的 trait 分类覆盖层，供 scripts/import-legacy-data.py 合并。",
+    "机器判定（是否被 skill_registry.py 的正则/精确规则命中）由导入脚本直接从旧源码推导，",
+    "不在本文件里重复；本文件只登记需要读场景代码才能得出的结论。",
+    "",
+    "resolution 取值：alias（已注册族的命名变体）/ flavor（说明性文字）/",
+    "unimplemented（确认无实现）/ scene-rule（场景规则，由脚本内置的 SCENE_RULE_TRAITS 处理，",
+    "不在此处登记）/ ambiguous（证据不足）。",
+    "",
+    "核查方式：对全部 .py 文件（排除 __pycache__/build/dist）逐个 grep 该字符串，",
+    "再按词干与机制比对已注册族。结论与证据见 docs/SKILL_COVERAGE.md。",
+    "凡是分类带有判断成分的，note 里写明不确定性，不写成确定事实。"
+  ],
+  "traits": {
+    "爆裂1": {
+      "resolution": "alias",
+      "family": "explodeOnDeath",
+      "evidence": "skill_registry.py:268 用精确匹配注册 `爆裂`，没有 `爆裂(\\d+)` 正则；skill_effects.py:1013-1046 的机制与词干一致",
+      "note": "纯解析缺口：数值形式落空。置信度高。"
+    },
+    "狂暴1": {
+      "resolution": "alias",
+      "family": "berserk",
+      "evidence": "skill_registry.py:244 用 `trait == \"狂暴\"` 精确匹配；skill_effects.py:769-815 的机制与词干一致",
+      "note": "纯解析缺口：数值形式落空。置信度高。"
+    },
+    "延时1": {
+      "resolution": "alias",
+      "family": "delay",
+      "evidence": "skill_registry.py:134 注册 `延迟(\\d+)`；skill_effects.py:1259-1290 为对敌方最左占用准备槽 CD+n",
+      "note": "延时/延迟是同义异形词，不是解析缺口。置信度中：本轮不自动建立别名规则，需人工确认后再决定是否实现。"
+    },
+    "治疗1": {
+      "resolution": "alias",
+      "family": "healAlly",
+      "evidence": "skill_registry.py:202 注册 `治愈(\\d+)`；skill_effects.py:414-498 为治疗随机受伤友方（无友方时治疗自己）",
+      "note": "治疗/治愈是同义异形词。卡面描述「对自身和友方进行治疗」与治愈n 语义一致。置信度中。"
+    },
+    "不屈": {
+      "resolution": "flavor",
+      "family": null,
+      "evidence": "全项目 .py 无该字符串；不存在任何「致命伤害后保留」机制",
+      "note": "无参数形容词，卡面描述为纯散文。判断成分：可能是未实现的机制，也可能是设定文字。"
+    },
+    "傀儡": {
+      "resolution": "flavor",
+      "family": null,
+      "evidence": "全项目 .py 无该字符串；游戏中不存在召唤系统",
+      "note": "卡面描述提到召唤傀儡，但没有任何召唤机制。判断成分：若后续要做召唤系统，此项应重新归类。"
+    },
+    "决斗": {
+      "resolution": "flavor",
+      "family": null,
+      "evidence": "全项目 .py 无该字符串；该卡的有效机制只有同列的 `自毁`",
+      "note": "trait 与卡名重复。判断成分较高。"
+    },
+    "严霜2": {
+      "resolution": "unimplemented",
+      "family": null,
+      "evidence": "全项目 .py 无该字符串",
+      "note": "读作机制关键词（冰霜类），无实现。"
+    },
+    "传送": {
+      "resolution": "unimplemented",
+      "family": null,
+      "evidence": "全项目 .py 无该字符串",
+      "note": "无位移/换位机制。"
+    },
+    "传送1": {
+      "resolution": "unimplemented",
+      "family": null,
+      "evidence": "全项目 .py 无该字符串",
+      "note": "同上，数值形式同样无实现。"
+    },
+    "伤害5": {
+      "resolution": "unimplemented",
+      "family": null,
+      "evidence": "全项目 .py 无该字符串",
+      "note": "数值被编码进 trait 字符串，但无读取方。"
+    },
+    "先攻": {
+      "resolution": "unimplemented",
+      "family": null,
+      "evidence": "全项目 .py 无该字符串；攻击顺序固定左到右，无先攻排序",
+      "note": "无实现。"
+    },
+    "先锋": {
+      "resolution": "unimplemented",
+      "family": null,
+      "evidence": "全项目 .py 无该字符串",
+      "note": "无实现。"
+    },
+    "剑舞1": {
+      "resolution": "unimplemented",
+      "family": null,
+      "evidence": "全项目 .py 无该字符串",
+      "note": "无实现。"
+    },
+    "剑舞2": {
+      "resolution": "unimplemented",
+      "family": null,
+      "evidence": "全项目 .py 无该字符串",
+      "note": "无实现。"
+    },
+    "剧毒2": {
+      "resolution": "unimplemented",
+      "family": null,
+      "evidence": "全项目 .py 无该字符串；不存在持续伤害/中毒状态",
+      "note": "无实现。"
+    },
+    "即时": {
+      "resolution": "unimplemented",
+      "family": null,
+      "evidence": "全项目 .py 无该字符串",
+      "note": "无实现。"
+    },
+    "即死1": {
+      "resolution": "unimplemented",
+      "family": null,
+      "evidence": "全项目 .py 无该字符串；不存在即死机制",
+      "note": "无实现。"
+    },
+    "吞噬": {
+      "resolution": "unimplemented",
+      "family": null,
+      "evidence": "全项目 .py 无该字符串",
+      "note": "无实现。"
+    },
+    "圣盾1": {
+      "resolution": "unimplemented",
+      "family": null,
+      "evidence": "全项目 .py 无该字符串",
+      "note": "与 `防御n` 同域但词干不同，不作为别名。无实现。"
+    },
+    "地崩": {
+      "resolution": "unimplemented",
+      "family": null,
+      "evidence": "全项目 .py 无该字符串",
+      "note": "无实现。"
+    },
+    "对空": {
+      "resolution": "unimplemented",
+      "family": null,
+      "evidence": "battle_base_scene.py:1348 只出现在注释「地面单位无法对空：伤害转移到防御者玩家」里",
+      "note": "注意：飞行规则只检查 `飞行`（battle_base_scene.py:1344-1345），带 `对空` 但不带 `飞行` 的卡没有任何对空收益。PLAN 第 4.3 节明确要求不擅自加入未实现对空技能。"
+    },
+    "必杀1": {
+      "resolution": "unimplemented",
+      "family": null,
+      "evidence": "全项目 .py 无该字符串",
+      "note": "无实现。"
+    },
+    "拒止": {
+      "resolution": "unimplemented",
+      "family": null,
+      "evidence": "全项目 .py 无该字符串",
+      "note": "无实现。"
+    },
+    "操控1": {
+      "resolution": "unimplemented",
+      "family": null,
+      "evidence": "全项目 .py 无该字符串；不存在控制权转移机制",
+      "note": "无实现。"
+    },
+    "斩击1": {
+      "resolution": "unimplemented",
+      "family": null,
+      "evidence": "全项目 .py 无该字符串",
+      "note": "无实现。"
+    },
+    "斩杀3": {
+      "resolution": "unimplemented",
+      "family": null,
+      "evidence": "全项目 .py 无该字符串",
+      "note": "无实现。"
+    },
+    "毒雾5": {
+      "resolution": "unimplemented",
+      "family": null,
+      "evidence": "全项目 .py 无该字符串",
+      "note": "无实现。"
+    },
+    "法术反弹": {
+      "resolution": "unimplemented",
+      "family": null,
+      "evidence": "全项目 .py 无该字符串",
+      "note": "无实现。"
+    },
+    "洞察": {
+      "resolution": "unimplemented",
+      "family": null,
+      "evidence": "全项目 .py 无该字符串",
+      "note": "无实现。"
+    },
+    "流血2": {
+      "resolution": "unimplemented",
+      "family": null,
+      "evidence": "全项目 .py 无该字符串；`受伤n` 是同域但机制不同（攻击后自伤），不作为别名",
+      "note": "无实现。"
+    },
+    "溅射": {
+      "resolution": "unimplemented",
+      "family": null,
+      "evidence": "全项目 .py 无该字符串",
+      "note": "无实现。"
+    },
+    "灭绝2": {
+      "resolution": "unimplemented",
+      "family": null,
+      "evidence": "全项目 .py 无该字符串",
+      "note": "无实现。"
+    },
+    "燃烧2": {
+      "resolution": "unimplemented",
+      "family": null,
+      "evidence": "全项目 .py 无该字符串；火球n 是即时伤害，不是持续燃烧",
+      "note": "无实现。"
+    },
+    "献祭1": {
+      "resolution": "unimplemented",
+      "family": null,
+      "evidence": "全项目 .py 无该字符串",
+      "note": "无实现。"
+    },
+    "献祭3": {
+      "resolution": "unimplemented",
+      "family": null,
+      "evidence": "全项目 .py 无该字符串",
+      "note": "无实现。"
+    },
+    "群体伤害2": {
+      "resolution": "unimplemented",
+      "family": null,
+      "evidence": "全项目 .py 无该字符串",
+      "note": "形态接近 `群体爆破n`（对全体造成 n 伤害）但词干不同，不作为纯拼写变体。若人工确认可复用，应显式改登记为 alias。"
+    },
+    "群体减速1": {
+      "resolution": "unimplemented",
+      "family": null,
+      "evidence": "全项目 .py 无该字符串",
+      "note": "`延迟n` 针对单个最左占用准备槽，不是群体减速，不作为别名。"
+    },
+    "群体斩击1": {
+      "resolution": "unimplemented",
+      "family": null,
+      "evidence": "全项目 .py 无该字符串",
+      "note": "无实现。"
+    },
+    "群体禁飞": {
+      "resolution": "unimplemented",
+      "family": null,
+      "evidence": "全项目 .py 无该字符串；飞行规则只读 `飞行`",
+      "note": "概念上是飞行规则的反制，但代码没有任何读取点。"
+    },
+    "贯穿": {
+      "resolution": "unimplemented",
+      "family": null,
+      "evidence": "全项目 .py 无该字符串",
+      "note": "无实现。"
+    },
+    "远射": {
+      "resolution": "unimplemented",
+      "family": null,
+      "evidence": "全项目 .py 无该字符串",
+      "note": "无实现。"
+    },
+    "重伤1": {
+      "resolution": "unimplemented",
+      "family": null,
+      "evidence": "全项目 .py 无该字符串",
+      "note": "无实现。"
+    },
+    "闪避赋予3": {
+      "resolution": "unimplemented",
+      "family": null,
+      "evidence": "全项目 .py 无该字符串；`闪避n`（skill_effects.py:683-714）只作用于自身",
+      "note": "「赋予」意味着把闪避给别的单位，与自身闪避是不同机制。若人工确认按 `闪避3` 处理，应显式改登记为 alias。"
+    },
+    "隐匿": {
+      "resolution": "unimplemented",
+      "family": null,
+      "evidence": "全项目 .py 无该字符串；不存在目标选择/潜行机制",
+      "note": "无实现。"
+    },
+    "魅惑": {
+      "resolution": "unimplemented",
+      "family": null,
+      "evidence": "全项目 .py 无该字符串",
+      "note": "无实现。"
+    },
+    "麻痹2": {
+      "resolution": "unimplemented",
+      "family": null,
+      "evidence": "全项目 .py 无该字符串；不存在跳过行动/眩晕机制",
+      "note": "无实现。"
+    }
+  }
+}

@@ -1,0 +1,385 @@
+{
+  "pools": [
+    {
+      "id": "normal",
+      "name": "常规卡池",
+      "bgType": "bg/gacha_normal",
+      "description": "常驻卡池，标准概率",
+      "probTable": "simple",
+      "probLabel": "常规稀有爆率(8.9%)",
+      "currency": "gold",
+      "singleCost": 500,
+      "tenCost": 4500,
+      "showcaseCards": [
+        "D_001",
+        "C_001",
+        "B_001",
+        "A_001",
+        "S_001",
+        "SS_001",
+        "SSS_001",
+        "SS+_002",
+        "S+_002",
+        "A+_002",
+        "B+_002",
+        "C+_002",
+        "D_002"
+      ],
+      "declaredRarePercent": 8.9,
+      "computedRarePercent": 6.3
+    },
+    {
+      "id": "activity",
+      "name": "活动卡池",
+      "bgType": "bg/gacha_activity",
+      "description": "限时活动卡池，概率提升",
+      "probTable": "activity",
+      "probLabel": "活动稀有爆率(19%)",
+      "currency": "crystal",
+      "singleCost": 30,
+      "tenCost": 270,
+      "showcaseCards": [
+        "SSS_003",
+        "SSS_004",
+        "SS_001",
+        "SS+_002",
+        "S_001",
+        "S+_002",
+        "A_001",
+        "A+_002"
+      ],
+      "declaredRarePercent": 19.0,
+      "computedRarePercent": 19.0
+    },
+    {
+      "id": "special",
+      "name": "特别卡池",
+      "bgType": "bg/gacha_special",
+      "description": "特别卡池，高级卡牌",
+      "probTable": "special",
+      "probLabel": "特别稀有爆率(100%)",
+      "currency": "crystal",
+      "singleCost": 100,
+      "tenCost": 880,
+      "showcaseCards": [
+        "SS_001",
+        "SS_002",
+        "SS_003",
+        "SS+_004",
+        "SS+_005",
+        "SS+_006"
+      ],
+      "declaredRarePercent": 100.0,
+      "computedRarePercent": 94.0
+    },
+    {
+      "id": "holiday",
+      "name": "节日卡池",
+      "bgType": "bg/gacha_holiday",
+      "description": "节日限定卡池",
+      "probTable": "holiday",
+      "probLabel": "节日稀有爆率(12.5%)",
+      "currency": "gold",
+      "singleCost": 1500,
+      "tenCost": 13500,
+      "showcaseCards": [
+        "A_003",
+        "S_003",
+        "SS_003",
+        "SSS_003"
+      ],
+      "declaredRarePercent": 12.5,
+      "computedRarePercent": 12.5
+    },
+    {
+      "id": "SSS级限定卡池",
+      "name": "SSS限定卡池",
+      "bgType": "bg/gacha_sss",
+      "description": "SSS特殊卡池",
+      "probTable": "SSS",
+      "probLabel": "SSS特供爆率",
+      "currency": "crystal",
+      "singleCost": 600,
+      "tenCost": 5400,
+      "showcaseCards": [
+        "SSS_003",
+        "SSS_004",
+        "SSS_005"
+      ],
+      "declaredRarePercent": null,
+      "computedRarePercent": 100.0
+    },
+    {
+      "id": "SS级限定卡池",
+      "name": "SS限定卡池",
+      "bgType": "bg/gacha_ss",
+      "description": "SS特殊卡池",
+      "probTable": "SS",
+      "probLabel": "SS特供爆率",
+      "currency": "crystal",
+      "singleCost": 280,
+      "tenCost": 2500,
+      "showcaseCards": [
+        "SS_001",
+        "SS_002",
+        "SS+_003"
+      ],
+      "declaredRarePercent": null,
+      "computedRarePercent": 100.0
+    },
+    {
+      "id": "S级限定卡池",
+      "name": "S限定卡池",
+      "bgType": "bg/gacha_s",
+      "description": "S特殊卡池",
+      "probTable": "S",
+      "probLabel": "S特供爆率",
+      "currency": "crystal",
+      "singleCost": 120,
+      "tenCost": 1080,
+      "showcaseCards": [
+        "S_001",
+        "S_002",
+        "S+_003"
+      ],
+      "declaredRarePercent": null,
+      "computedRarePercent": 100.0
+    },
+    {
+      "id": "A级限定卡池",
+      "name": "A限定卡池",
+      "bgType": "bg/gacha_a",
+      "description": "A特殊卡池",
+      "probTable": "A",
+      "probLabel": "A特供爆率",
+      "currency": "gold",
+      "singleCost": 5000,
+      "tenCost": 45000,
+      "showcaseCards": [
+        "A_001",
+        "A_002",
+        "A_003",
+        "A+_004",
+        "A+_005"
+      ],
+      "declaredRarePercent": null,
+      "computedRarePercent": 100.0
+    }
+  ],
+  "tables": {
+    "simple": {
+      "SSS": 0.1,
+      "SS+": 0.2,
+      "SS": 0.3,
+      "S+": 0.5,
+      "S": 1.0,
+      "A+": 1.7,
+      "A": 2.5,
+      "B+": 5.0,
+      "B": 8.7,
+      "C+": 15.0,
+      "C": 25.0,
+      "D": 40.0
+    },
+    "activity": {
+      "SSS": 0.2,
+      "SS+": 0.5,
+      "SS": 0.8,
+      "S+": 1.5,
+      "S": 3.0,
+      "A+": 5.0,
+      "A": 8.0,
+      "B+": 12.0,
+      "B": 18.0,
+      "C+": 24.0,
+      "C": 18.0,
+      "D": 9.0
+    },
+    "special": {
+      "SSS": 3.0,
+      "SS+": 6.0,
+      "SS": 10.0,
+      "S+": 15.0,
+      "S": 20.0,
+      "A+": 25.0,
+      "A": 15.0,
+      "B+": 0.0,
+      "B": 0.0,
+      "C+": 0.0,
+      "C": 0.0,
+      "D": 0.0
+    },
+    "holiday": {
+      "SSS": 0.2,
+      "SS+": 0.3,
+      "SS": 0.5,
+      "S+": 1.0,
+      "S": 1.5,
+      "A+": 3.0,
+      "A": 6.0,
+      "B+": 12.0,
+      "B": 20.0,
+      "C+": 10.0,
+      "C": 5.0,
+      "D": 5.0
+    },
+    "SSS": {
+      "SSS": 100.0,
+      "SS+": 0.0,
+      "SS": 0.0,
+      "S+": 0.0,
+      "S": 0.0,
+      "A+": 0.0,
+      "A": 0.0,
+      "B+": 0.0,
+      "B": 0.0,
+      "C+": 0.0,
+      "C": 0.0,
+      "D": 0.0
+    },
+    "SS": {
+      "SSS": 0.0,
+      "SS+": 34.0,
+      "SS": 66.0,
+      "S+": 0.0,
+      "S": 0.0,
+      "A+": 0.0,
+      "A": 0.0,
+      "B+": 0.0,
+      "B": 0.0,
+      "C+": 0.0,
+      "C": 0.0,
+      "D": 0.0
+    },
+    "S": {
+      "SSS": 0.0,
+      "SS+": 0.0,
+      "SS": 0.0,
+      "S+": 34.0,
+      "S": 66.0,
+      "A+": 0.0,
+      "A": 0.0,
+      "B+": 0.0,
+      "B": 0.0,
+      "C+": 0.0,
+      "C": 0.0,
+      "D": 0.0
+    },
+    "A": {
+      "SSS": 0.0,
+      "SS+": 0.0,
+      "SS": 0.0,
+      "S+": 0.0,
+      "S": 0.0,
+      "A+": 25.0,
+      "A": 75.0,
+      "B+": 0.0,
+      "B": 0.0,
+      "C+": 0.0,
+      "C": 0.0,
+      "D": 0.0
+    }
+  },
+  "tableDiagnostics": [
+    {
+      "table": "simple",
+      "total": 100.0,
+      "rareTotal": 6.3,
+      "missingRarities": []
+    },
+    {
+      "table": "activity",
+      "total": 100.0,
+      "rareTotal": 19.0,
+      "missingRarities": []
+    },
+    {
+      "table": "special",
+      "total": 94.0,
+      "rareTotal": 94.0,
+      "missingRarities": [
+        "B+",
+        "B",
+        "C+",
+        "C",
+        "D"
+      ]
+    },
+    {
+      "table": "holiday",
+      "total": 64.5,
+      "rareTotal": 12.5,
+      "missingRarities": []
+    },
+    {
+      "table": "SSS",
+      "total": 100.0,
+      "rareTotal": 100.0,
+      "missingRarities": [
+        "SS+",
+        "SS",
+        "S+",
+        "S",
+        "A+",
+        "A",
+        "B+",
+        "B",
+        "C+",
+        "C",
+        "D"
+      ]
+    },
+    {
+      "table": "SS",
+      "total": 100.0,
+      "rareTotal": 100.0,
+      "missingRarities": [
+        "SSS",
+        "S+",
+        "S",
+        "A+",
+        "A",
+        "B+",
+        "B",
+        "C+",
+        "C",
+        "D"
+      ]
+    },
+    {
+      "table": "S",
+      "total": 100.0,
+      "rareTotal": 100.0,
+      "missingRarities": [
+        "SSS",
+        "SS+",
+        "SS",
+        "A+",
+        "A",
+        "B+",
+        "B",
+        "C+",
+        "C",
+        "D"
+      ]
+    },
+    {
+      "table": "A",
+      "total": 100.0,
+      "rareTotal": 100.0,
+      "missingRarities": [
+        "SSS",
+        "SS+",
+        "SS",
+        "S+",
+        "S",
+        "B+",
+        "B",
+        "C+",
+        "C",
+        "D"
+      ]
+    }
+  ],
+  "sourceHash": "9fbe44e031467276"
+}

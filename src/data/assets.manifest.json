@@ -1,0 +1,2097 @@
+{
+  "generatedBy": "scripts/prepare-assets.py",
+  "legacyRoot": "D:\\Github\\card_maker",
+  "contentVersion": "6b3fb3176695",
+  "tiers": {
+    "thumbnail": 384,
+    "battle": 768,
+    "detail": 1536
+  },
+  "tierBytes": {
+    "thumbnail": 824812,
+    "battle": 2401810,
+    "detail": 3893634
+  },
+  "tierMiB": {
+    "thumbnail": 0.79,
+    "battle": 2.29,
+    "detail": 3.71
+  },
+  "cards": {
+    "SSS_001": {
+      "artId": "card/sss/001",
+      "rarity": "SSS",
+      "sourceName": "001.png",
+      "face": {
+        "thumbnail": {
+          "url": "/assets/card/thumbnail/sss/001.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            256,
+            384
+          ],
+          "bytes": 35496
+        },
+        "battle": {
+          "url": "/assets/card/battle/sss/001.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            512,
+            768
+          ],
+          "bytes": 106062
+        },
+        "detail": {
+          "url": "/assets/card/detail/sss/001.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            720,
+            1080
+          ],
+          "bytes": 174112
+        }
+      },
+      "art": {
+        "url": "/assets/art/sss/001.webp",
+        "sourceName": "001.jpg",
+        "sourceSize": [
+          1169,
+          1854
+        ],
+        "size": [
+          968,
+          1536
+        ],
+        "bytes": 226110
+      }
+    },
+    "SSS_004": {
+      "artId": "card/sss/004",
+      "rarity": "SSS",
+      "sourceName": "004.png",
+      "face": {
+        "thumbnail": {
+          "url": "/assets/card/thumbnail/sss/004.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            256,
+            384
+          ],
+          "bytes": 39300
+        },
+        "battle": {
+          "url": "/assets/card/battle/sss/004.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            512,
+            768
+          ],
+          "bytes": 115410
+        },
+        "detail": {
+          "url": "/assets/card/detail/sss/004.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            720,
+            1080
+          ],
+          "bytes": 187462
+        }
+      },
+      "art": {
+        "url": "/assets/art/sss/004.webp",
+        "sourceName": "004.jpg",
+        "sourceSize": [
+          1361,
+          2048
+        ],
+        "size": [
+          1021,
+          1536
+        ],
+        "bytes": 255296
+      }
+    },
+    "SS+_002": {
+      "artId": "card/ss-plus/002",
+      "rarity": "SS+",
+      "sourceName": "002.png",
+      "face": {
+        "thumbnail": {
+          "url": "/assets/card/thumbnail/ss-plus/002.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            256,
+            384
+          ],
+          "bytes": 24356
+        },
+        "battle": {
+          "url": "/assets/card/battle/ss-plus/002.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            512,
+            768
+          ],
+          "bytes": 71632
+        },
+        "detail": {
+          "url": "/assets/card/detail/ss-plus/002.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            720,
+            1080
+          ],
+          "bytes": 114128
+        }
+      },
+      "art": {
+        "url": "/assets/art/ss-plus/002.webp",
+        "sourceName": "002.png",
+        "sourceSize": [
+          704,
+          1003
+        ],
+        "size": [
+          704,
+          1003
+        ],
+        "bytes": 73228
+      }
+    },
+    "SS+_004": {
+      "artId": "card/ss-plus/004",
+      "rarity": "SS+",
+      "sourceName": "004.png",
+      "face": {
+        "thumbnail": {
+          "url": "/assets/card/thumbnail/ss-plus/004.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            256,
+            384
+          ],
+          "bytes": 27928
+        },
+        "battle": {
+          "url": "/assets/card/battle/ss-plus/004.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            512,
+            768
+          ],
+          "bytes": 76042
+        },
+        "detail": {
+          "url": "/assets/card/detail/ss-plus/004.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            720,
+            1080
+          ],
+          "bytes": 126994
+        }
+      },
+      "art": {
+        "url": "/assets/art/ss-plus/004.webp",
+        "sourceName": "004.jpg",
+        "sourceSize": [
+          803,
+          1227
+        ],
+        "size": [
+          803,
+          1227
+        ],
+        "bytes": 109098
+      }
+    },
+    "SS+_010": {
+      "artId": "card/ss-plus/010",
+      "rarity": "SS+",
+      "sourceName": "010.png",
+      "face": {
+        "thumbnail": {
+          "url": "/assets/card/thumbnail/ss-plus/010.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            256,
+            384
+          ],
+          "bytes": 46388
+        },
+        "battle": {
+          "url": "/assets/card/battle/ss-plus/010.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            512,
+            768
+          ],
+          "bytes": 135280
+        },
+        "detail": {
+          "url": "/assets/card/detail/ss-plus/010.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            720,
+            1080
+          ],
+          "bytes": 218724
+        }
+      },
+      "art": {
+        "url": "/assets/art/ss-plus/010.webp",
+        "sourceName": "010.jpg",
+        "sourceSize": [
+          1365,
+          2048
+        ],
+        "size": [
+          1024,
+          1536
+        ],
+        "bytes": 309958
+      }
+    },
+    "SS+_011": {
+      "artId": "card/ss-plus/011",
+      "rarity": "SS+",
+      "sourceName": "011.png",
+      "face": {
+        "thumbnail": {
+          "url": "/assets/card/thumbnail/ss-plus/011.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            256,
+            384
+          ],
+          "bytes": 48456
+        },
+        "battle": {
+          "url": "/assets/card/battle/ss-plus/011.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            512,
+            768
+          ],
+          "bytes": 140182
+        },
+        "detail": {
+          "url": "/assets/card/detail/ss-plus/011.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            720,
+            1080
+          ],
+          "bytes": 221910
+        }
+      },
+      "art": {
+        "url": "/assets/art/ss-plus/011.webp",
+        "sourceName": "011.jpg",
+        "sourceSize": [
+          795,
+          1232
+        ],
+        "size": [
+          795,
+          1232
+        ],
+        "bytes": 236012
+      }
+    },
+    "SS_001": {
+      "artId": "card/ss/001",
+      "rarity": "SS",
+      "sourceName": "001.png",
+      "face": {
+        "thumbnail": {
+          "url": "/assets/card/thumbnail/ss/001.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            256,
+            384
+          ],
+          "bytes": 35872
+        },
+        "battle": {
+          "url": "/assets/card/battle/ss/001.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            512,
+            768
+          ],
+          "bytes": 104480
+        },
+        "detail": {
+          "url": "/assets/card/detail/ss/001.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            720,
+            1080
+          ],
+          "bytes": 174660
+        }
+      },
+      "art": {
+        "url": "/assets/art/ss/001.webp",
+        "sourceName": "001.jpg",
+        "sourceSize": [
+          1392,
+          2048
+        ],
+        "size": [
+          1044,
+          1536
+        ],
+        "bytes": 270862
+      }
+    },
+    "S+_002": {
+      "artId": "card/s-plus/002",
+      "rarity": "S+",
+      "sourceName": "002.png",
+      "face": {
+        "thumbnail": {
+          "url": "/assets/card/thumbnail/s-plus/002.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            256,
+            384
+          ],
+          "bytes": 34766
+        },
+        "battle": {
+          "url": "/assets/card/battle/s-plus/002.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            512,
+            768
+          ],
+          "bytes": 108822
+        },
+        "detail": {
+          "url": "/assets/card/detail/s-plus/002.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            720,
+            1080
+          ],
+          "bytes": 191542
+        }
+      },
+      "art": {
+        "url": "/assets/art/s-plus/002.webp",
+        "sourceName": "002.jpg",
+        "sourceSize": [
+          741,
+          1024
+        ],
+        "size": [
+          741,
+          1024
+        ],
+        "bytes": 187098
+      }
+    },
+    "S+_004": {
+      "artId": "card/s-plus/004",
+      "rarity": "S+",
+      "sourceName": "004.png",
+      "face": {
+        "thumbnail": {
+          "url": "/assets/card/thumbnail/s-plus/004.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            256,
+            384
+          ],
+          "bytes": 34966
+        },
+        "battle": {
+          "url": "/assets/card/battle/s-plus/004.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            512,
+            768
+          ],
+          "bytes": 104548
+        },
+        "detail": {
+          "url": "/assets/card/detail/s-plus/004.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            720,
+            1080
+          ],
+          "bytes": 167666
+        }
+      },
+      "art": {
+        "url": "/assets/art/s-plus/004.webp",
+        "sourceName": "004.jpg",
+        "sourceSize": [
+          600,
+          900
+        ],
+        "size": [
+          600,
+          900
+        ],
+        "bytes": 95126
+      }
+    },
+    "S+_007": {
+      "artId": "card/s-plus/007",
+      "rarity": "S+",
+      "sourceName": "007.png",
+      "face": {
+        "thumbnail": {
+          "url": "/assets/card/thumbnail/s-plus/007.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            256,
+            384
+          ],
+          "bytes": 20280
+        },
+        "battle": {
+          "url": "/assets/card/battle/s-plus/007.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            512,
+            768
+          ],
+          "bytes": 52044
+        },
+        "detail": {
+          "url": "/assets/card/detail/s-plus/007.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            720,
+            1080
+          ],
+          "bytes": 78918
+        }
+      },
+      "art": {
+        "url": "/assets/art/s-plus/007.webp",
+        "sourceName": "007.png",
+        "sourceSize": [
+          730,
+          1003
+        ],
+        "size": [
+          730,
+          1003
+        ],
+        "bytes": 27410
+      }
+    },
+    "S+_014": {
+      "artId": "card/s-plus/014",
+      "rarity": "S+",
+      "sourceName": "014.png",
+      "face": {
+        "thumbnail": {
+          "url": "/assets/card/thumbnail/s-plus/014.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            256,
+            384
+          ],
+          "bytes": 44434
+        },
+        "battle": {
+          "url": "/assets/card/battle/s-plus/014.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            512,
+            768
+          ],
+          "bytes": 133082
+        },
+        "detail": {
+          "url": "/assets/card/detail/s-plus/014.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            720,
+            1080
+          ],
+          "bytes": 212700
+        }
+      },
+      "art": {
+        "url": "/assets/art/s-plus/014.webp",
+        "sourceName": "014.jpg",
+        "sourceSize": [
+          761,
+          1170
+        ],
+        "size": [
+          761,
+          1170
+        ],
+        "bytes": 241558
+      }
+    },
+    "S_001": {
+      "artId": "card/s/001",
+      "rarity": "S",
+      "sourceName": "001.png",
+      "face": {
+        "thumbnail": {
+          "url": "/assets/card/thumbnail/s/001.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            256,
+            384
+          ],
+          "bytes": 35612
+        },
+        "battle": {
+          "url": "/assets/card/battle/s/001.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            512,
+            768
+          ],
+          "bytes": 96924
+        },
+        "detail": {
+          "url": "/assets/card/detail/s/001.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            720,
+            1080
+          ],
+          "bytes": 150820
+        }
+      },
+      "art": {
+        "url": "/assets/art/s/001.webp",
+        "sourceName": "001.jpg",
+        "sourceSize": [
+          1664,
+          2432
+        ],
+        "size": [
+          1051,
+          1536
+        ],
+        "bytes": 156296
+      }
+    },
+    "A+_006": {
+      "artId": "card/a-plus/006",
+      "rarity": "A+",
+      "sourceName": "006.png",
+      "face": {
+        "thumbnail": {
+          "url": "/assets/card/thumbnail/a-plus/006.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            256,
+            384
+          ],
+          "bytes": 30508
+        },
+        "battle": {
+          "url": "/assets/card/battle/a-plus/006.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            512,
+            768
+          ],
+          "bytes": 81860
+        },
+        "detail": {
+          "url": "/assets/card/detail/a-plus/006.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            720,
+            1080
+          ],
+          "bytes": 131136
+        }
+      },
+      "art": {
+        "url": "/assets/art/a-plus/006.webp",
+        "sourceName": "006.jpg",
+        "sourceSize": [
+          870,
+          1232
+        ],
+        "size": [
+          870,
+          1232
+        ],
+        "bytes": 139712
+      }
+    },
+    "A+_013": {
+      "artId": "card/a-plus/013",
+      "rarity": "A+",
+      "sourceName": "013.png",
+      "face": {
+        "thumbnail": {
+          "url": "/assets/card/thumbnail/a-plus/013.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            256,
+            384
+          ],
+          "bytes": 39044
+        },
+        "battle": {
+          "url": "/assets/card/battle/a-plus/013.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            512,
+            768
+          ],
+          "bytes": 116976
+        },
+        "detail": {
+          "url": "/assets/card/detail/a-plus/013.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            720,
+            1080
+          ],
+          "bytes": 190392
+        }
+      },
+      "art": {
+        "url": "/assets/art/a-plus/013.webp",
+        "sourceName": "013.jpg",
+        "sourceSize": [
+          841,
+          1232
+        ],
+        "size": [
+          841,
+          1232
+        ],
+        "bytes": 214196
+      }
+    },
+    "A_001": {
+      "artId": "card/a/001",
+      "rarity": "A",
+      "sourceName": "001.png",
+      "face": {
+        "thumbnail": {
+          "url": "/assets/card/thumbnail/a/001.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            256,
+            384
+          ],
+          "bytes": 32274
+        },
+        "battle": {
+          "url": "/assets/card/battle/a/001.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            512,
+            768
+          ],
+          "bytes": 96038
+        },
+        "detail": {
+          "url": "/assets/card/detail/a/001.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            720,
+            1080
+          ],
+          "bytes": 158648
+        }
+      },
+      "art": {
+        "url": "/assets/art/a/001.webp",
+        "sourceName": "001.jpg",
+        "sourceSize": [
+          2658,
+          4096
+        ],
+        "size": [
+          997,
+          1536
+        ],
+        "bytes": 201906
+      }
+    },
+    "A_011": {
+      "artId": "card/a/011",
+      "rarity": "A",
+      "sourceName": "011.png",
+      "face": {
+        "thumbnail": {
+          "url": "/assets/card/thumbnail/a/011.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            256,
+            384
+          ],
+          "bytes": 35770
+        },
+        "battle": {
+          "url": "/assets/card/battle/a/011.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            512,
+            768
+          ],
+          "bytes": 97154
+        },
+        "detail": {
+          "url": "/assets/card/detail/a/011.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            720,
+            1080
+          ],
+          "bytes": 150626
+        }
+      },
+      "art": {
+        "url": "/assets/art/a/011.webp",
+        "sourceName": "011.jpg",
+        "sourceSize": [
+          880,
+          1232
+        ],
+        "size": [
+          880,
+          1232
+        ],
+        "bytes": 147128
+      }
+    },
+    "B+_002": {
+      "artId": "card/b-plus/002",
+      "rarity": "B+",
+      "sourceName": "002.png",
+      "face": {
+        "thumbnail": {
+          "url": "/assets/card/thumbnail/b-plus/002.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            256,
+            384
+          ],
+          "bytes": 32574
+        },
+        "battle": {
+          "url": "/assets/card/battle/b-plus/002.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            512,
+            768
+          ],
+          "bytes": 93002
+        },
+        "detail": {
+          "url": "/assets/card/detail/b-plus/002.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            720,
+            1080
+          ],
+          "bytes": 149498
+        }
+      },
+      "art": {
+        "url": "/assets/art/b-plus/002.webp",
+        "sourceName": "002.png",
+        "sourceSize": [
+          726,
+          993
+        ],
+        "size": [
+          726,
+          993
+        ],
+        "bytes": 102156
+      }
+    },
+    "B_021": {
+      "artId": "card/b/021",
+      "rarity": "B",
+      "sourceName": "021.png",
+      "face": {
+        "thumbnail": {
+          "url": "/assets/card/thumbnail/b/021.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            256,
+            384
+          ],
+          "bytes": 46420
+        },
+        "battle": {
+          "url": "/assets/card/battle/b/021.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            512,
+            768
+          ],
+          "bytes": 149810
+        },
+        "detail": {
+          "url": "/assets/card/detail/b/021.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            720,
+            1080
+          ],
+          "bytes": 254920
+        }
+      },
+      "art": {
+        "url": "/assets/art/b/021.webp",
+        "sourceName": "021.jpg",
+        "sourceSize": [
+          848,
+          1200
+        ],
+        "size": [
+          848,
+          1200
+        ],
+        "bytes": 330134
+      }
+    },
+    "B_025": {
+      "artId": "card/b/025",
+      "rarity": "B",
+      "sourceName": "025.png",
+      "face": {
+        "thumbnail": {
+          "url": "/assets/card/thumbnail/b/025.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            256,
+            384
+          ],
+          "bytes": 35828
+        },
+        "battle": {
+          "url": "/assets/card/battle/b/025.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            512,
+            768
+          ],
+          "bytes": 101608
+        },
+        "detail": {
+          "url": "/assets/card/detail/b/025.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            720,
+            1080
+          ],
+          "bytes": 157758
+        }
+      },
+      "art": {
+        "url": "/assets/art/b/025.webp",
+        "sourceName": "025.png",
+        "sourceSize": [
+          771,
+          1001
+        ],
+        "size": [
+          771,
+          1001
+        ],
+        "bytes": 142598
+      }
+    },
+    "C+_007": {
+      "artId": "card/c-plus/007",
+      "rarity": "C+",
+      "sourceName": "007.png",
+      "face": {
+        "thumbnail": {
+          "url": "/assets/card/thumbnail/c-plus/007.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            256,
+            384
+          ],
+          "bytes": 37880
+        },
+        "battle": {
+          "url": "/assets/card/battle/c-plus/007.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            512,
+            768
+          ],
+          "bytes": 129248
+        },
+        "detail": {
+          "url": "/assets/card/detail/c-plus/007.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            720,
+            1080
+          ],
+          "bytes": 216242
+        }
+      },
+      "art": {
+        "url": "/assets/art/c-plus/007.webp",
+        "sourceName": "007.jpg",
+        "sourceSize": [
+          1064,
+          1569
+        ],
+        "size": [
+          1042,
+          1536
+        ],
+        "bytes": 339754
+      }
+    },
+    "C+_014": {
+      "artId": "card/c-plus/014",
+      "rarity": "C+",
+      "sourceName": "014.png",
+      "face": {
+        "thumbnail": {
+          "url": "/assets/card/thumbnail/c-plus/014.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            256,
+            384
+          ],
+          "bytes": 37662
+        },
+        "battle": {
+          "url": "/assets/card/battle/c-plus/014.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            512,
+            768
+          ],
+          "bytes": 108246
+        },
+        "detail": {
+          "url": "/assets/card/detail/c-plus/014.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            720,
+            1080
+          ],
+          "bytes": 174960
+        }
+      },
+      "art": {
+        "url": "/assets/art/c-plus/014.webp",
+        "sourceName": "014.jpg",
+        "sourceSize": [
+          1344,
+          2016
+        ],
+        "size": [
+          1024,
+          1536
+        ],
+        "bytes": 230166
+      }
+    },
+    "C_026": {
+      "artId": "card/c/026",
+      "rarity": "C",
+      "sourceName": "026.png",
+      "face": {
+        "thumbnail": {
+          "url": "/assets/card/thumbnail/c/026.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            256,
+            384
+          ],
+          "bytes": 30900
+        },
+        "battle": {
+          "url": "/assets/card/battle/c/026.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            512,
+            768
+          ],
+          "bytes": 81724
+        },
+        "detail": {
+          "url": "/assets/card/detail/c/026.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            720,
+            1080
+          ],
+          "bytes": 129998
+        }
+      },
+      "art": {
+        "url": "/assets/art/c/026.webp",
+        "sourceName": "026.png",
+        "sourceSize": [
+          745,
+          1006
+        ],
+        "size": [
+          745,
+          1006
+        ],
+        "bytes": 77864
+      }
+    },
+    "D_001": {
+      "artId": "card/d/001",
+      "rarity": "D",
+      "sourceName": "001.png",
+      "face": {
+        "thumbnail": {
+          "url": "/assets/card/thumbnail/d/001.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            256,
+            384
+          ],
+          "bytes": 38098
+        },
+        "battle": {
+          "url": "/assets/card/battle/d/001.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            512,
+            768
+          ],
+          "bytes": 101636
+        },
+        "detail": {
+          "url": "/assets/card/detail/d/001.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            720,
+            1080
+          ],
+          "bytes": 159820
+        }
+      },
+      "art": {
+        "url": "/assets/art/d/001.webp",
+        "sourceName": "001.jpg",
+        "sourceSize": [
+          845,
+          1232
+        ],
+        "size": [
+          845,
+          1232
+        ],
+        "bytes": 155612
+      }
+    }
+  },
+  "shared": {
+    "ui": {
+      "avatar": {
+        "url": "/assets/ui/avatar.webp",
+        "sourceName": "avatar.jpg",
+        "sourceSize": [
+          200,
+          200
+        ],
+        "size": [
+          200,
+          200
+        ],
+        "bytes": 16738
+      },
+      "badge": {
+        "url": "/assets/ui/badge.webp",
+        "sourceName": "badge.png",
+        "sourceSize": [
+          500,
+          526
+        ],
+        "size": [
+          243,
+          256
+        ],
+        "bytes": 19662
+      },
+      "card_back": {
+        "url": "/assets/ui/card_back.webp",
+        "sourceName": "card_back.png",
+        "sourceSize": [
+          320,
+          460
+        ],
+        "size": [
+          320,
+          460
+        ],
+        "bytes": 47126
+      },
+      "crystal": {
+        "url": "/assets/ui/crystal.webp",
+        "sourceName": "crystal.png",
+        "sourceSize": [
+          500,
+          500
+        ],
+        "size": [
+          256,
+          256
+        ],
+        "bytes": 27722
+      },
+      "gold": {
+        "url": "/assets/ui/gold.webp",
+        "sourceName": "gold.png",
+        "sourceSize": [
+          500,
+          500
+        ],
+        "size": [
+          256,
+          256
+        ],
+        "bytes": 18330
+      }
+    },
+    "skill": {
+      "curse": {
+        "url": "/assets/skill/curse.webp",
+        "sourceName": "curse.png",
+        "sourceSize": [
+          800,
+          749
+        ],
+        "size": [
+          256,
+          240
+        ],
+        "bytes": 8882
+      },
+      "explosion": {
+        "url": "/assets/skill/explosion.webp",
+        "sourceName": "explosion.png",
+        "sourceSize": [
+          628,
+          628
+        ],
+        "size": [
+          256,
+          256
+        ],
+        "bytes": 28168
+      },
+      "fire_ball": {
+        "url": "/assets/skill/fire_ball.webp",
+        "sourceName": "fire_ball.png",
+        "sourceSize": [
+          800,
+          800
+        ],
+        "size": [
+          256,
+          256
+        ],
+        "bytes": 24218
+      },
+      "ice": {
+        "url": "/assets/skill/ice.webp",
+        "sourceName": "ice.png",
+        "sourceSize": [
+          661,
+          661
+        ],
+        "size": [
+          256,
+          256
+        ],
+        "bytes": 26118
+      },
+      "lighten": {
+        "url": "/assets/skill/lighten.webp",
+        "sourceName": "lighten.png",
+        "sourceSize": [
+          800,
+          800
+        ],
+        "size": [
+          256,
+          256
+        ],
+        "bytes": 31270
+      },
+      "shield": {
+        "url": "/assets/skill/shield.webp",
+        "sourceName": "shield.png",
+        "sourceSize": [
+          800,
+          966
+        ],
+        "size": [
+          212,
+          256
+        ],
+        "bytes": 8490
+      },
+      "sword": {
+        "url": "/assets/skill/sword.webp",
+        "sourceName": "sword.png",
+        "sourceSize": [
+          407,
+          376
+        ],
+        "size": [
+          256,
+          237
+        ],
+        "bytes": 19516
+      },
+      "tear": {
+        "url": "/assets/skill/tear.webp",
+        "sourceName": "tear.png",
+        "sourceSize": [
+          503,
+          541
+        ],
+        "size": [
+          238,
+          256
+        ],
+        "bytes": 17106
+      }
+    },
+    "poster": {
+      "1-1": {
+        "url": "/assets/poster/1-1.webp",
+        "sourceName": "1-1.png",
+        "sourceSize": [
+          1680,
+          990
+        ],
+        "size": [
+          768,
+          453
+        ],
+        "bytes": 76432
+      },
+      "1-2": {
+        "url": "/assets/poster/1-2.webp",
+        "sourceName": "1-2.png",
+        "sourceSize": [
+          1680,
+          993
+        ],
+        "size": [
+          768,
+          454
+        ],
+        "bytes": 123312
+      },
+      "1-3": {
+        "url": "/assets/poster/1-3.webp",
+        "sourceName": "1-3.png",
+        "sourceSize": [
+          1680,
+          1001
+        ],
+        "size": [
+          768,
+          458
+        ],
+        "bytes": 79634
+      },
+      "1-4": {
+        "url": "/assets/poster/1-4.webp",
+        "sourceName": "1-4.png",
+        "sourceSize": [
+          1680,
+          1005
+        ],
+        "size": [
+          768,
+          459
+        ],
+        "bytes": 65714
+      },
+      "2-1": {
+        "url": "/assets/poster/2-1.webp",
+        "sourceName": "2-1.png",
+        "sourceSize": [
+          1920,
+          1016
+        ],
+        "size": [
+          768,
+          406
+        ],
+        "bytes": 19324
+      },
+      "2-2": {
+        "url": "/assets/poster/2-2.webp",
+        "sourceName": "2-2.png",
+        "sourceSize": [
+          900,
+          588
+        ],
+        "size": [
+          768,
+          502
+        ],
+        "bytes": 33624
+      },
+      "2-3": {
+        "url": "/assets/poster/2-3.webp",
+        "sourceName": "2-3.png",
+        "sourceSize": [
+          1680,
+          1003
+        ],
+        "size": [
+          768,
+          459
+        ],
+        "bytes": 61864
+      },
+      "2-4": {
+        "url": "/assets/poster/2-4.webp",
+        "sourceName": "2-4.png",
+        "sourceSize": [
+          1680,
+          999
+        ],
+        "size": [
+          768,
+          457
+        ],
+        "bytes": 35540
+      },
+      "3-1": {
+        "url": "/assets/poster/3-1.webp",
+        "sourceName": "3-1.png",
+        "sourceSize": [
+          1680,
+          1003
+        ],
+        "size": [
+          768,
+          459
+        ],
+        "bytes": 16402
+      },
+      "3-2": {
+        "url": "/assets/poster/3-2.webp",
+        "sourceName": "3-2.png",
+        "sourceSize": [
+          1680,
+          993
+        ],
+        "size": [
+          768,
+          454
+        ],
+        "bytes": 57882
+      },
+      "3-3": {
+        "url": "/assets/poster/3-3.webp",
+        "sourceName": "3-3.png",
+        "sourceSize": [
+          1920,
+          1080
+        ],
+        "size": [
+          768,
+          432
+        ],
+        "bytes": 67760
+      },
+      "3-4": {
+        "url": "/assets/poster/3-4.webp",
+        "sourceName": "3-4.png",
+        "sourceSize": [
+          1680,
+          1001
+        ],
+        "size": [
+          768,
+          458
+        ],
+        "bytes": 94638
+      },
+      "chapter_1_enter": {
+        "url": "/assets/poster/chapter_1_enter.webp",
+        "sourceName": "chapter_1_enter.png",
+        "sourceSize": [
+          1200,
+          910
+        ],
+        "size": [
+          768,
+          582
+        ],
+        "bytes": 146750
+      },
+      "chapter_2_enter": {
+        "url": "/assets/poster/chapter_2_enter.webp",
+        "sourceName": "chapter_2_enter.png",
+        "sourceSize": [
+          1528,
+          1003
+        ],
+        "size": [
+          768,
+          504
+        ],
+        "bytes": 40130
+      },
+      "chapter_3_enter": {
+        "url": "/assets/poster/chapter_3_enter.webp",
+        "sourceName": "chapter_3_enter.jpg",
+        "sourceSize": [
+          1820,
+          1024
+        ],
+        "size": [
+          768,
+          432
+        ],
+        "bytes": 70032
+      },
+      "poster001": {
+        "url": "/assets/poster/poster001.webp",
+        "sourceName": "poster001.jpg",
+        "sourceSize": [
+          600,
+          455
+        ],
+        "size": [
+          600,
+          455
+        ],
+        "bytes": 100186
+      },
+      "poster002": {
+        "url": "/assets/poster/poster002.webp",
+        "sourceName": "poster002.jpg",
+        "sourceSize": [
+          600,
+          394
+        ],
+        "size": [
+          600,
+          394
+        ],
+        "bytes": 53484
+      }
+    },
+    "bg": {
+      "024": {
+        "url": "/assets/bg/024.webp",
+        "sourceName": "024.jpg",
+        "sourceSize": [
+          1920,
+          1080
+        ],
+        "size": [
+          1536,
+          864
+        ],
+        "bytes": 185070
+      },
+      "1": {
+        "url": "/assets/bg/1.webp",
+        "sourceName": "1.jpg",
+        "sourceSize": [
+          1820,
+          1024
+        ],
+        "size": [
+          1536,
+          864
+        ],
+        "bytes": 371302
+      },
+      "2": {
+        "url": "/assets/bg/2.webp",
+        "sourceName": "2.jpg",
+        "sourceSize": [
+          1820,
+          1024
+        ],
+        "size": [
+          1536,
+          864
+        ],
+        "bytes": 342884
+      },
+      "20231227_172918": {
+        "url": "/assets/bg/20231227_172918.webp",
+        "sourceName": "20231227_172918.jpg",
+        "sourceSize": [
+          1456,
+          816
+        ],
+        "size": [
+          1456,
+          816
+        ],
+        "bytes": 347136
+      },
+      "20231227_172922": {
+        "url": "/assets/bg/20231227_172922.webp",
+        "sourceName": "20231227_172922.jpg",
+        "sourceSize": [
+          1456,
+          816
+        ],
+        "size": [
+          1456,
+          816
+        ],
+        "bytes": 352116
+      },
+      "3": {
+        "url": "/assets/bg/3.webp",
+        "sourceName": "3.jpg",
+        "sourceSize": [
+          1855,
+          1024
+        ],
+        "size": [
+          1536,
+          848
+        ],
+        "bytes": 308376
+      },
+      "4": {
+        "url": "/assets/bg/4.webp",
+        "sourceName": "4.png",
+        "sourceSize": [
+          3360,
+          1440
+        ],
+        "size": [
+          1536,
+          658
+        ],
+        "bytes": 149742
+      },
+      "6": {
+        "url": "/assets/bg/6.webp",
+        "sourceName": "6.jpg",
+        "sourceSize": [
+          3300,
+          1414
+        ],
+        "size": [
+          1536,
+          658
+        ],
+        "bytes": 225894
+      },
+      "acivity_map_bg": {
+        "url": "/assets/bg/acivity_map_bg.webp",
+        "sourceName": "acivity_map_bg.png",
+        "sourceSize": [
+          2647,
+          1535
+        ],
+        "size": [
+          1536,
+          891
+        ],
+        "bytes": 348078
+      },
+      "activity_bg": {
+        "url": "/assets/bg/activity_bg.webp",
+        "sourceName": "activity_bg.png",
+        "sourceSize": [
+          1920,
+          1080
+        ],
+        "size": [
+          1536,
+          864
+        ],
+        "bytes": 228726
+      },
+      "chapter_1_map_bg": {
+        "url": "/assets/bg/chapter_1_map_bg.webp",
+        "sourceName": "chapter_1_map_bg.jpg",
+        "sourceSize": [
+          1200,
+          910
+        ],
+        "size": [
+          1200,
+          910
+        ],
+        "bytes": 309508
+      },
+      "chapter_2_map_bg": {
+        "url": "/assets/bg/chapter_2_map_bg.webp",
+        "sourceName": "chapter_2_map_bg.png",
+        "sourceSize": [
+          1528,
+          1003
+        ],
+        "size": [
+          1528,
+          1003
+        ],
+        "bytes": 140124
+      },
+      "chapter_3_map_bg": {
+        "url": "/assets/bg/chapter_3_map_bg.webp",
+        "sourceName": "chapter_3_map_bg.jpg",
+        "sourceSize": [
+          1820,
+          1024
+        ],
+        "size": [
+          1536,
+          864
+        ],
+        "bytes": 251328
+      },
+      "G3WiCrtbEAAIBAb": {
+        "url": "/assets/bg/G3WiCrtbEAAIBAb.webp",
+        "sourceName": "G3WiCrtbEAAIBAb.jpg",
+        "sourceSize": [
+          3000,
+          1688
+        ],
+        "size": [
+          1536,
+          864
+        ],
+        "bytes": 267646
+      },
+      "G_yrOI5bYAAwqvS": {
+        "url": "/assets/bg/G_yrOI5bYAAwqvS.webp",
+        "sourceName": "G_yrOI5bYAAwqvS.jpg",
+        "sourceSize": [
+          1456,
+          816
+        ],
+        "size": [
+          1456,
+          816
+        ],
+        "bytes": 213748
+      },
+      "gacha_a_bg": {
+        "url": "/assets/bg/gacha_a_bg.webp",
+        "sourceName": "gacha_a_bg.jpg",
+        "sourceSize": [
+          1820,
+          1024
+        ],
+        "size": [
+          1536,
+          864
+        ],
+        "bytes": 307964
+      },
+      "gacha_activity_bg": {
+        "url": "/assets/bg/gacha_activity_bg.webp",
+        "sourceName": "gacha_activity_bg.jpg",
+        "sourceSize": [
+          2417,
+          1440
+        ],
+        "size": [
+          1536,
+          915
+        ],
+        "bytes": 203394
+      },
+      "gacha_holiday_bg": {
+        "url": "/assets/bg/gacha_holiday_bg.webp",
+        "sourceName": "gacha_holiday_bg.jpg",
+        "sourceSize": [
+          2687,
+          1440
+        ],
+        "size": [
+          1536,
+          823
+        ],
+        "bytes": 265096
+      },
+      "gacha_normal_bg": {
+        "url": "/assets/bg/gacha_normal_bg.webp",
+        "sourceName": "gacha_normal_bg.jpg",
+        "sourceSize": [
+          2468,
+          1440
+        ],
+        "size": [
+          1536,
+          896
+        ],
+        "bytes": 345342
+      },
+      "gacha_s_bg": {
+        "url": "/assets/bg/gacha_s_bg.webp",
+        "sourceName": "gacha_s_bg.jpg",
+        "sourceSize": [
+          1820,
+          1024
+        ],
+        "size": [
+          1536,
+          864
+        ],
+        "bytes": 285752
+      },
+      "gacha_special_bg": {
+        "url": "/assets/bg/gacha_special_bg.webp",
+        "sourceName": "gacha_special_bg.jpg",
+        "sourceSize": [
+          2441,
+          1440
+        ],
+        "size": [
+          1536,
+          906
+        ],
+        "bytes": 343572
+      },
+      "gacha_ss_bg": {
+        "url": "/assets/bg/gacha_ss_bg.webp",
+        "sourceName": "gacha_ss_bg.jpg",
+        "sourceSize": [
+          1820,
+          1024
+        ],
+        "size": [
+          1536,
+          864
+        ],
+        "bytes": 330482
+      },
+      "gacha_sss_bg": {
+        "url": "/assets/bg/gacha_sss_bg.webp",
+        "sourceName": "gacha_sss_bg.jpg",
+        "sourceSize": [
+          1820,
+          1024
+        ],
+        "size": [
+          1536,
+          864
+        ],
+        "bytes": 305182
+      },
+      "shop_bg": {
+        "url": "/assets/bg/shop_bg.webp",
+        "sourceName": "shop_bg.jpg",
+        "sourceSize": [
+          2821,
+          1440
+        ],
+        "size": [
+          1536,
+          784
+        ],
+        "bytes": 265052
+      },
+      "world_map_bg": {
+        "url": "/assets/bg/world_map_bg.webp",
+        "sourceName": "world_map_bg.png",
+        "sourceSize": [
+          1680,
+          1001
+        ],
+        "size": [
+          1536,
+          915
+        ],
+        "bytes": 495872
+      },
+      "铁血王座": {
+        "url": "/assets/bg/%E9%93%81%E8%A1%80%E7%8E%8B%E5%BA%A7.webp",
+        "sourceName": "铁血王座.png",
+        "sourceSize": [
+          1680,
+          1005
+        ],
+        "size": [
+          1536,
+          919
+        ],
+        "bytes": 210524
+      }
+    },
+    "menu": {
+      "menu_bg": {
+        "url": "/assets/bg/menu_bg.webp",
+        "sourceName": "menu_bg.jpg",
+        "sourceSize": [
+          2367,
+          1440
+        ],
+        "size": [
+          1536,
+          934
+        ],
+        "bytes": 334968
+      },
+      "battle_bg": {
+        "url": "/assets/bg/battle_bg.webp",
+        "sourceName": "battle_bg.png",
+        "sourceSize": [
+          1680,
+          1001
+        ],
+        "size": [
+          1536,
+          915
+        ],
+        "bytes": 495872
+      },
+      "battle_menu_bg": {
+        "url": "/assets/bg/battle_menu_bg.webp",
+        "sourceName": "battle_menu_bg.png",
+        "sourceSize": [
+          1528,
+          1003
+        ],
+        "size": [
+          1528,
+          1003
+        ],
+        "bytes": 140124
+      }
+    },
+    "cardBack": "/assets/ui/card_back.webp"
+  },
+  "notes": [
+    "卡面与卡背使用纯 ASCII 的稀有度 slug + 编号，路径里不含 # 或 +。",
+    "中文/空格/特殊字符的共享素材用百分号编码，sourceName 保留原文件名以便追溯。",
+    "卡面三档长边为 thumbnail/battle/detail，保持原始比例。",
+    "detail 档只在打开详情时加载，图鉴用 thumbnail 分页加载。",
+    "旧项目 assets/cards 中存在但游戏数据未加载的目录（#YAZIRI、二代）不进入 manifest。"
+  ]
+}
