@@ -1,6 +1,7 @@
 import { Suspense, useState } from 'react';
 
 import { BattleScene } from '../scenes/BattleScene';
+import { CardInspectorScene } from '../scenes/CardInspectorScene';
 import { DataProbe } from './DataProbe';
 import { ErrorBoundary } from './ErrorBoundary';
 
@@ -49,19 +50,10 @@ export function App() {
                 <BattleScene />
               </div>
             )}
-            {route === 'viewer' && <Placeholder title="开发查看器" phase="P1" />}
+            {route === 'viewer' && <CardInspectorScene />}
           </Suspense>
         </ErrorBoundary>
       </main>
-    </div>
-  );
-}
-
-function Placeholder({ title, phase }: { title: string; phase: string }) {
-  return (
-    <div className="app-placeholder">
-      <h1>{title}</h1>
-      <p>尚未实现，计划在 {phase} 阶段完成。</p>
     </div>
   );
 }

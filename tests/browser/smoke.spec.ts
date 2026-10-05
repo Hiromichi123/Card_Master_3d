@@ -50,10 +50,13 @@ test.describe('应用骨架', () => {
     await expect(firstCardName).toHaveText(/[一-鿿]/);
   });
 
-  test('未实现的页签给出明确占位而不是空白', async ({ page }) => {
+  test('开发查看器展示切片卡的真实数据，而不是空白', async ({ page }) => {
     await page.goto('/');
-    // 战斗场景在 P1 已实现，这里检查仍未实现的开发查看器
     await page.getByRole('button', { name: '开发查看器' }).click();
-    await expect(page.getByText('尚未实现，计划在 P1 阶段完成。')).toBeVisible();
+
+    await expect(page.getByRole('heading', { name: '卡牌检视' })).toBeVisible();
+    // 面板里的数据必须来自导入结果，而不是写死的占位
+    await expect(page.locator('.inspector__meta')).toContainText('A_011');
+    await expect(page.locator('.inspector__meta')).toContainText('火球1、冰封1、闪电1');
   });
 });

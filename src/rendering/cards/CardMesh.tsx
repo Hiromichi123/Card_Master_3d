@@ -5,46 +5,50 @@ import type { Group, MeshStandardMaterial } from 'three';
 import type { CardDefinition } from '../../domain/cards/types';
 import { CARD_BACK_URL, cardFaceUrl } from '../../data/assets';
 import { useManagedTexture } from '../../services/useManagedTexture';
+import { easeInOutCubic } from '../anim/easings';
+import { damp, flipAngle } from '../anim/motion';
+import { Timeline } from '../anim/Timeline';
 import {
   CARD_DIMENSIONS,
   CARD_FACE_OFFSET,
   getCardBodyGeometry,
   getCardFaceGeometry,
 } from './cardGeometry';
+import { HoloLayer, holoIntensityForRarity } from './HoloLayer';
 
 /**
- * 实体卡牌（施工清单 P1「共享圆角卡体、正面/背面、薄边、阴影」）。
+ * 实体卡牌。
  *
- * 验收要点：
- * - `V-CARD-1` 厚度可见且与卡面成固定比例；
- * - `V-CARD-2` 用成品卡面，不叠加烘焙过的名称；
- * - `V-CARD-5` 有可辨认的阴影，悬停抬升时阴影随之变化；
- * - `V-CARD-6` 悬停有抬起与倾斜，且与选中态区分；
- * - `V-CARD-7` 正面/背面都正确。
+ * 验收要点：`V-CARD-1` 厚度可见、`V-CARD-2` 用成品卡面、
+ * `V-CARD-3` 动态数值与烘焙卡面分离、`V-CARD-5` 阴影、
+ * `V-CARD-6` 悬停/选中提示、`V-CARD-7` 正反面、`V-CARD-8` 公共动画工具。
  *
- * 悬停用**逐帧阻尼**而不是 CSS/React 过渡：卡牌数量多时逐卡 setState 会掉帧，
- * 且倾斜角度必须与相机相关，交给材质/矩阵处理更直接。
+ * **翻面用几何旋转而不是换贴图**：绕卡牌自身长轴转 180°，
+ * 中途卡面会侧对相机、宽度趋近 0。换贴图做不到这个效果，
+ * 而且会与「背面片法线朝下」的物理事实打架。
+ *
+ * 悬停/抬升用逐帧阻尼，翻面用 `Timeline`——两者的区别是：
+ * 阻尼是「追踪一个目标」，翻面是「一段有始有终的演出」。
  */
 
 /**
  * 可选属性一律写成 `?: T | undefined`。
  * `exactOptionalPropertyTypes` 下「不传」与「传 undefined」是两种类型，
- * 而调用方通常持有 `T | undefined`（例如从可选字段转发），
- * 不写这一层就得在每个调用点写条件展开。
+ * 而调用方通常持有 `T | undefined`。
  */
 export interface CardMeshProps {
   readonly card: CardDefinition;
   readonly position: readonly [number, number, number];
-  /** 卡牌绕 Y 轴的朝向（弧度）。 */
   readonly rotationY?: number | undefined;
-  /** 卡牌绕 X 轴的初始倾角（平放时为 -π/2）。 */
   readonly rotationX?: number | undefined;
-  /** 是否显示卡背。 */
+  /** 是否盖着。变化时会播放翻面动画。 */
   readonly faceDown?: boolean | undefined;
-  /** 选中态。与悬停是两种不同提示（`V-CARD-6`）。 */
   readonly selected?: boolean | undefined;
-  /** 是否响应指针。敌方手牌与牌堆里的卡不响应。 */
   readonly interactive?: boolean | undefined;
+  /** 是否叠加全息层。 */
+  readonly holo?: boolean | undefined;
+  /** 全息强度倍数，用于查看器调参。默认 1。 */
+  readonly holoScale?: number | undefined;
   readonly onClick?: ((card: CardDefinition) => void) | undefined;
 }
 
@@ -52,8 +56,9 @@ const HOVER_LIFT = 0.22;
 const SELECTED_LIFT = 0.32;
 /** 悬停时朝相机方向倾斜的角度。 */
 const HOVER_TILT = 0.16;
-/** 阻尼速度，越大越跟手。 */
 const DAMPING = 12;
+/** 翻面时长。 */
+const FLIP_DURATION = 0.42;
 
 export function CardMesh({
   card,
@@ -63,30 +68,16 @@ export function CardMesh({
   faceDown = false,
   selected = false,
   interactive = true,
+  holo,
+  holoScale = 1,
   onClick,
 }: CardMeshProps) {
   const groupRef = useRef<Group>(null);
   const [hovered, setHovered] = useState(false);
 
-  /**
-   * 朝上的那一面用哪张贴图。
-   *
-   * 盖着的牌并不是「把卡转到背面朝上」——那要靠额外的旋转，还得处理镜像。
-   * 直接把卡背贴图放到朝上的那一面，视觉结果与翻面完全一致，
-   * 也避免了背面板法线朝下、相机看不到的问题。
-   * （物理翻面会让卡背图案旋转 180°，卡背是中心对称图形，这里不做额外补偿。）
-   */
-  const faceUrl = useMemo(
-    () => (faceDown ? null : cardFaceUrl(card.cardId, 'battle')),
-    [card.cardId, faceDown],
-  );
+  const faceUrl = useMemo(() => cardFaceUrl(card.cardId, 'battle'), [card.cardId]);
   const faceTexture = useManagedTexture(faceUrl);
   const backTexture = useManagedTexture(CARD_BACK_URL);
-
-  /** 朝上那一面的贴图。 */
-  const topTexture = faceDown ? backTexture : faceTexture;
-  /** 朝下那一面的贴图：盖着的牌背面是卡面，翻起来的牌背面是卡背。 */
-  const bottomTexture = faceDown ? faceTexture : backTexture;
 
   const faceMaterialRef = useRef<MeshStandardMaterial>(null);
   const backMaterialRef = useRef<MeshStandardMaterial>(null);
@@ -97,8 +88,7 @@ export function CardMesh({
    * three 在 `map === null` 时编译出的着色器里没有 `USE_MAP`，
    * 之后仅仅给 `material.map` 赋值**不会**重新编译，
    * 结果是贴图被静默忽略、卡面渲染成纯白。
-   * R3F 只对 shadowMap 处理了 `needsUpdate`，贴图属性不会自动触发
-   * （已在 node_modules/@react-three/fiber 里核对过）。
+   * R3F 只对 shadowMap 处理了 `needsUpdate`（已核对 node_modules）。
    */
   useEffect(() => {
     for (const material of [faceMaterialRef.current, backMaterialRef.current]) {
@@ -106,27 +96,72 @@ export function CardMesh({
         material.needsUpdate = true;
       }
     }
-  }, [topTexture, bottomTexture]);
+  }, [faceTexture, backTexture]);
 
-  // 悬停时抬起并略微立起；选中时抬得更高，两者叠加
+  // ---- 翻面：一段有始有终的演出，用 Timeline 而不是阻尼 ----
+  const flipRef = useRef(faceDown ? 1 : 0);
+  const flipTimelineRef = useRef<Timeline | null>(null);
+
+  /**
+   * 全息层只在正面朝上时叠加。
+   *
+   * 这个开关必须是 state 而不是读 `flipRef.current`：
+   * ref 不参与渲染，翻到一半时读它不会让组件重渲染，
+   * 结果就是盖着的牌上仍然挂着一层全息。这里用 ref 做去重，
+   * 只在布尔值真的翻转时才 setState，避免每帧重渲染。
+   */
+  const [holoVisible, setHoloVisible] = useState(!faceDown);
+  const holoVisibleRef = useRef(!faceDown);
+
+  useEffect(() => {
+    const from = flipRef.current;
+    const to = faceDown ? 1 : 0;
+    if (Math.abs(from - to) < 1e-4) {
+      return;
+    }
+
+    const timeline = new Timeline(() => {
+      flipTimelineRef.current = null;
+    });
+    timeline.add({
+      duration: FLIP_DURATION,
+      easing: easeInOutCubic,
+      onUpdate: (t) => {
+        flipRef.current = from + (to - from) * t;
+        const visible = flipRef.current < 0.5;
+        if (holoVisibleRef.current !== visible) {
+          holoVisibleRef.current = visible;
+          setHoloVisible(visible);
+        }
+      },
+    });
+    flipTimelineRef.current = timeline;
+  }, [faceDown]);
+
+  // ---- 悬停/选中：追踪目标，用阻尼 ----
   const targetLift = (selected ? SELECTED_LIFT : 0) + (hovered ? HOVER_LIFT : 0);
   const targetTilt = hovered ? HOVER_TILT : 0;
-
   const liftRef = useRef(0);
   const tiltRef = useRef(0);
 
   useFrame((_, delta) => {
+    const timeline = flipTimelineRef.current;
+    if (timeline) {
+      timeline.update(Math.min(delta, 0.1));
+    }
+
     const group = groupRef.current;
     if (!group) {
       return;
     }
-    // 指数阻尼，避免逐帧 setState；delta 已由 R3F 做上限保护
-    const smoothing = 1 - Math.exp(-DAMPING * delta);
-    liftRef.current += (targetLift - liftRef.current) * smoothing;
-    tiltRef.current += (targetTilt - tiltRef.current) * smoothing;
+
+    liftRef.current = damp(liftRef.current, targetLift, DAMPING, delta);
+    tiltRef.current = damp(tiltRef.current, targetTilt, DAMPING, delta);
 
     group.position.y = position[1] + liftRef.current;
     group.rotation.x = rotationX + tiltRef.current;
+    // 翻面绕自身长轴，与倾角叠加；欧拉顺序 XYZ 决定它先转、再躺平
+    group.rotation.y = rotationY + flipAngle(flipRef.current);
   });
 
   const handleOver = (event: { stopPropagation: () => void }): void => {
@@ -147,8 +182,12 @@ export function CardMesh({
   const bodyGeometry = getCardBodyGeometry();
   const faceGeometry = getCardFaceGeometry();
 
-  // 边缘颜色按稀有度给一点点差异，便于在牌堆里分辨，但保持低饱和
   const edgeColor = hovered || selected ? '#c9d4e6' : '#7b869c';
+  const holoEnabled = holo ?? true;
+  const holoIntensity = holoIntensityForRarity(card.rarity) * holoScale;
+
+  // 只有正面朝上时才叠全息；盖着的牌不显示
+  const showHolo = holoEnabled && holoVisible && holoIntensity > 0.001;
 
   return (
     <group
@@ -160,18 +199,18 @@ export function CardMesh({
         <meshStandardMaterial color={edgeColor} roughness={0.6} metalness={0.15} />
       </mesh>
 
-      {/* 朝上的一面：正面用成品卡面，盖着的牌用卡背 */}
+      {/* 正面：成品卡面 */}
       <mesh geometry={faceGeometry} position={[0, 0, CARD_FACE_OFFSET]}>
         <meshStandardMaterial
           ref={faceMaterialRef}
-          map={topTexture}
-          color={topTexture ? '#ffffff' : '#2f3644'}
+          map={faceTexture}
+          color={faceTexture ? '#ffffff' : '#2f3644'}
           roughness={0.55}
           metalness={0.05}
         />
       </mesh>
 
-      {/* 朝下的一面：翻起来时才看得到。盖着的牌朝下的是卡面本身 */}
+      {/* 背面：卡背。翻面靠的是整体旋转，两面始终都在 */}
       <mesh
         geometry={faceGeometry}
         position={[0, 0, -CARD_FACE_OFFSET]}
@@ -179,16 +218,16 @@ export function CardMesh({
       >
         <meshStandardMaterial
           ref={backMaterialRef}
-          map={bottomTexture}
-          color={bottomTexture ? '#ffffff' : '#2f3644'}
-          roughness={0.7}
+          map={backTexture}
+          color={backTexture ? '#ffffff' : '#3a3f52'}
+          roughness={0.6}
           metalness={0.05}
         />
       </mesh>
 
-      {/* 命中盒：用一个不可见的薄盒承接指针事件。
-          直接用挤出几何做 raycast 也能命中，但面片与侧面会分别触发，
-          悬停/离开会抖动；单独一层薄盒行为稳定。 */}
+      {showHolo && <HoloLayer intensity={holoIntensity} />}
+
+      {/* 命中盒：单独的不可见薄盒，避免挤出几何的面片与侧面分别触发指针事件 */}
       <mesh
         position={[0, 0, 0]}
         visible={false}
@@ -210,6 +249,3 @@ export function CardMesh({
     </group>
   );
 }
-
-/** 卡牌正面朝向相机的默认平放角度。 */
-export const CARD_FLAT = -Math.PI / 2;
