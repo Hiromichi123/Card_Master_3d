@@ -187,6 +187,16 @@ export const HAND = {
   tilt: 0.42,
   /** 扇形的弧深系数：越靠外侧越往后收一点。取回早期配置。 */
   arc: 0.012,
+  /**
+   * 手牌扇形的**层高差**：越靠左（玩家视角）抬得越高。
+   *
+   * 冷却数字在卡牌的右上角，而扇形里右边的牌会压住左边那张的右上角。
+   * 让左边的牌高一点点，它就压在右边的牌之上，角上的数字不会被吃掉；
+   * 差值不能太小：扇形本身还带一点**弧深**（外侧的牌往后收 0.012），
+   * 那点深度差会把左边的牌推到后面去，0.02 的层高差压不过它——
+   * 实测左牌的冷却数字还是被中间那张盖住了。0.04 才稳。
+   */
+  stackStep: 0.04,
   /** 悬停时再抬起的高度。 */
   hoverLift: 0.5,
   /** 悬停时的放大倍数。 */
@@ -215,9 +225,15 @@ export function handCardTransform(
   const centered = total <= 1 ? 0 : index - (total - 1) / 2;
   const arcDepth = HAND.arc * centered * centered;
   const sign = side === 'player' ? 1 : -1;
+  // 世界坐标里的「左侧」：玩家是下标小的，敌方因为镜像过来而是下标大的
+  const stackIndex = side === 'player' ? total - 1 - index : index;
 
   return {
-    position: [sign * centered * HAND.spread, HAND.lift, rowZ(side, ROW.hand + arcDepth)],
+    position: [
+      sign * centered * HAND.spread,
+      HAND.lift + stackIndex * HAND.stackStep,
+      rowZ(side, ROW.hand + arcDepth),
+    ],
     rotationY: -sign * centered * 0.075,
     // 平放是 -π/2，加一个正角就立起来；敌方取负，朝它自己那一侧倾
     rotationX: -Math.PI / 2 + sign * HAND.tilt,

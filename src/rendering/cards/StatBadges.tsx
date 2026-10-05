@@ -43,6 +43,16 @@ const HALF = 0.25;
  */
 const BOTTOM_Y = -0.58;
 const BOTTOM_SIZE = 0.3;
+/**
+ * 战斗区的攻/血：**更靠外侧、更靠下**，字号也大一档。
+ *
+ * 战斗区是主战场，牌面最大（1.5 倍），这两个数字是玩家真正在看的东西；
+ * 摊到卡牌两下角，既不压住插画的中心，也留得住距离感。
+ * 手牌与等待区仍然用上面那组更收拢的值。
+ */
+const BATTLE_HALF = 0.32;
+const BATTLE_BOTTOM_Y = -0.62;
+const BATTLE_BOTTOM_SIZE = 0.34;
 /** 手牌上的冷却：右上角，小一号。 */
 const HAND_CD_POS: [number, number] = [0.36, 0.61];
 const HAND_CD_SIZE = 0.22;
@@ -70,11 +80,16 @@ export function StatBadges({
     [atk, hp, cd, emphasised],
   );
 
+  const battle = layout === 'battle';
+  const half = battle ? BATTLE_HALF : HALF;
+  const bottomY = battle ? BATTLE_BOTTOM_Y : BOTTOM_Y;
+  const bottomSize = battle ? BATTLE_BOTTOM_SIZE : BOTTOM_SIZE;
+
   const plates: { key: string; texture: typeof textures.atk; x: number; y: number; size: number }[] =
     [
       // 攻在左半边、血在右半边，各自居中于自己那一半——不越过卡牌左右边界
-      { key: 'atk', texture: textures.atk, x: -HALF, y: BOTTOM_Y, size: BOTTOM_SIZE },
-      { key: 'hp', texture: textures.hp, x: HALF, y: BOTTOM_Y, size: BOTTOM_SIZE },
+      { key: 'atk', texture: textures.atk, x: -half, y: bottomY, size: bottomSize },
+      { key: 'hp', texture: textures.hp, x: half, y: bottomY, size: bottomSize },
     ];
 
   if (layout === 'hand') {

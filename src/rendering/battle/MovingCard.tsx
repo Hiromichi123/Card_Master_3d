@@ -44,6 +44,8 @@ export interface MovingCardProps {
     | undefined;
   readonly emphasisedStats?: ReadonlySet<StatKind> | undefined;
   readonly statLayout?: StatLayout | undefined;
+  readonly showStats?: boolean | undefined;
+  readonly holo?: boolean | undefined;
   readonly onClick?: ((card: CardDefinition) => void) | undefined;
   readonly onHoverChange?: ((card: CardDefinition, hovered: boolean) => void) | undefined;
 }
@@ -62,6 +64,8 @@ export function MovingCard({
   stats,
   emphasisedStats,
   statLayout,
+  showStats,
+  holo,
   onClick,
   onHoverChange,
 }: MovingCardProps) {
@@ -105,6 +109,8 @@ export function MovingCard({
         stats={stats}
         emphasisedStats={emphasisedStats}
         statLayout={statLayout}
+        showStats={showStats}
+        holo={holo}
         onClick={onClick}
         onHoverChange={onHoverChange}
       />

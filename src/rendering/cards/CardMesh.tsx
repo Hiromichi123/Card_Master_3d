@@ -15,6 +15,7 @@ import {
   getCardBodyGeometry,
   getCardFaceGeometry,
 } from './cardGeometry';
+import { CardGlow } from './CardGlow';
 import { HoloLayer, holoIntensityForRarity } from './HoloLayer';
 import { StatBadges, type StatLayout } from './StatBadges';
 import type { StatKind } from './statBadge';
@@ -251,6 +252,13 @@ export function CardMesh({
 
   // 只有正面朝上时才叠全息；盖着的牌不显示
   const showHolo = holoEnabled && holoVisible && holoIntensity > 0.001;
+  /**
+   * 稀有度光晕只在**桌面上的牌**（等待区、战斗区）出现。
+   *
+   * 手牌不描：那里一摞牌叠在一起，每张都发光会糊成一片，
+   * 而且手牌本来就靠悬停抬升在提示，不需要再抢注意力。
+   */
+  const showGlow = holoVisible && statLayout !== 'hand';
   // 数值徽标只在正面朝上时显示，且与全息无关（关掉全息仍要看得到数值）
   const showStatsNow = showStats && holoVisible;
 
@@ -290,6 +298,8 @@ export function CardMesh({
           metalness={0.05}
         />
       </mesh>
+
+      {showGlow && <CardGlow rarity={card.rarity} />}
 
       {showHolo && <HoloLayer intensity={holoIntensity} />}
 

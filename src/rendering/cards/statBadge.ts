@@ -17,18 +17,16 @@ import { CanvasTexture, LinearFilter, SRGBColorSpace } from 'three';
 export type StatKind = 'atk' | 'hp' | 'cd';
 
 /**
- * 配色。
+ * 配色：**标准红 / 绿 / 蓝**。
  *
- * `fg` 是主色，`ring` 是刚变化过时的强调色。
- *
- * 主色**取深一档**：早先用的是粉彩（#ffd9a8 / #c9f7d8 / #c6d4ff），
- * 压在本来就高饱和的插画上几乎化掉，读出来是一层发白的雾。
- * 现在改成饱和的橙 / 绿 / 蓝，靠深色描边而不是靠亮色去挤对比度。
+ * 攻=红、血=绿、冷却=蓝，是最不需要解释的一套约定。
+ * `halo` 是数字外围那圈细光晕的颜色，比主色亮一档——
+ * 卡面是任意插画，只靠描边会在浅色区域糊掉，靠光晕才能在深浅两种底子上都跳出来。
  */
-const PALETTE: Record<StatKind, { fg: string; ring: string }> = {
-  atk: { fg: '#ff9520', ring: '#ffd8a8' },
-  hp: { fg: '#2fc46b', ring: '#b8f5d0' },
-  cd: { fg: '#4f86ff', ring: '#bcd0ff' },
+const PALETTE: Record<StatKind, { fg: string; halo: string; ring: string }> = {
+  atk: { fg: '#ff2d2d', halo: 'rgba(255, 90, 90, 0.85)', ring: '#ffd0d0' },
+  hp: { fg: '#12c24a', halo: 'rgba(70, 230, 130, 0.85)', ring: '#c4f7d6' },
+  cd: { fg: '#2b6cff', halo: 'rgba(90, 150, 255, 0.85)', ring: '#cddcff' },
 };
 
 /** 每个徽标绘制尺寸，长宽相等。 */
@@ -82,9 +80,23 @@ export function getStatTexture(
   ctx.textBaseline = 'middle';
   ctx.lineJoin = 'round';
   ctx.miterLimit = 2;
-  ctx.lineWidth = 9;
-  ctx.strokeStyle = 'rgba(6, 9, 16, 0.92)';
+  /*
+    三层叠出「深底 + 光晕 + 实心字」：
+    先画一圈带阴影的描边（阴影就是光晕），再画第二遍描边做暗底，
+    最后填实体。光晕必须在暗底**之前**画，否则会被暗底盖住。
+  */
+  ctx.shadowColor = palette.halo;
+  ctx.shadowBlur = 16;
+  ctx.lineWidth = 14;
+  ctx.strokeStyle = palette.halo;
   ctx.strokeText(text, center, center + 2);
+
+  // 暗底：把数字从任意插画上「抠」出来
+  ctx.shadowBlur = 0;
+  ctx.lineWidth = 8;
+  ctx.strokeStyle = 'rgba(6, 9, 16, 0.85)';
+  ctx.strokeText(text, center, center + 2);
+
   // 刚变化过的那一下换成亮色，替代原来的白圈高亮
   ctx.fillStyle = emphasised ? palette.ring : palette.fg;
   ctx.fillText(text, center, center + 2);

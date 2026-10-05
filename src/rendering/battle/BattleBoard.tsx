@@ -42,6 +42,10 @@ export interface CardPlacement {
   readonly emphasisedStats?: ReadonlySet<StatKind> | undefined;
   /** 这张牌在哪个区域。决定数值怎么摆（见 `StatBadges`）。 */
   readonly statLayout?: StatLayout | undefined;
+  /** 是否显示数值徽标。对手的手牌不显示。 */
+  readonly showStats?: boolean | undefined;
+  /** 是否叠全息层。对手的手牌不叠。 */
+  readonly holo?: boolean | undefined;
   /**
    * 这张牌上一次是从哪里来的（抽牌、还魂）。
    *
@@ -137,6 +141,8 @@ export function BattleBoard({
           stats={placement.stats}
           emphasisedStats={placement.emphasisedStats}
           statLayout={placement.statLayout}
+          showStats={placement.showStats}
+          holo={placement.holo}
           selected={placement.instanceId === selectedInstanceId}
           // CardMesh 只认得卡牌定义，实例身份由这里补上——
           // 直接透传 onCardClick 的话第二个参数会永远缺省。

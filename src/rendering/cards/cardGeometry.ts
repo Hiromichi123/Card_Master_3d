@@ -1,9 +1,9 @@
 import {
   BufferAttribute,
+  BufferGeometry,
   ExtrudeGeometry,
   Shape,
   ShapeGeometry,
-  type BufferGeometry,
 } from 'three';
 
 /**
@@ -129,3 +129,77 @@ export const CARD_DIMENSIONS = {
   thickness: CARD_THICKNESS,
   radius: CARD_RADIUS,
 } as const;
+
+/* ---------------------------------------------------------------------------
+ * 稀有度光晕
+ * ------------------------------------------------------------------------- */
+
+/**
+ * 光晕的三层，由外向内变亮。
+ *
+ * 取值参照象棋项目 `sanctuaryBorder.js` 的圣地描边：
+ * 外面一层很宽很淡的晕、中间一层收窄、最里一条几乎不透明的亮线。
+ * 三层叠在一起才有「发光」的观感，单独一条亮线只会像描了个边。
+ */
+const GLOW_BANDS = [
+  { inner: -0.085, outer: 0.085, intensity: 0.13 },
+  { inner: -0.035, outer: 0.035, intensity: 0.3 },
+  { inner: -0.011, outer: 0.011, intensity: 0.95 },
+] as const;
+
+let glowGeometry: BufferGeometry | null = null;
+
+/**
+ * 卡牌光晕：以卡牌轮廓为中心的三条环带，拼成一个几何。
+ *
+ * **把层强度烘进顶点色，是为了只用一个 draw call。**
+ * 三层各建一个 mesh 的话，场上摆十来张牌就是几十次 draw call；
+ * 顶点色乘上材质色之后，三层强度仍然各自独立，颜色却由材质统一给
+ * （于是同稀有度的牌可以共用材质）。
+ */
+export function getCardGlowGeometry(): BufferGeometry {
+  if (glowGeometry) {
+    return glowGeometry;
+  }
+
+  const positions: number[] = [];
+  const colors: number[] = [];
+  const indices: number[] = [];
+
+  for (const band of GLOW_BANDS) {
+    const ring = buildRoundedRect(
+      CARD_WIDTH + band.outer * 2,
+      CARD_HEIGHT + band.outer * 2,
+      CARD_RADIUS + Math.max(band.outer, 0),
+    );
+    // 洞可以比卡牌还小（`inner` 为负），那样环带就有一半压在卡面下面
+    const hole = buildRoundedRect(
+      CARD_WIDTH + band.inner * 2,
+      CARD_HEIGHT + band.inner * 2,
+      Math.max(CARD_RADIUS + band.inner, 0.01),
+    );
+    ring.holes.push(hole);
+
+    const shaped = new ShapeGeometry(ring, 6);
+    const base = positions.length / 3;
+    const position = shaped.getAttribute('position');
+    for (let i = 0; i < position.count; i += 1) {
+      positions.push(position.getX(i), position.getY(i), 0);
+      colors.push(band.intensity, band.intensity, band.intensity);
+    }
+    const index = shaped.getIndex();
+    if (index) {
+      for (let i = 0; i < index.count; i += 1) {
+        indices.push(base + index.getX(i));
+      }
+    }
+    shaped.dispose();
+  }
+
+  const geometry = new BufferGeometry();
+  geometry.setAttribute('position', new BufferAttribute(new Float32Array(positions), 3));
+  geometry.setAttribute('color', new BufferAttribute(new Float32Array(colors), 3));
+  geometry.setIndex(indices);
+  glowGeometry = geometry;
+  return glowGeometry;
+}

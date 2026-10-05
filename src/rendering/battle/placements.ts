@@ -118,16 +118,11 @@ export function buildBoard(display: DisplayState, options: BuildBoardOptions = {
       if (!instanceId) {
         return;
       }
-      const placement = makePlacement(
-        display,
-        instanceId,
-        slotPosition(side, 'battle', index),
-        undefined,
-        undefined,
-        BATTLE_CARD_SCALE,
-        false,
-        'battle',
-      );
+      const placement = makePlacement(display, instanceId, {
+        position: slotPosition(side, 'battle', index),
+        scale: BATTLE_CARD_SCALE,
+        statLayout: 'battle',
+      });
       if (placement) {
         entries.push(placement);
       }
@@ -137,16 +132,11 @@ export function buildBoard(display: DisplayState, options: BuildBoardOptions = {
       if (!instanceId) {
         return;
       }
-      const placement = makePlacement(
-        display,
-        instanceId,
-        slotPosition(side, 'prep', index),
-        undefined,
-        undefined,
-        PREP_CARD_SCALE,
-        false,
-        'prep',
-      );
+      const placement = makePlacement(display, instanceId, {
+        position: slotPosition(side, 'prep', index),
+        scale: PREP_CARD_SCALE,
+        statLayout: 'prep',
+      });
       if (placement) {
         entries.push(placement);
       }
@@ -154,17 +144,24 @@ export function buildBoard(display: DisplayState, options: BuildBoardOptions = {
 
     zones.hand.forEach((instanceId, index) => {
       const hand = handCardTransform(index, zones.hand.length, side);
-      const placement = makePlacement(
-        display,
-        instanceId,
-        hand.position,
-        hand.rotationY,
-        hand.rotationX,
-        HAND_CARD_SCALE,
-        side === 'enemy',
-        'hand',
-        side === 'player' && options.playerCanPlay === true,
-      );
+      const placement = makePlacement(display, instanceId, {
+        position: hand.position,
+        rotationY: hand.rotationY,
+        rotationX: hand.rotationX,
+        scale: HAND_CARD_SCALE,
+        statLayout: 'hand',
+        interactive: side === 'player' && options.playerCanPlay === true,
+        /*
+          敌方手牌**不翻面**：翻面之后牌背朝着相机、牌面朝下趴在桌上，
+          而镜像过来的倾角本该让牌面朝天。去掉翻面，牌就是「面朝上、
+          朝对面那人倾」的自然姿态。
+
+          代价是让对手的手牌内容露了出来——这是实机确认过的取舍。
+          数值与全息显式关掉：至少不把攻防一并亮给玩家。
+        */
+        showStats: side === 'player',
+        holo: side === 'player',
+      });
       if (placement) {
         entries.push(placement);
       }
@@ -209,16 +206,28 @@ export function pilePlacement(pile: PileView): {
   return { position: pilePosition(pile.side, pile.kind), scale: PILE_CARD_SCALE };
 }
 
+/**
+ * 造一条放置记录。
+ *
+ * 参数用**对象**而不是一长串位置参数：早先有九个位置参数，
+ * 加 `statLayout` 那次就传错了位置（`Type 'boolean' is not assignable to 'StatLayout'`），
+ * 而漏传 `showStats` 更是连类型都拦不住——对手手牌会把攻防一起亮出来。
+ */
 function makePlacement(
   display: DisplayState,
   instanceId: string,
-  position: readonly [number, number, number],
-  rotationY: number | undefined,
-  rotationX: number | undefined,
-  scale: number,
-  faceDown: boolean,
-  statLayout: StatLayout,
-  interactive = false,
+  placement: {
+    position: readonly [number, number, number];
+    scale: number;
+    statLayout: StatLayout;
+    rotationY?: number | undefined;
+    rotationX?: number | undefined;
+    faceDown?: boolean | undefined;
+    interactive?: boolean | undefined;
+    /** 不给就按「正面朝上就显示」推。对手手牌要显式关掉。 */
+    showStats?: boolean | undefined;
+    holo?: boolean | undefined;
+  },
 ): CardPlacement | null {
   const identity = display.instances[instanceId];
   if (!identity) {
@@ -230,18 +239,21 @@ function makePlacement(
   }
   const stats = statsOf(display, instanceId);
   const emphasised = display.emphasised[instanceId];
+  const faceDown = placement.faceDown ?? false;
 
   return {
     instanceId,
     card,
-    position,
+    position: placement.position,
     spawn: display.spawns[instanceId],
-    rotationY: rotationY ?? undefined,
-    rotationX: rotationX ?? CARD_FLAT_ROTATION_X,
+    rotationY: placement.rotationY ?? undefined,
+    rotationX: placement.rotationX ?? CARD_FLAT_ROTATION_X,
     faceDown,
-    interactive,
-    scale,
-    statLayout,
+    interactive: placement.interactive ?? false,
+    scale: placement.scale,
+    statLayout: placement.statLayout,
+    showStats: placement.showStats ?? !faceDown,
+    holo: placement.holo,
     stats: stats ?? undefined,
     emphasisedStats: emphasised,
   };
