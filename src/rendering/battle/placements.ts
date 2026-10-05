@@ -190,7 +190,7 @@ function buildPiles(display: DisplayState): PileView[] {
     const topCard = topIdentity ? (cardById.get(topIdentity.definitionId) ?? null) : null;
 
     piles.push(
-      { side, kind: 'deck', topCard: null, count: zones.deckCount },
+      { side, kind: 'deck', topCard: null, count: zones.deck.length },
       { side, kind: 'discard', topCard, count: zones.discard.length },
     );
   }
@@ -230,6 +230,7 @@ function makePlacement(
     instanceId,
     card,
     position,
+    spawn: display.spawns[instanceId],
     rotationY: rotationY ?? undefined,
     rotationX: rotationX ?? CARD_FLAT_ROTATION_X,
     faceDown,

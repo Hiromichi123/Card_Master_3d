@@ -1,10 +1,14 @@
-import { useMemo } from 'react';
-import type { Texture } from 'three';
+import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
+import { Matrix4, MeshStandardMaterial, type InstancedMesh, type Texture } from 'three';
 
 import { CARD_BACK_URL } from '../../data/assets';
 import { useManagedTexture } from '../../services/useManagedTexture';
 import { CardMesh } from '../cards/CardMesh';
-import { getCardFaceGeometry } from '../cards/cardGeometry';
+import {
+  CARD_DIMENSIONS,
+  getCardBodyGeometry,
+  getCardFaceGeometry,
+} from '../cards/cardGeometry';
 import type { PileView } from './placements';
 import { PILE_CARD_SCALE, pilePosition } from './layout';
 
@@ -12,95 +16,139 @@ import { PILE_CARD_SCALE, pilePosition } from './layout';
  * 牌堆与弃牌堆。
  *
  * P3 只把数量放进 HUD，桌上什么都没有——牌打到哪去了在画面里看不出来。
- * 这里把两个区做出来：牌堆盖着（只有背面），弃牌堆露出**最上面那张明牌**，
- * 底下垫一张错开的背面当作厚度。
+ * 这里把两个区做成**有真实厚度**的实体：每张牌按卡牌自身的厚度（0.024）
+ * 叠一层，摞起来多高就等于还剩几张。弃牌堆最上面那张是明牌。
  *
- * 空的时候也画一圈底衬，否则开局时这个区域完全不可见，
- * 玩家不知道那里将来会有东西。
+ * 厚度用 `InstancedMesh` 画：一摞最多二十来张，逐张建 mesh 会让 draw call
+ * 从 182 涨到两百多（棋盘那边为同一件事吃过这个亏，见 `V-TABLE-8`）。
  */
 
-/** 底衬：一块与牌等大的浅色垫片，让这个区域在空的时候也看得见。 */
+/** 一摞最多画多少张。超过这个数就不再增高，免得弃牌堆堆成一根柱子。 */
+const MAX_PLATES = 20;
+
+/** 一张牌的厚度，与真实卡牌一致。 */
+const PLATE_THICKNESS = CARD_DIMENSIONS.thickness;
+
+/**
+ * 底衬：一块与牌等大的浅色垫片。
+ *
+ * **只在空的时候画。** 它原本一直画着，结果牌堆底下露出一块又亮又白的方块
+ * （基本材质不吃光照、叠在浅色格子垫上再被泛光一推，看着像一块塑料板）。
+ * 有牌的时候这一摞自己就说明了问题，不需要底衬。
+ */
 function PileBase({ color }: { color: string }) {
   const geometry = useMemo(() => getCardFaceGeometry(), []);
   return (
     <mesh geometry={geometry} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.001, 0]}>
-      {/*
-        底衬要看得见，否则开局时弃牌区是空的、牌堆也还没画，
-        整块区域在画面上不存在。用基本材质（不吃光照）+ 三成不透明度，
-        在深浅两种格子垫上都能辨认，又不至于像一张真的牌。
-      */}
-      <meshBasicMaterial color={color} transparent opacity={0.55} depthWrite={false} />
+      <meshBasicMaterial color={color} transparent opacity={0.28} depthWrite={false} />
     </mesh>
   );
 }
 
 /**
- * 一张背面朝上的牌，用来堆出厚度。
+ * 一摞牌。每张沿 Y 叠一个卡牌厚度。
  *
- * **只在卡背贴图就绪之后才挂上去。** 先挂一个没有 `map` 的材质、
- * 等贴图到了再赋值，three 不会自动重编译着色器，结果是这块牌子永远渲染成纯白
- * （P3 实机截图里那两块白方块就是这么来的）。等贴图到了再建材质，一次到位。
+ * **要两种材质。** `ExtrudeGeometry` 把「正反面」和「侧面」分成两个材质组
+ * （materialIndex 0 / 1），侧面的 UV 是按挤出参数生成的，直接套卡背贴图会
+ * 全部采到纹理左上角那一点——卡背图的左上角是白的，于是整摞渲染成一块白砖头
+ * （P3 实机截图里那两块白方块就是这么来的）。侧面改用不透明色的纸边材质，
+ * 一摞牌从侧面看本来就该是一叠纸边。
+ *
+ * 每张再给一点随机偏转，否则严丝合缝地叠着看起来像一块实心方块。
  */
-function BackPlate({
-  y,
-  offsetX,
-  offsetZ,
-  rotation,
-  texture,
-}: {
-  y: number;
-  offsetX: number;
-  offsetZ: number;
-  rotation: number;
-  texture: Texture;
-}) {
-  const geometry = useMemo(() => getCardFaceGeometry(), []);
+function Stack({ count, texture }: { count: number; texture: Texture }) {
+  const meshRef = useRef<InstancedMesh>(null);
+  const geometry = useMemo(() => getCardBodyGeometry(), []);
+  const plates = Math.min(count, MAX_PLATES);
+
+  const capMaterial = useMemo(
+    () => new MeshStandardMaterial({ map: texture, roughness: 0.62, metalness: 0.05 }),
+    [texture],
+  );
+  const edgeMaterial = useMemo(
+    () => new MeshStandardMaterial({ color: '#cfc8ba', roughness: 0.85, metalness: 0 }),
+    [],
+  );
+  useEffect(
+    () => () => {
+      capMaterial.dispose();
+      edgeMaterial.dispose();
+    },
+    [capMaterial, edgeMaterial],
+  );
+
+  /*
+    依赖里必须带上材质与 `plates`：`instancedMesh` 的 `args` 含材质，
+    贴图就绪或张数变化都会让 R3F 重建这个网格，而重建会把所有实例矩阵
+    重置为单位矩阵。依赖写漏了就会在桌上留下一块没有变换的杂散卡片
+    （棋盘那边踩过同一个坑，见 `Table.tsx`）。
+  */
+  useLayoutEffect(() => {
+    const mesh = meshRef.current;
+    if (!mesh) {
+      return;
+    }
+    const matrix = new Matrix4();
+    for (let i = 0; i < plates; i += 1) {
+      // 用下标当伪随机种子：同一个厚度每次渲染出来的样子是稳定的
+      const jitter = Math.sin(i * 12.9898) * 0.012;
+      const turn = Math.sin(i * 78.233) * 0.02;
+      matrix.makeRotationX(-Math.PI / 2);
+      matrix.multiply(new Matrix4().makeRotationY(turn));
+      matrix.setPosition(jitter, PLATE_THICKNESS / 2 + i * PLATE_THICKNESS, jitter * 0.6);
+      mesh.setMatrixAt(i, matrix);
+    }
+    mesh.count = plates;
+    mesh.instanceMatrix.needsUpdate = true;
+  }, [plates, capMaterial, edgeMaterial]);
+
+  if (plates === 0) {
+    return null;
+  }
+
   return (
-    <mesh
-      geometry={geometry}
-      rotation={[-Math.PI / 2, 0, rotation]}
-      position={[offsetX, y, offsetZ]}
-    >
-      <meshStandardMaterial map={texture} roughness={0.6} metalness={0.05} />
-    </mesh>
+    <instancedMesh
+      ref={meshRef}
+      args={[geometry, [capMaterial, edgeMaterial], MAX_PLATES]}
+      castShadow
+      receiveShadow
+    />
   );
 }
 
+/**
+ * 牌堆 / 弃牌堆。
+ *
+ * **卡背贴图没就绪之前什么都不画。** 先挂一个没有 `map` 的材质、等贴图到了再赋值，
+ * three 不会自动重编译着色器，结果是这一摞永远渲染成纯白（P3 实机截图里那两块
+ * 白方块就是这么来的）。
+ */
 export function Pile({ pile }: { pile: PileView }) {
   const position = pilePosition(pile.side, pile.kind);
   const backTexture = useManagedTexture(CARD_BACK_URL);
   const isDeck = pile.kind === 'deck';
-  const visible = pile.count > 0;
+  const filled = pile.count > 0;
+
+  const topOffset = Math.min(pile.count, MAX_PLATES) * PLATE_THICKNESS;
 
   return (
     <group position={[position[0], position[1], position[2]]}>
-      {/* 整堆按同一个比例缩放：底衬、垫片与明牌要一起变小，各自写一份迟早对不齐 */}
+      {/* 整堆按同一个比例缩放：底衬、叠层与明牌要一起变小，各自写一份迟早对不齐 */}
       <group scale={PILE_CARD_SCALE}>
-        <PileBase color={isDeck ? '#7fb2ff' : '#c9a86a'} />
+        {!filled && <PileBase color={isDeck ? '#7fb2ff' : '#c9a86a'} />}
 
-        {visible && isDeck && backTexture && (
-          <>
-            {/* 几张错开的背面：张数看不出来，但「这里有一摞」看得出来 */}
-            <BackPlate y={0.004} offsetX={-0.05} offsetZ={0.035} rotation={0.05} texture={backTexture} />
-            <BackPlate y={0.009} offsetX={-0.025} offsetZ={0.018} rotation={0.025} texture={backTexture} />
-            <BackPlate y={0.014} offsetX={0} offsetZ={0} rotation={0} texture={backTexture} />
-          </>
+        {filled && backTexture && (
+          <Stack count={pile.count} texture={backTexture} />
         )}
 
-        {visible && !isDeck && (
-          <>
-            {backTexture && (
-              <BackPlate y={0.006} offsetX={0.05} offsetZ={-0.04} rotation={-0.05} texture={backTexture} />
-            )}
-            {pile.topCard && (
-              <CardMesh
-                card={pile.topCard}
-                position={[0, 0.014, 0]}
-                rotationX={-Math.PI / 2}
-                interactive={false}
-              />
-            )}
-          </>
+        {/* 弃牌堆的最上面一张是明牌，摆在摞顶之上 */}
+        {!isDeck && pile.topCard && (
+          <CardMesh
+            card={pile.topCard}
+            position={[0, topOffset + 0.004, 0]}
+            rotationX={-Math.PI / 2}
+            interactive={false}
+          />
         )}
       </group>
     </group>

@@ -1,6 +1,6 @@
 import type { CardDefinition, SideId } from '../../domain/cards/types';
 import type { StatKind } from '../cards/statBadge';
-import { CardMesh } from '../cards/CardMesh';
+import { MovingCard } from './MovingCard';
 import { Pile } from './Pile';
 import type { PileView } from './placements';
 import { useSettingsStore } from '../../state/settingsStore';
@@ -39,6 +39,14 @@ export interface CardPlacement {
     | undefined;
   /** 刚刚变化过的项，会加白圈高亮。 */
   readonly emphasisedStats?: ReadonlySet<StatKind> | undefined;
+  /**
+   * 这张牌上一次是从哪里来的（抽牌、还魂）。
+   *
+   * 只在它**首次出现在画面上**时用得到：从牌堆抽到手、从弃牌堆被捞回来，
+   * 这两种情况下画面上原本没有它，需要一个起点才知道该从哪飞过来。
+   * 其余移动（出牌、部署、顺位整理）牌本来就在画面上，从当前位置接着走即可。
+   */
+  readonly spawn?: readonly [number, number, number] | undefined;
 }
 
 /**
@@ -112,10 +120,12 @@ export function BattleBoard({
       {piles?.map((pile) => <Pile key={`${pile.side}-${pile.kind}`} pile={pile} />)}
 
       {placements?.map((placement) => (
-        <CardMesh
+        <MovingCard
           key={placement.instanceId}
+          instanceId={placement.instanceId}
           card={placement.card}
-          position={placement.position}
+          target={placement.position}
+          spawn={placement.spawn}
           rotationY={placement.rotationY}
           rotationX={placement.rotationX}
           faceDown={placement.faceDown}

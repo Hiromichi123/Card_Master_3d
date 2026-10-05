@@ -82,7 +82,7 @@ function SidePanel({ side, snapshot }: { side: SideId; snapshot: BattleSnapshot 
         </span>
       </div>
       <ul className="hud__counts">
-        <li>牌堆 {zones.deckCount}</li>
+        <li>牌堆 {zones.deck.length}</li>
         <li>手牌 {zones.hand.length}</li>
         <li>弃牌 {zones.discard.length}</li>
       </ul>

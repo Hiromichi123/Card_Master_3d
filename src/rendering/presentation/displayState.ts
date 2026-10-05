@@ -38,8 +38,14 @@ export interface DisplayGroup {
 }
 
 export interface DisplaySide {
-  /** 牌堆剩余张数——牌堆是盖着的，只显示数量。 */
-  deckCount: number;
+  /**
+   * 牌堆，按**抽取顺序**存 instanceId，`deck[0]` 是下一张要抽的。
+   *
+   * 存列表而不是数量有两个原因：牌堆要画出真实厚度，
+   * 以及开局发牌动画要按这个顺序把牌一张张发出去。
+   * 引擎从 `zones.deck` 的**头部**抽牌（`deck.shift()`），顺序与这里一致。
+   */
+  deck: string[];
   /**
    * 弃牌堆，按先后顺序存 instanceId。
    *
@@ -85,6 +91,16 @@ export interface DisplayState {
   proxies: ProxyCard[];
   /** 刚刚变化过的项，用来给数值徽标加白圈。 */
   emphasised: Record<string, ReadonlySet<StatKind>>;
+  /**
+   * 每张卡**上一次是从哪里来的**。
+   *
+   * 卡片从牌堆抽到手、从弃牌堆被还魂捞回来时，它在画面上是「凭空出现」的——
+   * 渲染层需要一个起点才知道该从哪里飞过来。存在这里而不是让渲染层去猜，
+   * 是因为只有事件知道来源（`CardDrawn` 来自牌堆，`CardMoved` 带 `from`）。
+   *
+   * 纯表现，不进 `projectDisplay`。
+   */
+  spawns: Record<string, readonly [number, number, number]>;
 }
 
 /**
@@ -102,6 +118,7 @@ export function adoptDisplay(target: DisplayState, source: DisplayState): void {
   target.cd = source.cd;
   target.proxies = [];
   target.emphasised = {};
+  target.spawns = {};
 }
 
 /** 把权威状态整体投影成显示状态。用于开局、取消演出、以及测试里的期望值。 */
@@ -132,13 +149,14 @@ export function displayFromState(state: BattleState): DisplayState {
     cd,
     proxies: [],
     emphasised: {},
+    spawns: {},
   };
 }
 
 function sideZonesFromState(state: BattleState, side: SideId): DisplaySide {
   const zones = state.zones[side];
   return {
-    deckCount: zones.deck.length,
+    deck: [...zones.deck],
     discard: [...zones.discard],
     hand: [...zones.hand],
     prep: [...zones.prep],
@@ -258,8 +276,9 @@ export function applyEventToDisplay(display: DisplayState, event: BattleEvent): 
   switch (event.type) {
     case 'CardDrawn': {
       const side = display.zones[event.side];
+      // 从牌堆顶上抽走那张，剩下的顺序不变——顺序就是抽取顺序
+      removeFromList(side.deck, event.instanceId);
       side.hand.push(event.instanceId);
-      side.deckCount = Math.max(0, side.deckCount - 1);
       break;
     }
 
@@ -291,10 +310,9 @@ export function applyEventToDisplay(display: DisplayState, event: BattleEvent): 
 
     case 'CardMoved': {
       const side = display.zones[event.side];
-      // 先从原处拿掉（含从弃牌堆列表里摘掉），再放到新处。
+      // 先从原处拿掉（含从弃牌堆/牌堆的列表里摘掉），再放到新处。
       // 还魂会把牌从弃牌堆捞回手牌，漏掉摘除这一步弃牌堆就只增不减。
       removeFromZone(side, event.instanceId);
-      adjustCount(side, event.from, -1);
       placeInZone(side, event.to, event.slotIndex, event.instanceId);
       break;
     }
@@ -391,6 +409,7 @@ function indexOfInBoard(side: DisplaySide, instanceId: string): number | null {
 
 function removeFromZone(side: DisplaySide, instanceId: string): void {
   removeFromList(side.hand, instanceId);
+  removeFromList(side.deck, instanceId);
   removeFromList(side.discard, instanceId);
   clearSlot(side.prep, instanceId);
   clearSlot(side.battle, instanceId);
@@ -420,20 +439,10 @@ function placeInZone(
       // 进弃牌堆要记下是哪一张——弃牌区画的是最上面那张明牌
       side.discard.push(instanceId);
       break;
-    // 牌堆是盖着的，只有数量
     case 'deck':
+      // 回到牌堆的牌放到**顶上**（引擎从头部抽牌）
+      side.deck.unshift(instanceId);
       break;
-  }
-}
-
-/** 牌堆的计数增减。弃牌堆存的是列表，由 `placeInZone` 维护。 */
-function adjustCount(
-  side: DisplaySide,
-  zone: 'deck' | 'hand' | 'prep' | 'battle' | 'discard',
-  delta: number,
-): void {
-  if (zone === 'deck') {
-    side.deckCount = Math.max(0, side.deckCount + delta);
   }
 }
 

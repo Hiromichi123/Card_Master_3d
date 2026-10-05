@@ -203,6 +203,7 @@ function stubDeps(display: DisplayState): DirectorDeps {
     log: () => {},
     worldPointOf: () => [0, 0, 0],
     slotPointOf: () => [0, 0, 0],
+    pilePointOf: () => [0, 0, 0],
     playerAnchor: () => [0, 0, 0],
     nameOf: (id) => id,
     speed: () => 'normal',

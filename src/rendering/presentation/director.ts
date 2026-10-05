@@ -78,6 +78,8 @@ export interface DirectorDeps {
   readonly log: (line: string) => void;
   readonly worldPointOf: (instanceId: string) => Point;
   readonly slotPointOf: (side: SideId, zone: SlotZone, slotIndex: number) => Point;
+  /** 某一方的牌堆 / 弃牌堆在桌上的位置。抽牌与还魂的起点是这里。 */
+  readonly pilePointOf: (side: SideId, kind: 'deck' | 'discard') => Point;
   readonly playerAnchor: (side: SideId) => Point;
   readonly nameOf: (instanceId: string) => string;
   readonly speed: () => PresentationSpeed;
@@ -85,6 +87,40 @@ export interface DirectorDeps {
   readonly onFinished: (finalState: BattleState) => void;
   /** 开发期自检：显示状态是否与权威状态一致。生产构建里是空实现。 */
   readonly checkConsistency?: ((display: DisplayState, finalState: BattleState) => void) | undefined;
+}
+
+/**
+ * 这张牌从哪儿来。
+ *
+ * 只在**卡片在画面上凭空出现**时才需要：从牌堆抽到手、被还魂从弃牌堆捞回来。
+ * 其余的移动（出牌、部署、顺位整理）牌本来就在画面上，渲染层从它当前的位置
+ * 接着飞就行，不需要提示。
+ *
+ * **必须在 `onComplete` 里算**，不能提前：`worldPointOf` 读的是显示状态，
+ * 而这一步之前它还是移动前的位置——那正是我们想要的「起点」。
+ */
+function spawnForEvent(
+  event: BattleEvent,
+  deps: DirectorDeps,
+): { instanceId: string; point: Point } | null {
+  switch (event.type) {
+    case 'CardDrawn':
+      return { instanceId: event.instanceId, point: deps.pilePointOf(event.side, 'deck') };
+    case 'CardPlayed':
+    case 'CardDeployed':
+    case 'CloneCreated':
+      return { instanceId: event.instanceId, point: deps.worldPointOf(event.instanceId) };
+    case 'CardMoved':
+      if (event.from === 'discard') {
+        return { instanceId: event.instanceId, point: deps.pilePointOf(event.side, 'discard') };
+      }
+      if (event.from === 'deck') {
+        return { instanceId: event.instanceId, point: deps.pilePointOf(event.side, 'deck') };
+      }
+      return { instanceId: event.instanceId, point: deps.worldPointOf(event.instanceId) };
+    default:
+      return null;
+  }
 }
 
 /** 事件里有没有会改动 HP/ATK 的？有的话后面接一个高亮 beat。 */
@@ -147,6 +183,11 @@ export function buildBeats(resolution: Resolution, deps: DirectorDeps): Beat[] {
         applyPatchesToDisplay(deps.display, patches);
         // 结构变化
         applyEventToDisplay(deps.display, event);
+        // 记下这张牌从哪儿来：渲染层靠它决定「从哪飞过来」
+        const spawn = spawnForEvent(event, deps);
+        if (spawn) {
+          deps.display.spawns[spawn.instanceId] = spawn.point;
+        }
 
         const line = logLineFor(event, deps.nameOf);
         if (line) {

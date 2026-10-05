@@ -79,6 +79,8 @@ const HOVER_TILT = 0.26;
 /** 悬停/选中时的放大倍数。牌桌视角下卡片本来就不大，放大要看得出来。 */
 const HOVER_SCALE = 1.12;
 const SELECTED_SCALE = 1.22;
+/** 朝向变化的阻尼系数。比抬升略慢一点，翻过去的过程才看得见。 */
+const ROT_DAMPING = 9;
 const DAMPING = 12;
 /** 翻面时长。 */
 const FLIP_DURATION = 0.42;
@@ -180,6 +182,15 @@ export function CardMesh({
   const liftRef = useRef(0);
   const tiltRef = useRef(0);
   const scaleRef = useRef(1);
+  /**
+   * 基础朝向也要阻尼，不能直接跟随 props。
+   *
+   * 牌在区与区之间移动时朝向是会变的（手牌立着、准备区与战斗区平放），
+   * 直接赋值就是「啪」地翻过去；而且手牌会因为张数变化整体重排，
+   * 阻尼之后整把牌是滑过去的，不是跳过去的。
+   */
+  const rotXRef = useRef(rotationX);
+  const rotYRef = useRef(rotationY);
 
   useFrame((_, delta) => {
     const timeline = flipTimelineRef.current;
@@ -196,11 +207,14 @@ export function CardMesh({
     tiltRef.current = damp(tiltRef.current, targetTilt, DAMPING, delta);
     scaleRef.current = damp(scaleRef.current, targetScale, DAMPING, delta);
 
+    rotXRef.current = damp(rotXRef.current, rotationX, ROT_DAMPING, delta);
+    rotYRef.current = damp(rotYRef.current, rotationY, ROT_DAMPING, delta);
+
     group.scale.setScalar(scale * scaleRef.current);
     group.position.y = position[1] + liftRef.current;
-    group.rotation.x = rotationX + tiltRef.current;
+    group.rotation.x = rotXRef.current + tiltRef.current;
     // 翻面绕自身长轴，与倾角叠加；欧拉顺序 XYZ 决定它先转、再躺平
-    group.rotation.y = rotationY + flipAngle(flipRef.current);
+    group.rotation.y = rotYRef.current + flipAngle(flipRef.current);
   });
 
   const handleOver = (event: { stopPropagation: () => void }): void => {

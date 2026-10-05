@@ -29,6 +29,7 @@ import type { SideId } from '../../domain/cards/types';
 import type { PresentationSpeed } from '../../state/settingsStore';
 import type { SlotZone } from '../battle/layout';
 import { handPointOf, slotPosition } from '../battle/placements';
+import { pilePosition } from '../battle/layout';
 import { AI_THINK_SECONDS } from './constants';
 import { PresentationDirector } from './director';
 import {
@@ -79,6 +80,8 @@ export interface BattleSnapshot {
   /** 最近几条演出日志。 */
   readonly log: readonly string[];
   readonly autoPlayer: boolean;
+  /** 第几局。开新局会 +1，用来重播开场的发牌动画。 */
+  readonly runId: number;
 }
 
 const LOG_LIMIT = 6;
@@ -92,6 +95,7 @@ export class BattleSession {
   private inputOpen = false;
   private selectedInstanceId: string | null = null;
   private autoPlayer = false;
+  private runId = 0;
   private readonly log: string[] = [];
   private readonly listeners = new Set<() => void>();
 
@@ -129,6 +133,7 @@ export class BattleSession {
       log: (line) => this.pushLog(line),
       worldPointOf: (instanceId) => this.worldPointOf(instanceId),
       slotPointOf: (side, zone, slotIndex) => this.slotPointOf(side, zone, slotIndex),
+      pilePointOf: (side, kind) => pilePosition(side, kind),
       playerAnchor: (side) => playerAnchorPoint(side),
       nameOf: (instanceId) => this.nameOf(instanceId),
       speed: () => this.speed(),
@@ -187,6 +192,7 @@ export class BattleSession {
       playablePrepSlots: this.playablePrepSlots(),
       log: this.log,
       autoPlayer: this.autoPlayer,
+      runId: this.runId,
     };
   }
 
@@ -213,6 +219,17 @@ export class BattleSession {
     this.state = createBattle(this.config, this.definitions);
     // 注意是**灌进同一个显示状态对象**：导演在构造时就按引用拿住了它
     adoptDisplay(this.display, displayFromState(this.state));
+    /*
+      开局手牌给一个起点：各自牌堆。开场的发牌动画是装饰性的，
+      但它让手牌从牌堆飞进手里，两者叠在一起才读得出「牌是一张张发下来的」。
+    */
+    for (const side of ['player', 'enemy'] as const) {
+      const pile = pilePosition(side, 'deck');
+      for (const instanceId of this.display.zones[side].hand) {
+        this.display.spawns[instanceId] = pile;
+      }
+    }
+    this.runId += 1;
     this.aiRng = createRng(this.config.seed ^ AI_SEED_MIX);
     this.mode = 'battle';
     this.inputOpen = false;

@@ -4,6 +4,7 @@ import { PCFShadowMap } from 'three';
 
 import type { CardDefinition, SideId } from '../domain/cards/types';
 import { BattleBoard } from '../rendering/battle/BattleBoard';
+import { DealAnimation } from '../rendering/battle/DealAnimation';
 import { DepartingCard } from '../rendering/battle/DepartingCard';
 import { PresentationDriver } from '../rendering/battle/PresentationDriver';
 import { buildBoard } from '../rendering/battle/placements';
@@ -60,6 +61,14 @@ export function BattleScene() {
   const snapshot = useBattleSession(session);
 
   useEffect(() => () => session.dispose(), [session]);
+
+  /** 开一场新局就播一次发牌动画；播完自己收掉。 */
+  const [dealing, setDealing] = useState(false);
+  useEffect(() => {
+    if (snapshot.runId > 0 && snapshot.mode === 'battle') {
+      setDealing(true);
+    }
+  }, [snapshot.runId, snapshot.mode]);
 
   const [detail, setDetail] = useState<{
     readonly card: CardDefinition;
@@ -152,6 +161,11 @@ export function BattleScene() {
             组件挂载了、画面正常，但回调一次都不触发。
             演出的表现就是「点了结束回合，画面永远停在原地，且零报错」。
           */}
+          {/* 开场的发牌动画。key 用 runId，开新局会重新播一遍 */}
+          {dealing && (
+            <DealAnimation key={snapshot.runId} onDone={() => setDealing(false)} />
+          )}
+
           <PresentationDriver session={session} />
           <EffectSystem
             capacity={profile.particleCapacity}
