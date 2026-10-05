@@ -123,9 +123,9 @@ python scripts/prepare-assets.py --check
 **实验台**：手动触发任意特效或当前卡的任意 trait，调强度/数量/时长/配色，
 可暂停冻结在任意一帧、也可立即跳过。
 
-**性能**（Intel Arc 核显，1920×1080 实测）：中档 3.2 ms/帧、178 draw calls，
+**性能**（Intel Arc 核显，1920×1080 实测）：中档 3.47 ms/帧、182 draw calls，
 60 FPS 预算下余量约 5 倍。完整数字与测量条件见
-[docs/validation/P1.md](docs/validation/P1.md) 第 3.13 节。
+[docs/validation/P1.md](docs/validation/P1.md) 第 3.13 与 3.14 节。
 
 ## 下一步
 
