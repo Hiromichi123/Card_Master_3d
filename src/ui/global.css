@@ -105,7 +105,19 @@ code {
   flex: 1 1 auto;
   min-height: 0;
   position: relative;
-  overflow: auto;
+  /* 3D 场景需要确定尺寸，不能让外层滚动条参与布局 */
+  overflow: hidden;
+}
+
+/* 3D 场景容器：绝对铺满，Canvas 才能拿到稳定的宽高 */
+.scene-viewport {
+  position: absolute;
+  inset: 0;
+}
+
+.scene-viewport canvas {
+  display: block;
+  touch-action: none;
 }
 
 .app-loading,

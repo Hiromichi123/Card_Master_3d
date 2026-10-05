@@ -1,5 +1,6 @@
 import { Suspense, useState } from 'react';
 
+import { BattleScene } from '../scenes/BattleScene';
 import { DataProbe } from './DataProbe';
 import { ErrorBoundary } from './ErrorBoundary';
 
@@ -43,7 +44,11 @@ export function App() {
         <ErrorBoundary>
           <Suspense fallback={<div className="app-loading">正在加载…</div>}>
             {route === 'probe' && <DataProbe />}
-            {route === 'battle' && <Placeholder title="战斗场景" phase="P1" />}
+            {route === 'battle' && (
+              <div className="scene-viewport">
+                <BattleScene />
+              </div>
+            )}
             {route === 'viewer' && <Placeholder title="开发查看器" phase="P1" />}
           </Suspense>
         </ErrorBoundary>

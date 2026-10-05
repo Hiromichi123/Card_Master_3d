@@ -52,7 +52,8 @@ test.describe('应用骨架', () => {
 
   test('未实现的页签给出明确占位而不是空白', async ({ page }) => {
     await page.goto('/');
-    await page.getByRole('button', { name: '战斗场景' }).click();
+    // 战斗场景在 P1 已实现，这里检查仍未实现的开发查看器
+    await page.getByRole('button', { name: '开发查看器' }).click();
     await expect(page.getByText('尚未实现，计划在 P1 阶段完成。')).toBeVisible();
   });
 });
