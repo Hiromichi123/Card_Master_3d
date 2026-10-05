@@ -2,8 +2,35 @@
 
 日期：2026-10-05。原项目：`D:\Github\card_maker`。目标项目：`D:\Github\card_master_3d`。
 
-**当前进度：P0 已完成**（数据规范与规则基线）。P1 未开始。
-下一步需要先把 Node 升级到 `>=22.12.0`，详见下方「进入 P1 的前置条件」。
+**当前进度：P0、P1 已完成。**
+P1 是工程骨架与视觉样机（3D 战桌、实体卡牌、全息、粒子特效、实验台、画质档）。
+下一步是 P2：不依赖渲染的战斗规则引擎。
+
+## 运行方式
+
+```bash
+npm install
+npm run dev          # http://127.0.0.1:5173
+```
+
+导航栏三个页签：
+
+| 页签 | 内容 |
+| --- | --- |
+| 数据自检 | 确认导入的数据被应用读到，数值与导入报告一致 |
+| 战斗场景 | 3D 战桌、实体卡牌、悬停详情、动态数值徽标 |
+| 实验台 | 手动触发卡牌特性与 13 类攻击特效，调强度/数量/时长/配色，暂停与跳过 |
+
+导航栏右侧可切换画质档（低/中/高）与演出速度（正常/快速/跳过），并可打开性能读数条。
+
+```bash
+npm run typecheck    # tsc --noEmit
+npm run test         # Vitest 单元测试
+npx playwright test  # 浏览器用例（会自动启动 dev server）
+npm run build        # 类型检查 + 生产构建
+```
+
+Node 需要 `>=22.12.0`；本机升级过程的记录见 [docs/VERSIONS.md](docs/VERSIONS.md) 第 1 节。
 
 ## 阅读顺序
 
@@ -11,11 +38,12 @@
 2. [CONSTRUCTION_CHECKLIST.md](CONSTRUCTION_CHECKLIST.md)：按阶段勾选的施工任务、依赖和验收门槛。
 3. [docs/LEGACY_AUDIT.md](docs/LEGACY_AUDIT.md)：原项目静态核查结果、迁移来源和未完成内容。
 
-P0 完成后新增的关键文档：
+P0 / P1 的关键文档：
 
 | 文件 | 内容 |
 | --- | --- |
 | [docs/validation/P0.md](docs/validation/P0.md) | P0 验证环境、逐项结果、发现的差异与待办 |
+| [docs/validation/P1.md](docs/validation/P1.md) | P1 逐项结果、实测性能数字、踩到并修掉的缺陷 |
 | [docs/rules.md](docs/rules.md) | 战斗规则基线与新旧差异（D1–D15），P2 的执行依据 |
 | [docs/SKILL_COVERAGE.md](docs/SKILL_COVERAGE.md) | 35 技能族逐族机制 + 47 种未识别 trait 的分类依据 |
 | [docs/VISUAL_SPEC.md](docs/VISUAL_SPEC.md) | 视觉规范与参考效果清单，P1 验收直接引用 |
@@ -33,18 +61,6 @@ P0 完成后新增的关键文档：
 首个可玩里程碑为 P3；已有玩法迁移完成的验收点为 P7。
 局域网联机、账号服务、旧版未接入技能、空章节和未完成活动机制均不进入本轮施工。
 用户已确认采用 3D 战桌＋实体卡牌＋立体技能特效。
-
-## 进入 P1 的前置条件
-
-**必须先把 Node 升级到 `>=22.12.0`（推荐 24.x LTS）。**
-当前机器是 22.11.0，不满足 Vite 8 的 `engines` 校验。
-
-自动升级试过一次，卡在权限上：现有 Node 装在 `F:\Node.js\`，该目录对普通用户只读，
-而它位于 **Machine PATH**，优先级高于 User PATH —— 所以只往 User PATH 里加新 Node 不生效。
-需要**一次提权操作**。Node 24 已经装好一份可用的副本，替换命令见
-[docs/VERSIONS.md](docs/VERSIONS.md) 第 1.3 节。
-
-如果无法提权，退路是改用 Node 22.11 可跑的 Vite 6 工具链（见同文件第 1.3 节末尾）。
 
 ## P0 已完成的内容
 
