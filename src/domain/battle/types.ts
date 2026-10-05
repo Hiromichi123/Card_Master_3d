@@ -10,7 +10,13 @@
  * 2. 事件里带已经确定的目标与数值；演出层不得再次随机选择目标或自行扣血。
  */
 
-import type { CardInstance, CombatStateGroup, SideId, ZoneId } from '../cards/types';
+import type {
+  CardDefinition,
+  CardInstance,
+  CombatStateGroup,
+  SideId,
+  ZoneId,
+} from '../cards/types';
 
 /**
  * 规则常量。
@@ -74,16 +80,23 @@ export type BattlePhase =
   /** 已经结束。 */
   | 'ended';
 
-/** 一方的区域状态。 */
+/**
+ * 一方的区域状态。
+ *
+ * 数组本身可以改内容（抽牌、换区、整理槽位都在改它），
+ * 但**长度固定**：准备区与战斗区的长度由 `BattleRules` 决定，
+ * 战斗中不增删槽位。`prep` / `battle` 用 `null` 表示空槽，
+ * 而不是用变长数组——位置是对位规则的一部分，不能被压缩掉。
+ */
 export interface SideZones {
   /** 抽牌堆，索引 0 为下一张要抽的牌。 */
-  readonly deck: string[];
-  readonly hand: string[];
+  deck: string[];
+  hand: string[];
   /** 准备区，固定长度，`null` 表示空槽。 */
-  readonly prep: (string | null)[];
+  prep: (string | null)[];
   /** 战斗区，固定长度，`null` 表示空槽。 */
-  readonly battle: (string | null)[];
-  readonly discard: string[];
+  battle: (string | null)[];
+  discard: string[];
 }
 
 /**
@@ -91,6 +104,14 @@ export interface SideZones {
  */
 export interface BattleState {
   readonly rules: BattleRules;
+  /**
+   * 本局用到的卡牌定义，按 cardId 索引。
+   *
+   * 规则层要读 trait（沉默看对位、飞行看双方、不死/复活看死亡卡），
+   * 而实例上只存 `definitionId`。把定义表放进状态里，
+   * 引擎就是自包含的：不需要外部再传一份数据库，也能完整重放一局。
+   */
+  readonly definitions: Readonly<Record<string, CardDefinition>>;
   readonly seed: number;
   /** RNG 的内部状态；规则随机与粒子随机完全分开（PLAN 第 4.2 节）。 */
   rng: RngState;
@@ -175,6 +196,20 @@ export type CommandValidation =
  * 战斗事件。每个事件都带已确定的数值与目标，
  * 演出层只负责按顺序播放，不重新计算。
  */
+/**
+ * 对联合类型做 Omit。
+ *
+ * 直接用 `Omit<BattleEvent, K>` 是错的：`Omit` 不分配到联合的每个成员上，
+ * 它只会保留**所有成员共有的**键，判别字段与各分支的字段全部丢失，
+ * 于是写事件时每个字段都报「不支持该属性」。必须显式分配。
+ */
+export type DistributiveOmit<T, K extends PropertyKey> = T extends unknown
+  ? Omit<T, K>
+  : never;
+
+/** 事件的载荷：不含序号与回合，由引擎补。 */
+export type BattleEventPayload = DistributiveOmit<BattleEvent, 'seq' | 'turn'>;
+
 export type BattleEvent = { readonly seq: number; readonly turn: number } & (
   | { readonly type: 'BattleStarted'; readonly config: BattleConfig }
   | { readonly type: 'CardDrawn'; readonly side: SideId; readonly instanceId: string; readonly fromDeckIndex: number }
@@ -186,6 +221,7 @@ export type BattleEvent = { readonly seq: number; readonly turn: number } & (
   | { readonly type: 'DamageApplied'; readonly side: SideId; readonly instanceId: string; readonly amount: number; readonly hpBefore: number; readonly hpAfter: number; readonly source: DamageSource }
   | { readonly type: 'Healed'; readonly side: SideId; readonly instanceId: string; readonly amount: number; readonly hpBefore: number; readonly hpAfter: number }
   | { readonly type: 'StatChanged'; readonly side: SideId; readonly instanceId: string; readonly stat: 'atk'; readonly from: number; readonly to: number; readonly cause: string }
+  | { readonly type: 'PlayerHpChanged'; readonly side: SideId; readonly amount: number; readonly hpBefore: number; readonly hpAfter: number; readonly source: DamageSource }
   | { readonly type: 'CardDied'; readonly side: SideId; readonly instanceId: string; readonly groupId: string; readonly collapsedInstanceIds: readonly string[] }
   | { readonly type: 'CardMoved'; readonly side: SideId; readonly instanceId: string; readonly from: ZoneId; readonly to: ZoneId; readonly slotIndex: number }
   | { readonly type: 'CloneCreated'; readonly side: SideId; readonly instanceId: string; readonly groupId: string; readonly battleSlot: number; readonly mode: 'shared' | 'independent' }

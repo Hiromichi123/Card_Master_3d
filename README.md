@@ -2,9 +2,9 @@
 
 日期：2026-10-05。原项目：`D:\Github\card_maker`。目标项目：`D:\Github\card_master_3d`。
 
-**当前进度：P0、P1 已完成。**
-P1 是工程骨架与视觉样机（3D 战桌、实体卡牌、全息、粒子特效、实验台、画质档）。
-下一步是 P2：不依赖渲染的战斗规则引擎。
+**当前进度：P0、P1、P2 已完成。**
+P2 是不依赖渲染的战斗规则引擎（35 个技能族、带 seed 的 RNG、基础 AI）。
+下一步是 P3：首个可玩战斗切片（把引擎接到 3D 场景上）。
 
 ## 运行方式
 
@@ -48,6 +48,7 @@ P0 / P1 的关键文档：
 | --- | --- |
 | [docs/validation/P0.md](docs/validation/P0.md) | P0 验证环境、逐项结果、发现的差异与待办 |
 | [docs/validation/P1.md](docs/validation/P1.md) | P1 逐项结果、实测性能数字、踩到并修掉的缺陷 |
+| [docs/validation/P2.md](docs/validation/P2.md) | P2 逐项结果、`rules.md` 七个待复核项的结论 |
 | [docs/rules.md](docs/rules.md) | 战斗规则基线与新旧差异（D1–D15），P2 的执行依据 |
 | [docs/SKILL_COVERAGE.md](docs/SKILL_COVERAGE.md) | 35 技能族逐族机制 + 47 种未识别 trait 的分类依据 |
 | [docs/VISUAL_SPEC.md](docs/VISUAL_SPEC.md) | 视觉规范与参考效果清单，P1 验收直接引用 |
@@ -141,8 +142,26 @@ python scripts/prepare-assets.py --check
 60 FPS 预算下余量约 5 倍。完整数字与测量条件见
 [docs/validation/P1.md](docs/validation/P1.md) 第 3.13 与 3.14 节。
 
+## P2 已完成的内容
+
+**引擎**（`src/domain/battle/`）：`Command → Resolution(events + patches + finalState)`。
+顺序基线按 `docs/rules.md`：胜负预检 → 双方 CD 递减 → 部署 → 上场技能 →
+从左到右攻击 → 死亡与死亡技能 → 槽位整理 → 胜负 → 换边。
+**不依赖 React / Three.js / DOM**，`src/domain/` 下没有任何对它们的 import，
+因此可以在 node 环境里跑完整局。
+
+**技能**（`src/domain/skills/rules.ts`）：35 个族全部实现，逐族机制与证据见
+[docs/SKILL_COVERAGE.md](docs/SKILL_COVERAGE.md)。
+
+**保留的旧版行为**：双方 CD 一起递减、同回合部署的卡会立刻攻击、
+免疫只挡技能伤害、地对空打本体、冰封只造成伤害。
+
+**按计划改动的地方**（编号见 `docs/rules.md` 第 10 节）：伤害不再由动画回调交付、
+胜负计入牌堆、新增回合上限平局、同时死亡改对称判定、死亡分组不用 `id()`。
+
 ## 下一步
 
-P2：不依赖渲染的战斗规则引擎。执行依据是
-[docs/rules.md](docs/rules.md)（含 15 条允许改动的差异与 7 项待复核）
-与 [docs/SLICE.md](docs/SLICE.md)（固定 seed 与 10 个验证场景）。
+P3：首个可玩战斗切片。把 `BattleState` 映射到 3D 战桌，
+点击选牌/出牌，按事件顺序播放演出并在命中节点应用 patch，
+接上 AI、胜负页与快速/跳过。执行依据是本文件的 P1/P2 产物与
+[docs/validation/P2.md](docs/validation/P2.md)。

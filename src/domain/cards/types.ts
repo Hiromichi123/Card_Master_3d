@@ -149,18 +149,17 @@ export interface CardInstance {
   /** 区域内的槽位下标；`deck`/`discard` 为 -1。 */
   slotIndex: number;
   /**
-   * 所属共享状态组。分身的多张卡指向同一个组（共享 HP/ATK）。
-   * 见 `game/skills/skill_effects.py:817`。
+   * 所属状态组。战斗中的可变数值（HP/ATK）一律存在组上，不在实例上。
+   *
+   * 这样建模是因为旧版的分身**共享同一个 `CardData` 对象**
+   * （`game/skills/skill_effects.py:817`），共享的是 HP 与 ATK 两者，
+   * 不只是生命。把数值放在组上，「分身受伤处处可见」就是自动成立的，
+   * 而不是靠两处同步去维持。
+   *
+   * 复制（`skill_effects.py:858` 的 deepcopy）另起一个组，因此天然独立。
    */
   stateGroupId: string;
-  /**
-   * 独立生命值。仅当该实例不共享状态组时生效；
-   * 复制（`skill_effects.py:858` 的 deepcopy）使用独立状态。
-   */
-  hp: number;
-  /** 当前攻击力，含战斗中的增减益。 */
-  atk: number;
-  /** 部署后剩余冷却回合。 */
+  /** 部署后剩余冷却回合。CD 是槽位级的，不共享。 */
   cd: number;
   /** 是否处于飞行状态（场景规则，非技能族）。 */
   flying: boolean;
@@ -192,16 +191,26 @@ export interface CardMarks {
 export interface CombatStateGroup {
   readonly groupId: string;
   readonly owner: SideId;
-  /** 当前共享生命值。组内任一成员受击都会改动这里。 */
+  /** 当前生命值。组内任一成员受击都会改动这里——分身共享的就是它。 */
   hp: number;
-  /** 共享生命上限。 */
-  readonly maxHp: number;
-  readonly baseAtk: number;
-  /** 组内成员的 instanceId，按创建顺序。 */
-  readonly memberIds: readonly string[];
   /**
-   * 该组本轮已经行动的成员数，用于“一份状态组每方每回合的原有使用限制”
-   * （PLAN 第 4.2 节）。分身死亡只处理一次共享状态组。
+   * 生命上限。
+   *
+   * 旧版的祝福是「ATK+n 且 HP+n（当前 HP 一起提高）」，
+   * 因此上限也必须能被提高。若让它固定，后面任何一次治疗按上限截断，
+   * 都会把祝福加的血**压回去**——旧版就有这个毛病（`min(max_hp, hp + n)`），
+   * 这里按「祝福同时提高上限」处理，并在差异记录里写明。
    */
-  actedThisTurn: number;
+  maxHp: number;
+  /** 当前攻击力，含战斗中的增减益。 */
+  atk: number;
+  /** 组内成员的 instanceId，按创建顺序。分身会有多个，复制只有一个。 */
+  readonly memberIds: string[];
+  /**
+   * 死亡是否已经处理过。
+   *
+   * 分身共享一份状态，因此整组只处理**一次**死亡：一次弃牌、一次死亡技能。
+   * 旧版靠 `id(card_data)` 分组做到这一点，这里靠这个标记。
+   */
+  deathHandled: boolean;
 }
