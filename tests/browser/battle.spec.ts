@@ -126,7 +126,7 @@ test.describe('战斗台面主题', () => {
     await page.getByRole('button', { name: '战斗场景' }).click();
     await page.waitForTimeout(4000);
 
-    const select = page.locator('.quality__select');
+    const select = page.getByLabel('战斗台面');
     const all = await select
       .locator('option')
       .evaluateAll((options) => options.map((option) => (option as HTMLOptionElement).value));
@@ -171,5 +171,69 @@ test.describe('战斗台面主题', () => {
     expect(unique.size, `有台面外观完全相同：${JSON.stringify([...seen])}`).toBe(ids.length);
 
     expect(problems, `切换台面时出错：\n${problems.join('\n')}`).toEqual([]);
+  });
+});
+
+test.describe('相机', () => {
+  test('四个视角预设都能切换，取景确实改变且内容不被裁掉', async ({ page }) => {
+    const problems: string[] = [];
+    page.on('pageerror', (error) => problems.push(error.message));
+
+    await page.goto('/');
+    await page.getByRole('button', { name: '战斗场景' }).click();
+    await page.waitForTimeout(4000);
+
+    const camSelect = page.getByLabel('相机视角');
+    const ids = await camSelect
+      .locator('option')
+      .evaluateAll((options) => options.map((option) => (option as HTMLOptionElement).value));
+    expect(ids).toEqual(['orbit', 'top', 'low', 'commander']);
+
+    const seen = new Map<string, string>();
+    for (const id of ids) {
+      await camSelect.selectOption(id);
+      await page.waitForTimeout(1800);
+      seen.set(id, await canvasPngBase64(page));
+    }
+
+    // 每个预设都应当给出不同的取景；相同说明模式没生效
+    expect(new Set(seen.values()).size).toBe(ids.length);
+
+    // 取景是按内容外接盒算的，所以任何视角下格子垫都应当完整可见
+    await camSelect.selectOption('orbit');
+    await page.waitForTimeout(1800);
+    const bounds = await page.evaluate(async (png: string) => {
+      const blob = await (await fetch(`data:image/png;base64,${png}`)).blob();
+      const bitmap = await createImageBitmap(blob);
+      const off = new OffscreenCanvas(bitmap.width, bitmap.height);
+      const ctx = off.getContext('2d');
+      if (!ctx) return null;
+      ctx.drawImage(bitmap, 0, 0);
+      const { data } = ctx.getImageData(0, 0, bitmap.width, bitmap.height);
+      // 奶白色的棋盘格只出现在格子垫上，用它来定位板面
+      let minX = bitmap.width;
+      let maxX = -1;
+      for (let y = 0; y < bitmap.height; y += 3) {
+        for (let x = 0; x < bitmap.width; x += 3) {
+          const i = (y * bitmap.width + x) * 4;
+          const r = data[i]!;
+          const g = data[i + 1]!;
+          const b = data[i + 2]!;
+          if (r > 165 && g > 145 && b > 105) {
+            if (x < minX) minX = x;
+            if (x > maxX) maxX = x;
+          }
+        }
+      }
+      return { minX, maxX, width: bitmap.width };
+    }, await canvasPngBase64(page));
+
+    expect(bounds, '没能定位到格子垫').not.toBeNull();
+    if (bounds) {
+      expect(bounds.minX, '板面左侧被裁掉').toBeGreaterThan(2);
+      expect(bounds.width - bounds.maxX, '板面右侧被裁掉').toBeGreaterThan(2);
+    }
+
+    expect(problems, `相机切换出错：\n${problems.join('\n')}`).toEqual([]);
   });
 });

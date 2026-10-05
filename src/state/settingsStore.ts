@@ -5,6 +5,10 @@ import {
   type QualityProfile,
   type QualityTier,
 } from '../rendering/quality';
+import {
+  DEFAULT_CAMERA_MODE,
+  type CameraModeId,
+} from '../rendering/battle/cameraModes';
 import { DEFAULT_THEME_ID, getTableTheme, type TableTheme } from '../rendering/table/themes';
 
 /**
@@ -38,12 +42,15 @@ interface SettingsState {
   readonly tableThemeId: string;
   /** 解析后的主题对象，避免每帧重新查找。 */
   readonly tableTheme: TableTheme;
+  /** 相机视角预设。 */
+  readonly cameraModeId: CameraModeId;
 
   setQuality: (tier: QualityTier) => void;
   setPresentationSpeed: (speed: PresentationSpeed) => void;
   setCameraShake: (enabled: boolean) => void;
   setShowPerf: (enabled: boolean) => void;
   setTableTheme: (id: string) => void;
+  setCameraMode: (id: CameraModeId) => void;
   setReduceMotion: (enabled: boolean) => void;
 }
 
@@ -54,6 +61,7 @@ export const useSettingsStore = create<SettingsState>((set) => ({
   cameraShake: true,
   showPerf: false,
   reduceMotion: false,
+  cameraModeId: DEFAULT_CAMERA_MODE,
   tableThemeId: DEFAULT_THEME_ID,
   tableTheme: getTableTheme(DEFAULT_THEME_ID),
 
@@ -63,6 +71,7 @@ export const useSettingsStore = create<SettingsState>((set) => ({
   setShowPerf: (showPerf) => set({ showPerf }),
   setTableTheme: (id) => set({ tableThemeId: id, tableTheme: getTableTheme(id) }),
   setReduceMotion: (reduceMotion) => set({ reduceMotion }),
+  setCameraMode: (cameraModeId) => set({ cameraModeId }),
 }));
 
 /** 演出速度 → 时长倍数。跳过模式由 `skipAll` 直接补完，不走倍数。 */

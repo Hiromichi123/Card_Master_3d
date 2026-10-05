@@ -1,4 +1,5 @@
 import { QUALITY_LABELS, type QualityTier } from '../rendering/quality';
+import { CAMERA_MODES } from '../rendering/battle/cameraModes';
 import { TABLE_THEMES } from '../rendering/table/themes';
 import { useSettingsStore, type PresentationSpeed } from '../state/settingsStore';
 
@@ -31,6 +32,8 @@ export function QualityControl() {
   const setShowPerf = useSettingsStore((state) => state.setShowPerf);
   const tableThemeId = useSettingsStore((state) => state.tableThemeId);
   const setTableTheme = useSettingsStore((state) => state.setTableTheme);
+  const cameraModeId = useSettingsStore((state) => state.cameraModeId);
+  const setCameraMode = useSettingsStore((state) => state.setCameraMode);
   const reduceMotion = useSettingsStore((state) => state.reduceMotion);
   const setReduceMotion = useSettingsStore((state) => state.setReduceMotion);
 
@@ -40,12 +43,29 @@ export function QualityControl() {
         <span className="quality__label">台面</span>
         <select
           className="quality__select"
+          aria-label="战斗台面"
           value={tableThemeId}
           onChange={(event) => setTableTheme(event.target.value)}
         >
           {TABLE_THEMES.map((theme) => (
             <option key={theme.id} value={theme.id}>
               {theme.name}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      <label className="quality__group" title="相机视角；在场景里拖动可自由旋转">
+        <span className="quality__label">视角</span>
+        <select
+          className="quality__select"
+          aria-label="相机视角"
+          value={cameraModeId}
+          onChange={(event) => setCameraMode(event.target.value as typeof cameraModeId)}
+        >
+          {CAMERA_MODES.map((mode) => (
+            <option key={mode.id} value={mode.id}>
+              {mode.name}
             </option>
           ))}
         </select>
