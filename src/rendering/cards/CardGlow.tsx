@@ -28,28 +28,33 @@ import { CARD_FACE_OFFSET, getCardGlowGeometry } from './cardGeometry';
  * 的 `COLORS`，那份表也就是卡牌上等级字样的颜色）。
  * 自己另配一套的话，同一张牌在旧版和这里会是两种颜色，对照起来对不上。
  *
- * **强度不是「稀有度越高越亮」。** 加色混合下颜色本身的亮度差异很大：
- * `SSS` 是纯红 (255,0,0)，`A+` 是深紫 (75,0,130)——同样一层光，
- * 深紫几乎看不见、纯红直接过曝。所以按颜色亮度反着补：
- * 越暗的颜色给越高的强度，纯红反而压低（实机反馈正是「SSS 边缘太强烈」）。
+ * 强度按稀有度**单调递增**，`A` / `A+` 是 0.5 的基点：
  *
- * 整体强度压在 0.5 以下也是同一个原因：加色混合叠在**已经很亮的卡面**上，
- * 强度稍高就从「发光」变成「一圈实心色框」。
+ * | D | C, C+ | B, B+ | A, A+ | S, S+ | SS, SS+ | SSS |
+ * | --- | --- | --- | --- | --- | --- | --- |
+ * | 0.20 | 0.30 | 0.40 | **0.50** | 0.55 | 0.60 | 0.65 |
+ *
+ * **带 `+` 与不带 `+` 同亮度**——它们是同一档，只是同名卡的不同版本。
+ *
+ * 注意这**不是**「让观感上一样亮」：加色混合下颜色本身的亮度差很大，
+ * `A+` 的深紫 (75,0,130) 在 0.5 时就是比 `A` 的紫 (138,43,226) 暗。
+ * 这是按稀有度排一条统一刻度的必然结果，不是缺陷。
+ * `#elna` 在旧版里与 SSS 同为 level 0，取同一档。
  */
 const RARITY_GLOW: Record<CardRarity, { color: string; intensity: number; pulse: boolean }> = {
   D: { color: '#808080', intensity: 0.2, pulse: false },
-  C: { color: '#00ff00', intensity: 0.18, pulse: false },
+  C: { color: '#00ff00', intensity: 0.3, pulse: false },
   'C+': { color: '#008000', intensity: 0.3, pulse: false },
-  B: { color: '#00bfff', intensity: 0.24, pulse: false },
-  'B+': { color: '#0000a0', intensity: 0.46, pulse: false },
-  A: { color: '#8a2be2', intensity: 0.34, pulse: false },
+  B: { color: '#00bfff', intensity: 0.4, pulse: false },
+  'B+': { color: '#0000a0', intensity: 0.4, pulse: false },
+  A: { color: '#8a2be2', intensity: 0.5, pulse: false },
   'A+': { color: '#4b0082', intensity: 0.5, pulse: false },
-  S: { color: '#ffd700', intensity: 0.5, pulse: true },
-  'S+': { color: '#a0522d', intensity: 0.42, pulse: true },
-  SS: { color: '#ff6414', intensity: 0.44, pulse: true },
-  'SS+': { color: '#ff8072', intensity: 0.46, pulse: true },
-  SSS: { color: '#ff0000', intensity: 0.34, pulse: true },
-  '#elna': { color: '#ff1493', intensity: 0.42, pulse: true },
+  S: { color: '#ffd700', intensity: 0.55, pulse: true },
+  'S+': { color: '#a0522d', intensity: 0.55, pulse: true },
+  SS: { color: '#ff6414', intensity: 0.6, pulse: true },
+  'SS+': { color: '#ff8072', intensity: 0.6, pulse: true },
+  SSS: { color: '#ff0000', intensity: 0.65, pulse: true },
+  '#elna': { color: '#ff1493', intensity: 0.65, pulse: true },
 };
 
 export function CardGlow({ rarity }: { rarity: CardRarity }) {
