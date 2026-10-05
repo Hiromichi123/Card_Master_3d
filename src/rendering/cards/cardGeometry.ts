@@ -142,9 +142,11 @@ export const CARD_DIMENSIONS = {
  * 三层叠在一起才有「发光」的观感，单独一条亮线只会像描了个边。
  */
 const GLOW_BANDS = [
-  { inner: -0.085, outer: 0.085, intensity: 0.13 },
-  { inner: -0.035, outer: 0.035, intensity: 0.3 },
-  { inner: -0.011, outer: 0.011, intensity: 0.95 },
+  // 外晕：只往外带一点点，宽了就成了「加粗描边」而不是发光
+  { inner: -0.05, outer: 0.05, intensity: 0.1 },
+  { inner: -0.022, outer: 0.022, intensity: 0.24 },
+  // 亮芯：很细，压在最里面
+  { inner: -0.008, outer: 0.008, intensity: 0.85 },
 ] as const;
 
 let glowGeometry: BufferGeometry | null = null;
