@@ -2,7 +2,7 @@ import type { CardDefinition } from '../../domain/cards/types';
 import { CardMesh } from '../cards/CardMesh';
 import { useSettingsStore } from '../../state/settingsStore';
 import { CameraRig } from './CameraRig';
-import { LAYOUT } from './layout';
+import { SceneEnvironment } from './SceneEnvironment';
 import { SlotMarkers } from './SlotMarkers';
 import { Table } from './Table';
 
@@ -34,8 +34,6 @@ export interface BattleBoardProps {
   readonly selectedCardId?: string | null | undefined;
   readonly onCardClick?: ((card: CardDefinition) => void) | undefined;
   readonly onCardHover?: ((card: CardDefinition, hovered: boolean) => void) | undefined;
-  /** 阴影贴图边长，按画质档传入。 */
-  readonly shadowMapSize?: number | undefined;
 }
 
 export function BattleBoard({
@@ -45,40 +43,30 @@ export function BattleBoard({
   selectedCardId,
   onCardClick,
   onCardHover,
-  shadowMapSize = 2048,
 }: BattleBoardProps) {
   const theme = useSettingsStore((state) => state.tableTheme);
   const quality = useSettingsStore((state) => state.quality);
+  const shadows = useSettingsStore((state) => state.profile.shadows);
+  const reduceMotion = useSettingsStore((state) => state.reduceMotion);
 
   return (
     <>
       <CameraRig />
 
-      {/* 环境光给整体一个可读的底，主光负责方向感与阴影 */}
-      <ambientLight intensity={0.9} />
-      <hemisphereLight args={['#9fb6e0', '#3b4252', 0.9]} />
-
       {/*
-        主光跟随桌面中心，而不是世界原点：桌子是按 tableCenterZ 居中的，
-        光源若仍以原点为基准，远端准备区会落在阴影相机范围外而丢掉阴影。
+        环境与灯光移植自棋盘项目：一盏投影主光 + 冷色补光 + 轮廓光 + 极低环境光，
+        再加上运行时生成的房间环境贴图。台面用的是物理材质，
+        没有环境贴图时 clearcoat 与 envMapIntensity 基本不起作用，
+        木头和大理石会长得一样平。
       */}
-      <directionalLight
-        position={[6, 12, LAYOUT.tableCenterZ + 7]}
-        target-position={[0, 0, LAYOUT.tableCenterZ]}
-        intensity={1.5}
-        castShadow
-        shadow-mapSize-width={shadowMapSize}
-        shadow-mapSize-height={shadowMapSize}
-        shadow-camera-near={1}
-        shadow-camera-far={45}
-        shadow-camera-left={-11}
-        shadow-camera-right={11}
-        shadow-camera-top={11}
-        shadow-camera-bottom={-11}
-        shadow-bias={-0.0006}
-      />
+      <SceneEnvironment theme={theme} shadows={shadows} />
 
-      <Table theme={theme} quality={quality} />
+      <Table
+        theme={theme}
+        quality={quality}
+        weatherId={theme.id}
+        reduceMotion={reduceMotion}
+      />
       <SlotMarkers placeable={placeable} targeted={targeted} />
 
       {placements?.map((placement, index) => (

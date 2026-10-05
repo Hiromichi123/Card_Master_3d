@@ -88,8 +88,21 @@
 棋盘那类「深色场景 + 小体积高亮」可以低到 0.62；本项目卡面是大块高亮表面，
 阈值过低会让整张卡发光、糊掉插画与中文。阈值取「主题值与下限 0.9 的较大者」。
 
-台面清单见 `src/rendering/table/themes.ts`；来源与许可见 `assets-sources.json` 的
-`portedCode` 段。
+`V-TABLE-10` 场景必须有**运行时生成的环境贴图**（`RoomEnvironment` + `PMREMGenerator`），
+不下载 HDR 文件。台面用的是 `MeshPhysicalMaterial`，它的 `clearcoat`、`transmission`、
+`envMapIntensity` 只有在有环境贴图时才起作用——没有它，上漆的木头、大理石与石材
+会长得一样平。
+
+`V-TABLE-11` 灯光固定为**三盏 + 一点环境光**：一盏投影主光、一盏冷色补光（把暗部托起来）、
+一盏低位轮廓光（把主体从背景里分出来）。主题只调环境光强度、背景与雾——
+换主题换的是场地氛围，不是重新打一次光。
+
+`V-TABLE-12` 部分台面带**天气**（草地会摇、荒原浮尘、火山余烬、雪原落雪）。
+天气只影响表现，不参与任何规则；只用 `Points` 与一个 `InstancedMesh` 两个图元实现，
+整层只占几次 draw call；低画质档减少数量，「减少动态」时**冻结而不是移除**。
+
+台面清单见 `src/rendering/table/themes.ts`，天气见 `src/rendering/table/weather.tsx`；
+来源与许可见 `assets-sources.json` 的 `portedCode` 段。
 
 ---
 
@@ -201,6 +214,7 @@ P1 的验收要求「代表 VFX 展示」，以下三组是**最小可验收集�
 | [Poly Haven](https://polyhaven.com/license) | HDRI、桌面/石材 PBR | CC0 | 下载适当分辨率并本地化 |
 | [Kenney Particle Pack](https://kenney.nl/assets/particle-pack) | 粒子图集 | CC0（页面标记） | 整理图集后本地加载 |
 | 自制程序几何 / Shader | 法阵、冰晶、护盾、电弧、卡框 | 本项目自有 | 参数化复用，不依赖大量模型 |
+| [Chessboard-three.js](https://github.com/ibra-kdbra/Chessboard-three.js) | 程序化台面纹理、材质构造器、台面主题、环境光照、天气层 | MIT | **移植代码**，逐文件对应见 `assets-sources.json` 的 `portedCode` 段；棋子模型与联机部分未移植 |
 | [pokemon-cards-css](https://github.com/simeydotme/pokemon-cards-css) | 全息**视觉参考** | GPL-3.0 | **只参考视觉规律，不复制源码或 Pokémon 插画** |
 
 素材登记表为仓库根目录的 `assets-sources.json`（P0-15 产物）。

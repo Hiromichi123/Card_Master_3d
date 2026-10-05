@@ -27,6 +27,13 @@ interface SettingsState {
   readonly cameraShake: boolean;
   /** 是否显示性能读数条。 */
   readonly showPerf: boolean;
+  /**
+   * 减少动态。
+   *
+   * 天气层不会因此消失，只会**冻结**——静止的画面仍然是玩家选的那张台面，
+   * 这条与原项目的处理一致。
+   */
+  readonly reduceMotion: boolean;
   /** 战斗台面主题 id。 */
   readonly tableThemeId: string;
   /** 解析后的主题对象，避免每帧重新查找。 */
@@ -37,6 +44,7 @@ interface SettingsState {
   setCameraShake: (enabled: boolean) => void;
   setShowPerf: (enabled: boolean) => void;
   setTableTheme: (id: string) => void;
+  setReduceMotion: (enabled: boolean) => void;
 }
 
 export const useSettingsStore = create<SettingsState>((set) => ({
@@ -45,6 +53,7 @@ export const useSettingsStore = create<SettingsState>((set) => ({
   presentationSpeed: 'normal',
   cameraShake: true,
   showPerf: false,
+  reduceMotion: false,
   tableThemeId: DEFAULT_THEME_ID,
   tableTheme: getTableTheme(DEFAULT_THEME_ID),
 
@@ -53,6 +62,7 @@ export const useSettingsStore = create<SettingsState>((set) => ({
   setCameraShake: (cameraShake) => set({ cameraShake }),
   setShowPerf: (showPerf) => set({ showPerf }),
   setTableTheme: (id) => set({ tableThemeId: id, tableTheme: getTableTheme(id) }),
+  setReduceMotion: (reduceMotion) => set({ reduceMotion }),
 }));
 
 /** 演出速度 → 时长倍数。跳过模式由 `skipAll` 直接补完，不走倍数。 */

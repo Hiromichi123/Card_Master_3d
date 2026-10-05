@@ -31,6 +31,8 @@ export function QualityControl() {
   const setShowPerf = useSettingsStore((state) => state.setShowPerf);
   const tableThemeId = useSettingsStore((state) => state.tableThemeId);
   const setTableTheme = useSettingsStore((state) => state.setTableTheme);
+  const reduceMotion = useSettingsStore((state) => state.reduceMotion);
+  const setReduceMotion = useSettingsStore((state) => state.setReduceMotion);
 
   return (
     <div className="quality">
@@ -90,6 +92,15 @@ export function QualityControl() {
           onChange={(event) => setCameraShake(event.target.checked)}
         />
         震动
+      </label>
+
+      <label className="quality__group quality__group--check" title="冻结天气层（不移除）">
+        <input
+          type="checkbox"
+          checked={reduceMotion}
+          onChange={(event) => setReduceMotion(event.target.checked)}
+        />
+        静止
       </label>
 
       <label className="quality__group quality__group--check" title="性能读数条">

@@ -89,7 +89,6 @@ export function BattleScene() {
             selectedCardId={selectedCard?.cardId ?? null}
             onCardClick={handleCardClick}
             onCardHover={handleCardHover}
-            shadowMapSize={profile.shadowMapSize}
           />
           {/*
             背景与雾来自台面主题：木桌是暖褐的暗、霓虹是紫黑、

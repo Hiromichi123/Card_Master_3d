@@ -12,6 +12,7 @@ import {
 
 import { buildMaterial } from '../table/materials';
 import type { TableTheme } from '../table/themes';
+import { hasWeather, WeatherLayer } from '../table/weather';
 import { LAYOUT } from './layout';
 
 /**
@@ -94,9 +95,18 @@ export interface TableProps {
   readonly theme: TableTheme;
   /** 程序化贴图的分辨率档。低档不出贴图（见 materials.ts）。 */
   readonly quality: 'low' | 'medium' | 'high';
+  /** 天气层的主题 id。没有天气的主题传到表外即可。 */
+  readonly weatherId?: string | undefined;
+  /** 减少动态：天气层冻结而不是移除。 */
+  readonly reduceMotion?: boolean | undefined;
 }
 
-export function Table({ theme, quality }: TableProps) {
+export function Table({
+  theme,
+  quality,
+  weatherId,
+  reduceMotion = false,
+}: TableProps) {
   const half = MAT_SPAN / 2;
 
   const { lightMaterial, darkMaterial, frameMaterial, inlayMaterial, slabMaterial } =
@@ -196,6 +206,15 @@ export function Table({ theme, quality }: TableProps) {
   const lightTilesRef = useRef<InstancedMesh>(null);
   const darkTilesRef = useRef<InstancedMesh>(null);
 
+  /**
+   * 写入实例矩阵。
+   *
+   * 依赖里**必须**带上材质：`instancedMesh` 的 `args` 含材质对象，
+   * 换主题时 `buildMaterial` 会返回一个新材质，`args` 随之改变，
+   * R3F 就会**重建**这个 InstancedMesh——而重建会把所有实例矩阵重置为单位矩阵。
+   * 如果依赖里只有 `tilePositions`（换主题时它不变），这个 effect 不会再跑，
+   * 于是棋盘中央会留下一块没有变换的杂散格子（实测就是这么发现的）。
+   */
   useLayoutEffect(() => {
     const matrix = new Matrix4();
     const write = (mesh: InstancedMesh | null, positions: [number, number][]): void => {
@@ -210,7 +229,7 @@ export function Table({ theme, quality }: TableProps) {
     };
     write(lightTilesRef.current, tilePositions.light);
     write(darkTilesRef.current, tilePositions.dark);
-  }, [tilePositions]);
+  }, [tilePositions, lightMaterial, darkMaterial]);
 
   return (
     <group position={[0, 0, LAYOUT.tableCenterZ]}>
@@ -265,6 +284,14 @@ export function Table({ theme, quality }: TableProps) {
         <planeGeometry args={[MAT_SPAN - FRAME_WIDTH, 0.016]} />
         <meshBasicMaterial color={theme.mat.inlay} transparent opacity={0.5} />
       </mesh>
+
+      {/*
+        天气层跟桌子一起平移，所以它落在桌面坐标系里而不是世界原点——
+        否则桌面布局一改（桌子不再居中）就会露馅。
+      */}
+      {weatherId && hasWeather(weatherId) && (
+        <WeatherLayer themeId={weatherId} quality={quality} reducedMotion={reduceMotion} />
+      )}
     </group>
   );
 }

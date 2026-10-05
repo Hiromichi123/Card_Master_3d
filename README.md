@@ -112,9 +112,19 @@ python scripts/prepare-assets.py --check
 **10 套战斗台面**（导航栏「台面」下拉切换）：锦标赛、大理石厅、黑曜石、祖母绿牌室、
 霓虹网格、象牙与乌木、草原、荒原、火山、雪原。每套同时决定格子垫、边框、嵌线、
 背景与雾、槽位配色与泛光性格。贴图是程序化生成的（fbm 噪声驱动的木纹/大理石/石面），
-仓库里不放二进制纹理。台面系统与材质数据移植自
+仓库里不放二进制纹理。
+
+**场景环境**：运行时用 `RoomEnvironment` + `PMREMGenerator` 生成环境贴图（不下载 HDR），
+灯光是「投影主光 + 冷色补光 + 低位轮廓光 + 一点环境光」。这不是美化——
+台面用 `MeshPhysicalMaterial`，没有环境贴图时 clearcoat 与材质反射参数根本不起作用。
+
+**台面天气**：草原摇草、荒原浮尘、火山余烬、雪原落雪。只影响表现、不参与规则；
+整层只用 `Points` 与一个 `InstancedMesh`，每套台面只多 1–2 次 draw call。
+导航栏的「静止」会**冻结**天气而不是移除它。
+
+台面系统、材质数据、环境光照与天气层均移植自
 [Chessboard-three.js](https://github.com/ibra-kdbra/Chessboard-three.js)（MIT），
-来源见 [assets-sources.json](assets-sources.json) 的 `portedCode` 段。
+逐文件对应见 [assets-sources.json](assets-sources.json) 的 `portedCode` 段。
 
 **全息与特效**（`src/rendering/cards/HoloLayer.tsx`、`src/rendering/effects`）：
 视角驱动的全息叠加层按稀有度分档；固定容量粒子池 + 13 类特效模板

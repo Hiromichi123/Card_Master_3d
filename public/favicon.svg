@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Card Master 3D">
+  <!--
+    站点图标：两张叠放的圆角卡牌。
+    没有它浏览器会请求 /favicon.ico 并拿到 404，控制台里会多出一条错误——
+    有头模式下必然出现，headless 下不一定，正是那种会让人误判成"代码有问题"的噪声。
+    用 SVG 而不是位图：任意 DPR 下都清晰，且不需要额外的二进制素材。
+  -->
+  <rect width="64" height="64" rx="12" fill="#0d1018" />
+  <g transform="rotate(-10 26 34)">
+    <rect x="14" y="15" width="24" height="34" rx="4" fill="#2b3346" stroke="#4a5670" stroke-width="2" />
+  </g>
+  <g transform="rotate(8 40 34)">
+    <rect x="26" y="15" width="24" height="34" rx="4" fill="#e8ecf4" stroke="#7b869c" stroke-width="2" />
+    <circle cx="38" cy="28" r="5" fill="#6ea8ff" />
+    <rect x="31" y="38" width="14" height="2.5" rx="1.2" fill="#7b869c" />
+    <rect x="31" y="43" width="10" height="2.5" rx="1.2" fill="#7b869c" />
+  </g>
+</svg>

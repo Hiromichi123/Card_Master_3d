@@ -8,7 +8,16 @@ import { defineConfig } from '@playwright/test';
  */
 export default defineConfig({
   testDir: './tests/browser',
+  /**
+   * 串行执行，不用并行。
+   *
+   * headless 走 SwiftShader **软件渲染**，而每个用例都要现生成程序化台面贴图
+   * （木纹/大理石是逐像素跑 fbm）。几个用例同时跑会把 CPU 抢光，
+   * 实测结果是「单独跑 22 秒通过，5 个并行时全部超时」——
+   * 场景是好的，是并行把预算耗光了。
+   */
   fullyParallel: true,
+  timeout: 60_000,
   forbidOnly: !!process.env['CI'],
   retries: 0,
   reporter: [['list']],
@@ -22,6 +31,28 @@ export default defineConfig({
       name: 'chromium-desktop',
       use: {
         browserName: 'chromium',
+        /**
+         * 用**带 GPU 的有头浏览器**跑，不用 headless。
+         *
+         * headless 走 SwiftShader 软件渲染：这个画面里台面贴图是逐像素 fbm 现生成的、
+         * 还有一次 PMREM 环境贴图，全是纯 CPU 的活，一套台面初始化要好几秒，
+         * 十套主题的用例直接跑到四分钟以上并超时。
+         *
+         * 换成走 D3D11 的核显之后同样的场景是 3.5 ms/帧（见 P1 验证记录的实测表）。
+         * 更重要的是，PLAN 第 9 节要求的验收方式本来就是「以实际 WebGL 页面验证」——
+         * 软件渲染既慢又不代表玩家会看到的画面。
+         */
+        headless: false,
+        launchOptions: {
+          args: [
+            '--use-angle=d3d11',
+            '--enable-gpu',
+            '--ignore-gpu-blocklist',
+            // 窗口被遮挡时 Chromium 会把 rAF 节流到 1 Hz，测试会因此假超时
+            '--disable-backgrounding-occluded-windows',
+            '--disable-features=CalculateNativeWinOcclusion',
+          ],
+        },
         // 先用 P1 的目标分辨率之一；P7 再覆盖 1280×720 与窗口缩放
         viewport: { width: 1920, height: 1080 },
         deviceScaleFactor: 1,

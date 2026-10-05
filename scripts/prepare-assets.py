@@ -326,19 +326,23 @@ def build_sources(legacy: Path, shared: dict[str, object]) -> dict[str, object]:
                 "url": "https://github.com/ibra-kdbra/Chessboard-three.js",
                 "license": "MIT",
                 "source": "D:\Github\Chessboard-three.js\.claude\worktrees\realtime-chess",
-                "port": "程序化台面纹理、材质构造器与台面主题数据",
+                "port": "程序化台面纹理、材质构造器、台面主题、板面装配、环境光照与天气层",
                 "files": {
                     "src/render/three/textures.js": "src/rendering/table/proceduralTextures.ts",
                     "src/render/three/materials.js": "src/rendering/table/materials.ts",
                     "src/render/three/themes.js": "src/rendering/table/themes.ts",
                     "src/render/realtime/boardMesh.js": "src/rendering/battle/Table.tsx 的板面装配方式",
+                    "src/render/three/scene.js 的光照段": "src/rendering/battle/SceneEnvironment.tsx",
+                    "src/render/realtime/mapEffects.js": "src/rendering/table/weather.tsx",
                 },
                 "note": (
-                    "只移植程序化生成与主题数据这两部分：原项目用 wood/marble/stone/glass "
-                    "的 fbm 噪声生成贴图，不依赖任何二进制素材。"
-                    "棋子模型、天气效果（mapEffects）与联机部分均未移植。"
-                    "原项目的泛光阈值按「深色场景 + 小体积棋子」标定，"
-                    "直接套用会糊掉本项目的卡面，已在 quality.ts 里加了下限。"
+                    "用 wood/marble/stone/glass 的 fbm 噪声生成贴图，不依赖任何二进制素材。"
+                    "棋子模型与联机部分未移植。"
+                    "两处按本项目的画面构成做了适配："
+                    "原项目的泛光阈值按「深色场景 + 小体积棋子」标定，直接套用会糊掉卡面，"
+                    "已在 quality.ts 加了下限 0.9；"
+                    "天气粒子的尺寸是世界单位，原棋盘跨度 32 单位而本项目只有 10.4，"
+                    "已在 weather.tsx 用 PARTICLE_SCALE 按比例缩小。"
                 ),
             },
         ],
