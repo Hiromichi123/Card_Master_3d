@@ -13,6 +13,7 @@ import { EffectSystem } from '../rendering/effects/EffectSystem';
 import { FAMILY_TO_EFFECT, type EffectTemplateId } from '../rendering/effects/templates';
 import { PerfSampler } from '../rendering/PerfSampler';
 import { PostEffects } from '../rendering/postprocessing/PostEffects';
+import { sceneFogArgs } from '../rendering/table/themes';
 import { SPEED_SCALE, useSettingsStore } from '../state/settingsStore';
 import { PerfOverlay } from '../ui/PerfOverlay';
 import { WebGLGuard } from './WebGLGuard';
@@ -190,14 +191,16 @@ export function EffectLabScene() {
     <WebGLGuard>
       <div className="lab">
         <Canvas
-          // flat = 关闭 tone mapping。
-          // R3F 默认用 ACESFilmic，但后处理链不会重复应用它，
-          // 于是「开/关后处理」会得到两套色调（实测差 10.9%）。
-          // 卡面插画本身就是按 sRGB 画好的，再过一遍 ACES 只会让它变灰。
+          // flat = 关闭渲染器自带的色调映射。
+          // three 在渲染到屏幕时才应用色调映射，而挂了后处理链之后场景先渲到贴图上；
+          // 于是「开不开后处理」会得到两套影调——实测差 10.9%。
+          // 试过把 ACES 挂到后处理链尾，反而变成重复应用，反向差 23%。
+          // 目前的取舍是关掉它，两条路径一致（差 1.4%）。
           flat
           shadows={profile.shadows ? { type: PCFShadowMap } : false}
           dpr={[1, profile.dprCap]}
           camera={{ position: [0, 3.2, 4.6], fov: 42, near: 0.1, far: 80 }}
+          gl={{ antialias: true, powerPreference: 'high-performance' }}
         >
           <ambientLight intensity={0.85} />
           <hemisphereLight args={['#9fb6e0', '#3b4252', 0.85]} />
@@ -239,10 +242,8 @@ export function EffectLabScene() {
             而不是「桌子换了、空气没换」。
           */}
           <color attach="background" args={[theme.background]} />
-          <fog
-            attach="fog"
-            args={[theme.fog.color, theme.fog.near, theme.fog.far]}
-          />
+          {/* 与战斗场景共用同一处尺度换算 */}
+          <fog attach="fog" args={sceneFogArgs(theme.fog)} />
 
           <PerfSampler />
           <PostEffects profile={profile} theme={theme} />

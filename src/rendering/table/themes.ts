@@ -67,6 +67,23 @@ function fog(color: number, near: number = FOG_DEFAULT.near, far: number = FOG_D
   return { color, near, far };
 }
 
+/**
+ * 雾距离从原项目尺度换算到本项目尺度的系数。
+ *
+ * 主题里的 `fog.near/far` 是照搬象棋项目的数值，那边的尺度是
+ * 棋盘半径 10.3、桌面圆盘半径 46、相机距离 26；本项目是 5.9 / 26 / 约 13，
+ * 约为原来的 0.5 倍。**照抄原数值会让雾的起点落在圆盘之外**——
+ * 圆盘的远端还没进雾就已经出了视野，边缘是一条硬边，而不是化进背景色。
+ *
+ * 只换算距离，颜色不动：主题的雾色同时是背景色，是那套氛围本身。
+ */
+const SCENE_FOG_SCALE = 0.52;
+
+/** 把主题的雾换算到本项目的场景尺度。战斗场景与实验台共用这一处换算。 */
+export function sceneFogArgs(spec: TableTheme['fog']): [number, number, number] {
+  return [spec.color, spec.near * SCENE_FOG_SCALE, spec.far * SCENE_FOG_SCALE];
+}
+
 export const TABLE_THEMES: readonly TableTheme[] = [
   {
     id: 'tournament',

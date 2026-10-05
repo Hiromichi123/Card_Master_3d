@@ -75,6 +75,9 @@ export function SceneEnvironment({ theme, shadows }: SceneEnvironmentProps) {
         // 法线偏移处理有弧度的卡牌边缘；只用普通 bias 要么阴影浮空、要么出现条纹
         shadow-bias={-0.0004}
         shadow-normalBias={0.03}
+        // 原项目用 radius 2 把阴影边缘化开。本项目走 PCFShadowMap 而不是
+        // PCFSoftShadowMap，radius 是生效的（PCFSoft 下会被忽略，那边靠调小 mapSize 变软）。
+        shadow-radius={2}
       />
 
       {/* 补光：对侧、偏冷、不投影。把暗部从背景里托起来。 */}

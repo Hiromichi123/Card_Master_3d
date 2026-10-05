@@ -109,8 +109,7 @@ export function Table({
 }: TableProps) {
   const half = MAT_SPAN / 2;
 
-  const { lightMaterial, darkMaterial, frameMaterial, inlayMaterial, slabMaterial } =
-    useMemo(() => {
+  const { lightMaterial, darkMaterial, frameMaterial, inlayMaterial } = useMemo(() => {
       // 边框的纹理尺度按整块板的跨度展开，木纹才是连续的
       const span = MAT_SPAN + FRAME_WIDTH * 2;
       return {
@@ -128,10 +127,6 @@ export function Table({
           },
           { quality },
         ),
-        slabMaterial: buildMaterial(
-          { kind: 'plain', color: theme.table.color, roughness: theme.table.roughness },
-          { quality: 'low' },
-        ),
         span,
       };
     }, [theme, quality]);
@@ -142,9 +137,8 @@ export function Table({
       darkMaterial.dispose();
       frameMaterial.dispose();
       inlayMaterial.dispose();
-      slabMaterial.dispose();
     },
-    [lightMaterial, darkMaterial, frameMaterial, inlayMaterial, slabMaterial],
+    [lightMaterial, darkMaterial, frameMaterial, inlayMaterial],
   );
 
   /** 格子几何：整块垫子共用一套，只有材质按深浅交替。 */
@@ -233,18 +227,6 @@ export function Table({
 
   return (
     <group position={[0, 0, LAYOUT.tableCenterZ]}>
-      {/*
-        桌面大板：铺在整块板子之下，比格子垫外扩很多，
-        读起来是「板子放在一张更大的桌子上」，而不是悬空的一块。
-      */}
-      <mesh
-        receiveShadow
-        position={[0, -0.42, 0]}
-        material={slabMaterial}
-      >
-        <boxGeometry args={[MAT_SPAN + 7.5, 0.62, MAT_SPAN + 7.5]} />
-      </mesh>
-
       {/*
         嵌线板：比格子垫略大一圈，从格子的缝隙里透出来。
         棋盘上用 `inlay` 画出一条细金线，是这类台面最容易辨认的细节。

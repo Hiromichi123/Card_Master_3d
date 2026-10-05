@@ -3,6 +3,7 @@ import { CardMesh } from '../cards/CardMesh';
 import { useSettingsStore } from '../../state/settingsStore';
 import { CameraRig } from './CameraRig';
 import { SceneEnvironment } from './SceneEnvironment';
+import { SceneGround } from './SceneGround';
 import { SlotMarkers } from './SlotMarkers';
 import { Table } from './Table';
 
@@ -60,6 +61,9 @@ export function BattleBoard({
         木头和大理石会长得一样平。
       */}
       <SceneEnvironment theme={theme} shadows={shadows} />
+
+      {/* 棋盘之外的大圆桌：远端的边缘由雾化成背景色 */}
+      <SceneGround theme={theme} />
 
       <Table
         theme={theme}

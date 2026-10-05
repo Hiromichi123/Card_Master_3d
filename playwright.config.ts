@@ -9,12 +9,14 @@ import { defineConfig } from '@playwright/test';
 export default defineConfig({
   testDir: './tests/browser',
   /**
-   * 串行执行，不用并行。
+   * 并行执行。
    *
-   * headless 走 SwiftShader **软件渲染**，而每个用例都要现生成程序化台面贴图
-   * （木纹/大理石是逐像素跑 fbm）。几个用例同时跑会把 CPU 抢光，
-   * 实测结果是「单独跑 22 秒通过，5 个并行时全部超时」——
-   * 场景是好的，是并行把预算耗光了。
+   * 这里曾经被迫改成串行：headless 走 SwiftShader **软件渲染**，而每个用例都要
+   * 现生成程序化台面贴图（木纹/大理石是逐像素跑 fbm），几个用例同时跑会把 CPU 抢光
+   * ——「单独跑 22 秒通过，5 个并行时全部超时」。
+   *
+   * 换成下面那个带 GPU 的有头浏览器之后这个理由就不成立了：
+   * 7 个用例 7 个 worker 全绿，耗时 25 秒。软件渲染才需要串行，GPU 不需要。
    */
   fullyParallel: true,
   timeout: 60_000,
