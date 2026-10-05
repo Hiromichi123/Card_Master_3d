@@ -24,9 +24,9 @@ export type StatKind = 'atk' | 'hp' | 'cd';
  * 卡面是任意插画，只靠描边会在浅色区域糊掉，靠光晕才能在深浅两种底子上都跳出来。
  */
 const PALETTE: Record<StatKind, { fg: string; halo: string; ring: string }> = {
-  atk: { fg: '#ff2d2d', halo: 'rgba(255, 90, 90, 0.85)', ring: '#ffd0d0' },
-  hp: { fg: '#12c24a', halo: 'rgba(70, 230, 130, 0.85)', ring: '#c4f7d6' },
-  cd: { fg: '#2b6cff', halo: 'rgba(90, 150, 255, 0.85)', ring: '#cddcff' },
+  atk: { fg: '#ff2d2d', halo: 'rgba(255, 90, 90, 0.42)', ring: '#ffd0d0' },
+  hp: { fg: '#12c24a', halo: 'rgba(70, 230, 130, 0.42)', ring: '#c4f7d6' },
+  cd: { fg: '#2b6cff', halo: 'rgba(90, 150, 255, 0.42)', ring: '#cddcff' },
 };
 
 /** 每个徽标绘制尺寸，长宽相等。 */
@@ -86,14 +86,14 @@ export function getStatTexture(
     最后填实体。光晕必须在暗底**之前**画，否则会被暗底盖住。
   */
   ctx.shadowColor = palette.halo;
-  ctx.shadowBlur = 16;
-  ctx.lineWidth = 14;
+  ctx.shadowBlur = 7;
+  ctx.lineWidth = 9;
   ctx.strokeStyle = palette.halo;
   ctx.strokeText(text, center, center + 2);
 
-  // 暗底：把数字从任意插画上「抠」出来
+  // 暗底：把数字从任意插画上「抠」出来。可读性靠它，光晕只是氛围
   ctx.shadowBlur = 0;
-  ctx.lineWidth = 8;
+  ctx.lineWidth = 6;
   ctx.strokeStyle = 'rgba(6, 9, 16, 0.85)';
   ctx.strokeText(text, center, center + 2);
 
