@@ -87,3 +87,63 @@ test.describe('3D 战斗场景', () => {
     expect(box?.height).toBeGreaterThan(500);
   });
 });
+
+test.describe('战斗台面主题', () => {
+  test('10 套台面都能切换，画面确实改变且无报错', async ({ page }) => {
+    // 逐套切换并截图，10 套远超默认的 30 秒；且 headless 走软件渲染，
+    // 程序化贴图是 CPU 现画的，比有 GPU 时慢得多。
+    test.setTimeout(180_000);
+
+    const problems: string[] = [];
+    page.on('console', (message) => {
+      if (message.type() === 'error') {
+        problems.push(`console: ${message.text()}`);
+      }
+    });
+    page.on('pageerror', (error) => problems.push(`pageerror: ${error.message}`));
+
+    await page.goto('/');
+    await page.getByRole('button', { name: '战斗场景' }).click();
+    await page.waitForTimeout(4000);
+
+    const select = page.locator('.quality__select');
+    const ids = await select
+      .locator('option')
+      .evaluateAll((options) => options.map((option) => (option as HTMLOptionElement).value));
+    expect(ids.length).toBeGreaterThanOrEqual(6);
+
+    /** 台面区域的像素指纹，用来判断主题是否真的换了外观。 */
+    const fingerprint = async (): Promise<string> => {
+      const buffer = await page.locator('canvas').screenshot();
+      return page.evaluate(async (bytes: number[]) => {
+        const bitmap = await createImageBitmap(
+          new Blob([new Uint8Array(bytes)], { type: 'image/png' }),
+        );
+        const off = new OffscreenCanvas(64, 64);
+        const ctx = off.getContext('2d');
+        if (!ctx) return '';
+        ctx.drawImage(bitmap, 0, 0, 64, 64);
+        const { data } = ctx.getImageData(0, 0, 64, 64);
+        let sum = 0;
+        for (let i = 0; i < data.length; i += 4) {
+          sum = (sum + data[i]! * 3 + data[i + 1]! * 5 + data[i + 2]! * 7) % 1_000_003;
+        }
+        return String(sum);
+      }, Array.from(buffer));
+    };
+
+    const seen = new Map<string, string>();
+    for (const id of ids) {
+      await select.selectOption(id);
+      // 程序化贴图要现画，新材质也要编译，给足时间
+      await page.waitForTimeout(2200);
+      seen.set(id, await fingerprint());
+    }
+
+    // 每一套台面都应当与其它台面看起来不同——相同说明主题没生效
+    const unique = new Set(seen.values());
+    expect(unique.size, `有台面外观完全相同：${JSON.stringify([...seen])}`).toBe(ids.length);
+
+    expect(problems, `切换台面时出错：\n${problems.join('\n')}`).toEqual([]);
+  });
+});

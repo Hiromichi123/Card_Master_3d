@@ -104,10 +104,17 @@ python scripts/prepare-assets.py --check
 **工程**：Vite 8 + React 19 + TypeScript 7，严格模式类型检查零错误，
 生产构建通过。错误边界与 WebGL2 不可用提示都在。
 
-**战桌与卡牌**（`src/rendering/battle`、`src/rendering/cards`）：
+**战桌与卡牌**（`src/rendering/battle`、`src/rendering/cards`、`src/rendering/table`）：
 倾斜透视相机、世界坐标槽位（每方 5 战斗 + 8 准备）、圆角挤出的实体卡牌、
 正反面与翻面动画、阴影、悬停抬升与倾斜、手牌扇形。
 动态 ATK/HP/CD 用 Canvas 贴图与烘焙卡面分离显示。
+
+**10 套战斗台面**（导航栏「台面」下拉切换）：锦标赛、大理石厅、黑曜石、祖母绿牌室、
+霓虹网格、象牙与乌木、草原、荒原、火山、雪原。每套同时决定格子垫、边框、嵌线、
+背景与雾、槽位配色与泛光性格。贴图是程序化生成的（fbm 噪声驱动的木纹/大理石/石面），
+仓库里不放二进制纹理。台面系统与材质数据移植自
+[Chessboard-three.js](https://github.com/ibra-kdbra/Chessboard-three.js)（MIT），
+来源见 [assets-sources.json](assets-sources.json) 的 `portedCode` 段。
 
 **全息与特效**（`src/rendering/cards/HoloLayer.tsx`、`src/rendering/effects`）：
 视角驱动的全息叠加层按稀有度分档；固定容量粒子池 + 13 类特效模板

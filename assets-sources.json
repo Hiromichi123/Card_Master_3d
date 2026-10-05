@@ -54,6 +54,23 @@
   ],
   "selfMade": [
     "卡框、法阵、冰晶、护盾、电弧等程序几何与自有 Shader",
-    "自有全息 Shader（V-HOLO-1..4）"
+    "自有全息 Shader（V-HOLO-1..4）",
+    "战斗台面的格子垫、嵌线板与立体边框（按主题数据程序生成）"
+  ],
+  "portedCode": [
+    {
+      "name": "Chessboard-three.js",
+      "url": "https://github.com/ibra-kdbra/Chessboard-three.js",
+      "license": "MIT",
+      "source": "D:\\Github\\Chessboard-three.js\\.claude\\worktrees\realtime-chess",
+      "port": "程序化台面纹理、材质构造器与台面主题数据",
+      "files": {
+        "src/render/three/textures.js": "src/rendering/table/proceduralTextures.ts",
+        "src/render/three/materials.js": "src/rendering/table/materials.ts",
+        "src/render/three/themes.js": "src/rendering/table/themes.ts",
+        "src/render/realtime/boardMesh.js": "src/rendering/battle/Table.tsx 的板面装配方式"
+      },
+      "note": "只移植程序化生成与主题数据这两部分：原项目用 wood/marble/stone/glass 的 fbm 噪声生成贴图，不依赖任何二进制素材。棋子模型、天气效果（mapEffects）与联机部分均未移植。原项目的泛光阈值按「深色场景 + 小体积棋子」标定，直接套用会糊掉本项目的卡面，已在 quality.ts 里加了下限。"
+    }
   ]
 }

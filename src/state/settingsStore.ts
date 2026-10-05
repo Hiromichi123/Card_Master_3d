@@ -5,6 +5,7 @@ import {
   type QualityProfile,
   type QualityTier,
 } from '../rendering/quality';
+import { DEFAULT_THEME_ID, getTableTheme, type TableTheme } from '../rendering/table/themes';
 
 /**
  * 低频应用状态（PLAN 第 2 节：用 Zustand 管低频状态，高频更新直接走 three）。
@@ -26,11 +27,16 @@ interface SettingsState {
   readonly cameraShake: boolean;
   /** 是否显示性能读数条。 */
   readonly showPerf: boolean;
+  /** 战斗台面主题 id。 */
+  readonly tableThemeId: string;
+  /** 解析后的主题对象，避免每帧重新查找。 */
+  readonly tableTheme: TableTheme;
 
   setQuality: (tier: QualityTier) => void;
   setPresentationSpeed: (speed: PresentationSpeed) => void;
   setCameraShake: (enabled: boolean) => void;
   setShowPerf: (enabled: boolean) => void;
+  setTableTheme: (id: string) => void;
 }
 
 export const useSettingsStore = create<SettingsState>((set) => ({
@@ -39,11 +45,14 @@ export const useSettingsStore = create<SettingsState>((set) => ({
   presentationSpeed: 'normal',
   cameraShake: true,
   showPerf: false,
+  tableThemeId: DEFAULT_THEME_ID,
+  tableTheme: getTableTheme(DEFAULT_THEME_ID),
 
   setQuality: (tier) => set({ quality: tier, profile: QUALITY_PROFILES[tier] }),
   setPresentationSpeed: (presentationSpeed) => set({ presentationSpeed }),
   setCameraShake: (cameraShake) => set({ cameraShake }),
   setShowPerf: (showPerf) => set({ showPerf }),
+  setTableTheme: (id) => set({ tableThemeId: id, tableTheme: getTableTheme(id) }),
 }));
 
 /** 演出速度 → 时长倍数。跳过模式由 `skipAll` 直接补完，不走倍数。 */

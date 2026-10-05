@@ -773,3 +773,25 @@ code {
   color: var(--text);
   font-weight: 600;
 }
+
+.quality__select {
+  appearance: none;
+  border: 1px solid var(--border-strong);
+  background: var(--bg-raised-hover);
+  color: var(--text);
+  padding: 3px 8px;
+  border-radius: 6px;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  max-width: 130px;
+}
+
+.quality__select:hover {
+  border-color: var(--accent);
+}
+
+.quality__select option {
+  background: var(--bg-raised);
+  color: var(--text);
+}

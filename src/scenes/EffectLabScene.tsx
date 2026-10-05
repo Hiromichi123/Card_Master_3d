@@ -83,6 +83,7 @@ export function EffectLabScene() {
   const [durationScale, setDurationScale] = useState(1);
   const [color, setColor] = useState<string>('#ffb445');
   const profile = useSettingsStore((state) => state.profile);
+  const theme = useSettingsStore((state) => state.tableTheme);
   const presentationSpeed = useSettingsStore((state) => state.presentationSpeed);
   const showPerf = useSettingsStore((state) => state.showPerf);
   const [paused, setPaused] = useState(false);
@@ -197,7 +198,6 @@ export function EffectLabScene() {
           shadows={profile.shadows ? { type: PCFShadowMap } : false}
           dpr={[1, profile.dprCap]}
           camera={{ position: [0, 3.2, 4.6], fov: 42, near: 0.1, far: 80 }}
-          onCreated={({ gl }) => gl.setClearColor('#0d1018')}
         >
           <ambientLight intensity={0.85} />
           <hemisphereLight args={['#9fb6e0', '#3b4252', 0.85]} />
@@ -213,9 +213,13 @@ export function EffectLabScene() {
             shadow-camera-bottom={-6}
           />
 
+          {/* 地面跟随台面主题，否则换主题时背景与地面会互相打架 */}
           <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.02, 0]} receiveShadow>
             <planeGeometry args={[22, 22]} />
-            <meshStandardMaterial color="#2b3140" roughness={0.95} />
+            <meshStandardMaterial
+              color={theme.table.color}
+              roughness={theme.table.roughness}
+            />
           </mesh>
 
           <LabStage
@@ -229,8 +233,19 @@ export function EffectLabScene() {
             onCardClick={handleCardClick}
           />
 
+          {/*
+            背景与雾来自台面主题：木桌是暖褐的暗、霓虹是紫黑、
+            雪原是冷灰蓝。这两项一并换掉，整张桌子的气氛才会跟着主题走，
+            而不是「桌子换了、空气没换」。
+          */}
+          <color attach="background" args={[theme.background]} />
+          <fog
+            attach="fog"
+            args={[theme.fog.color, theme.fog.near, theme.fog.far]}
+          />
+
           <PerfSampler />
-          <PostEffects profile={profile} />
+          <PostEffects profile={profile} theme={theme} />
 
           <OrbitControls
             target={[0, 0.2, 0]}

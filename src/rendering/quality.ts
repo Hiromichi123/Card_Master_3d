@@ -18,8 +18,13 @@ export interface QualityProfile {
   readonly particleCapacity: number;
   /** 是否启用 Bloom。低档关闭。 */
   readonly bloom: boolean;
-  /** Bloom 强度。 */
-  readonly bloomIntensity: number;
+  /**
+   * Bloom 强度的**倍率**，乘在台面主题给的基准值上。
+   *
+   * 台面主题决定泛光的性格（鬼火一样的霓虹 vs 几乎不闪的木桌），
+   * 画质档决定同一性格下打多少折。
+   */
+  readonly bloomScale: number;
   /** 是否投射阴影。低档关闭。 */
   readonly shadows: boolean;
   /** 阴影贴图边长。 */
@@ -33,7 +38,7 @@ export const QUALITY_PROFILES: Record<QualityTier, QualityProfile> = {
     dprCap: 1,
     particleCapacity: 250,
     bloom: false,
-    bloomIntensity: 0,
+    bloomScale: 0,
     shadows: false,
     shadowMapSize: 512,
     cardTier: 'thumbnail',
@@ -42,7 +47,7 @@ export const QUALITY_PROFILES: Record<QualityTier, QualityProfile> = {
     dprCap: 1.5,
     particleCapacity: 1000,
     bloom: true,
-    bloomIntensity: 0.45,
+    bloomScale: 1,
     shadows: true,
     shadowMapSize: 1024,
     cardTier: 'battle',
@@ -51,7 +56,7 @@ export const QUALITY_PROFILES: Record<QualityTier, QualityProfile> = {
     dprCap: 2,
     particleCapacity: 3000,
     bloom: true,
-    bloomIntensity: 0.7,
+    bloomScale: 1.25,
     shadows: true,
     shadowMapSize: 2048,
     cardTier: 'battle',
@@ -65,15 +70,17 @@ export const QUALITY_LABELS: Record<QualityTier, string> = {
 };
 
 /**
- * Bloom 的亮度阈值。
+ * Bloom 亮度阈值的**下限**。
  *
- * 取得**很高**是刻意的：阈值低的话整个画面都会发光，卡面插画与中文会被糊掉，
- * 正是 `V-PP-2` 要避免的。
+ * 台面主题各自带一个阈值（移植自棋盘项目），那些值是按「深色场景 + 小体积高亮棋子」
+ * 调的：棋盘上低到 0.62 也没问题，因为画面里几乎没有大面积亮部。
  *
- * 这个值是实测调出来的：0.9 时仅翻转 Bloom 就会让卡面区域平均亮度涨 10.9%
- * （卡面上的金色花纹与白字本身就接近纯白），肉眼可见一层薄雾。
- * 提到 0.96 后只有真正过曝的粒子核心与闪电仍参与泛光，
- * 卡面的变化被压到可忽略。
+ * 本项目的画面构成不同——卡面是大块高亮表面，阈值一低整张卡都会发光，
+ * 插画与中文被糊掉，正是 `V-PP-2` 要禁止的。实测 0.9 时仅翻转 Bloom
+ * 就会让卡面区域平均亮度涨 10.9%。
+ *
+ * 所以取「主题值与下限的较大者」：保留主题之间的差异，
+ * 但不允许任何主题越过会糊卡面的那条线。
  */
-export const BLOOM_LUMINANCE_THRESHOLD = 0.96;
+export const MIN_BLOOM_THRESHOLD = 0.9;
 export const BLOOM_LUMINANCE_SMOOTHING = 0.25;

@@ -1,5 +1,6 @@
 import type { CardDefinition } from '../../domain/cards/types';
 import { CardMesh } from '../cards/CardMesh';
+import { useSettingsStore } from '../../state/settingsStore';
 import { CameraRig } from './CameraRig';
 import { LAYOUT } from './layout';
 import { SlotMarkers } from './SlotMarkers';
@@ -46,6 +47,9 @@ export function BattleBoard({
   onCardHover,
   shadowMapSize = 2048,
 }: BattleBoardProps) {
+  const theme = useSettingsStore((state) => state.tableTheme);
+  const quality = useSettingsStore((state) => state.quality);
+
   return (
     <>
       <CameraRig />
@@ -74,7 +78,7 @@ export function BattleBoard({
         shadow-bias={-0.0006}
       />
 
-      <Table />
+      <Table theme={theme} quality={quality} />
       <SlotMarkers placeable={placeable} targeted={targeted} />
 
       {placements?.map((placement, index) => (

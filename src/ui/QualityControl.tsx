@@ -1,4 +1,5 @@
 import { QUALITY_LABELS, type QualityTier } from '../rendering/quality';
+import { TABLE_THEMES } from '../rendering/table/themes';
 import { useSettingsStore, type PresentationSpeed } from '../state/settingsStore';
 
 /**
@@ -28,9 +29,26 @@ export function QualityControl() {
   const setCameraShake = useSettingsStore((state) => state.setCameraShake);
   const showPerf = useSettingsStore((state) => state.showPerf);
   const setShowPerf = useSettingsStore((state) => state.setShowPerf);
+  const tableThemeId = useSettingsStore((state) => state.tableThemeId);
+  const setTableTheme = useSettingsStore((state) => state.setTableTheme);
 
   return (
     <div className="quality">
+      <label className="quality__group" title="战斗台面：材质、配色、背景与雾一起换">
+        <span className="quality__label">台面</span>
+        <select
+          className="quality__select"
+          value={tableThemeId}
+          onChange={(event) => setTableTheme(event.target.value)}
+        >
+          {TABLE_THEMES.map((theme) => (
+            <option key={theme.id} value={theme.id}>
+              {theme.name}
+            </option>
+          ))}
+        </select>
+      </label>
+
       <label className="quality__group" title="画质档：只影响表现，不影响战斗结果">
         <span className="quality__label">画质</span>
         <span className="quality__segmented">

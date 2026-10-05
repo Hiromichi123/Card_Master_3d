@@ -30,6 +30,7 @@ import { WebGLGuard } from './WebGLGuard';
 export function BattleScene() {
   const arrangement = useMemo(() => buildDemoArrangement(), []);
   const profile = useSettingsStore((state) => state.profile);
+  const theme = useSettingsStore((state) => state.tableTheme);
   const showPerf = useSettingsStore((state) => state.showPerf);
   const [selectedCard, setSelectedCard] = useState<CardDefinition | null>(null);
   const [hoveredCard, setHoveredCard] = useState<CardDefinition | null>(null);
@@ -75,7 +76,6 @@ export function BattleScene() {
             setSelectedCard(null);
             setPinned(false);
           }}
-          onCreated={({ gl }) => gl.setClearColor('#0d1018')}
         >
           {/*
             采样器必须排在 <PostEffects> **之前**。
@@ -91,8 +91,19 @@ export function BattleScene() {
             onCardHover={handleCardHover}
             shadowMapSize={profile.shadowMapSize}
           />
+          {/*
+            背景与雾来自台面主题：木桌是暖褐的暗、霓虹是紫黑、
+            雪原是冷灰蓝。这两项一并换掉，整张桌子的气氛才会跟着主题走，
+            而不是「桌子换了、空气没换」。
+          */}
+          <color attach="background" args={[theme.background]} />
+          <fog
+            attach="fog"
+            args={[theme.fog.color, theme.fog.near, theme.fog.far]}
+          />
+
           <PerfSampler />
-          <PostEffects profile={profile} />
+          <PostEffects profile={profile} theme={theme} />
         </Canvas>
 
         <PerfOverlay visible={showPerf} />

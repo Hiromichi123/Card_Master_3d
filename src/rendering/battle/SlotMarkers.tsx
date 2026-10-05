@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 
+import { useSettingsStore } from '../../state/settingsStore';
 import { buildSlots, CARD_SIZE } from './layout';
 
 /**
@@ -31,6 +32,16 @@ export function slotKey(side: string, zone: string, index: number): string {
 
 export function SlotMarkers({ placeable, targeted }: Props) {
   const slots = useMemo(() => buildSlots(), []);
+  // 槽位的三种状态色来自当前台面主题，换主题时整张桌子的配色一起变
+  const accent = useSettingsStore((state) => state.tableTheme.accent);
+  const colors = useMemo(
+    () => ({
+      base: `#${accent.slot.toString(16).padStart(6, '0')}`,
+      placeable: `#${accent.placeable.toString(16).padStart(6, '0')}`,
+      target: `#${accent.target.toString(16).padStart(6, '0')}`,
+    }),
+    [accent],
+  );
 
   return (
     <group>
@@ -41,7 +52,11 @@ export function SlotMarkers({ placeable, targeted }: Props) {
 
         // 战斗槽用方角，准备槽用圆角，光靠形状就能区分两类区域
         const inset = slot.zone === 'battle' ? 1.02 : 0.98;
-        const color = isTarget ? '#ffb457' : isPlaceable ? '#7fb2ff' : '#93a4c2';
+        const color = isTarget
+          ? colors.target
+          : isPlaceable
+            ? colors.placeable
+            : colors.base;
         // 常态也要看得见：槽位是玩家判断“牌放哪”的唯一线索，
         // 全透明等于让人猜（V-TABLE-2 要求低对比，不是不可见）。
         const opacity = isTarget ? 0.95 : isPlaceable ? 0.8 : 0.34;
