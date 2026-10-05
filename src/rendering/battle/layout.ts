@@ -196,10 +196,16 @@ export const HAND = {
 /**
  * 手牌扇形的第 index 张（共 total 张）的位姿。
  *
- * 敌方镜像的是**横向位置与扇形角度**（`position.x`、`rotationY`），
- * **立起方向不镜像**：立起的角度与 `faceDown` 是同一件事的两个把手，
- * 两个一起翻就会翻回去——实机上表现为敌方手牌朝上摊着给人看。
- * 「这一面朝谁」统一交给 `faceDown` 决定，倾角只负责把它抬起来。
+ * 敌方是**整套镜像**的：横向位置、扇形角度、立起方向都取反，
+ * 于是两把牌各自朝自己的玩家倾，而不是并排朝同一个方向。
+ *
+ * **立起方向与 `faceDown` 会互相影响，这里有个约束。**
+ * 盖着的牌靠「绕 Y 转 π」翻面，而倾角参与同一个欧拉旋转：
+ * 牌面朝向相机与否，取决于 `sin(θ − 相机俯角)` 的符号（θ 是倾角）。
+ * 只有 θ 落在约 (−2.37, 0.77) 区间内，盖着的牌才真的盖着。
+ * 玩家侧 θ = −π/2 + 0.42、敌方 θ = −π/2 − 0.42 都在区间内；
+ * 但**倾角不能调大到 0.8 以上**，否则敌方手牌会翻过来朝上
+ * （P3 早期用 0.95 时就是这样，当时误判成「镜像会导致翻面」）。
  */
 export function handCardTransform(
   index: number,
@@ -213,8 +219,8 @@ export function handCardTransform(
   return {
     position: [sign * centered * HAND.spread, HAND.lift, rowZ(side, ROW.hand + arcDepth)],
     rotationY: -sign * centered * 0.075,
-    // 平放是 -π/2，加一个正角就立起来
-    rotationX: -Math.PI / 2 + HAND.tilt,
+    // 平放是 -π/2，加一个正角就立起来；敌方取负，朝它自己那一侧倾
+    rotationX: -Math.PI / 2 + sign * HAND.tilt,
   };
 }
 

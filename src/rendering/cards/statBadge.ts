@@ -16,10 +16,19 @@ import { CanvasTexture, LinearFilter, SRGBColorSpace } from 'three';
 
 export type StatKind = 'atk' | 'hp' | 'cd';
 
-const PALETTE: Record<StatKind, { bg: string; fg: string; ring: string }> = {
-  atk: { bg: 'rgba(38,20,16,0.92)', fg: '#ffd9a8', ring: '#e07a3c' },
-  hp: { bg: 'rgba(16,32,24,0.92)', fg: '#c9f7d8', ring: '#3fbf7f' },
-  cd: { bg: 'rgba(18,22,38,0.92)', fg: '#c6d4ff', ring: '#5f7fd8' },
+/**
+ * 配色。
+ *
+ * `fg` 是主色，`ring` 是刚变化过时的强调色。
+ *
+ * 主色**取深一档**：早先用的是粉彩（#ffd9a8 / #c9f7d8 / #c6d4ff），
+ * 压在本来就高饱和的插画上几乎化掉，读出来是一层发白的雾。
+ * 现在改成饱和的橙 / 绿 / 蓝，靠深色描边而不是靠亮色去挤对比度。
+ */
+const PALETTE: Record<StatKind, { fg: string; ring: string }> = {
+  atk: { fg: '#ff9520', ring: '#ffd8a8' },
+  hp: { fg: '#2fc46b', ring: '#b8f5d0' },
+  cd: { fg: '#4f86ff', ring: '#bcd0ff' },
 };
 
 /** 每个徽标绘制尺寸，长宽相等。 */
@@ -66,17 +75,18 @@ export function getStatTexture(
     去掉底之后靠**描边**保证可读性：卡面是任意插画，白字没描边会在浅色区域糊掉。
   */
   const text = String(value);
-  const fontSize = text.length >= 3 ? 78 : text.length === 2 ? 96 : 108;
+  // 字号留出边距：填满整张纹理的话，数字会顶到方块的边缘，看起来又大又挤
+  const fontSize = text.length >= 3 ? 58 : text.length === 2 ? 70 : 82;
   ctx.font = `700 ${fontSize}px "Microsoft YaHei", "PingFang SC", system-ui, sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.lineJoin = 'round';
   ctx.miterLimit = 2;
-  ctx.lineWidth = 12;
-  ctx.strokeStyle = emphasised ? palette.ring : 'rgba(6, 9, 16, 0.9)';
+  ctx.lineWidth = 9;
+  ctx.strokeStyle = 'rgba(6, 9, 16, 0.92)';
   ctx.strokeText(text, center, center + 2);
   // 刚变化过的那一下换成亮色，替代原来的白圈高亮
-  ctx.fillStyle = emphasised ? '#ffffff' : palette.fg;
+  ctx.fillStyle = emphasised ? palette.ring : palette.fg;
   ctx.fillText(text, center, center + 2);
 
   const texture = new CanvasTexture(canvas);

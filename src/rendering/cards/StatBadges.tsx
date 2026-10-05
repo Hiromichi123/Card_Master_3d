@@ -34,14 +34,25 @@ export interface StatBadgesProps {
 
 /** 卡牌本地坐标下的边长。1 是卡宽。 */
 const HALF = 0.25;
-/** 攻/血的纵坐标。取 −0.53 时，0.42 的方块正好收在卡面下缘（−0.75）之内。 */
-const BOTTOM_Y = -0.53;
-const BOTTOM_SIZE = 0.42;
+/**
+ * 攻/血的纵坐标与边长。
+ *
+ * 方块比早先小了一圈（0.42 → 0.3）：数字只要读得清就够，
+ * 占满半个卡宽会把插画下缘整个盖住。
+ * 取 −0.58 时，0.3 的方块收在卡面下缘（−0.75）之内。
+ */
+const BOTTOM_Y = -0.58;
+const BOTTOM_SIZE = 0.3;
 /** 手牌上的冷却：右上角，小一号。 */
-const HAND_CD_POS: [number, number] = [0.34, 0.6];
-const HAND_CD_SIZE = 0.24;
-/** 等待区的冷却：卡面正中央，大数字。 */
-const PREP_CD_SIZE = 0.82;
+const HAND_CD_POS: [number, number] = [0.36, 0.61];
+const HAND_CD_SIZE = 0.22;
+/**
+ * 等待区的冷却：卡面正中央，**唯一一个大号**的数字。
+ *
+ * 只有这里放大是有理由的：等待区那张牌身上，玩家唯一要读的就是「还要等几回合」，
+ * 攻防都在底边小字里够用了。其它两区（手牌、战斗区）都不放大。
+ */
+const PREP_CD_SIZE = 0.72;
 
 export function StatBadges({
   atk,

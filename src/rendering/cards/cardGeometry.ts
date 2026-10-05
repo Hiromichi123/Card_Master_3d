@@ -3,6 +3,7 @@ import {
   ExtrudeGeometry,
   Shape,
   ShapeGeometry,
+  type BufferGeometry,
 } from 'three';
 
 /**
@@ -44,16 +45,22 @@ function buildRoundedRect(width: number, height: number, radius: number): Shape 
 }
 
 /**
- * 把 ShapeGeometry 的 UV 从「等于坐标值」重算成 0–1。
+ * 把 UV 从「等于坐标值」重算成 0–1。
  *
- * three 的 ShapeGeometry 默认用顶点坐标当 UV，对贴图来说完全不可用；
- * 不重算就会出现「贴图被拉伸到无限大」的效果。
+ * three 的 `ShapeGeometry` 与 `ExtrudeGeometry` 默认都用**顶点坐标**当 UV，
+ * 对贴图来说完全不可用。卡面是 1×1.5，UV 也就跑到 0–1.5 去，
+ * 纹理默认是 clamp，超出部分拉出边缘像素——表现是贴图只画出一个角，
+ * 其余部分是边缘色（P3 的牌堆就是这样：卡背只显出四分之一，
+ * 另外四分之一是黑的、一半是白的）。
+ *
+ * **正面片与卡体都要重算。** 一开始只处理了正面片，卡体（挤出几何）漏掉了，
+ * 于是同一张卡背贴在正面片上是对的、贴在牌堆顶上那一面就是错位的。
  */
-function remapShapeUv(
-  geometry: ShapeGeometry,
+function remapPlanarUv<T extends BufferGeometry>(
+  geometry: T,
   width: number,
   height: number,
-): ShapeGeometry {
+): T {
   const position = geometry.getAttribute('position');
   const uv = new Float32Array(position.count * 2);
 
@@ -80,6 +87,8 @@ export function getCardBodyGeometry(): ExtrudeGeometry {
     });
     // 挤出方向是 +Z，从 0 到 depth；平移成以中心为原点
     bodyGeometry.translate(0, 0, -CARD_THICKNESS / 2);
+    // 正反面（materialIndex 0）要贴图，UV 必须重算；侧面走边缘色材质，UV 无所谓
+    remapPlanarUv(bodyGeometry, CARD_WIDTH, CARD_HEIGHT);
     bodyGeometry.computeVertexNormals();
   }
   return bodyGeometry;
@@ -101,7 +110,7 @@ export function getCardFaceGeometry(): ShapeGeometry {
       CARD_RADIUS - FACE_INSET,
     );
     const geometry = new ShapeGeometry(shape, 6);
-    faceGeometry = remapShapeUv(
+    faceGeometry = remapPlanarUv(
       geometry,
       CARD_WIDTH - FACE_INSET * 2,
       CARD_HEIGHT - FACE_INSET * 2,
