@@ -19,10 +19,10 @@ import { Vector3, type PerspectiveCamera } from 'three';
  * 取景用的半跨度。
  *
  * 取的是**内容**的外接半径，不是棋盘本身的半径：手牌移到盘外并抬到空中之后，
- * 内容的范围由它决定（离盘面中心约 6.6，含悬停时再抬起的余量）。
+ * 内容的范围由它决定（离盘面中心约 7.2，含悬停时再抬起的余量）。
  * 只按棋盘算会把两边的牌切掉。
  */
-export const TABLE_RADIUS = 6.9;
+export const TABLE_RADIUS = 7.35;
 
 /** 静置时的极角（自正上方量起）。等价于约 46° 的仰角。 */
 export const CAMERA_POLAR_ANGLE = Math.PI / 2 - (46 * Math.PI) / 180;

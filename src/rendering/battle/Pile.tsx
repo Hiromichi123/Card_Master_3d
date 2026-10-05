@@ -1,5 +1,12 @@
 import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
-import { Matrix4, MeshStandardMaterial, type InstancedMesh, type Texture } from 'three';
+import {
+  Matrix4,
+  MeshStandardMaterial,
+  type BufferGeometry,
+  type InstancedMesh,
+  type Material,
+  type Texture,
+} from 'three';
 
 import { CARD_BACK_URL } from '../../data/assets';
 import { useManagedTexture } from '../../services/useManagedTexture';
@@ -77,42 +84,50 @@ function Stack({ count, texture }: { count: number; texture: Texture }) {
     [capMaterial, edgeMaterial],
   );
 
-  /*
-    依赖里必须带上材质与 `plates`：`instancedMesh` 的 `args` 含材质，
-    贴图就绪或张数变化都会让 R3F 重建这个网格，而重建会把所有实例矩阵
-    重置为单位矩阵。依赖写漏了就会在桌上留下一块没有变换的杂散卡片
-    （棋盘那边踩过同一个坑，见 `Table.tsx`）。
-  */
+  /**
+   * `args` 必须**缓存住**。
+   *
+   * 写成行内数组字面量的话，每次渲染都是一个新的数组，
+   * R3F 会认为 `args` 变了、把整个 `InstancedMesh` 拆掉重建——
+   * 而重建会把所有实例矩阵重置为单位矩阵。表现是**一张立在原地的卡牌
+   * 插在棋盘里**（矩阵没写进去），而不是一摞躺着的牌。
+   *
+   * 棋盘那边为同一个坑吃过一次亏，`Table.tsx` 的注释里写了规则：
+   * `args` 含运行时可变对象时，写入实例属性的 effect 必须把它们放进依赖。
+   * 这里更进一步——`args` 本身的引用也要稳定。
+   */
+  const args = useMemo<[BufferGeometry, Material[], number]>(
+    () => [geometry, [capMaterial, edgeMaterial], MAX_PLATES],
+    [geometry, capMaterial, edgeMaterial],
+  );
+
   useLayoutEffect(() => {
     const mesh = meshRef.current;
     if (!mesh) {
       return;
     }
     const matrix = new Matrix4();
+    const turnMatrix = new Matrix4();
     for (let i = 0; i < plates; i += 1) {
       // 用下标当伪随机种子：同一个厚度每次渲染出来的样子是稳定的
       const jitter = Math.sin(i * 12.9898) * 0.012;
       const turn = Math.sin(i * 78.233) * 0.02;
+      // 先绕 Y 在卡面内微转，再躺平——顺序反了那个小角度会变成俯仰
       matrix.makeRotationX(-Math.PI / 2);
-      matrix.multiply(new Matrix4().makeRotationY(turn));
+      matrix.multiply(turnMatrix.makeRotationY(turn));
       matrix.setPosition(jitter, PLATE_THICKNESS / 2 + i * PLATE_THICKNESS, jitter * 0.6);
       mesh.setMatrixAt(i, matrix);
     }
     mesh.count = plates;
     mesh.instanceMatrix.needsUpdate = true;
-  }, [plates, capMaterial, edgeMaterial]);
+  }, [plates, args]);
 
   if (plates === 0) {
     return null;
   }
 
   return (
-    <instancedMesh
-      ref={meshRef}
-      args={[geometry, [capMaterial, edgeMaterial], MAX_PLATES]}
-      castShadow
-      receiveShadow
-    />
+    <instancedMesh ref={meshRef} args={args} castShadow receiveShadow />
   );
 }
 

@@ -1,5 +1,6 @@
 import type { CardDefinition, SideId } from '../../domain/cards/types';
 import type { StatKind } from '../cards/statBadge';
+import type { StatLayout } from '../cards/StatBadges';
 import { MovingCard } from './MovingCard';
 import { Pile } from './Pile';
 import type { PileView } from './placements';
@@ -37,8 +38,10 @@ export interface CardPlacement {
   readonly stats?:
     | { readonly atk: number; readonly hp: number; readonly cd: number }
     | undefined;
-  /** 刚刚变化过的项，会加白圈高亮。 */
+  /** 刚刚变化过的项，会换成亮色高亮。 */
   readonly emphasisedStats?: ReadonlySet<StatKind> | undefined;
+  /** 这张牌在哪个区域。决定数值怎么摆（见 `StatBadges`）。 */
+  readonly statLayout?: StatLayout | undefined;
   /**
    * 这张牌上一次是从哪里来的（抽牌、还魂）。
    *
@@ -133,6 +136,7 @@ export function BattleBoard({
           scale={placement.scale}
           stats={placement.stats}
           emphasisedStats={placement.emphasisedStats}
+          statLayout={placement.statLayout}
           selected={placement.instanceId === selectedInstanceId}
           // CardMesh 只认得卡牌定义，实例身份由这里补上——
           // 直接透传 onCardClick 的话第二个参数会永远缺省。

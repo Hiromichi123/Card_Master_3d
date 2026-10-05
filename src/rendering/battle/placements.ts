@@ -11,6 +11,7 @@ import { cardById } from '../../data';
 import type { CardDefinition, SideId } from '../../domain/cards/types';
 import type { DisplayState } from '../presentation/displayState';
 import { statsOf } from '../presentation/displayState';
+import type { StatLayout } from '../cards/StatBadges';
 import type { CardPlacement } from './BattleBoard';
 import {
   BATTLE_CARD_SCALE,
@@ -125,6 +126,7 @@ export function buildBoard(display: DisplayState, options: BuildBoardOptions = {
         undefined,
         BATTLE_CARD_SCALE,
         false,
+        'battle',
       );
       if (placement) {
         entries.push(placement);
@@ -143,6 +145,7 @@ export function buildBoard(display: DisplayState, options: BuildBoardOptions = {
         undefined,
         PREP_CARD_SCALE,
         false,
+        'prep',
       );
       if (placement) {
         entries.push(placement);
@@ -159,6 +162,7 @@ export function buildBoard(display: DisplayState, options: BuildBoardOptions = {
         hand.rotationX,
         HAND_CARD_SCALE,
         side === 'enemy',
+        'hand',
         side === 'player' && options.playerCanPlay === true,
       );
       if (placement) {
@@ -213,6 +217,7 @@ function makePlacement(
   rotationX: number | undefined,
   scale: number,
   faceDown: boolean,
+  statLayout: StatLayout,
   interactive = false,
 ): CardPlacement | null {
   const identity = display.instances[instanceId];
@@ -236,6 +241,7 @@ function makePlacement(
     faceDown,
     interactive,
     scale,
+    statLayout,
     stats: stats ?? undefined,
     emphasisedStats: emphasised,
   };

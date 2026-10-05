@@ -50,7 +50,7 @@ export const BOARD_CENTER_Z = 0.82;
 const ROW = {
   battle: 1.8,
   prep: 4.0,
-  hand: 6.3,
+  hand: 6.4,
 } as const;
 
 /**
@@ -60,7 +60,7 @@ const ROW = {
  * 准备区只比原来大一点（0.86 → 1.05），它是等候席，不该跟主战场抢注意力。
  */
 export const BATTLE_CARD_SCALE = 1.5;
-export const PREP_CARD_SCALE = 1.05;
+export const PREP_CARD_SCALE = 0.88;
 export const HAND_CARD_SCALE = 1.15;
 export const PILE_CARD_SCALE = 0.62;
 
@@ -169,24 +169,24 @@ export function buildSlots(): SlotDescriptor[] {
  * 读起来才像握在手里，也才不跟棋盘上的格子抢位置。
  */
 export const HAND = {
-  /** 相邻两张的横向间距。卡放大到 1.15 之后间距也要跟着开。 */
-  spread: 0.92,
+  /** 相邻两张的横向间距。早期配置是 0.62，那时卡是 1.0 宽，按比例放到 1.15。 */
+  spread: 0.72,
   /**
    * 抬离桌面的高度。
    *
    * 抬得越高，牌在屏幕上越往上跑（46° 俯角下约等于往盘面里挪 `lift × 0.7`）。
-   * 1.05 已经明确浮在桌面之上，再高就会压到准备行。
    */
-  lift: 1.05,
+  lift: 0.85,
   /**
-   * 相对平放再立起来的角度。越大越接近竖着拿。
+   * 相对平放再立起来的角度。
    *
-   * 立得越直，牌在**屏幕上**占的高度越小——这是让它不遮住准备行的主要手段。
-   * 0.95 时牌的投影还太长，手牌的命中区会压住中间几个准备槽，点不进去。
+   * 取回早期配置的 0.42：0.42 是一把**摊开的手牌**，1.2 接近竖着举牌，
+   * 后者虽然屏幕投影更矮、更不容易压到准备行，但看起来不像在打牌。
+   * 不压到准备行改由「离盘面中心更远」来保证，见 `ROW`。
    */
-  tilt: 1.2,
-  /** 扇形的弧深系数：越靠外侧越往后收一点。 */
-  arc: 0.02,
+  tilt: 0.42,
+  /** 扇形的弧深系数：越靠外侧越往后收一点。取回早期配置。 */
+  arc: 0.012,
   /** 悬停时再抬起的高度。 */
   hoverLift: 0.5,
   /** 悬停时的放大倍数。 */
@@ -212,7 +212,7 @@ export function handCardTransform(
 
   return {
     position: [sign * centered * HAND.spread, HAND.lift, rowZ(side, ROW.hand + arcDepth)],
-    rotationY: -sign * centered * 0.07,
+    rotationY: -sign * centered * 0.075,
     // 平放是 -π/2，加一个正角就立起来
     rotationX: -Math.PI / 2 + HAND.tilt,
   };

@@ -59,25 +59,25 @@ export function getStatTexture(
 
   const palette = PALETTE[kind];
   const center = SIZE / 2;
-  const radius = SIZE / 2 - 6;
 
-  // 底：圆形 + 描边，保证在任意卡面上都读得清
-  ctx.beginPath();
-  ctx.arc(center, center, radius, 0, Math.PI * 2);
-  ctx.fillStyle = palette.bg;
-  ctx.fill();
-  ctx.lineWidth = emphasised ? 7 : 4;
-  ctx.strokeStyle = emphasised ? '#ffffff' : palette.ring;
-  ctx.stroke();
-
-  // 数值：字号按位数收缩，三位数不溢出
+  /*
+    **只画数字，不画外圈。** 原先每个数值都套一个实心圆 + 描边，
+    一排徽标看起来像三枚棋子压在卡面上，把插画的下缘整个盖住了。
+    去掉底之后靠**描边**保证可读性：卡面是任意插画，白字没描边会在浅色区域糊掉。
+  */
   const text = String(value);
-  const fontSize = text.length >= 3 ? 54 : text.length === 2 ? 66 : 74;
-  ctx.fillStyle = palette.fg;
+  const fontSize = text.length >= 3 ? 78 : text.length === 2 ? 96 : 108;
   ctx.font = `700 ${fontSize}px "Microsoft YaHei", "PingFang SC", system-ui, sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText(text, center, center + 3);
+  ctx.lineJoin = 'round';
+  ctx.miterLimit = 2;
+  ctx.lineWidth = 12;
+  ctx.strokeStyle = emphasised ? palette.ring : 'rgba(6, 9, 16, 0.9)';
+  ctx.strokeText(text, center, center + 2);
+  // 刚变化过的那一下换成亮色，替代原来的白圈高亮
+  ctx.fillStyle = emphasised ? '#ffffff' : palette.fg;
+  ctx.fillText(text, center, center + 2);
 
   const texture = new CanvasTexture(canvas);
   texture.colorSpace = SRGBColorSpace;

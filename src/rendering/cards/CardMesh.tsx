@@ -16,7 +16,7 @@ import {
   getCardFaceGeometry,
 } from './cardGeometry';
 import { HoloLayer, holoIntensityForRarity } from './HoloLayer';
-import { StatBadges } from './StatBadges';
+import { StatBadges, type StatLayout } from './StatBadges';
 import type { StatKind } from './statBadge';
 
 /**
@@ -65,6 +65,13 @@ export interface CardMeshProps {
   readonly emphasisedStats?: ReadonlySet<StatKind> | undefined;
   /** 是否显示数值徽标。 */
   readonly showStats?: boolean | undefined;
+  /**
+   * 这张牌现在在哪个区域。
+   *
+   * 数值的摆法跟着它变：手牌把冷却放在右上角、等待区放成中央大数字、
+   * 战斗区干脆不显示冷却（见 `StatBadges`）。
+   */
+  readonly statLayout?: StatLayout | undefined;
   /** 卡牌整体缩放（准备区的卡比战斗区小一圈）。 */
   readonly scale?: number | undefined;
   readonly onClick?: ((card: CardDefinition) => void) | undefined;
@@ -98,6 +105,7 @@ export function CardMesh({
   stats,
   emphasisedStats,
   showStats = true,
+  statLayout = 'battle',
   scale = 1,
   onClick,
   onHoverChange,
@@ -291,7 +299,7 @@ export function CardMesh({
           hp={stats?.hp ?? card.hp}
           cd={stats?.cd ?? card.cd}
           emphasised={emphasisedStats}
-          scale={scale}
+          layout={statLayout}
         />
       )}
 

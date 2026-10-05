@@ -5,6 +5,7 @@ import type { Group } from 'three';
 import type { CardDefinition } from '../../domain/cards/types';
 import { damp } from '../anim/motion';
 import type { StatKind } from '../cards/statBadge';
+import type { StatLayout } from '../cards/StatBadges';
 import { CardMesh } from '../cards/CardMesh';
 
 /**
@@ -42,6 +43,7 @@ export interface MovingCardProps {
     | { readonly atk: number; readonly hp: number; readonly cd: number }
     | undefined;
   readonly emphasisedStats?: ReadonlySet<StatKind> | undefined;
+  readonly statLayout?: StatLayout | undefined;
   readonly onClick?: ((card: CardDefinition) => void) | undefined;
   readonly onHoverChange?: ((card: CardDefinition, hovered: boolean) => void) | undefined;
 }
@@ -59,6 +61,7 @@ export function MovingCard({
   scale,
   stats,
   emphasisedStats,
+  statLayout,
   onClick,
   onHoverChange,
 }: MovingCardProps) {
@@ -101,6 +104,7 @@ export function MovingCard({
         scale={scale}
         stats={stats}
         emphasisedStats={emphasisedStats}
+        statLayout={statLayout}
         onClick={onClick}
         onHoverChange={onHoverChange}
       />
