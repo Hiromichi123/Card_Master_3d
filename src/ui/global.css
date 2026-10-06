@@ -3032,118 +3032,412 @@ code {
 
 
 
-/* --- 商店 --------------------------------------------------------------- */
+/* --- 换屏黑场（旧版 `ui/transition.py`）----------------------------------- */
 
-.shop__lead {
-  margin: 4px 0 0;
-  font-size: 13px;
-  color: var(--text-dim);
+/*
+  淡出 → 换屏 → 淡入，一程 320ms（旧版是每秒 800 个 alpha，255/800 ≈ 0.32s）。
+  盖在所有东西之上（比展示位的 70 还高），转场期间 `pointer-events: none`
+  只是为了不挡住已经没意义的点击。
+*/
+.fade {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  background: #000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 320ms linear;
 }
 
-.shop__error {
+.fade--on {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fade {
+    transition: none;
+  }
+}
+
+/* --- 商店（旧版 `shop_scene.py` / `activity_shop_scene.py`）---------------- */
+
+/*
+  坐标全是设计单位：位置相对 2880 × 1800 的设计框，尺寸 `calc(N * var(--ui))`。
+  版面：标题 11% / 副标题 16% / 左栏 (4%, 18%, 62%×78%) / 右栏 (66%+26, 18%, 其余×78%)。
+*/
+.shop__title {
+  position: absolute;
+  left: 50%;
+  top: 11%;
+  transform: translate(-50%, -50%);
   margin: 0;
-  padding: 7px 12px;
-  border-left: 3px solid var(--danger);
-  border-radius: 6px;
-  background: rgba(255, 107, 107, 0.1);
-  color: var(--text);
-  font-size: 13px;
+  font-size: calc(100 * var(--ui));
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+  color: #fff5e1;
+  text-shadow:
+    calc(4 * var(--ui)) calc(4 * var(--ui)) 0 #000,
+    0 0 calc(34 * var(--ui)) rgba(255, 220, 160, 0.35);
 }
 
-.shop__shelf {
-  /* 一排最多 6 格，撑满 1920 只会把卡片拉得很宽、右边空一片；整排居中收窄 */
-  max-width: 1080px;
-  margin: 0 auto 18px;
-}
-
-.shop__heading {
-  margin: 0 0 8px;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-dim);
-  letter-spacing: 0.03em;
-}
-
-/* 一排货架：卡不超过 6 张，用定宽列而不是 auto-fill，卡才不会忽大忽小 */
-.shop__row {
+.shop__subtitle {
+  position: absolute;
+  left: 50%;
+  top: 16%;
+  transform: translateX(-50%);
   margin: 0;
-  padding: 0;
-  list-style: none;
-  display: grid;
-  grid-template-columns: repeat(6, minmax(0, 164px));
-  gap: 10px;
+  color: #ebebeb;
+  font-size: calc(40 * var(--ui));
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
 }
 
-.shop__item {
-  position: relative;
+.shop__currency {
+  position: absolute;
+  left: 4%;
+  top: 3%;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: calc(8 * var(--ui));
+  align-items: flex-start;
+  font-size: calc(28 * var(--ui));
 }
 
-.shop__price {
-  font-size: 12px;
-  color: var(--text);
-  text-align: center;
+/* 活动商店的徽章计数（旧版 (72%, 8%) 的一块深紫面板） */
+.shop__badge {
+  position: absolute;
+  left: 72%;
+  top: 8%;
+  display: flex;
+  align-items: center;
+  gap: calc(12 * var(--ui));
+  padding: calc(8 * var(--ui)) calc(20 * var(--ui));
+  border-radius: calc(12 * var(--ui));
+  background: rgba(30, 20, 40, 0.7);
+  color: #ffb4ff;
+  font-size: calc(28 * var(--ui));
+}
+
+.shop__badge-value {
+  color: #fff;
   font-variant-numeric: tabular-nums;
 }
 
-/* 售罄：盖住整格，且不挡点击（点击由卡片的 disabled 挡） */
+/*
+  右上角的「返回主菜单」。旧版给它开了 `persistent_glow`——
+  常亮着，因为它是这块屏上唯一的出口。
+*/
+.shop__return {
+  position: absolute;
+  left: 84%;
+  top: 5%;
+  width: calc(240 * var(--ui));
+  height: calc(60 * var(--ui));
+  font: inherit;
+  font-size: calc(28 * var(--ui));
+  font-weight: 600;
+  color: #191919;
+  background: rgba(120, 180, 255, 0.78);
+  border: calc(2 * var(--ui)) solid rgba(170, 210, 255, 0.9);
+  border-radius: calc(10 * var(--ui));
+  box-shadow: 0 0 calc(26 * var(--ui)) rgba(120, 180, 255, 0.55);
+  cursor: pointer;
+  animation: shop-return-pulse 2.2s ease-in-out infinite;
+}
+
+.shop__return:hover {
+  background: rgba(170, 210, 255, 0.92);
+}
+
+@keyframes shop-return-pulse {
+  50% {
+    box-shadow: 0 0 calc(38 * var(--ui)) rgba(150, 200, 255, 0.85);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shop__return {
+    animation: none;
+  }
+}
+
+/* 左右两块面板 */
+.shop__left,
+.shop__right {
+  position: absolute;
+  top: 18%;
+  height: 78%;
+  display: flex;
+  flex-direction: column;
+}
+
+.shop__left {
+  left: 4%;
+  width: 62%;
+  gap: calc(28 * var(--ui));
+}
+
+.shop__right {
+  left: calc(66% + 26 * var(--ui));
+  width: calc(34% - 66 * var(--ui));
+  gap: calc(16 * var(--ui));
+}
+
+/* 每一排：标签在左上，排面板里横着摆卡 */
+/*
+  一排 = 标签 + 排面板。**整排的高度交给内容**，固定高度给面板本身
+  （旧版的 `spec["height"]` 量的就是面板，标签画在它上方之外）。
+  第一版把固定高度给了整排，于是面板里放不下的部分溢出去、
+  正好被下一排的标签压住——点价格按钮点到的其实是那个标签。
+*/
+.shop__shelf {
+  display: flex;
+  flex-direction: column;
+  gap: calc(6 * var(--ui));
+}
+
+.shop__shelf-label {
+  font-size: calc(26 * var(--ui));
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+}
+
+.shop__shelf-row {
+  display: flex;
+  align-items: flex-start;
+  gap: calc(16 * var(--ui));
+  min-height: 0;
+  padding: calc(8 * var(--ui)) calc(16 * var(--ui));
+  background: rgba(25, 35, 70, 0.43);
+  border: calc(2 * var(--ui)) solid rgba(90, 140, 200, 0.31);
+  border-radius: calc(18 * var(--ui));
+}
+
+.shop__item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(4 * var(--ui));
+}
+
+.shop__item-name {
+  font-size: calc(26 * var(--ui));
+  line-height: 1.15;
+  color: #fff;
+  text-align: center;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+}
+
+/* 卡图：稀有度描边（旧版是把卡框外扩 16 画一圈该稀有度的颜色） */
+.shop__item-art {
+  position: relative;
+  width: 100%;
+  border: calc(3 * var(--ui)) solid var(--rarity, #888);
+  border-radius: calc(14 * var(--ui));
+  overflow: hidden;
+  background: #0b0e15;
+  box-shadow: 0 0 calc(16 * var(--ui)) color-mix(in srgb, var(--rarity, #888) 45%, transparent);
+}
+
+.shop__item-art img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* 价格按钮（旧版 `_draw_price_button`） */
+.shop__price-btn {
+  width: 100%;
+  padding: calc(6 * var(--ui)) 0;
+  font: inherit;
+  font-size: calc(22 * var(--ui));
+  font-weight: 600;
+  color: #191919;
+  background: rgba(255, 220, 120, 0.9);
+  border: none;
+  border-radius: calc(8 * var(--ui));
+  cursor: pointer;
+  font-variant-numeric: tabular-nums;
+}
+
+.shop__price-btn:hover:not(:disabled) {
+  background: rgba(255, 240, 180, 1);
+}
+
+.shop__price-btn:disabled {
+  background: rgba(120, 120, 130, 0.55);
+  color: #cfcfcf;
+  cursor: not-allowed;
+}
+
 .shop__soldout {
   position: absolute;
   inset: 0;
   display: grid;
   place-items: center;
-  border-radius: 8px;
-  background: rgba(8, 11, 18, 0.62);
-  color: var(--text-dim);
-  font-size: 13px;
-  letter-spacing: 0.08em;
-  pointer-events: none;
+  background: rgba(8, 11, 18, 0.66);
+  color: #ffbebe;
+  font-size: calc(24 * var(--ui));
+  letter-spacing: 0.1em;
+}
+
+.shop__empty {
+  margin: auto;
+  color: #c8c8c8;
+  font-size: calc(22 * var(--ui));
+}
+
+/* 右栏的面板标题（特典卡包 / 市场行情） */
+.shop__panel-label {
+  display: block;
+  font-size: calc(26 * var(--ui));
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+}
+
+/* 卡包：上半 45%，横着摆三个 */
+.shop__packs {
+  display: flex;
+  flex-direction: column;
+  gap: calc(8 * var(--ui));
+  flex: 0 0 45%;
+  min-height: 0;
+}
+
+.shop__pack-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-evenly;
+  gap: calc(12 * var(--ui));
+  flex: 1;
+  min-height: 0;
+  padding: calc(14 * var(--ui)) calc(12 * var(--ui));
+  background: rgba(25, 28, 50, 0.51);
+  border: calc(2 * var(--ui)) solid rgba(120, 150, 210, 0.28);
+  border-radius: calc(14 * var(--ui));
 }
 
 /*
-  礼包没有卡面，用一块按稀有度描边的底板当门面：
-  它卖的是「必出某个稀有度」这个承诺，所以稀有度字要大。
+  礼包没有卡面：一块按稀有度发光的空位（旧版是给卡包图后面垫一层会呼吸的
+  稀有度色椭圆，`_draw_pack_offer`）。
 */
-.shop__pack {
+.shop__pack-body {
+  position: relative;
+  border: calc(3 * var(--ui)) solid var(--rarity, #888);
+  border-radius: calc(12 * var(--ui));
+  background:
+    radial-gradient(
+      ellipse at 50% 50%,
+      color-mix(in srgb, var(--rarity, #888) 55%, transparent) 0%,
+      rgba(15, 18, 35, 0.9) 70%
+    ),
+    #12161f;
+  animation: shop-pack-glow 2.6s ease-in-out infinite;
+}
+
+@keyframes shop-pack-glow {
+  50% {
+    box-shadow: 0 0 calc(30 * var(--ui)) color-mix(in srgb, var(--rarity, #888) 70%, transparent);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shop__pack-body {
+    animation: none;
+  }
+}
+
+.shop__item--pack .shop__price-btn {
+  width: calc(170 * var(--ui));
+}
+
+/* 行情图：占满剩余高度，两张图各一半 */
+.shop__charts {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
+  gap: calc(10 * var(--ui));
+  flex: 1;
+  min-height: 0;
+}
+
+.chart {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  padding: calc(8 * var(--ui)) calc(10 * var(--ui));
+  background: rgba(15, 18, 35, 0.47);
+  border: calc(2 * var(--ui)) solid rgba(90, 110, 160, 0.27);
+  border-radius: calc(14 * var(--ui));
+}
+
+.chart__title {
+  font-size: calc(24 * var(--ui));
+  color: #fff;
+}
+
+.chart__svg {
+  flex: 1;
+  min-height: 0;
   width: 100%;
-  aspect-ratio: 2 / 3;
-  padding: 10px;
-  font: inherit;
-  color: var(--text);
-  text-align: center;
-  background: linear-gradient(160deg, #1b2130 0%, #121722 100%);
-  border: 2px solid var(--border-strong);
-  border-radius: 8px;
-  cursor: pointer;
 }
 
-.shop__pack:disabled {
-  cursor: not-allowed;
-  opacity: 0.55;
+.chart__grid {
+  stroke: rgba(255, 255, 255, 0.09);
+  stroke-width: 1;
 }
 
-.shop__pack-name {
-  font-size: 14px;
-  font-weight: 600;
+.chart__line {
+  fill: none;
+  stroke-width: 2.5;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
 }
 
-.shop__pack-rarity {
-  font-size: 20px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
+/* 横轴刻度（DOM，不在 SVG 里——见 LineChart 的注释） */
+.chart__axis {
+  display: flex;
+  justify-content: space-between;
+  padding-left: calc(46 / 640 * 100%);
+  padding-right: calc(14 / 640 * 100%);
+  color: rgba(220, 226, 236, 0.7);
+  font-size: calc(18 * var(--ui));
 }
 
-.shop__pack-note {
-  font-size: 11px;
+.chart__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(10 * var(--ui));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: calc(20 * var(--ui));
   color: var(--text-dim);
-  line-height: 1.4;
+}
+
+.chart__legend li {
+  display: flex;
+  align-items: center;
+  gap: calc(6 * var(--ui));
+}
+
+.chart__swatch {
+  width: calc(14 * var(--ui));
+  height: calc(4 * var(--ui));
+  border-radius: 2px;
+}
+
+.shop__error {
+  margin: 0;
+  padding: calc(8 * var(--ui)) calc(14 * var(--ui));
+  border-left: calc(4 * var(--ui)) solid var(--danger);
+  border-radius: calc(8 * var(--ui));
+  background: rgba(255, 107, 107, 0.14);
+  color: #fff;
+  font-size: calc(24 * var(--ui));
 }
 
 /* --- 货币与等级 ---------------------------------------------------------- */
@@ -6199,3 +6493,23 @@ code {
 .gacha-probability .gacha__rare { flex-shrink: 0; margin: 0; color: #f8e7bc; font-size: inherit; }
 .gacha-probability__rows { display: flex; flex: 1; justify-content: space-between; gap: 12px; list-style: none; margin: 0; padding: 0; }
 .gacha-probability__rows .gacha__prob-value { color: inherit; }
+
+/* Selection and reveal share one board and one Canvas; only surrounding UI leaves. */
+.gacha .gacha__stage { z-index: 0; background: #fff8e8; }
+.gacha .gacha-menu { position: absolute; inset: 0; z-index: 4; background: transparent; }
+.gacha-menu--leaving { pointer-events: none; }
+.gacha-menu--leaving .gacha-menu__card-hit { pointer-events: none; }
+.gacha-menu--leaving .gacha-dashboard { animation: gacha-ui-left var(--gacha-exit-duration) ease-in forwards; }
+.gacha-menu--leaving .gacha-menu__heading { animation: gacha-ui-up var(--gacha-exit-duration) ease-in forwards; }
+.gacha-menu--leaving .gacha-menu__currency { animation: gacha-ui-right var(--gacha-exit-duration) ease-in forwards; }
+.gacha-menu--leaving .gacha-menu__actions, .gacha-menu--leaving .gacha-menu__dev { animation: gacha-ui-down var(--gacha-exit-duration) ease-in forwards; }
+.gacha-menu--leaving .gacha-menu__card-controls { animation: gacha-ui-right var(--gacha-exit-duration) ease-in forwards; }
+.gacha-complete--leaving { pointer-events: none; }
+.gacha-complete--leaving .gacha-complete__actions { pointer-events: none; animation: gacha-result-out var(--gacha-exit-duration) ease-in forwards; }
+.gacha-complete--leaving .gacha-complete__head { animation: gacha-result-up var(--gacha-exit-duration) ease-in forwards; }
+@keyframes gacha-ui-left { to { translate: -1200px 0; opacity: 0; } }
+@keyframes gacha-ui-right { to { translate: 1700px 0; opacity: 0; } }
+@keyframes gacha-ui-up { to { translate: 0 -600px; opacity: 0; } }
+@keyframes gacha-ui-down { to { translate: 0 600px; opacity: 0; } }
+@keyframes gacha-result-out { to { translate: 0 160px; opacity: 0; } }
+@keyframes gacha-result-up { to { translate: 0 -120px; opacity: 0; } }

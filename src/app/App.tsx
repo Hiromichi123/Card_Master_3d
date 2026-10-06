@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 
 import { BattleScene } from '../scenes/BattleScene';
 import { CollectionScene } from '../scenes/CollectionScene';
@@ -12,6 +12,7 @@ import { HubScene } from '../scenes/HubScene';
 import { getProfileStore } from '../state/profileStore';
 import type { ProfileStore } from '../state/createProfileStore';
 import { pushToast } from '../state/toastStore';
+import { useSettingsStore } from '../state/settingsStore';
 import { useProfileStore } from '../state/useProfileStore';
 import { QualityControl } from '../ui/QualityControl';
 import { ScreenPlaceholder } from '../ui/ScreenPlaceholder';
@@ -32,9 +33,68 @@ import { ROUTES, type RouteId } from './routes';
  * 3. **关卡启动载荷**。战役选关后要把这一局的卡组与奖励带进战斗场景，
  *    它是跨屏幕的一次性数据，放这里最直观。
  */
+/**
+ * 换屏时的黑场时长（毫秒）。
+ *
+ * 旧版 `ui/transition.py` 是「每秒 800 个 alpha」，一程 255/800 ≈ **0.32 秒**：
+ * 淡出到全黑 → 切场景 → 淡入。这里照抄这个节奏。
+ */
+const FADE_MS = 320;
+
 export function App() {
   const [route, setRoute] = useState<RouteId>('hub');
   const [store, setStore] = useState<ProfileStore | null>(null);
+  const reduceMotion = useSettingsStore((state) => state.reduceMotion);
+
+  /*
+    转场：淡出 → 换屏 → 淡入。
+
+    **转场期间不接受新的跳转**（`busyRef`）——旧版也是这么做的
+    （`if not self.transition.is_transitioning`），否则连点两个入口会让黑场
+    与三次切屏互相追尾。
+  */
+  const [fadeOn, setFadeOn] = useState(false);
+  const pendingRef = useRef<RouteId | null>(null);
+  const busyRef = useRef(false);
+
+  const navigate = useCallback(
+    (next: RouteId) => {
+      if (busyRef.current || next === route) {
+        return;
+      }
+      if (reduceMotion) {
+        setRoute(next);
+        return;
+      }
+      busyRef.current = true;
+      pendingRef.current = next;
+      setFadeOn(true);
+    },
+    [route, reduceMotion],
+  );
+
+  useEffect(() => {
+    if (!fadeOn) {
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      const next = pendingRef.current;
+      pendingRef.current = null;
+      if (next) {
+        setRoute(next);
+      }
+      setFadeOn(false);
+      /*
+        **换屏的瞬间就放开输入**，不等淡入走完。
+
+        旧版是「转场期间一律不响应」，照搬的话屏幕已经能看清了还点不动，
+        实测很别扭（用例也在这个窗口里点空过）。淡入被下一次跳转打断是可接受的：
+        `fadeOn` 从当前不透明度继续往 1 走，看起来就是又黑了一次。
+      */
+      busyRef.current = false;
+    }, FADE_MS);
+    return () => window.clearTimeout(timer);
+  }, [fadeOn]);
 
   useEffect(() => {
     let alive = true;
@@ -71,7 +131,7 @@ export function App() {
             className={
               item.id === route ? 'app-nav__tab app-nav__tab--active' : 'app-nav__tab'
             }
-            onClick={() => setRoute(item.id)}
+            onClick={() => navigate(item.id)}
             title={item.hint}
           >
             {item.label}
@@ -90,7 +150,7 @@ export function App() {
               route={route}
               snapshot={snapshot}
               store={store}
-              onNavigate={setRoute}
+              onNavigate={navigate}
               onReset={() => {
                 void store?.resetProfile();
               }}
@@ -100,6 +160,9 @@ export function App() {
       </main>
 
       <ToastHost />
+
+      {/* 换屏的黑场。转场期间挡掉指针，避免点到正在淡出的那一屏 */}
+      <div className={fadeOn ? 'fade fade--on' : 'fade'} aria-hidden="true" />
     </div>
   );
 }
@@ -173,9 +236,25 @@ function Screen({ route, snapshot, store, onNavigate, onReset }: ScreenProps) {
     case 'deck':
       return <DeckEditorScene profile={profile} store={store} />;
     case 'shop':
-      return <ShopScene profile={profile} store={store} busy={snapshot.busy} kind="normal" />;
+      return (
+        <ShopScene
+          profile={profile}
+          store={store}
+          busy={snapshot.busy}
+          kind="normal"
+          onNavigate={onNavigate}
+        />
+      );
     case 'activityShop':
-      return <ShopScene profile={profile} store={store} busy={snapshot.busy} kind="activity" />;
+      return (
+        <ShopScene
+          profile={profile}
+          store={store}
+          busy={snapshot.busy}
+          kind="activity"
+          onNavigate={onNavigate}
+        />
+      );
     case 'battlemenu':
       return <BattleMenuScene profile={profile} onNavigate={onNavigate} />;
     case 'activity':

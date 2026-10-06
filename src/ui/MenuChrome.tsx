@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 
 import { ComingSoonBadge } from './ComingSoonBadge';
-import { useParallax } from './useParallax';
+import { DesignStage } from './DesignStage';
 
 /**
  * 三个菜单（主菜单 / 选择对战模式 / 限时活动模式）共用的外壳。
@@ -39,29 +39,18 @@ export function MenuChrome({
   children,
   titleSize = 96,
 }: MenuChromeProps) {
-  const parallaxRef = useParallax();
-
   return (
-    <div className="menu" ref={parallaxRef}>
-      <div
-        className="menu__bg"
-        style={backgroundUrl ? { backgroundImage: `url(${backgroundUrl})` } : undefined}
-        aria-hidden="true"
-      />
-      <div className="menu__scrim" aria-hidden="true" />
+    <DesignStage backgroundUrl={backgroundUrl}>
+      {status && <div className="menu__status">{status}</div>}
 
-      <div className="menu__stage">
-        {status && <div className="menu__status">{status}</div>}
+      <h1 className="menu__title" style={{ ['--title-size' as string]: titleSize }}>
+        {title}
+      </h1>
+      {subtitle && <p className="menu__subtitle">{subtitle}</p>}
+      {note}
 
-        <h1 className="menu__title" style={{ ['--title-size' as string]: titleSize }}>
-          {title}
-        </h1>
-        {subtitle && <p className="menu__subtitle">{subtitle}</p>}
-        {note}
-
-        {children}
-      </div>
-    </div>
+      {children}
+    </DesignStage>
   );
 }
 

@@ -38,7 +38,7 @@ async function openShop(page: Page, kind: 'normal' | 'activity' = 'normal'): Pro
   } else {
     await menuEntry(page, '商店').click();
   }
-  await expect(page.locator('.shop__row').first()).toBeVisible({ timeout: 30_000 });
+  await expect(page.locator('.shop__shelf-row').first()).toBeVisible({ timeout: 30_000 });
 }
 
 /**
@@ -51,10 +51,17 @@ function menuEntry(page: Page, label: string) {
   return page.locator('.menu__columns').getByRole('button', { name: label, exact: true });
 }
 
-/** 某一排货架。 */
+/**
+ * 某一排货架。
+ *
+ * 按 `aria-label` 找：新版版面照旧版，每排的标签是一行文字（不是标题元素），
+ * 用 `aria-label` 既给读屏也给用例一个稳定的抓手。
+ */
 function shelf(page: Page, label: string) {
-  return page.locator('.shop__shelf').filter({ has: page.getByRole('heading', { name: label }) });
+  return page.locator(`.shop__shelf[aria-label="${label}"]`);
 }
+
+
 
 /**
  * 新号的起始条件：5000 金币（`STARTING_CURRENCIES`），
@@ -78,7 +85,7 @@ async function firstAffordable(page: Page, label: string, budget = START_GOLD): 
   const items = shelf(page, label).locator('.shop__item');
   const count = await items.count();
   for (let index = 0; index < count; index += 1) {
-    const price = await items.nth(index).locator('.shop__price').textContent();
+    const price = await items.nth(index).locator('.shop__price-btn').textContent();
     const amount = Number.parseInt(price ?? '0', 10);
     if ((price ?? '').includes('金币') && amount <= budget) {
       return index;
@@ -91,11 +98,20 @@ test('货架：四排齐全、同一天可复现、换一天就换一批', async
   const problems = collectProblems(page);
   await openShop(page);
 
-  // 常规商店是「神话 / 传承 / 探索」三排 + 礼包一排（`shops.json` 的 shelves 与 packs）
+  /*
+    常规商店照旧版 `shop_scene.py`：左栏三排「神话 / 传承 / 探索」，
+    右栏「特典卡包」+ 两张行情图；标题是「星辰商店」。
+  */
   await expect(shelf(page, '神话')).toBeVisible();
   await expect(shelf(page, '传承')).toBeVisible();
   await expect(shelf(page, '探索')).toBeVisible();
-  await expect(shelf(page, '礼包')).toBeVisible();
+  await expect(page.locator('.shop__title')).toHaveText('星辰商店');
+  await expect(page.locator('.shop__panel-label')).toHaveText(['特典卡包', '市场行情']);
+  await expect(page.locator('.chart__title')).toHaveText([
+    '成交价走势 (SSS-D)',
+    '汇率波动 (金币/水晶/徽章)',
+  ]);
+  await expect(page.locator('.shop__return')).toBeVisible();
 
   const readShelf = async (): Promise<string> =>
     page.evaluate(() =>
@@ -111,14 +127,14 @@ test('货架：四排齐全、同一天可复现、换一天就换一批', async
   await page.reload();
   await clickNav(page, '主菜单');
   await menuEntry(page, '商店').click();
-  await expect(page.locator('.shop__row').first()).toBeVisible();
+  await expect(page.locator('.shop__shelf-row').first()).toBeVisible();
   expect(await readShelf()).toBe(today);
 
   // 换一天：整批换掉（「每日刷新」就是这一句）
   await page.goto('/?day=20240102');
   await clickNav(page, '主菜单');
   await menuEntry(page, '商店').click();
-  await expect(page.locator('.shop__row').first()).toBeVisible();
+  await expect(page.locator('.shop__shelf-row').first()).toBeVisible();
   const tomorrow = await readShelf();
   expect(tomorrow).not.toBe(today);
   // 售罄标识里带日键，所以两天的标识不可能相交
@@ -135,10 +151,10 @@ test('买卡：扣钱与发货是同一笔事务，且标记售罄', async ({ pa
   expect(index, '探索货架里没有买得起的卡').toBeGreaterThanOrEqual(0);
 
   const item = shelf(page, '探索').locator('.shop__item').nth(index);
-  const priceText = await item.locator('.shop__price').textContent();
+  const priceText = await item.locator('.shop__price-btn').textContent();
   const price = Number.parseInt(priceText ?? '0', 10);
   const entryId = await item.evaluate((node) => (node as HTMLElement).dataset['entryId'] ?? '');
-  await item.locator('.tile').click();
+  await item.locator('.shop__price-btn').click();
   await expect(item.locator('.shop__soldout')).toBeVisible({ timeout: 15_000 });
 
   /*
@@ -159,10 +175,10 @@ test('买不起：一分钱不扣、盘上不留记录、给一句提示', async
 
   // 新号 5000 金币 / 300 水晶；「神话」排第一件是 551 水晶的 SSS，买不起
   const first = shelf(page, '神话').locator('.shop__item').first();
-  const priceText = await first.locator('.shop__price').textContent();
+  const priceText = await first.locator('.shop__price-btn').textContent();
   expect(priceText, '这条用例假设神话排第一件是水晶价').toContain('水晶');
 
-  await first.locator('.tile').click();
+  await first.locator('.shop__price-btn').click();
   await expect(page.locator('.shop__error')).toContainText('余额不足');
   await expect(first.locator('.shop__soldout')).toHaveCount(0);
 
@@ -179,13 +195,15 @@ test('活动入口进的是活动商店，货架与常规不同', async ({ page 
   const problems = collectProblems(page);
   await openShop(page, 'activity');
 
-  await expect(page.locator('.screen__title')).toHaveText('活动商店');
+  await expect(page.locator('.shop__title')).toHaveText('活动商店');
   // 活动货架的三排与常规完全不同（`shops.json` 的 activityShop.shelves）
   await expect(shelf(page, '活动精选')).toBeVisible();
   await expect(shelf(page, '稀有兑换')).toBeVisible();
   await expect(shelf(page, '常规兑换')).toBeVisible();
-  // 活动商店没有礼包（配置里就没有 packs）
-  await expect(page.locator('.shop__pack')).toHaveCount(0);
+  // 活动商店没有礼包（配置里就没有 packs），但有一个徽章计数与一张汇率图
+  await expect(page.locator('.shop__item--pack')).toHaveCount(0);
+  await expect(page.getByTestId('badge-counter')).toBeVisible();
+  await expect(page.locator('.chart__title')).toHaveText(['徽章兑换汇率走势']);
 
   expect(problems, `场景出现问题：\n${problems.join('\n')}`).toEqual([]);
 });
@@ -201,10 +219,10 @@ test('活动商店用徽章计价，新号买不起（徽章来自活动，还�
     2. 新号徽章为 0，所以点购买应当被拒、且**盘上不留记录**。
   */
   const first = page.locator('.shop__item').first();
-  await expect(first.locator('.shop__price')).toContainText('徽章');
-  await expect(first.locator('.shop__price')).not.toContainText('undefined');
+  await expect(first.locator('.shop__price-btn')).toContainText('徽章');
+  await expect(first.locator('.shop__price-btn')).not.toContainText('undefined');
 
-  await first.locator('.tile').click();
+  await first.locator('.shop__price-btn').click();
   await expect(page.locator('.shop__error')).toContainText('余额不足');
   expect(await readProfile(page)).toBeUndefined();
 

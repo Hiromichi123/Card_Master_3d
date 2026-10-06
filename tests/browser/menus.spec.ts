@@ -84,8 +84,8 @@ test('「活动模式」进的是活动大厅，活动商店在它里面', async
 
   // **活动商店是这一层里的入口**，不是主菜单直接进的
   await menuEntry(page, '活动商店').click();
-  await expect(page.locator('.screen__title')).toHaveText('活动商店');
-  await expect(page.locator('.shop__row').first()).toBeVisible();
+  await expect(page.locator('.shop__title')).toHaveText('活动商店');
+  await expect(page.locator('.shop__shelf-row').first()).toBeVisible();
 
   expect(problems, `场景出现问题：\n${problems.join('\n')}`).toEqual([]);
 });
@@ -124,4 +124,35 @@ test('返回主菜单回到主菜单，而不是导航栏切换', async ({ page 
   // 导航栏仍然停在「主菜单」页签
   await expect(page.locator('.app-nav__tab--active')).toHaveText('主菜单');
   await clickNav(page, '主菜单');
+});
+
+/**
+ * 换屏的黑场。
+ *
+ * 旧版 `ui/transition.py`：每秒 800 个 alpha，一程 255/800 ≈ **0.32 秒**，
+ * 淡出到全黑 → 换场景 → 淡入。
+ */
+test('换屏有黑场：先淡出到全黑，再淡入', async ({ page }) => {
+  await openHub(page);
+
+  await clickNav(page, '图鉴');
+  // 逐帧采样黑场的不透明度（采样的是真实渲染值，不是我们的状态变量）
+  const samples: number[] = [];
+  for (let i = 0; i < 16; i += 1) {
+    samples.push(
+      await page.evaluate(() => {
+        const overlay = document.querySelector('.fade');
+        return overlay ? Number(getComputedStyle(overlay).opacity) : -1;
+      }),
+    );
+    await page.waitForTimeout(50);
+  }
+
+  expect(Math.max(...samples), '黑场没有淡到足够黑').toBeGreaterThan(0.6);
+  expect(samples[samples.length - 1], '最后应当已经淡回透明').toBe(0);
+  // 中间确实经过了「半透明」——证明是渐变而不是瞬切
+  expect(samples.some((value) => value > 0.15 && value < 0.85)).toBe(true);
+
+  // 黑场之后落在新屏幕
+  await expect(page.locator('.collection__lead')).toBeVisible();
 });
