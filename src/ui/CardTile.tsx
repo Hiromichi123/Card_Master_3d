@@ -7,6 +7,10 @@ import { useRarityIndex } from '../state/useRarityIndex';
 /**
  * 图鉴/组卡/商店共用的小卡格。
  *
+ * **这里是纯图片，没有箔片效果。** 箔片只在「展示位」出现
+ * （点开后的大图，见 `CardShowcase`）——一屏几十张卡同时闪既吵又费合成，
+ * 而且缩略图尺寸下条纹根本读不出来。这也正是 V-HOLO-4 的划分。
+ *
  * 整张卡面用 **thumbnail 档**加载（384 长边），不是战斗用的高清档——
  * PLAN 第 5 节要求图鉴分页/按可见区域加载缩略图，一屏几十张走高清档会直接
  * 把纹理预算打爆。
@@ -48,6 +52,7 @@ export function CardTile({
   const card = cardById.get(cardId);
   const rarityIndex = useRarityIndex();
   const url = cardFaceUrl(cardId, 'thumbnail');
+
 
   // 换卡时要重新判断一次——否则上一张的失败状态会跟过来
   const [broken, setBroken] = useState(false);

@@ -81,7 +81,7 @@ test('图鉴展示全部卡牌，且卡面真的加载出来了', async ({ page 
   expect(problems, `场景出现问题：\n${problems.join('\n')}`).toEqual([]);
 });
 
-test('按稀有度筛选，并且能打开一张卡的详情', async ({ page }) => {
+test('按稀有度筛选，点开后进入展示位', async ({ page }) => {
   test.setTimeout(120_000);
   const problems = collectProblems(page);
 
@@ -94,20 +94,33 @@ test('按稀有度筛选，并且能打开一张卡的详情', async ({ page }) 
   await expect(page.locator('.tile')).toHaveCount(12);
   await expect(page.getByRole('button', { name: /^SSS/ })).toHaveClass(/chip--on/);
 
-  // 点开第一张：详情面板要出内容，且有中文卡名
+  /*
+    点开第一张：进入**展示位**——背景压暗、卡牌放大到屏幕正中。
+    网格里的缩略图是纯图片，箔片只在展示位出现（V-HOLO-4）。
+  */
   await page.locator('.tile').first().click();
-  const panel = page.locator('.detail');
-  await expect(panel).toBeVisible();
-  await expect(panel.locator('.detail__name')).toHaveText(/[一-鿿]/);
-  await expect(panel).toContainText('SSS');
+  const showcase = page.locator('.showcase');
+  await expect(showcase).toBeVisible();
+  await expect(showcase.locator('.showcase__name')).toHaveText(/[一-鿿]/);
+
+  const card = page.locator('.showcase__card');
+  const box = await card.boundingBox();
+  expect(box?.width ?? 0).toBeGreaterThan(300);
 
   /*
-    关掉面板。**直接按类名点，不要先试 `getByRole('button', {name:'✕'})`**：
-    那个匹配不上时 Playwright 会一直等到测试超时才放弃（默认没有动作超时），
-    `catch` 根本没机会跑——表现成「测试超时」而不是「选择器不对」。
+    **检视要真的在动。** 鼠标移开中心之后，写入的自定义属性必须跟着变——
+    这是「箔片跟着指针走」唯一可断言的证据（截图比对太脆）。
   */
-  await panel.locator('.detail__close').click();
-  await expect(panel).toBeHidden();
+  if (box) {
+    await page.mouse.move(box.x + box.width * 0.2, box.y + box.height * 0.2);
+    await expect
+      .poll(async () => card.evaluate((el) => el.style.getPropertyValue('--foil-bg-x')))
+      .not.toBe('50%');
+  }
+
+  // Esc 关闭
+  await page.keyboard.press('Escape');
+  await expect(showcase).toBeHidden();
 
   expect(problems, `场景出现问题：\n${problems.join('\n')}`).toEqual([]);
 });

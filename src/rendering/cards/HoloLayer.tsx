@@ -4,6 +4,7 @@ import { AdditiveBlending, DoubleSide } from 'three';
 
 import type { CardRarity } from '../../domain/cards/types';
 import { CARD_FACE_OFFSET, getCardFaceGeometry } from './cardGeometry';
+import { foilKindForRarity, FOIL_TUNING } from './foilModel';
 import {
   createHoloUniforms,
   HOLO_FRAGMENT_SHADER,
@@ -53,19 +54,29 @@ export function holoIntensityForRarity(rarity: CardRarity): number {
 }
 
 interface Props {
-  readonly intensity: number;
+  /** 按稀有度决定箔片种类与强度（见 `foilModel.ts`）。 */
+  readonly rarity: CardRarity;
 }
 
 /** 罩在卡面正上方的一层片，紧贴但略高于卡面，避免与卡面 z-fighting。 */
 const HOLO_OFFSET = CARD_FACE_OFFSET + 0.0014;
 
-export function HoloLayer({ intensity }: Props) {
-  const uniforms = useMemo(() => createHoloUniforms(intensity), []);
+export function HoloLayer({ rarity }: Props) {
+  const uniforms = useMemo(() => createHoloUniforms(), []);
 
-  // 强度变化时只改 uniform 值，不重建材质（重建会触发着色器重新编译、掉帧）
+  /*
+    换稀有度时只改 uniform 的值，**不重建材质**——重建会触发着色器重新编译，
+    表现为卡牌一闪。参数全部来自 `FOIL_TUNING`，两处渲染端共用同一份表。
+  */
   useEffect(() => {
-    uniforms.uIntensity.value = intensity;
-  }, [intensity, uniforms]);
+    const tuning = FOIL_TUNING[foilKindForRarity(rarity)];
+    uniforms.uStrength.value = tuning.strength;
+    uniforms.uDensity.value = tuning.density;
+    uniforms.uHueSpread.value = tuning.hueSpread;
+    uniforms.uScanlines.value = tuning.scanlines;
+    uniforms.uSpeckle.value = tuning.speckle;
+    uniforms.uGilt.value = tuning.gilt;
+  }, [rarity, uniforms]);
 
   useFrame((_, delta) => {
     // 色带的缓慢流动。时间只驱动表现，不参与任何规则计算。

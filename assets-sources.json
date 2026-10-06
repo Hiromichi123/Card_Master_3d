@@ -74,5 +74,17 @@
       },
       "note": "用 wood/marble/stone/glass 的 fbm 噪声生成贴图，不依赖任何二进制素材。棋子模型与联机部分未移植。两处按本项目的画面构成做了适配：原项目的泛光阈值按「深色场景 + 小体积棋子」标定，直接套用会糊掉卡面，已在 quality.ts 加了下限 0.9；天气粒子的尺寸是世界单位，原棋盘跨度 32 单位而本项目只有 10.4，已在 weather.tsx 用 PARTICLE_SCALE 按比例缩小。"
     }
+  ],
+  "visualReferences": [
+    {
+      "name": "pokemon-cards-css",
+      "url": "https://github.com/simeydotme/pokemon-cards-css",
+      "demo": "https://poke-holo.simey.me/",
+      "license": "GPL-3.0",
+      "usedFor": "闪卡的视觉规律：色带随倾斜滑移、两组错位彩虹带互相干涉、细扫描线、跟着指针走的眩光；以及「指针 → 检视状态」这套交互",
+      "notUsed": "未复制任何源码、类名、变量名、数值或 Pokémon 素材。本项目按自己的参数重写：3D 卡用自有着色器（src/rendering/cards/holoShader.ts），展示位用自有 CSS（src/ui/global.css 的 .foil 段），共用的检视模型在 src/rendering/cards/foilModel.ts",
+      "policy": "符合本文件 policy 第 3 条「GPL 素材只作视觉参考，不复制其源码或插画」，以及 docs/VISUAL_SPEC.md 的 V-HOLO-3 / V-HOLO-4",
+      "licenseStatus": "reference-only"
+    }
   ]
 }

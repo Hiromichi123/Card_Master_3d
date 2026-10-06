@@ -301,7 +301,7 @@ export function CardMesh({
 
       {showGlow && <CardGlow rarity={card.rarity} />}
 
-      {showHolo && <HoloLayer intensity={holoIntensity} />}
+      {showHolo && <HoloLayer rarity={card.rarity} />}
 
       {showStatsNow && (
         <StatBadges

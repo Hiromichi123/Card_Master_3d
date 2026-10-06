@@ -7,7 +7,7 @@ import { useRarityIndex } from '../state/useRarityIndex';
 import { CardGrid } from '../ui/CardGrid';
 import { CardTile } from '../ui/CardTile';
 import { ScrollArea } from '../ui/ScrollArea';
-import { CardDetailPanel } from '../ui/CardDetailPanel';
+import { CardShowcase } from '../ui/CardShowcase';
 
 /**
  * 卡牌图鉴。
@@ -29,7 +29,7 @@ export interface CollectionSceneProps {
 export function CollectionScene({ profile }: CollectionSceneProps) {
   const rarityIndex = useRarityIndex();
   const [rarity, setRarity] = useState<string | null>(null);
-  const [detailCardId, setDetailCardId] = useState<string | null>(null);
+  const [showcaseCardId, setShowcaseCardId] = useState<string | null>(null);
 
   const rarityOf = useMemo(
     () => (cardId: string) => cardById.get(cardId)?.rarity ?? null,
@@ -47,7 +47,7 @@ export function CollectionScene({ profile }: CollectionSceneProps) {
     return sortForCollection(filtered, rarityOf, (r) => rarityIndex.rankOf(r));
   }, [profile.inventory, rarity, rarityOf, rarityIndex]);
 
-  const detailCard = detailCardId ? (cardById.get(detailCardId) ?? null) : null;
+
 
   return (
     <div className="screen collection">
@@ -122,20 +122,15 @@ export function CollectionScene({ profile }: CollectionSceneProps) {
                 key={entry.cardId}
                 cardId={entry.cardId}
                 count={entry.count}
-                onClick={() => setDetailCardId(entry.cardId)}
+                onClick={() => setShowcaseCardId(entry.cardId)}
               />
             ))}
           </CardGrid>
         )}
       </ScrollArea>
 
-      {detailCard && (
-        <CardDetailPanel
-          card={detailCard}
-          pinned
-          onClose={() => setDetailCardId(null)}
-          onTogglePin={() => setDetailCardId(null)}
-        />
+      {showcaseCardId && (
+        <CardShowcase cardId={showcaseCardId} onClose={() => setShowcaseCardId(null)} />
       )}
     </div>
   );

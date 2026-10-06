@@ -1619,3 +1619,297 @@ code {
   text-align: center;
   color: var(--text-dim);
 }
+
+/* ---------------------------------------------------------------------------
+ * 展示位的箔片
+ *
+ * **只在展示位（点开的大图）用，不在网格的缩略图上用。** 一屏几十张卡同时
+ * 闪既吵又费合成，而且缩略图尺寸下条纹根本读不出来——这也正是 V-HOLO-4 的划分。
+ *
+ * **参考** `pokemon-cards-css`（GPL-3.0）的**视觉规律**：斜向彩虹带、
+ * 两组错位色带互相干涉、细扫描线、跟着指针走的眩光。
+ * **不复制其实现**——没有它的代码、类名或数值（V-HOLO-3、PLAN 第 3.3 节）。
+ *
+ * 自定义属性由 `useFoilPointer` 逐帧写入；**默认值就是静止态**。
+ * ------------------------------------------------------------------------- */
+
+.showcase {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  /* 背景压暗，让卡牌像被端到灯下 */
+  background: rgba(6, 9, 15, 0.86);
+  backdrop-filter: blur(4px);
+}
+
+.showcase__stage {
+  /* 透视放在**舞台**上而不是卡片上：卡片自己还要做 rotate，
+     两者写在同一个 transform 里会因为顺序不同得到不同的投影。 */
+  perspective: 1400px;
+  perspective-origin: 50% 50%;
+}
+
+.showcase__card {
+  /* 检视：卡片跟着指针倒。幅度比网格里大得多——这里只有一张卡，
+     倒得明显才像拿在手里 */
+  transform: rotateX(var(--foil-tilt-x, 0deg)) rotateY(var(--foil-tilt-y, 0deg));
+  transform-style: preserve-3d;
+  transition: transform 90ms ease-out;
+  position: relative;
+  width: min(420px, 38vw);
+  aspect-ratio: 2 / 3;
+  border-radius: 12px;
+  overflow: hidden;
+  /* 实体感：卡片有厚度，投影跟着倾斜走 */
+  box-shadow:
+    0 2px 0 rgba(255, 255, 255, 0.12) inset,
+    0 26px 50px rgba(0, 0, 0, 0.66),
+    0 6px 14px rgba(0, 0, 0, 0.5);
+  background: #0b0e15;
+}
+
+.showcase__art {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* 卡牌边缘的一圈高光，读起来像有厚度的成品卡而不是一张图片 */
+.showcase__edge {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.28) inset,
+    0 0 0 3px rgba(0, 0, 0, 0.5) inset;
+}
+
+/* 静止态就在正中；指针进来之后由 hook 改写 */
+.showcase__card {
+  --foil-bg-x: 50%;
+  --foil-bg-y: 50%;
+  --foil-glare-x: 50%;
+  --foil-glare-y: 50%;
+  --foil-center: 0;
+  /*
+    静止态**不给满分受光**：`--foil-lit` 直接乘进眩光的透明度，
+    给 1 的话没被碰过的卡正中央压着一团高光。
+  */
+  --foil-lit: 0.6;
+  --foil-strength: 0;
+  --foil-density: 1;
+  --foil-scan: 0;
+}
+
+/*
+  箔片层。
+
+  混合模式用 `overlay` 而不是参考实现那种 `color-dodge`——
+
+  这不是口味问题。`color-dodge` 的公式是 base / (1 - blend)：
+  **底图越暗它越没有效果**，底图越亮它越冲顶。参考项目的卡面在徽章窗里
+  本来就是偏亮的，所以合适；而本项目的卡面是任意插画，深色区域上箔片
+  直接消失（实测几乎看不出任何变化），浅色区域又整片冲白——两头都不对。
+
+  `overlay` 是「暗部乘、亮部提」，两个方向都保得住插画结构。
+*/
+.foil {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  overflow: hidden;
+  opacity: calc(var(--foil-strength) * 0.55);
+  mix-blend-mode: overlay;
+  filter: contrast(1.35) saturate(1.15);
+
+  /*
+    两层斜向彩虹带（角度差 21°、周期不同）互相干涉，这是整套观感的关键手法：
+    单独一组是「印在卡上的条纹」，两组叠起来才有宽窄交替的波浪。
+
+    **密度靠 background-size 调，不靠色标。** 第一版写的是
+    `色标 6% / density` 再配 300% 的铺展，结果每个色带只有两三个像素，
+    缩略图上直接变成噪声。
+  */
+  background-image:
+    repeating-linear-gradient(
+      110deg,
+      var(--foil-c1) 0%,
+      var(--foil-c2) 6%,
+      var(--foil-c3) 12%,
+      var(--foil-c4) 18%,
+      var(--foil-c5) 24%,
+      var(--foil-c6) 30%,
+      var(--foil-c1) 36%
+    ),
+    repeating-linear-gradient(
+      89deg,
+      var(--foil-c6) 0%,
+      var(--foil-c5) 9%,
+      var(--foil-c4) 18%,
+      var(--foil-c3) 27%,
+      var(--foil-c6) 36%
+    );
+  background-size:
+    calc(300% / var(--foil-density, 1)) calc(300% / var(--foil-density, 1)),
+    calc(240% / var(--foil-density, 1)) calc(240% / var(--foil-density, 1));
+  background-position:
+    var(--foil-bg-x) var(--foil-bg-y),
+    calc(100% - var(--foil-bg-x)) calc(100% - var(--foil-bg-y));
+  background-blend-mode: overlay;
+}
+
+/* 细扫描线。它是「箔」而不是「印了张彩虹图」的分界 */
+.foil::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: calc(var(--foil-scan) / 150);
+  mix-blend-mode: overlay;
+  background-image: repeating-linear-gradient(
+    20deg,
+    rgba(0, 0, 0, 0.85) 0px,
+    rgba(0, 0, 0, 0.85) 1px,
+    rgba(255, 255, 255, 0.55) 1px,
+    rgba(255, 255, 255, 0.55) 2px
+  );
+}
+
+/*
+  眩光：跟着指针走的一团亮斑。
+  用 screen 而不是 overlay——深色卡面上 overlay 等于没画。
+*/
+.foil::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(
+    farthest-corner circle at var(--foil-glare-x) var(--foil-glare-y),
+    hsla(0, 0%, 100%, calc(0.34 * var(--foil-lit))) 8%,
+    hsla(0, 0%, 100%, calc(0.16 * var(--foil-lit))) 24%,
+    hsla(0, 0%, 0%, 0.28) 80%
+  );
+  mix-blend-mode: screen;
+}
+
+/* 每种箔片的配色。金色取中调——接近白的高光在 overlay 下会把卡面推平 */
+.foil--gold {
+  --foil-c1: #c99a2e;
+  --foil-c2: #f0d489;
+  --foil-c3: #8f6a1a;
+  --foil-c4: #e8c877;
+  --foil-c5: #6f5212;
+  --foil-c6: #d9b562;
+}
+
+.foil--prism {
+  --foil-c1: #ff5f6d;
+  --foil-c2: #ffd166;
+  --foil-c3: #5ce1a0;
+  --foil-c4: #4fc3f7;
+  --foil-c5: #9a6bff;
+  --foil-c6: #ff7ad9;
+}
+
+.foil--speckle {
+  --foil-c1: #7fe0ff;
+  --foil-c2: #cfefff;
+  --foil-c3: #59b8e8;
+  --foil-c4: #ffffff;
+  --foil-c5: #8fd4ff;
+  --foil-c6: #dff3ff;
+}
+
+.foil--bands {
+  --foil-c1: #ffd36e;
+  --foil-c2: #7fe0c0;
+  --foil-c3: #7fb2ff;
+  --foil-c4: #d99bff;
+  --foil-c5: #ff8fb0;
+  --foil-c6: #fff0b0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .showcase__card {
+    transform: none;
+    transition: none;
+  }
+}
+
+/* --- 展示位的说明与关闭 -------------------------------------------------- */
+
+/*
+  卡牌**居中**，说明栏贴右边绝对定位。
+
+  写成 flex 并排的话，说明栏会占掉一块宽度、把卡牌挤到偏离屏幕中心的位置——
+  而「卡牌放大在屏幕正中」是这个展示位的要点。
+*/
+.showcase__inner {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+}
+
+.showcase__info {
+  position: absolute;
+  right: 4vw;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 260px;
+  color: var(--text-dim);
+  font-size: 13px;
+}
+
+.showcase__name {
+  margin: 0 0 4px;
+  font-size: 20px;
+  color: var(--text);
+}
+
+.showcase__meta {
+  margin: 0 0 12px;
+}
+
+.showcase__stats {
+  display: flex;
+  gap: 14px;
+  margin: 0 0 12px;
+  padding: 0;
+  list-style: none;
+}
+
+.showcase__stats li b {
+  display: block;
+  font-size: 18px;
+  color: var(--text);
+}
+
+.showcase__close {
+  margin-top: 14px;
+}
+
+/* 窄屏放不下并排，改成卡牌在上、说明在下 */
+@media (max-width: 900px) {
+  .showcase__card {
+    width: min(300px, 62vw);
+  }
+  .showcase__info {
+    position: static;
+    transform: none;
+    width: min(360px, 84vw);
+    margin-top: 16px;
+    text-align: center;
+  }
+  .showcase__inner {
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    padding: 12px 0;
+  }
+}
