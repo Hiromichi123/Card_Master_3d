@@ -1,0 +1,35 @@
+{
+  "gpu": "ANGLE (Intel, Intel(R) Arc(TM) Graphics (0x00007D55) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+  "errors": [],
+  "particleText": "活跃粒子\n0 / 3000\n帧内峰值\n199",
+  "screenshots": [
+    "fireball.png",
+    "ice.png",
+    "lightning.png",
+    "group-heal.png",
+    "armor-break.png",
+    "drain.png",
+    "revive.png"
+  ],
+  "templateChecks": {
+    "templates": 23,
+    "qualities": [
+      "low",
+      "high"
+    ]
+  },
+  "battleResults": [
+    {
+      "speed": "快速",
+      "verdict": "胜利",
+      "score": "最终生命 我方 7 : 0 敌方",
+      "reason": "本体生命归零"
+    },
+    {
+      "speed": "跳过",
+      "verdict": "胜利",
+      "score": "最终生命 我方 7 : 0 敌方",
+      "reason": "本体生命归零"
+    }
+  ]
+}

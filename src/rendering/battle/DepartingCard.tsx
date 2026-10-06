@@ -1,9 +1,11 @@
+import { ANIMATION_DURATION_SCALE } from '../anim/timing';
 import { useFrame } from '@react-three/fiber';
 import { useEffect, useMemo, useRef } from 'react';
 import type { Group } from 'three';
 
 import { cardById } from '../../data';
 import { Timeline } from '../anim/Timeline';
+import { FLYING_CARD_LIFT } from '../anim/combatMotion';
 import { easeOutCubic } from '../anim/easings';
 import { CardMesh } from '../cards/CardMesh';
 import type { ProxyCard } from '../presentation/displayState';
@@ -30,6 +32,7 @@ export function DepartingCard({ proxy }: { proxy: ProxyCard }) {
   const progress = useRef(0);
 
   const card = cardById.get(proxy.definitionId);
+  const flyingLift = card?.rawTraits.includes('飞行') ? FLYING_CARD_LIFT : 0;
   const base = useMemo(
     () => slotPosition(proxy.side, 'battle', proxy.slotIndex),
     [proxy.side, proxy.slotIndex],
@@ -56,7 +59,7 @@ export function DepartingCard({ proxy }: { proxy: ProxyCard }) {
     if (!timeline) {
       return;
     }
-    timeline.update(Math.min(delta, 0.05));
+    timeline.update(Math.min(delta, 0.05) / ANIMATION_DURATION_SCALE);
 
     const group = groupRef.current;
     if (!group) {
@@ -66,7 +69,7 @@ export function DepartingCard({ proxy }: { proxy: ProxyCard }) {
     // 缩小 + 上浮 + 侧翻，读起来是「这张牌散掉了」而不是「凭空消失」
     const scale = 1 - t;
     group.scale.setScalar(Math.max(scale, 0.001));
-    group.position.set(base[0], base[1] + t * 0.32, base[2]);
+    group.position.set(base[0], base[1] + flyingLift + t * 0.32, base[2]);
     group.rotation.z = t * 0.6;
   });
 
@@ -75,7 +78,7 @@ export function DepartingCard({ proxy }: { proxy: ProxyCard }) {
   }
 
   return (
-    <group ref={groupRef} position={[base[0], base[1], base[2]]}>
+    <group ref={groupRef} position={[base[0], base[1] + flyingLift, base[2]]}>
       <CardMesh
         card={card}
         position={[0, 0, 0]}

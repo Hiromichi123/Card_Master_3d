@@ -1,9 +1,12 @@
 import { useFrame } from '@react-three/fiber';
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import type { Group } from 'three';
 
 import type { CardDefinition } from '../../domain/cards/types';
 import { damp } from '../anim/motion';
+import { FLYING_CARD_LIFT } from '../anim/combatMotion';
+import { effectDirector } from '../effects/effectDirector';
+import { SPEED_SCALE, useSettingsStore } from '../../state/settingsStore';
 import type { StatKind } from '../cards/statBadge';
 import type { StatLayout } from '../cards/StatBadges';
 import { CardMesh } from '../cards/CardMesh';
@@ -70,6 +73,19 @@ export function MovingCard({
   onHoverChange,
 }: MovingCardProps) {
   const groupRef = useRef<Group>(null);
+  const flyingInBattle = statLayout === 'battle' && card.rawTraits.includes('飞行');
+  const wasFlyingInBattle = useRef(false);
+  useEffect(() => {
+    if (flyingInBattle && !wasFlyingInBattle.current) {
+      const speed = useSettingsStore.getState().presentationSpeed;
+      if (speed !== 'skip') effectDirector.play({
+        template: 'flyingDeploy', from: target, to: [target[0], target[1] + 0.03, target[2]],
+        color: '#ffffff', durationScale: SPEED_SCALE[speed],
+      });
+    }
+    wasFlyingInBattle.current = flyingInBattle;
+    // Slot compaction and subsequent hits must never replay the deployment circle.
+  }, [flyingInBattle, instanceId]);
   /** 当前的视觉位置。`null` 表示这张牌还没在画面上出现过。 */
   const current = useRef<[number, number, number] | null>(null);
 
@@ -88,7 +104,7 @@ export function MovingCard({
     }
 
     position[0] = damp(position[0], target[0], MOVE_DAMPING, delta);
-    position[1] = damp(position[1], target[1], MOVE_DAMPING, delta);
+    position[1] = damp(position[1], target[1] + (flyingInBattle ? FLYING_CARD_LIFT : 0), MOVE_DAMPING, delta);
     position[2] = damp(position[2], target[2], MOVE_DAMPING, delta);
     group.position.set(position[0], position[1], position[2]);
   });
@@ -97,6 +113,7 @@ export function MovingCard({
     <group ref={groupRef}>
       <CardMesh
         key={instanceId}
+        attackKey={instanceId}
         card={card}
         // 位置由这一层负责，CardMesh 只保留它自己的悬停抬升与旋转
         position={[0, 0, 0]}

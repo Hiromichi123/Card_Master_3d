@@ -22,7 +22,18 @@ export type EffectTemplateId =
   | 'buff'
   | 'debuff'
   | 'flow'
-  | 'status';
+  | 'status'
+  | 'bombard'
+  | 'deathBurst'
+  | 'groupHeal'
+  | 'armorBreak'
+  | 'dodge'
+  | 'lifeDrain'
+  | 'rebirth'
+  | 'clone'
+  | 'cooldown'
+  | 'silence'
+  | 'flyingDeploy';
 
 /**
  * 技能族 → 特效模板。
@@ -32,8 +43,8 @@ export type EffectTemplateId =
  */
 export const FAMILY_TO_EFFECT: Record<string, EffectTemplateId> = {
   fireball: 'fireball',
-  bombard: 'fireball',
-  explodeOnDeath: 'fireball',
+  bombard: 'bombard',
+  explodeOnDeath: 'deathBurst',
   groupFireball: 'groupFireball',
   groupBombard: 'groupFireball',
   iceSeal: 'iceSeal',
@@ -41,11 +52,11 @@ export const FAMILY_TO_EFFECT: Record<string, EffectTemplateId> = {
   lightning: 'lightning',
   groupLightning: 'groupLightning',
   defense: 'shield',
-  armorBreak: 'shield',
-  dodge: 'shield',
+  armorBreak: 'armorBreak',
+  dodge: 'dodge',
   immunity: 'shield',
   healAlly: 'heal',
-  groupHeal: 'heal',
+  groupHeal: 'groupHeal',
   selfHeal: 'heal',
   blessing: 'buff',
   groupBlessing: 'buff',
@@ -53,17 +64,17 @@ export const FAMILY_TO_EFFECT: Record<string, EffectTemplateId> = {
   groupInspire: 'buff',
   curse: 'debuff',
   injury: 'debuff',
-  vampire: 'debuff',
+  vampire: 'lifeDrain',
   berserk: 'debuff',
-  selfDestruct: 'debuff',
+  selfDestruct: 'deathBurst',
   drawCard: 'flow',
-  soulReturn: 'flow',
-  haste: 'flow',
-  delay: 'flow',
-  clone: 'flow',
-  copy: 'flow',
-  undying: 'flow',
-  rebirth: 'flow',
-  silence: 'status',
+  soulReturn: 'rebirth',
+  haste: 'cooldown',
+  delay: 'cooldown',
+  clone: 'clone',
+  copy: 'clone',
+  undying: 'rebirth',
+  rebirth: 'rebirth',
+  silence: 'silence',
   counter: 'normalAttack',
 };

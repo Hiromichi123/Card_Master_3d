@@ -1,3 +1,4 @@
+import { ANIMATION_DURATION_SCALE } from '../anim/timing';
 import { useFrame, useThree } from '@react-three/fiber';
 import { useEffect, useMemo, useRef } from 'react';
 import { AdditiveBlending, BufferAttribute, BufferGeometry, Color, Vector3 } from 'three';
@@ -7,6 +8,7 @@ import { ParticlePool } from './ParticlePool';
 import { PARTICLE_FRAGMENT_SHADER, PARTICLE_VERTEX_SHADER } from './particleShader';
 import { particleStats } from './particleStats';
 import { DEFAULT_EFFECT_COLOR, EFFECT_RECIPES } from './templates';
+import { SkillVisualPool } from './SkillVisualPool';
 
 /**
  * 粒子与特效系统的场景侧。
@@ -60,6 +62,9 @@ export function EffectSystem({
     pool.sizeScale = worldScale;
   }, [pool, worldScale]);
   const activeRef = useRef<ActiveEffect[]>([]);
+  const visuals = useMemo(() => new SkillVisualPool(capacity <= 250 ? 10 : 24), [capacity]);
+  useEffect(() => { visuals.worldScale = worldScale; }, [visuals, worldScale]);
+  useEffect(() => () => visuals.dispose(), [visuals]);
   const gl = useThree((state) => state.gl);
 
   /** 直接复用池子的数组作为顶点属性，避免每帧拷贝 */
@@ -114,10 +119,13 @@ export function EffectSystem({
 
       const timeline = recipe.build({
         pool,
+        visuals,
+        family: request.family,
         from: scratchFrom.clone(),
         to: scratchTo.clone(),
         extraTargets: extraTargets.map((v) => v.clone()),
         color,
+        tint: request.color ? color : undefined,
         intensity: request.intensity ?? 1,
         countScale: request.countScale ?? 1,
         durationScale: request.durationScale ?? 1,
@@ -136,9 +144,10 @@ export function EffectSystem({
     return () => {
       unsubscribe();
       activeRef.current = [];
+      visuals.clear();
       pool.clear();
     };
-  }, [pool]);
+  }, [pool, visuals]);
 
   useFrame((_, delta) => {
     if (paused) {
@@ -152,9 +161,9 @@ export function EffectSystem({
 
     // 帧率归一化：模板里的「每帧发射 n 颗」乘上这个系数后，
     // 单位时间的粒子密度不随帧率变化，低帧率机器上特效不会变稀。
-    pool.frameScale = step * 60;
+    pool.frameScale = step * 60 / ANIMATION_DURATION_SCALE;
 
-    pool.update(step);
+    pool.update(step / ANIMATION_DURATION_SCALE);
     particleStats.alive = pool.alive;
     particleStats.capacity = capacity;
     if (pool.alive > particleStats.peak) {
@@ -189,10 +198,14 @@ export function EffectSystem({
         effect.skipToEnd();
       }
       activeRef.current = [];
+      visuals.clear();
+      pool.clear();
     });
-  }, []);
+  }, [pool, visuals]);
 
   return (
+    <group>
+      <primitive object={visuals.group} />
     <points geometry={geometry} frustumCulled={false}>
       <shaderMaterial
         vertexShader={PARTICLE_VERTEX_SHADER}
@@ -203,5 +216,6 @@ export function EffectSystem({
         blending={AdditiveBlending}
       />
     </points>
+    </group>
   );
 }

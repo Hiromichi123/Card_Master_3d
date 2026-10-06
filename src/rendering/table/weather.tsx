@@ -1,3 +1,4 @@
+import { ANIMATION_DURATION_SCALE } from '../anim/timing';
 import { useFrame } from '@react-three/fiber';
 import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import {
@@ -243,7 +244,7 @@ function ParticleField({ themeId, quality, spec, reducedMotion }: ParticleFieldP
     if (reducedMotion) {
       return;
     }
-    const step = Math.min(delta, 0.05);
+    const step = Math.min(delta, 0.05) / ANIMATION_DURATION_SCALE;
     elapsedRef.current += step;
     const { positions, speeds, geometry } = built;
 
@@ -407,7 +408,7 @@ function GrassField({ themeId, quality, spec, reducedMotion }: GrassFieldProps) 
     if (!mesh || reducedMotion) {
       return;
     }
-    phaseRef.current += Math.min(delta, 0.05);
+    phaseRef.current += Math.min(delta, 0.05) / ANIMATION_DURATION_SCALE;
     const phase = (phaseRef.current / spec.swaySeconds) * Math.PI * 2;
     mesh.rotation.z = Math.sin(phase) * spec.swayRadians;
   });

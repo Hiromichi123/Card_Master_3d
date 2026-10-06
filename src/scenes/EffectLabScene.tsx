@@ -43,19 +43,31 @@ const TEMPLATE_LABELS: { id: EffectTemplateId; label: string }[] = [
   { id: 'shield', label: '护盾 / 防御' },
   { id: 'heal', label: '治愈 / 恢复' },
   { id: 'buff', label: '祝福 / 振奋' },
-  { id: 'debuff', label: '诅咒 / 吸血' },
+  { id: 'debuff', label: '诅咒 / 受伤' },
   { id: 'flow', label: '抽卡 / 转移' },
-  { id: 'status', label: '沉默 / 飞行' },
+  { id: 'bombard', label: '炮击' },
+  { id: 'deathBurst', label: '死亡爆裂 / 自毁' },
+  { id: 'groupHeal', label: '群体治愈' },
+  { id: 'armorBreak', label: '破甲' },
+  { id: 'dodge', label: '闪避残影' },
+  { id: 'lifeDrain', label: '吸血流光' },
+  { id: 'rebirth', label: '还魂 / 复活' },
+  { id: 'clone', label: '分身 / 复制' },
+  { id: 'cooldown', label: '加速 / 延迟' },
+  { id: 'silence', label: '沉默封印' },
 ];
 
 const GROUP_TEMPLATES = new Set<EffectTemplateId>([
   'groupFireball',
   'groupIceSeal',
   'groupLightning',
+  'groupHeal',
+  'buff',
 ]);
 
 /** 预设主题色：颜色是给「看效果」用的，不需要任意取色器。 */
 const COLOR_PRESETS: { label: string; value: string }[] = [
+  { label: '原色', value: '' },
   { label: '金', value: '#ffb445' },
   { label: '冰', value: '#8fd4ff' },
   { label: '雷', value: '#cfe6ff' },
@@ -82,7 +94,7 @@ export function EffectLabScene() {
   const [intensity, setIntensity] = useState(1);
   const [countScale, setCountScale] = useState(1);
   const [durationScale, setDurationScale] = useState(1);
-  const [color, setColor] = useState<string>('#ffb445');
+  const [color, setColor] = useState<string>('');
   const profile = useSettingsStore((state) => state.profile);
   const theme = useSettingsStore((state) => state.tableTheme);
   const presentationSpeed = useSettingsStore((state) => state.presentationSpeed);
@@ -153,10 +165,11 @@ export function EffectLabScene() {
 
       effectDirector.play({
         template,
+        sourceInstanceId: card?.cardId,
         from: CASTER_ORIGIN,
         to: [0, 0, 0],
         extraTargets: extras,
-        color,
+        color: color || undefined,
         intensity: overrideIntensity ?? intensity,
         countScale,
         // 演出速度只压缩播放时长，不影响任何规则结果（V-FX-5）
@@ -165,7 +178,7 @@ export function EffectLabScene() {
       });
       setLastEffect(`${label} · 播放中`);
     },
-    [layout, index, color, intensity, countScale, durationScale],
+    [layout, card?.cardId, color, intensity, countScale, durationScale, presentationSpeed],
   );
 
   const playTrait = useCallback(

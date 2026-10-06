@@ -1,3 +1,4 @@
+import { ANIMATION_DURATION_SCALE } from '../rendering/anim/timing';
 import { create } from 'zustand';
 
 import {
@@ -76,7 +77,7 @@ export const useSettingsStore = create<SettingsState>((set) => ({
 
 /** 演出速度 → 时长倍数。跳过模式由 `skipAll` 直接补完，不走倍数。 */
 export const SPEED_SCALE: Record<PresentationSpeed, number> = {
-  normal: 1,
-  fast: 0.45,
-  skip: 0.05,
+  normal: ANIMATION_DURATION_SCALE,
+  fast: 0.45 * ANIMATION_DURATION_SCALE,
+  skip: 0.05 * ANIMATION_DURATION_SCALE,
 };

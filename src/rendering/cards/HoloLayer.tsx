@@ -1,3 +1,4 @@
+import { ANIMATION_DURATION_SCALE } from '../anim/timing';
 import { useFrame } from '@react-three/fiber';
 import { useEffect, useMemo } from 'react';
 import { AdditiveBlending, DoubleSide } from 'three';
@@ -80,7 +81,7 @@ export function HoloLayer({ rarity }: Props) {
 
   useFrame((_, delta) => {
     // 色带的缓慢流动。时间只驱动表现，不参与任何规则计算。
-    uniforms.uTime.value += delta;
+    uniforms.uTime.value += delta / ANIMATION_DURATION_SCALE;
   });
 
   const geometry = getCardFaceGeometry();

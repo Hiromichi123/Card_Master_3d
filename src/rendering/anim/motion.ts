@@ -1,3 +1,4 @@
+import { ANIMATION_DURATION_SCALE } from './timing';
 import { Vector3 } from 'three';
 
 /**
@@ -17,7 +18,7 @@ import { Vector3 } from 'three';
  * 好处是**与帧率无关**——同样的 lambda 在 60Hz 与 144Hz 下收敛速度一致。
  */
 export function damp(current: number, target: number, lambda: number, delta: number): number {
-  return current + (target - current) * (1 - Math.exp(-lambda * delta));
+  return current + (target - current) * (1 - Math.exp(-lambda * delta / ANIMATION_DURATION_SCALE));
 }
 
 /**

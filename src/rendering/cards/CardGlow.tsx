@@ -1,3 +1,4 @@
+import { ANIMATION_DURATION_SCALE } from '../anim/timing';
 import { useFrame } from '@react-three/fiber';
 import { useEffect, useMemo, useRef } from 'react';
 import { AdditiveBlending, MeshBasicMaterial } from 'three';
@@ -91,7 +92,7 @@ export function CardGlow({ rarity }: { rarity: CardRarity }) {
       return;
     }
     // 与圣地描边同一档节奏：慢，只有一点点起伏
-    elapsed.current += Math.min(delta, 0.05) * 1000;
+    elapsed.current += Math.min(delta, 0.05) * 1000 / ANIMATION_DURATION_SCALE;
     material.opacity = base * (0.88 + 0.12 * Math.sin(elapsed.current / 700));
   });
 

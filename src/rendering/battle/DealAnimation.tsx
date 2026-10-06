@@ -1,3 +1,4 @@
+import { ANIMATION_DURATION_SCALE } from '../anim/timing';
 import { useFrame } from '@react-three/fiber';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Vector3, type Group } from 'three';
@@ -77,7 +78,7 @@ function DealPlate({
     if (!timeline) {
       return;
     }
-    timeline.update(Math.min(delta, 0.05));
+    timeline.update(Math.min(delta, 0.05) / ANIMATION_DURATION_SCALE);
     onUpdate(groupRef.current, progress.current);
   });
 
@@ -116,7 +117,7 @@ export function DealAnimation({ onDone }: { onDone: () => void }) {
     if (finished) {
       return;
     }
-    elapsed.current += Math.min(delta, 0.05);
+    elapsed.current += Math.min(delta, 0.05) / ANIMATION_DURATION_SCALE;
     if (elapsed.current >= TOTAL) {
       setFinished(true);
       onDone();

@@ -27,6 +27,7 @@ import type {
 } from '../../domain/battle/types';
 import type { SideId } from '../../domain/cards/types';
 import { Timeline } from '../anim/Timeline';
+import { ATTACK_OUT_SECONDS, hpLossValues, hpStepSeconds } from '../anim/combatMotion';
 import type { SlotZone } from '../battle/layout';
 import { SPEED_SCALE, type PresentationSpeed } from '../../state/settingsStore';
 import {
@@ -160,9 +161,9 @@ export function buildBeats(resolution: Resolution, deps: DirectorDeps): Beat[] {
 
   events.forEach((event, index) => {
     const patches = patchesAt.get(event.seq) ?? [];
-    const duration = EVENT_BEAT[event.type] ?? DEFAULT_BEAT;
+    const duration = (event.type === 'AttackDeclared' || (event.type === 'SkillTriggered' && event.family === 'counter')) ? ATTACK_OUT_SECONDS : EVENT_BEAT[event.type] ?? DEFAULT_BEAT;
 
-    beats.push({
+    const beat: Beat = {
       duration,
       onStart: () => {
         // 坐标在这一刻解析：显示状态还没被本步改动，正是「出手前」的那一帧
@@ -175,7 +176,7 @@ export function buildBeats(resolution: Resolution, deps: DirectorDeps): Beat[] {
         };
         const request = effectRequestFor(event, context);
         if (request) {
-          deps.play(request);
+          deps.play({ ...request, durationScale: SPEED_SCALE[deps.speed()] });
         }
       },
       onComplete: () => {
@@ -195,7 +196,28 @@ export function buildBeats(resolution: Resolution, deps: DirectorDeps): Beat[] {
         }
         deps.publish();
       },
-    });
+    };
+
+    const hpLoss = event.type === 'DamageApplied' || event.type === 'PlayerHpChanged'
+      ? hpLossValues(event.hpBefore, event.hpAfter) : [];
+    if (hpLoss.length === 0) {
+      beats.push(beat);
+    } else {
+      const hpPatches = patches.filter((patch) => patch.kind === 'setHp');
+      const before = event.type === 'DamageApplied' || event.type === 'PlayerHpChanged' ? event.hpBefore : 0;
+      beats.push({ duration: 0, onStart: beat.onStart, onComplete: () => {
+        // Start the one brightness pulse while the first number is still visible.
+        applyPatchesToDisplay(deps.display, hpPatches.map((patch) => ({ ...patch, value: before })));
+        deps.publish();
+      } });
+      hpLoss.forEach((value, stepIndex) => {
+        beats.push({ duration: hpStepSeconds(hpLoss.length), onComplete: () => {
+          applyPatchesToDisplay(deps.display, hpPatches.map((patch) => ({ ...patch, value })));
+          if (stepIndex === hpLoss.length - 1) beat.onComplete?.();
+          else deps.publish();
+        } });
+      });
+    }
 
     if (touchesStats(event)) {
       beats.push({

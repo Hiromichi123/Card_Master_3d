@@ -12,6 +12,10 @@ export interface EffectRequest {
   /** 唯一实例 id，便于调试与去重。 */
   readonly id: string;
   readonly template: EffectTemplateId;
+  /** Presentation-only skill variant, never changes combat rules. */
+  readonly family?: string | undefined;
+  /** Source card identity for card-body attacks (not a projectile). */
+  readonly sourceInstanceId?: string | undefined;
   /** 起点：施法者或攻击方。 */
   readonly from: readonly [number, number, number];
   /** 主目标点。 */

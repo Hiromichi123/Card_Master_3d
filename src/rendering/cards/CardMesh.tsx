@@ -1,3 +1,4 @@
+import { ANIMATION_DURATION_SCALE } from '../anim/timing';
 import { useFrame } from '@react-three/fiber';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Group, MeshStandardMaterial } from 'three';
@@ -9,6 +10,8 @@ import { useSettingsStore } from '../../state/settingsStore';
 import { easeInOutCubic } from '../anim/easings';
 import { damp, flipAngle } from '../anim/motion';
 import { Timeline } from '../anim/Timeline';
+import { effectDirector } from '../effects/effectDirector';
+import { ATTACK_OUT_SECONDS, ATTACK_RETURN_SECONDS, attackAdvance, attackDistance } from '../anim/combatMotion';
 import {
   CARD_DIMENSIONS,
   CARD_FACE_OFFSET,
@@ -42,11 +45,23 @@ import type { StatKind } from './statBadge';
  */
 export interface CardMeshProps {
   readonly card: CardDefinition;
+  readonly attackKey?: string | undefined;
   readonly position: readonly [number, number, number];
   readonly rotationY?: number | undefined;
   readonly rotationX?: number | undefined;
   /** 是否盖着。变化时会播放翻面动画。 */
   readonly faceDown?: boolean | undefined;
+  /**
+   * **受控翻面**：外部逐帧写入的进度，0 = 正面朝上，1 = 背面朝上
+   * （与 `faceDown` 同一套方向，见 `flipAngle`）。
+   *
+   * 给了它就不再自己跑 `Timeline`——抽卡演出按编排层的时间表翻，
+   * 若每张卡各自跑一条时间轴，错峰时刻就有了两份来源，迟早对不上；
+   * 而且「跳过」要求立刻翻到终态，而时间轴得跑满 0.42s。
+   *
+   * 不传时行为与以前**完全一致**（战斗那边的既有一堆消费者）。
+   */
+  readonly flipControl?: { readonly current: number } | undefined;
   readonly selected?: boolean | undefined;
   readonly interactive?: boolean | undefined;
   /** 是否叠加全息层。 */
@@ -95,10 +110,12 @@ const FLIP_DURATION = 0.42;
 
 export function CardMesh({
   card,
+  attackKey,
   position,
   rotationY = 0,
   rotationX = -Math.PI / 2,
   faceDown = false,
+  flipControl,
   selected = false,
   interactive = true,
   holo,
@@ -112,6 +129,28 @@ export function CardMesh({
   onHoverChange,
 }: CardMeshProps) {
   const groupRef = useRef<Group>(null);
+  const attackTimeline = useRef<Timeline | null>(null);
+  const attackOffset = useRef(0);
+  useEffect(() => {
+    const stop = (): void => {
+      attackTimeline.current?.skipToEnd();
+      attackTimeline.current = null;
+      attackOffset.current = 0;
+    };
+    const unsubscribe = effectDirector.subscribe((request) => {
+      if (request.template !== 'normalAttack' || statLayout !== 'battle' ||
+          request.sourceInstanceId !== (attackKey ?? card.cardId)) return;
+      stop();
+      const direction = Math.sign(request.to[2] - request.from[2]) || -1;
+      const distance = attackDistance(Math.abs(request.to[2] - request.from[2]), CARD_DIMENSIONS.height * scale);
+      const timeline = new Timeline(() => { attackOffset.current = 0; attackTimeline.current = null; });
+      timeline.add({ duration: (ATTACK_OUT_SECONDS + ATTACK_RETURN_SECONDS) * Math.max(0.01, request.durationScale ?? 1),
+        onUpdate: (t) => { attackOffset.current = direction * distance * attackAdvance(t); } });
+      attackTimeline.current = timeline;
+    });
+    const unregister = effectDirector.registerSkipper(stop);
+    return () => { unsubscribe(); unregister(); stop(); };
+  }, [attackKey, card.cardId, statLayout, scale]);
   const [hovered, setHovered] = useState(false);
 
   // 纹理档跟随画质：低档用缩略图，减少核显上的显存与带宽压力
@@ -143,7 +182,8 @@ export function CardMesh({
   }, [faceTexture, backTexture]);
 
   // ---- 翻面：一段有始有终的演出，用 Timeline 而不是阻尼 ----
-  const flipRef = useRef(faceDown ? 1 : 0);
+  const controlled = flipControl !== undefined;
+  const flipRef = useRef(controlled ? flipControl.current : faceDown ? 1 : 0);
   const flipTimelineRef = useRef<Timeline | null>(null);
 
   /**
@@ -154,10 +194,20 @@ export function CardMesh({
    * 结果就是盖着的牌上仍然挂着一层全息。这里用 ref 做去重，
    * 只在布尔值真的翻转时才 setState，避免每帧重渲染。
    */
-  const [holoVisible, setHoloVisible] = useState(!faceDown);
-  const holoVisibleRef = useRef(!faceDown);
+  /*
+    受控模式下初值要按**外部给的进度**算：默认的 `!faceDown` 会让一张盖着
+    的牌先闪一帧全息（进度是 1，但 state 说「正面朝上」）。
+  */
+  const [holoVisible, setHoloVisible] = useState(
+    controlled ? flipControl.current < 0.5 : !faceDown,
+  );
+  const holoVisibleRef = useRef(controlled ? flipControl.current < 0.5 : !faceDown);
 
   useEffect(() => {
+    // 受控：进度由外面写，这里不建时间轴
+    if (controlled) {
+      return;
+    }
     const from = flipRef.current;
     const to = faceDown ? 1 : 0;
     if (Math.abs(from - to) < 1e-4) {
@@ -172,15 +222,10 @@ export function CardMesh({
       easing: easeInOutCubic,
       onUpdate: (t) => {
         flipRef.current = from + (to - from) * t;
-        const visible = flipRef.current < 0.5;
-        if (holoVisibleRef.current !== visible) {
-          holoVisibleRef.current = visible;
-          setHoloVisible(visible);
-        }
       },
     });
     flipTimelineRef.current = timeline;
-  }, [faceDown]);
+  }, [faceDown, controlled]);
 
   // ---- 悬停/选中：追踪目标，用阻尼 ----
   // 悬停与选中**同时**抬高并放大：在实机里试对局时，光靠一点点抬升
@@ -202,9 +247,25 @@ export function CardMesh({
   const rotYRef = useRef(rotationY);
 
   useFrame((_, delta) => {
-    const timeline = flipTimelineRef.current;
-    if (timeline) {
-      timeline.update(Math.min(delta, 0.1));
+    attackTimeline.current?.update(Math.min(delta, 0.05));
+    if (controlled) {
+      flipRef.current = flipControl.current;
+    } else {
+      const timeline = flipTimelineRef.current;
+      if (timeline) {
+        timeline.update(Math.min(delta, 0.1) / ANIMATION_DURATION_SCALE);
+      }
+    }
+
+    /*
+      全息层只在正面朝上时叠加。两种模式共用这一处开关：
+      用 ref 去重，只在布尔值真的翻转时才 setState。
+      写在 `useFrame` 里而不是时间轴的 `onUpdate` 里，是为了让受控模式也走同一条路。
+    */
+    const faceUp = flipRef.current < 0.5;
+    if (holoVisibleRef.current !== faceUp) {
+      holoVisibleRef.current = faceUp;
+      setHoloVisible(faceUp);
     }
 
     const group = groupRef.current;
@@ -221,6 +282,7 @@ export function CardMesh({
 
     group.scale.setScalar(scale * scaleRef.current);
     group.position.y = position[1] + liftRef.current;
+    group.position.z = position[2] + attackOffset.current;
     group.rotation.x = rotXRef.current + tiltRef.current;
     // 翻面绕自身长轴，与倾角叠加；欧拉顺序 XYZ 决定它先转、再躺平
     group.rotation.y = rotYRef.current + flipAngle(flipRef.current);

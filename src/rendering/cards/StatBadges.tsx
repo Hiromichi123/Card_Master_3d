@@ -1,4 +1,8 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
+import { useFrame } from '@react-three/fiber';
+import type { MeshBasicMaterial } from 'three';
+import { HP_FLASH_SECONDS, hpFlashBrightness } from '../anim/combatMotion';
+import { SPEED_SCALE, useSettingsStore } from '../../state/settingsStore';
 
 import { CARD_DIMENSIONS, CARD_FACE_OFFSET } from './cardGeometry';
 import { getStatTexture, type StatKind } from './statBadge';
@@ -71,10 +75,21 @@ export function StatBadges({
   emphasised,
   layout = 'battle',
 }: StatBadgesProps) {
+  const hpMaterial = useRef<MeshBasicMaterial>(null);
+  const hpFlash = useRef(HP_FLASH_SECONDS);
+  const hpEmphasised = emphasised?.has('hp') ?? false;
+  useEffect(() => { if (hpEmphasised) hpFlash.current = 0; }, [hpEmphasised]);
+  useFrame((_, delta) => {
+    const speed = useSettingsStore.getState().presentationSpeed;
+    hpFlash.current = speed === 'skip' ? HP_FLASH_SECONDS : Math.min(HP_FLASH_SECONDS,
+      hpFlash.current + Math.min(delta, 0.05) / Math.max(0.01, SPEED_SCALE[speed]));
+    const brightness = hpFlashBrightness(hpFlash.current / HP_FLASH_SECONDS);
+    hpMaterial.current?.color.setRGB(brightness, brightness, brightness);
+  });
   const textures = useMemo(
     () => ({
       atk: getStatTexture('atk', atk, emphasised?.has('atk') ?? false),
-      hp: getStatTexture('hp', hp, emphasised?.has('hp') ?? false),
+      hp: getStatTexture('hp', hp, false),
       cd: getStatTexture('cd', cd, emphasised?.has('cd') ?? false),
     }),
     [atk, hp, cd, emphasised],
@@ -121,7 +136,7 @@ export function StatBadges({
           <planeGeometry args={[plate.size, plate.size]} />
           {/* 徽标是压在卡面上的贴纸，不参与光照计算：
               如果用受光材质，暗处的卡上数字会一起变暗而读不清 */}
-          <meshBasicMaterial map={plate.texture} transparent depthWrite={false} />
+          <meshBasicMaterial ref={plate.key === 'hp' ? hpMaterial : null} map={plate.texture} transparent depthWrite={false} toneMapped={plate.key !== 'hp'} />
         </mesh>
       ))}
     </group>

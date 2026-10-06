@@ -144,17 +144,17 @@ export function effectRequestFor(
         return null;
       }
       const from = castPointOf(context.worldPointOf(event.instanceId), event.side);
-      // 打自己身上的技能（治疗、祝福）不该朝别处飞，所以把自身排除掉
-      const targets = targetsOf(context).filter(
-        (target) => target.instanceId !== event.instanceId,
-      );
+      // Self-heals/buffs must retain their actual recipient, including group casts.
+      const targets = targetsOf(context);
       const points = targets.map((target) => pointFor(target, context));
       const [first, ...rest] = points;
       return {
         template,
+        family: event.family ?? undefined,
+        sourceInstanceId: event.instanceId,
         from,
         // 没有可辨认的目标时落在自己身上：宁可原地起手，也不要朝世界原点乱飞
-        to: first ?? from,
+        to: first ?? impactPointOf(context.worldPointOf(event.instanceId)),
         extraTargets: rest,
         intensity: event.param ?? 1,
       };
@@ -164,6 +164,7 @@ export function effectRequestFor(
       const from = castPointOf(context.worldPointOf(event.attackerId), event.side);
       return {
         template: 'normalAttack',
+        sourceInstanceId: event.attackerId,
         from,
         to: event.targetInstanceId
           ? impactPointOf(context.worldPointOf(event.targetInstanceId))
@@ -172,22 +173,9 @@ export function effectRequestFor(
       };
     }
 
-    case 'PlayerHpChanged': {
-      // 通常紧跟在自己那一方的攻击或技能之后（那一下已经播过了），只在没有前导时补一个
-      const previous = context.events[context.index - 1];
-      const alreadyPlayed =
-        previous !== undefined &&
-        (previous.type === 'AttackDeclared' || previous.type === 'SkillTriggered');
-      if (alreadyPlayed) {
-        return null;
-      }
-      return {
-        template: 'normalAttack',
-        from: context.playerAnchor(oppositeOf(event.side)),
-        to: context.playerAnchor(event.side),
-        intensity: 1,
-      };
-    }
+    case 'PlayerHpChanged':
+      // HP feedback is handled by the number countdown; never emit an extra ball.
+      return null;
 
     case 'Healed': {
       const point = impactPointOf(context.worldPointOf(event.instanceId));
@@ -221,6 +209,25 @@ export function effectRequestFor(
         to: impactPointOf(context.slotPointOf(event.side, 'battle', event.battleSlot)),
         intensity: 1,
       };
+    }
+
+    case 'CloneCreated': {
+      const point = impactPointOf(context.slotPointOf(event.side, 'battle', event.battleSlot));
+      return { template: 'clone', family: event.mode === 'shared' ? 'clone' : 'copy', from: point, to: point, intensity: 1 };
+    }
+
+    case 'CooldownChanged': {
+      if (event.cause !== 'skill') return null;
+      const point = impactPointOf(context.worldPointOf(event.instanceId));
+      return { template: 'cooldown', family: event.to < event.from ? 'haste' : 'delay', from: point, to: point, intensity: 1 };
+    }
+
+    case 'CardMoved': {
+      if (event.from !== 'discard') return null;
+      const point = impactPointOf(context.worldPointOf(event.instanceId));
+      const target = event.to === 'battle' || event.to === 'prep'
+        ? impactPointOf(context.slotPointOf(event.side, event.to, event.slotIndex)) : point;
+      return { template: 'rebirth', family: 'rebirth', from: point, to: target, intensity: 1 };
     }
 
     case 'CardDied': {
