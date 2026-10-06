@@ -193,6 +193,58 @@ export interface ShopShelf {
   readonly allow_repeat: boolean;
 }
 
+/**
+ * 把 `shops.json` 的 snake_case 摊成领域层要的形状。
+ *
+ * 放在数据层而不是场景里：**测试与界面要读同一份**。
+ * 之前只有 `progression.test.ts` 里有一份私有映射，界面再抄一份就是两处真相。
+ *
+ * **顺手补一处导入缺陷**：活动商店的 `priceByRarity` 是**裸数字**
+ * （`{"#elna": 1080}`），而常规商店是 `{currency, amount}`。
+ * 直接用的话 `entry.price.amount` 是 `undefined`——界面会显示「undefined」、
+ * 购买校验会拿 `undefined` 去比大小（永远为假），而且**不会报错**。
+ *
+ * 这里按该商店自己的 `unknownRarityFallback.currency` 补上货币：
+ * 活动商店的兜底价写的是 `badge`，与「徽章是活动商店用的」这条约定一致
+ * （见 `ui/CurrencyBar.tsx` 的注释）。缺兜底时退回金币。
+ */
+function toShopSpec(raw: {
+  priceByRarity: Record<string, ShopPrice | number>;
+  unknownRarityFallback: ShopPrice;
+  packs?: readonly ShopPack[];
+  shelves: Record<string, ShopShelf>;
+} | null) {
+  if (!raw) {
+    return null;
+  }
+  const impliedCurrency: keyof Currencies = raw.unknownRarityFallback?.currency ?? 'gold';
+  const normalize = (price: ShopPrice | number): ShopPrice =>
+    typeof price === 'number' ? { currency: impliedCurrency, amount: price } : price;
+  return {
+    priceByRarity: Object.fromEntries(
+      Object.entries(raw.priceByRarity).map(([rarity, price]) => [rarity, normalize(price)]),
+    ),
+    unknownRarityFallback: raw.unknownRarityFallback,
+    packs: raw.packs ?? [],
+    shelves: Object.fromEntries(
+      Object.entries(raw.shelves).map(([key, value]) => [
+        key,
+        {
+          label: value.label,
+          rarities: value.rarities,
+          countRange: value.count_range,
+          allowRepeat: value.allow_repeat,
+        },
+      ]),
+    ),
+  };
+}
+
+export const shopSpecs = {
+  normal: toShopSpec(shopsJson.normalShop as never),
+  activity: toShopSpec(shopsJson.activityShop as never),
+};
+
 export const shops = shopsJson as unknown as {
   available: boolean;
   normalShop: {
@@ -202,7 +254,12 @@ export const shops = shopsJson as unknown as {
     shelves: Record<string, ShopShelf>;
     refresh: { dayKeyFormat: string; seedDerivation: string; seedReproducible: boolean };
   } | null;
-  activityShop: unknown | null;
+  activityShop: {
+    priceByRarity: Record<string, ShopPrice>;
+    unknownRarityFallback: ShopPrice;
+    shelves: Record<string, ShopShelf>;
+    refresh: { dayKeyFormat: string; seedDerivation: string; seedReproducible: boolean };
+  } | null;
   fusion: unknown | null;
   /**
    * 旧版的真实缺陷清单。**这一轮是「修不要抄」**：

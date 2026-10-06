@@ -1,0 +1,203 @@
+import { expect, test, type Page } from '@playwright/test';
+
+import {
+  clickNav,
+  collectProblems,
+  openWithFreshSave,
+  readProfile,
+  totalCards,
+} from './helpers';
+
+/**
+ * 商店的浏览器验证。
+ *
+ * 沿用在抽卡那边立的三条规矩：
+ * 数值读 **IndexedDB 的落盘值**、文案从**领域常量**来、
+ * 断言不依赖帧率。另外这里多一条：**货架必须可复现**——
+ * `?day=` 把「今天」钉死，同一天两次打开的货架必须一模一样，
+ * 换一天必须不一样（那是「每日刷新」这句话的全部内容）。
+ */
+
+const DAY = '20240101';
+
+async function openShop(page: Page, from = '商店'): Promise<void> {
+  await openWithFreshSave(page);
+  await page.goto(`/?day=${DAY}`);
+  await clickNav(page, '主菜单');
+  /*
+    必须限定在 `.menu__columns` 里：导航栏上也有一个「商店」页签，
+    按名字直接找会同时命中两个（strict mode violation）。
+  */
+  await menuEntry(page, from).click();
+  await expect(page.locator('.shop__row').first()).toBeVisible({ timeout: 30_000 });
+}
+
+/**
+ * 主菜单上的某个入口。
+ *
+ * 限定在 `.menu__columns` 里：导航栏的页签与主菜单的入口会重名
+ * （「商店」两边都有），直接按名字找会命中两个。
+ */
+function menuEntry(page: Page, label: string) {
+  return page.locator('.menu__columns').getByRole('button', { name: label, exact: true });
+}
+
+/** 某一排货架。 */
+function shelf(page: Page, label: string) {
+  return page.locator('.shop__shelf').filter({ has: page.getByRole('heading', { name: label }) });
+}
+
+/**
+ * 新号的起始条件：5000 金币（`STARTING_CURRENCIES`），
+ * 以及「开号即拥有全部 247 张有效卡、每张各 1 张」。
+ *
+ * 用常量当基准而不是读盘：**新档是「用到才写」的**，
+ * 在第一次成功改动之前 IndexedDB 里根本没有记录，
+ * 读出来是 `undefined`、当成 0 的话，减出来的数会是负数。
+ */
+const START_GOLD = 5000;
+const DEMO_UNIQUE_CARDS = 247;
+
+/**
+ * 一排里第一件**金币价且买得起**的商品。
+ *
+ * 预算用常量而不是读盘：**新档是「用到才写」的**，
+ * 在第一次成功改动之前 IndexedDB 里根本没有记录，读出来是 `undefined`、
+ * 当成 0 的话就什么都买不起了（第一版就是这样，报「没有买得起的卡」）。
+ */
+async function firstAffordable(page: Page, label: string, budget = START_GOLD): Promise<number> {
+  const items = shelf(page, label).locator('.shop__item');
+  const count = await items.count();
+  for (let index = 0; index < count; index += 1) {
+    const price = await items.nth(index).locator('.shop__price').textContent();
+    const amount = Number.parseInt(price ?? '0', 10);
+    if ((price ?? '').includes('金币') && amount <= budget) {
+      return index;
+    }
+  }
+  return -1;
+}
+
+test('货架：四排齐全、同一天可复现、换一天就换一批', async ({ page }) => {
+  const problems = collectProblems(page);
+  await openShop(page);
+
+  // 常规商店是「神话 / 传承 / 探索」三排 + 礼包一排（`shops.json` 的 shelves 与 packs）
+  await expect(shelf(page, '神话')).toBeVisible();
+  await expect(shelf(page, '传承')).toBeVisible();
+  await expect(shelf(page, '探索')).toBeVisible();
+  await expect(shelf(page, '礼包')).toBeVisible();
+
+  const readShelf = async (): Promise<string> =>
+    page.evaluate(() =>
+      [...document.querySelectorAll('.shop__item')]
+        .map((item) => (item as HTMLElement).dataset['entryId'] ?? '')
+        .join('|'),
+    );
+
+  const today = await readShelf();
+  expect(today.length).toBeGreaterThan(0);
+
+  // 重新打开同一天：货架一模一样（`?day=` 固定，种子也就固定）
+  await page.reload();
+  await clickNav(page, '主菜单');
+  await menuEntry(page, '商店').click();
+  await expect(page.locator('.shop__row').first()).toBeVisible();
+  expect(await readShelf()).toBe(today);
+
+  // 换一天：整批换掉（「每日刷新」就是这一句）
+  await page.goto('/?day=20240102');
+  await clickNav(page, '主菜单');
+  await menuEntry(page, '商店').click();
+  await expect(page.locator('.shop__row').first()).toBeVisible();
+  const tomorrow = await readShelf();
+  expect(tomorrow).not.toBe(today);
+  // 售罄标识里带日键，所以两天的标识不可能相交
+  expect(tomorrow.split('|')[0]?.startsWith('20240102')).toBe(true);
+
+  expect(problems, `场景出现问题：\n${problems.join('\n')}`).toEqual([]);
+});
+
+test('买卡：扣钱与发货是同一笔事务，且标记售罄', async ({ page }) => {
+  const problems = collectProblems(page);
+  await openShop(page);
+
+  const index = await firstAffordable(page, '探索');
+  expect(index, '探索货架里没有买得起的卡').toBeGreaterThanOrEqual(0);
+
+  const item = shelf(page, '探索').locator('.shop__item').nth(index);
+  const priceText = await item.locator('.shop__price').textContent();
+  const price = Number.parseInt(priceText ?? '0', 10);
+  const entryId = await item.evaluate((node) => (node as HTMLElement).dataset['entryId'] ?? '');
+  await item.locator('.tile').click();
+  await expect(item.locator('.shop__soldout')).toBeVisible({ timeout: 15_000 });
+
+  /*
+    **读盘**：一笔事务里同时扣钱、发货、标售罄。
+    旧版 `knownIssues[0]` 就是「只扣钱不发货」，这条断言直接盯着那个缺陷。
+  */
+  const after = await readProfile(page);
+  expect(after?.currencies.gold).toBe(START_GOLD - price);
+  expect(totalCards(after)).toBe(DEMO_UNIQUE_CARDS + 1);
+  expect(after?.shop.soldOut).toContain(entryId);
+
+  expect(problems, `场景出现问题：\n${problems.join('\n')}`).toEqual([]);
+});
+
+test('买不起：一分钱不扣、盘上不留记录、给一句提示', async ({ page }) => {
+  const problems = collectProblems(page);
+  await openShop(page);
+
+  // 新号 5000 金币 / 300 水晶；「神话」排第一件是 551 水晶的 SSS，买不起
+  const first = shelf(page, '神话').locator('.shop__item').first();
+  const priceText = await first.locator('.shop__price').textContent();
+  expect(priceText, '这条用例假设神话排第一件是水晶价').toContain('水晶');
+
+  await first.locator('.tile').click();
+  await expect(page.locator('.shop__error')).toContainText('余额不足');
+  await expect(first.locator('.shop__soldout')).toHaveCount(0);
+
+  /*
+    被拒的购买**不该产生任何落盘**：新档在第一次成功改动之前盘上本来就是空的，
+    所以「读出来是 undefined」就是最强的断言——拒绝发生在写盘之前。
+  */
+  expect(await readProfile(page)).toBeUndefined();
+
+  expect(problems, `场景出现问题：\n${problems.join('\n')}`).toEqual([]);
+});
+
+test('活动入口进的是活动商店，货架与常规不同', async ({ page }) => {
+  const problems = collectProblems(page);
+  await openShop(page, '活动入口');
+
+  await expect(page.locator('.screen__title')).toHaveText('活动商店');
+  // 活动货架的三排与常规完全不同（`shops.json` 的 activityShop.shelves）
+  await expect(shelf(page, '活动精选')).toBeVisible();
+  await expect(shelf(page, '稀有兑换')).toBeVisible();
+  await expect(shelf(page, '常规兑换')).toBeVisible();
+  // 活动商店没有礼包（配置里就没有 packs）
+  await expect(page.locator('.shop__pack')).toHaveCount(0);
+
+  expect(problems, `场景出现问题：\n${problems.join('\n')}`).toEqual([]);
+});
+
+test('活动商店用徽章计价，新号买不起（徽章来自活动，还没做）', async ({ page }) => {
+  const problems = collectProblems(page);
+  await openShop(page, '活动入口');
+
+  /*
+    **活动商店的价格是徽章**。这里盯住两件事：
+    1. 价格表在 `shops.json` 里是**裸数字**，数据层补上了货币——
+       没补的话这里会显示「undefined」；
+    2. 新号徽章为 0，所以点购买应当被拒、且**盘上不留记录**。
+  */
+  const first = page.locator('.shop__item').first();
+  await expect(first.locator('.shop__price')).toContainText('徽章');
+  await expect(first.locator('.shop__price')).not.toContainText('undefined');
+
+  await first.locator('.tile').click();
+  await expect(page.locator('.shop__error')).toContainText('余额不足');
+  expect(await readProfile(page)).toBeUndefined();
+
+  expect(problems, `场景出现问题：\n${problems.join('\n')}`).toEqual([]);
+});

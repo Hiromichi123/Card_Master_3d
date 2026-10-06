@@ -1,2122 +1,2988 @@
 /*
+
  * 全局样式与最小设计基线。
+
  *
+
  * 约束（VISUAL_SPEC V-HUD-1 / V-HUD-5）：
+
  * - 中文必须能直接读清，不依赖在线字体或 CDN；
+
  * - 字体用系统字体栈，Windows 上落到微软雅黑；
+
  * - 深色底，避免与卡面的高饱和插画互相干扰。
+
  */
 
+
+
 :root {
+
   --bg: #0d1018;
+
   --bg-raised: #161b26;
+
   --bg-raised-hover: #1e2534;
+
   --border: #2a3346;
+
   --border-strong: #3c4a63;
+
   --text: #e8ecf4;
+
   --text-dim: #98a3b8;
+
   --accent: #6ea8ff;
+
   --danger: #ff6b6b;
+
   --ok: #5ddc9a;
 
+
+
   color-scheme: dark;
+
   font-family: 'Microsoft YaHei', 'PingFang SC', 'Hiragino Sans GB',
+
     'Noto Sans CJK SC', 'Source Han Sans SC', system-ui, -apple-system, 'Segoe UI',
+
     sans-serif;
+
   font-size: 14px;
+
   line-height: 1.6;
+
   -webkit-font-smoothing: antialiased;
+
 }
+
+
 
 * {
+
   box-sizing: border-box;
+
 }
+
+
 
 html,
+
 body,
+
 #root {
+
   height: 100%;
+
   margin: 0;
+
 }
+
+
 
 body {
+
   background: var(--bg);
+
   color: var(--text);
+
   /* 3D 画布拖拽时不要选中文字 */
+
   user-select: none;
+
   overflow: hidden;
+
 }
 
+
+
 code {
+
   font-family: 'Cascadia Mono', Consolas, 'Courier New', monospace;
+
   font-size: 0.92em;
+
   color: var(--accent);
+
 }
+
+
 
 /* ---------- 应用外壳 ---------- */
 
+
+
 .app-shell {
+
   display: flex;
+
   flex-direction: column;
+
   height: 100%;
+
 }
+
+
 
 .app-nav {
+
   display: flex;
+
   align-items: center;
+
   gap: 6px;
+
   padding: 0 14px;
+
   height: 46px;
+
   flex: 0 0 auto;
+
   background: var(--bg-raised);
+
   border-bottom: 1px solid var(--border);
+
 }
+
+
 
 .app-nav__brand {
+
   font-weight: 600;
+
   letter-spacing: 0.02em;
+
   margin-right: 14px;
+
   color: var(--text);
+
 }
+
+
 
 .app-nav__tab {
+
   appearance: none;
+
   border: 1px solid transparent;
+
   background: transparent;
+
   color: var(--text-dim);
+
   padding: 5px 12px;
+
   border-radius: 6px;
+
   font: inherit;
+
   cursor: pointer;
+
 }
+
+
 
 .app-nav__tab:hover {
+
   background: var(--bg-raised-hover);
+
   color: var(--text);
+
 }
+
+
 
 .app-nav__tab--active {
+
   background: var(--bg-raised-hover);
+
   border-color: var(--border-strong);
+
   color: var(--text);
+
 }
+
+
 
 .app-main {
+
   flex: 1 1 auto;
+
   min-height: 0;
+
   position: relative;
+
   /* 3D 场景需要确定尺寸，不能让外层滚动条参与布局 */
+
   overflow: hidden;
+
 }
+
+
 
 /* 3D 场景容器：绝对铺满，Canvas 才能拿到稳定的宽高 */
+
 .scene-viewport {
+
   position: absolute;
+
   inset: 0;
+
 }
+
+
 
 .scene-viewport canvas {
+
   display: block;
+
   touch-action: none;
+
 }
+
+
 
 .app-loading,
+
 .app-placeholder {
+
   display: flex;
+
   flex-direction: column;
+
   align-items: center;
+
   justify-content: center;
+
   height: 100%;
+
   gap: 8px;
+
   color: var(--text-dim);
+
 }
 
+
+
 .app-placeholder h1 {
+
   margin: 0;
+
   font-size: 20px;
+
   color: var(--text);
+
 }
+
+
 
 /* ---------- 错误页 ---------- */
 
+
+
 .app-error {
+
   margin: 40px auto;
+
   max-width: 760px;
+
   padding: 22px 26px;
+
   background: var(--bg-raised);
+
   border: 1px solid var(--border-strong);
+
   border-radius: 10px;
+
 }
+
+
 
 .app-error h1 {
+
   margin: 0 0 8px;
+
   font-size: 18px;
+
   color: var(--danger);
+
 }
+
+
 
 .app-error__message {
+
   margin: 0 0 14px;
+
   color: var(--text);
+
 }
+
+
 
 .app-error__details summary {
+
   cursor: pointer;
+
   color: var(--text-dim);
+
 }
+
+
 
 .app-error__details pre {
+
   margin: 10px 0 0;
+
   padding: 12px;
+
   max-height: 320px;
+
   overflow: auto;
+
   background: #0a0d14;
+
   border: 1px solid var(--border);
+
   border-radius: 6px;
+
   font-size: 12px;
+
   line-height: 1.5;
+
   white-space: pre-wrap;
+
   user-select: text;
+
 }
 
+
+
 .app-error__retry {
+
   margin-top: 16px;
+
   appearance: none;
+
   border: 1px solid var(--border-strong);
+
   background: var(--bg-raised-hover);
+
   color: var(--text);
+
   padding: 7px 18px;
+
   border-radius: 6px;
+
   font: inherit;
+
   cursor: pointer;
+
 }
+
+
 
 /* ---------- 数据自检 ---------- */
 
+
+
 .probe {
+
   max-width: 1080px;
+
   margin: 0 auto;
+
   padding: 26px 24px 60px;
+
 }
+
+
 
 .probe h1 {
+
   margin: 0 0 6px;
+
   font-size: 22px;
+
 }
+
+
 
 .probe h2 {
+
   margin: 0 0 10px;
+
   font-size: 15px;
+
   color: var(--text-dim);
+
   font-weight: 600;
+
 }
+
+
 
 .probe__lead {
+
   margin: 0 0 22px;
+
   color: var(--text-dim);
+
 }
+
+
 
 .probe__grid {
+
   display: grid;
+
   grid-template-columns: repeat(auto-fill, minmax(158px, 1fr));
+
   gap: 10px;
+
   margin-bottom: 26px;
+
 }
+
+
 
 .probe__stat {
+
   display: flex;
+
   flex-direction: column;
+
   gap: 2px;
+
   padding: 12px 14px;
+
   background: var(--bg-raised);
+
   border: 1px solid var(--border);
+
   border-left: 3px solid var(--ok);
+
   border-radius: 8px;
+
 }
+
+
 
 .probe__stat--bad {
+
   border-left-color: var(--danger);
+
 }
+
+
 
 .probe__stat-label {
+
   font-size: 12px;
+
   color: var(--text-dim);
+
 }
+
+
 
 .probe__stat-value {
+
   font-size: 20px;
+
   font-weight: 600;
+
   font-variant-numeric: tabular-nums;
+
 }
+
+
 
 .probe__stat-expect {
+
   font-size: 11px;
+
   color: var(--text-dim);
+
 }
+
+
 
 .probe__stat--bad .probe__stat-expect {
+
   color: var(--danger);
+
 }
+
+
 
 .probe__section {
+
   margin-bottom: 26px;
+
 }
+
+
 
 .probe__list {
+
   margin: 0;
+
   padding: 0;
+
   list-style: none;
+
   display: grid;
+
   grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+
   gap: 4px 18px;
+
 }
+
+
 
 .probe__list li {
+
   display: flex;
+
   justify-content: space-between;
+
   gap: 12px;
+
   padding: 5px 0;
+
   border-bottom: 1px solid var(--border);
+
 }
+
+
 
 .probe__list--plain li span:first-child {
+
   color: var(--text-dim);
+
 }
+
+
 
 .probe__table {
+
   width: 100%;
+
   border-collapse: collapse;
+
   font-size: 13px;
+
 }
+
+
 
 .probe__table th,
+
 .probe__table td {
+
   text-align: left;
+
   padding: 7px 10px;
+
   border-bottom: 1px solid var(--border);
+
 }
+
+
 
 .probe__table th {
+
   color: var(--text-dim);
+
   font-weight: 600;
+
 }
 
+
+
 .probe__table td {
+
   font-variant-numeric: tabular-nums;
+
 }
+
+
 
 /* ---------- 实验台 ---------- */
 
+
+
 .lab {
+
   position: absolute;
+
   inset: 0;
+
 }
+
+
 
 .lab canvas {
+
   display: block;
+
   touch-action: none;
+
 }
+
+
 
 .lab__panel {
+
   position: absolute;
+
   top: 16px;
+
   right: 16px;
+
   bottom: 16px;
+
   width: 320px;
+
   padding: 16px 18px;
+
   overflow-y: auto;
+
   background: rgba(22, 27, 38, 0.94);
+
   border: 1px solid var(--border-strong);
+
   border-radius: 10px;
+
   backdrop-filter: blur(6px);
+
 }
+
+
 
 .lab__title {
+
   margin: 0 0 14px;
+
   font-size: 15px;
+
 }
+
+
 
 .lab__section {
+
   margin-bottom: 16px;
+
   padding-bottom: 14px;
+
   border-bottom: 1px solid var(--border);
+
 }
+
+
 
 .lab__section:last-of-type {
+
   border-bottom: none;
+
 }
+
+
 
 .lab__section h3 {
+
   margin: 0 0 8px;
+
   font-size: 12.5px;
+
   font-weight: 600;
+
   color: var(--text-dim);
+
   letter-spacing: 0.03em;
+
 }
+
+
 
 .lab__row {
+
   display: flex;
+
   align-items: center;
+
   gap: 8px;
+
   margin-bottom: 10px;
+
 }
+
+
 
 .lab__row button {
+
   appearance: none;
+
   border: 1px solid var(--border-strong);
+
   background: var(--bg-raised-hover);
+
   color: var(--text);
+
   width: 34px;
+
   height: 28px;
+
   border-radius: 6px;
+
   font: inherit;
+
   cursor: pointer;
+
 }
+
+
 
 .lab__row button:hover {
+
   border-color: var(--accent);
+
 }
+
+
 
 .lab__name {
+
   flex: 1;
+
   text-align: center;
+
   font-weight: 600;
+
   white-space: nowrap;
+
   overflow: hidden;
+
   text-overflow: ellipsis;
+
 }
+
+
 
 .lab__meta {
+
   display: grid;
+
   grid-template-columns: auto 1fr;
+
   gap: 4px 10px;
+
   margin: 0;
+
   font-size: 12.5px;
+
 }
+
+
 
 .lab__meta dt {
+
   color: var(--text-dim);
+
 }
+
+
 
 .lab__meta dd {
+
   margin: 0;
+
   font-variant-numeric: tabular-nums;
+
   word-break: break-word;
+
 }
+
+
 
 /* 触发按钮：等宽网格，按钮多了也不会挤成一条 */
+
 .lab__buttons {
+
   display: grid;
+
   grid-template-columns: repeat(2, 1fr);
+
   gap: 6px;
+
 }
+
+
 
 .lab__buttons button {
+
   appearance: none;
+
   border: 1px solid var(--border-strong);
+
   background: var(--bg-raised-hover);
+
   color: var(--text);
+
   padding: 6px 8px;
+
   border-radius: 6px;
+
   font: inherit;
+
   font-size: 12.5px;
+
   cursor: pointer;
+
   text-align: center;
+
 }
+
+
 
 .lab__buttons button:hover {
+
   border-color: var(--accent);
+
   background: #24304a;
+
 }
+
+
 
 .lab__buttons button:active {
+
   background: #2f3d5c;
+
 }
+
+
 
 .lab__toggle,
-.lab__slider {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  margin-bottom: 9px;
-  font-size: 12.5px;
-  cursor: pointer;
-}
 
 .lab__slider {
-  flex-direction: column;
-  align-items: stretch;
-  gap: 3px;
+
+  display: flex;
+
+  gap: 8px;
+
+  align-items: center;
+
+  margin-bottom: 9px;
+
+  font-size: 12.5px;
+
+  cursor: pointer;
+
 }
+
+
+
+.lab__slider {
+
+  flex-direction: column;
+
+  align-items: stretch;
+
+  gap: 3px;
+
+}
+
+
 
 .lab__slider span {
+
   color: var(--text-dim);
+
 }
+
+
 
 .lab__slider input {
+
   width: 100%;
+
   accent-color: var(--accent);
+
 }
+
+
 
 .lab__palette {
+
   display: flex;
+
   gap: 6px;
+
   margin-top: 4px;
+
 }
+
+
 
 .lab__swatch {
+
   appearance: none;
+
   width: 26px;
+
   height: 22px;
+
   border-radius: 5px;
+
   border: 2px solid transparent;
+
   cursor: pointer;
+
 }
+
+
 
 .lab__swatch--on {
+
   border-color: var(--text);
+
 }
+
+
 
 .lab__wide {
+
   appearance: none;
+
   width: 100%;
+
   margin-top: 4px;
+
   border: 1px solid var(--border-strong);
+
   background: var(--bg-raised-hover);
+
   color: var(--text);
+
   padding: 7px 10px;
+
   border-radius: 6px;
+
   font: inherit;
+
   font-size: 12.5px;
+
   cursor: pointer;
+
 }
+
+
 
 .lab__wide:hover {
+
   border-color: var(--accent);
+
 }
 
+
+
 .lab__hint {
+
   margin: 10px 0 0;
+
   font-size: 11.5px;
+
   line-height: 1.6;
+
   color: var(--text-dim);
+
 }
+
+
 
 /* ---------- 卡牌详情面板（V-CARD-6 / V-HUD-3） ---------- */
 
+
+
 .detail {
+
   position: absolute;
+
   top: 16px;
+
   right: 16px;
+
   width: 300px;
+
   max-height: calc(100% - 32px);
+
   overflow-y: auto;
+
   padding: 14px 16px;
+
   background: rgba(22, 27, 38, 0.94);
+
   border: 1px solid var(--border-strong);
+
   border-radius: 10px;
+
   backdrop-filter: blur(6px);
+
   /* 面板之上的点击不穿透到 3D 场景 */
+
   pointer-events: auto;
+
 }
+
+
 
 .detail__head {
+
   display: flex;
+
   align-items: flex-start;
+
   gap: 8px;
+
   margin-bottom: 8px;
+
 }
+
+
 
 .detail__name {
+
   flex: 1;
+
   margin: 0;
+
   font-size: 17px;
+
   line-height: 1.35;
+
 }
+
+
 
 .detail__actions {
+
   display: flex;
+
   gap: 4px;
+
 }
+
+
 
 .detail__pin,
-.detail__close {
-  appearance: none;
-  border: 1px solid var(--border-strong);
-  background: var(--bg-raised-hover);
-  color: var(--text-dim);
-  border-radius: 6px;
-  font: inherit;
-  font-size: 12px;
-  cursor: pointer;
-  padding: 2px 8px;
-}
 
 .detail__close {
-  padding: 2px 9px;
-  font-size: 15px;
-  line-height: 1.3;
+
+  appearance: none;
+
+  border: 1px solid var(--border-strong);
+
+  background: var(--bg-raised-hover);
+
+  color: var(--text-dim);
+
+  border-radius: 6px;
+
+  font: inherit;
+
+  font-size: 12px;
+
+  cursor: pointer;
+
+  padding: 2px 8px;
+
 }
+
+
+
+.detail__close {
+
+  padding: 2px 9px;
+
+  font-size: 15px;
+
+  line-height: 1.3;
+
+}
+
+
 
 .detail__pin--on {
+
   border-color: var(--accent);
+
   color: var(--accent);
+
 }
+
+
 
 .detail__meta {
+
   display: flex;
+
   align-items: center;
+
   gap: 8px;
+
   flex-wrap: wrap;
+
   margin-bottom: 12px;
+
   font-size: 12px;
+
 }
+
+
 
 .detail__rarity {
+
   padding: 1px 7px;
+
   border: 1px solid var(--border-strong);
+
   border-radius: 999px;
+
   color: var(--text);
+
 }
+
+
 
 .detail__warn {
+
   color: var(--danger);
+
 }
+
+
 
 .detail__stats {
+
   display: grid;
+
   grid-template-columns: repeat(3, 1fr);
+
   gap: 8px;
+
   margin: 0 0 14px;
+
 }
+
+
 
 .detail__stat {
+
   padding: 7px 8px;
+
   background: var(--bg-raised);
+
   border: 1px solid var(--border);
+
   border-radius: 7px;
+
   text-align: center;
+
 }
+
+
 
 .detail__stat--changed {
+
   border-color: var(--accent);
+
 }
+
+
 
 .detail__stat dt {
+
   font-size: 11px;
+
   color: var(--text-dim);
+
 }
+
+
 
 .detail__stat dd {
+
   margin: 2px 0 0;
+
   font-size: 18px;
+
   font-weight: 600;
+
   font-variant-numeric: tabular-nums;
+
 }
+
+
 
 .detail__stat dd em {
+
   display: block;
+
   font-style: normal;
+
   font-size: 10.5px;
+
   font-weight: 400;
+
   color: var(--text-dim);
+
 }
+
+
 
 .detail__section {
+
   margin-bottom: 12px;
+
 }
+
+
 
 .detail__section h3 {
+
   margin: 0 0 6px;
+
   font-size: 12px;
+
   font-weight: 600;
+
   color: var(--text-dim);
+
 }
+
+
 
 .detail__traits {
+
   margin: 0;
+
   padding: 0;
+
   list-style: none;
+
 }
+
+
 
 .detail__traits li {
+
   display: flex;
+
   justify-content: space-between;
+
   gap: 10px;
+
   padding: 4px 0;
+
   border-bottom: 1px solid var(--border);
+
   font-size: 12.5px;
+
 }
+
+
 
 .detail__trait-state {
+
   font-size: 11.5px;
+
   color: var(--text-dim);
+
   text-align: right;
+
 }
+
+
 
 .detail__trait-state--unimplemented,
+
 .detail__trait-state--flavor {
+
   opacity: 0.75;
+
 }
+
+
 
 .detail__trait-state--ambiguous {
+
   color: #ffb457;
+
 }
+
+
 
 .detail__description {
+
   margin: 0;
+
   font-size: 12.5px;
+
   line-height: 1.65;
+
   color: var(--text-dim);
+
 }
 
+
+
 .detail__empty {
+
   margin: 0;
+
   font-size: 12.5px;
+
   color: var(--text-dim);
+
 }
+
+
 
 /* ---------- 全局画质与演出控制 ---------- */
 
+
+
 .app-nav__spacer {
+
   flex: 1;
+
 }
+
+
 
 .quality {
+
   display: flex;
+
   align-items: center;
+
   gap: 14px;
+
 }
+
+
 
 .quality__group {
+
   display: flex;
+
   align-items: center;
+
   gap: 6px;
+
   font-size: 12px;
+
   color: var(--text-dim);
+
 }
+
+
 
 .quality__group--check {
+
   cursor: pointer;
+
 }
+
+
 
 .quality__label {
+
   white-space: nowrap;
+
 }
+
+
 
 .quality__segmented {
+
   display: inline-flex;
+
   border: 1px solid var(--border-strong);
+
   border-radius: 6px;
+
   overflow: hidden;
+
 }
+
+
 
 .quality__seg {
+
   appearance: none;
+
   border: none;
+
   border-right: 1px solid var(--border-strong);
+
   background: transparent;
+
   color: var(--text-dim);
+
   padding: 3px 9px;
+
   font: inherit;
+
   font-size: 12px;
+
   cursor: pointer;
+
 }
+
+
 
 .quality__seg:last-child {
+
   border-right: none;
+
 }
+
+
 
 .quality__seg:hover {
+
   background: var(--bg-raised-hover);
+
   color: var(--text);
+
 }
 
+
+
 .quality__seg--on {
+
   background: var(--bg-raised-hover);
+
   color: var(--accent);
+
 }
+
+
 
 /* ---------- 性能读数条 ---------- */
 
+
+
 .perf {
+
   position: absolute;
+
   left: 12px;
+
   bottom: 12px;
+
   display: flex;
+
   flex-wrap: wrap;
+
   gap: 4px 12px;
+
   max-width: calc(100% - 24px);
+
   padding: 7px 11px;
+
   background: rgba(12, 15, 22, 0.88);
+
   border: 1px solid var(--border-strong);
+
   border-left-width: 3px;
+
   border-radius: 7px;
+
   font-size: 11.5px;
+
   font-variant-numeric: tabular-nums;
+
   color: var(--text-dim);
+
   pointer-events: none;
+
 }
+
+
 
 .perf--ok {
+
   border-left-color: var(--ok);
+
 }
+
+
 
 .perf--warn {
+
   border-left-color: #ffb457;
+
 }
+
+
 
 .perf--bad {
+
   border-left-color: var(--danger);
+
 }
+
+
 
 .perf__item b {
+
   color: var(--text);
+
   font-weight: 600;
+
 }
+
+
 
 .quality__select {
+
   appearance: none;
+
   border: 1px solid var(--border-strong);
+
   background: var(--bg-raised-hover);
+
   color: var(--text);
+
   padding: 3px 8px;
+
   border-radius: 6px;
+
   font: inherit;
+
   font-size: 12px;
+
   cursor: pointer;
+
   max-width: 130px;
+
 }
+
+
 
 .quality__select:hover {
+
   border-color: var(--accent);
+
 }
+
+
 
 .quality__select option {
+
   background: var(--bg-raised);
+
   color: var(--text);
+
 }
+
+
 
 /* ---------------------------------------------------------------------------
+
  * P3：战斗 HUD、菜单与胜负页
+
  *
+
  * 全部是画布之上的 DOM 覆层。`pointer-events` 的纪律见 `.hud`——
+
  * 整层不能吃点击，否则战桌的牌点不动、点空白也取消不了选中。
+
  * ------------------------------------------------------------------------- */
 
+
+
 .hud {
+
   position: absolute;
+
   inset: 0;
+
   display: flex;
+
   flex-direction: column;
+
   justify-content: space-between;
+
   /* 只有显式开了 auto 的子元素才接点击 */
+
   pointer-events: none;
+
 }
+
+
 
 .hud__top {
+
   display: flex;
+
   justify-content: space-between;
+
   align-items: flex-start;
+
   gap: 16px;
+
   padding: 12px 16px 0;
+
 }
+
+
 
 .hud__side {
+
   min-width: 200px;
+
   padding: 10px 12px;
+
   background: rgba(22, 27, 38, 0.82);
+
   border: 1px solid var(--border-strong);
+
   border-radius: 10px;
+
   backdrop-filter: blur(6px);
+
 }
+
+
 
 .hud__side--enemy {
+
   border-color: #5a3550;
+
 }
+
+
 
 .hud__side-name {
+
   font-size: 13px;
+
   font-weight: 600;
+
   color: var(--text);
+
 }
+
+
 
 .hud__hp {
+
   margin-top: 6px;
+
 }
+
+
 
 .hud__hp-value {
+
   font-size: 13px;
+
   color: var(--text);
+
   font-variant-numeric: tabular-nums;
+
 }
+
+
 
 .hud__hp-track {
+
   display: block;
+
   height: 6px;
+
   margin-top: 4px;
+
   border-radius: 3px;
+
   background: #2a3346;
+
   overflow: hidden;
+
 }
+
+
 
 .hud__hp-fill {
+
   display: block;
+
   height: 100%;
+
   background: var(--ok);
+
   transition: width 160ms ease-out;
+
 }
+
+
 
 .hud__side--enemy .hud__hp-fill {
+
   background: var(--danger);
+
 }
+
+
 
 .hud__counts {
+
   display: flex;
+
   gap: 10px;
+
   margin: 8px 0 0;
+
   padding: 0;
+
   list-style: none;
+
   font-size: 12px;
+
   color: var(--text-dim);
+
 }
+
+
 
 .hud__turn {
+
   align-self: center;
+
   margin-top: -8px;
+
   padding: 4px 14px;
+
   background: rgba(22, 27, 38, 0.86);
+
   border: 1px solid var(--border-strong);
+
   border-radius: 999px;
+
   font-size: 13px;
+
   color: var(--text);
+
   white-space: nowrap;
+
 }
+
+
 
 .hud__turn-side {
+
   margin-left: 8px;
+
   color: var(--accent);
+
 }
+
+
 
 .hud__bottom {
+
   display: flex;
+
   justify-content: space-between;
+
   align-items: flex-end;
+
   gap: 16px;
+
   padding: 0 16px 14px;
+
 }
+
+
 
 .hud__log {
+
   flex: 1;
+
   max-width: 460px;
+
   margin: 0;
+
   padding: 8px 12px;
+
   list-style: none;
+
   background: rgba(22, 27, 38, 0.78);
+
   border: 1px solid var(--border);
+
   border-radius: 8px;
+
   font-size: 12px;
+
   color: var(--text-dim);
+
   /* 日志要能滚动查看，所以它自己接点击 */
+
   pointer-events: auto;
+
 }
+
+
 
 .hud__log li + li {
+
   margin-top: 2px;
+
 }
+
+
 
 .hud__actions {
+
   display: flex;
+
   flex-direction: column;
+
   align-items: flex-end;
+
   gap: 8px;
+
 }
+
+
 
 .hud__hint {
+
   margin: 0;
+
   padding: 4px 10px;
+
   background: rgba(22, 27, 38, 0.82);
+
   border-radius: 999px;
+
   font-size: 12px;
+
   color: var(--text-dim);
+
 }
+
+
 
 .hud__hint--alert {
+
   color: #ffd08a;
+
   border: 1px solid #7a5a2a;
+
   animation: hud-pulse 1.6s ease-in-out infinite;
+
 }
+
+
 
 @keyframes hud-pulse {
+
   0%,
+
   100% {
+
     opacity: 1;
+
   }
+
   50% {
+
     opacity: 0.62;
+
   }
+
 }
 
+
+
 @media (prefers-reduced-motion: reduce) {
+
   .hud__hint--alert {
+
     animation: none;
+
   }
+
   .hud__hp-fill {
+
     transition: none;
+
   }
+
 }
+
+
 
 /* --- 按钮 ---------------------------------------------------------------- */
 
+
+
 .btn {
+
   appearance: none;
+
   pointer-events: auto;
+
   padding: 7px 16px;
+
   font: inherit;
+
   font-size: 13px;
+
   color: var(--text);
+
   background: var(--bg-raised);
+
   border: 1px solid var(--border-strong);
+
   border-radius: 8px;
+
   cursor: pointer;
+
 }
+
+
 
 .btn:hover:not(:disabled) {
+
   background: var(--bg-raised-hover);
+
 }
+
+
 
 .btn:disabled {
+
   opacity: 0.45;
+
   cursor: not-allowed;
+
 }
+
+
 
 .btn--primary {
+
   color: #0d1018;
+
   background: var(--accent);
+
   border-color: var(--accent);
+
   font-weight: 600;
+
 }
 
+
+
 .btn--primary:hover:not(:disabled) {
+
   background: #8bbcff;
+
 }
+
+
 
 /* --- 覆层：菜单与胜负页 -------------------------------------------------- */
 
+
+
 .overlay {
+
   position: absolute;
+
   inset: 0;
+
   display: flex;
+
   align-items: center;
+
   justify-content: center;
+
   padding: 24px;
+
   /* 背景压暗，但仍要看得到身后的战桌——它渲染的是这一局的开局局面 */
+
   background: rgba(8, 11, 18, 0.62);
+
   backdrop-filter: blur(3px);
+
 }
+
+
 
 .overlay__panel {
+
   width: min(520px, 100%);
+
   max-height: 100%;
+
   overflow-y: auto;
+
   padding: 24px 28px;
+
   background: rgba(22, 27, 38, 0.96);
+
   border: 1px solid var(--border-strong);
+
   border-radius: 12px;
+
 }
+
+
 
 .overlay__title {
+
   margin: 0 0 6px;
+
   font-size: 24px;
+
   color: var(--text);
+
 }
+
+
 
 .overlay__title--win {
+
   color: var(--ok);
+
 }
+
+
 
 .overlay__title--lose {
+
   color: var(--danger);
+
 }
+
+
 
 .overlay__reason,
+
 .overlay__score,
+
 .overlay__note {
+
   margin: 0 0 6px;
+
   color: var(--text-dim);
+
   font-size: 13px;
+
 }
+
+
 
 .overlay__score {
+
   color: var(--text);
+
   font-variant-numeric: tabular-nums;
+
 }
+
+
 
 .overlay__deck {
+
   margin: 16px 0;
+
   padding: 12px 14px;
+
   background: var(--bg-raised);
+
   border: 1px solid var(--border);
+
   border-radius: 8px;
+
 }
+
+
 
 .overlay__deck-title {
+
   margin: 0 0 8px;
+
   font-size: 13px;
+
   color: var(--text);
+
 }
+
+
 
 .overlay__deck-list {
+
   display: flex;
+
   flex-wrap: wrap;
+
   gap: 6px;
+
   margin: 0;
+
   padding: 0;
+
   list-style: none;
+
 }
+
+
 
 .overlay__deck-list li {
+
   padding: 2px 8px;
+
   background: var(--bg);
+
   border: 1px solid var(--border);
+
   border-radius: 999px;
+
   font-size: 12px;
+
   color: var(--text-dim);
+
 }
+
+
 
 .overlay__toggle {
+
   display: flex;
+
   align-items: center;
+
   gap: 8px;
+
   margin: 14px 0;
+
   font-size: 13px;
+
   color: var(--text-dim);
+
   cursor: pointer;
+
 }
+
+
 
 .overlay__actions {
+
   display: flex;
+
   gap: 10px;
+
   margin-top: 18px;
+
 }
+
+
 
 /* ---------------------------------------------------------------------------
+
  * P5：主界面与外围玩法
+
  *
+
  * 沿用同一套令牌与 BEM 命名。新增的屏幕都挂在 `.app-main` 里，
+
  * 所以它们不自己带定位——除了模态（见 `.overlay--fixed`）。
+
  * ------------------------------------------------------------------------- */
 
+
+
 .screen {
+
   display: flex;
+
   flex-direction: column;
+
   gap: 14px;
+
   height: 100%;
+
   padding: 18px 22px;
+
   /* min-height: 0 让内部的滚动容器能收缩——少了它图鉴滑不动，且不报错 */
+
   min-height: 0;
+
 }
+
+
 
 .screen__head {
+
   display: flex;
+
   justify-content: space-between;
+
   align-items: flex-start;
+
   gap: 16px;
+
 }
+
+
 
 .screen__title {
+
   margin: 0;
+
   font-size: 20px;
+
   color: var(--text);
+
 }
+
+
 
 .screen__body {
+
   flex: 1;
+
   min-height: 0;
+
 }
 
+
+
 .screen__note {
+
   color: var(--text-dim);
+
 }
+
+
 
 /* --- 主菜单 -------------------------------------------------------------- */
 
+
+
 /*
+
   **设计空间 + 整体等比缩放**，照旧版 `config.py`：
+
   设计分辨率 2880 × 1800，`--ui = min(视口宽/2880, 视口高/1800)`，
+
   于是所有尺寸都可以写成 `calc(设计单位 * var(--ui))`，
+
   位置写成相对设计框的百分比。窗口怎么变，版面比例都不变。
 
+
+
   `100vw / 2880` 是「长度 ÷ 数」= 长度，所以 `--ui` 在 1920 宽的屏上是 0.667px，
+
   `calc(300 * var(--ui))` 就是 200px。取 min 而不是 max：
+
   宁可两侧留边，也不让按钮被挤出视口（旧版 `SCALE_POLICY = "fit"` 是同一个选择）。
+
 */
+
 .menu {
+
   position: relative;
+
   height: 100%;
+
   overflow: hidden;
+
   --ui: min(100vw / 2880, 100vh / 1800);
+
   --parallax-x: 0px;
+
   --parallax-y: 0px;
+
   background: #05070c;
+
 }
+
+
 
 /* 背景铺满视口：视差靠平移它，放进设计框的话超宽窗口会露边 */
+
 .menu__bg {
+
   position: absolute;
+
   inset: -5%;
+
   background-position: center;
+
   background-size: cover;
+
   background-color: #0d1018;
+
   transform: translate3d(var(--parallax-x), var(--parallax-y), 0);
+
   will-change: transform;
+
 }
+
+
 
 .menu__scrim {
+
   position: absolute;
+
   inset: 0;
+
   /*
+
     两层：一层竖向的总压暗，一层从右侧来的横向压暗。
 
+
+
     第二层是给按钮列的：原版按钮是深色字、没有底板，压在**它的**背景图上没问题，
+
     但本项目的菜单背景是一张高饱和插画，不给按钮区单独压一道，
+
     未悬停的标签就读不清了（实测过两轮）。压暗在背景上、不动按钮本身，
+
     所以按钮的形态仍然与原版一致。
+
   */
+
   background:
+
     linear-gradient(270deg, rgba(6, 9, 15, 0.62) 0%, rgba(6, 9, 15, 0.18) 46%, rgba(6, 9, 15, 0) 62%),
+
     linear-gradient(
+
       180deg,
+
       rgba(6, 9, 15, 0.68) 0%,
+
       rgba(6, 9, 15, 0.34) 40%,
+
       rgba(6, 9, 15, 0.74) 100%
+
     );
+
 }
+
+
 
 /* 设计框：2880 × 1800 等比缩放到视口，居中 */
+
 .menu__stage {
+
   position: absolute;
+
   left: 50%;
+
   top: 50%;
+
   width: calc(2880 * var(--ui));
+
   height: calc(1800 * var(--ui));
+
   transform: translate(-50%, -50%);
+
 }
+
+
 
 .menu__status {
+
   position: absolute;
+
   left: calc(40 * var(--ui));
+
   /* 顶部要给导航栏让位，再往下留一段空隙 */
+
   top: calc(118 * var(--ui));
+
   display: flex;
+
   flex-direction: column;
+
   gap: calc(10 * var(--ui));
+
   align-items: flex-start;
+
   padding: calc(14 * var(--ui)) calc(18 * var(--ui));
+
   border-radius: calc(12 * var(--ui));
+
   background: rgba(8, 11, 18, 0.5);
+
   backdrop-filter: blur(4px);
+
   font-size: calc(28 * var(--ui));
+
 }
+
+
 
 /* 标题：居中、12% 高，金色 + 硬阴影（旧版就是这么画的） */
+
 .menu__title {
+
   position: absolute;
+
   left: 50%;
+
   top: 12%;
+
   transform: translate(-50%, -50%);
+
   margin: 0;
+
   font-size: calc(140 * var(--ui));
+
   font-weight: 700;
+
   letter-spacing: 0.05em;
+
   white-space: nowrap;
+
   color: #ffd700;
+
   /* 硬阴影的偏移量也是设计单位，跟着一起缩放 */
+
   text-shadow:
+
     calc(5 * var(--ui)) calc(5 * var(--ui)) 0 #000,
+
     0 0 calc(40 * var(--ui)) rgba(255, 190, 40, 0.4);
+
 }
+
+
 
 .menu__deck {
+
   position: absolute;
+
   left: 50%;
+
   top: 19.5%;
+
   transform: translateX(-50%);
+
   margin: 0;
+
   color: #d7c9a0;
+
   font-size: calc(30 * var(--ui));
+
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+
 }
 
+
+
 /*
+
   两列阶梯按钮。位置就是旧版那两条式子：
+
   一级列 x = 70%（= 2016/2880），y = 25%（= 450/1800）；
+
   二级列 x = 一级列 x + 按钮宽 300 + 两倍阶梯 60。
+
   行距 90、每往下一行整体左移 30——都是设计单位。
+
 */
+
 .menu__columns {
+
   position: absolute;
+
   left: 70%;
+
   top: 25%;
+
   display: flex;
+
   gap: calc(60 * var(--ui));
+
   align-items: flex-start;
+
 }
+
+
 
 .menu__column {
+
   display: flex;
+
   flex-direction: column;
+
   gap: calc(40 * var(--ui));
+
   align-items: flex-start;
+
 }
+
+
 
 .menu__entry {
+
   position: relative;
+
   display: flex;
+
   align-items: center;
+
   justify-content: center;
+
   /* **长度固定**：三角形是绝对定位的（不在流里），所以按钮宽度只由这里决定，
+
      标签长短不会把按钮撑开或缩窄。 */
+
   width: calc(300 * var(--ui));
+
   height: calc(50 * var(--ui));
+
   padding: 0;
+
   /* 阶梯：第 n 行左移 n × 30 */
+
   margin-left: calc(var(--row, 0) * -30 * var(--ui));
+
   font: inherit;
+
   font-size: calc(40 * var(--ui));
+
   font-weight: 600;
+
   letter-spacing: 0.03em;
+
   color: #191919;
+
   background: none;
+
   border: none;
+
   cursor: pointer;
+
   /*
+
     深色字压在插画上，靠一层淡白光晕兜底（旧版背景比这张干净，没有这一层）。
+
     悬停时换成该入口的彩光描边（见下）。
+
   */
+
   text-shadow:
+
     0 1px 0 rgba(255, 255, 255, 0.45),
+
     0 0 calc(18 * var(--ui)) rgba(255, 255, 255, 0.4);
+
 }
+
+
 
 .menu__entry:hover {
+
   text-shadow:
+
     0 0 calc(4 * var(--ui)) var(--glow),
+
     calc(2 * var(--ui)) calc(2 * var(--ui)) 0 var(--glow),
+
     calc(-2 * var(--ui)) calc(-2 * var(--ui)) 0 var(--glow),
+
     calc(2 * var(--ui)) calc(-2 * var(--ui)) 0 var(--glow),
+
     calc(-2 * var(--ui)) calc(2 * var(--ui)) 0 var(--glow);
+
 }
 
+
+
 /*
+
   悬停亮起的三层同心圆角光晕。
 
+
+
   旧版是画三层**内缩的圆角矩形**（不是模糊），
+
   透明度 100 / 70 / 40 × 脉动（`0.5 + glow_intensity * 0.5`）。
+
   这里用三段只有 spread、没有 blur 的 `box-shadow` 做同一件事：
+
   圆角与硬边都在，读起来就是旧版那三层。
+
   脉动直接动画这三层的透明度，等价于旧版对 alpha 的调制。
+
 */
+
 .menu__entry-glow {
+
   position: absolute;
+
   inset: 0;
+
   border-radius: calc(5 * var(--ui));
+
   opacity: 0;
+
   pointer-events: none;
+
   transition: opacity 160ms ease-out;
+
   box-shadow:
+
     0 0 0 calc(8 * var(--ui)) color-mix(in srgb, var(--glow) 39%, transparent),
+
     0 0 0 calc(16 * var(--ui)) color-mix(in srgb, var(--glow) 27%, transparent),
+
     0 0 0 calc(24 * var(--ui)) color-mix(in srgb, var(--glow) 16%, transparent);
+
 }
+
+
 
 .menu__entry:hover .menu__entry-glow {
+
   opacity: 1;
+
   animation: menu-glow-pulse 1.1s ease-in-out infinite;
+
 }
+
+
 
 @keyframes menu-glow-pulse {
+
   50% {
+
     opacity: 0.5;
+
   }
+
 }
+
+
 
 .menu__entry-label {
+
   position: relative;
+
   display: flex;
+
   align-items: center;
+
   gap: calc(10 * var(--ui));
+
 }
+
+
 
 /*
+
   左右两个三角形。旧版：**常态就画**（按钮色、alpha 100），悬停时换成高亮色并变亮；
+
   位置在按钮**外侧** —— 顶点离按钮边 40 设计单位、底边离 20，也就是尖朝外。
 
+
+
   三条要点，都是「和原版不一样」踩出来的：
+
   1. **绝对定位**，不参与按钮内部的流。放进流里的话它俩会紧贴标签（标签长短还会推着它们跑），
+
      而原版是钉在按钮两端的；顺带一个好处是按钮长度不再受标签影响；
+
   2. **尖朝外**：左边那个用 `border-right` 画（顶点在左），右边用 `border-left`；
+
   3. 尺寸 20 × 20 设计单位，与原版一致。
+
 */
+
 .menu__entry-tri {
+
   position: absolute;
+
   top: 50%;
+
   transform: translateY(-50%);
+
   width: 0;
+
   height: 0;
+
   border-top: calc(10 * var(--ui)) solid transparent;
+
   border-bottom: calc(10 * var(--ui)) solid transparent;
+
 }
+
+
 
 .menu__entry-tri--left {
+
   left: calc(-40 * var(--ui));
+
   border-right: calc(20 * var(--ui)) solid color-mix(in srgb, var(--glow) 62%, transparent);
+
   transition: border-right-color 160ms ease-out;
+
 }
+
+
 
 .menu__entry-tri--right {
+
   right: calc(-40 * var(--ui));
+
   border-left: calc(20 * var(--ui)) solid color-mix(in srgb, var(--glow) 62%, transparent);
+
   transition: border-left-color 160ms ease-out;
+
 }
+
+
 
 .menu__entry:hover .menu__entry-tri--left {
+
   border-right-color: var(--glow);
+
 }
+
+
 
 .menu__entry:hover .menu__entry-tri--right {
+
   border-left-color: var(--glow);
+
 }
 
+
+
 /* 系统关了动效时连脉动一起停：它是「鼠标停在哪一项」的反馈 */
+
 @media (prefers-reduced-motion: reduce) {
+
   .menu__entry:hover .menu__entry-glow {
+
     animation: none;
+
   }
+
 }
+
+
 
 /* --- 活动海报轮播（旧版 `ui/activity_poster.py`）--------------------------- */
 
+
+
 /*
+
   位置 (58%, 60%)、尺寸 35% × 30%——两个数都来自旧版
+
   （`poster_topleft` 与 `poster_width/height` 就是这么按窗口算的，
+
   只不过那边的「窗口」是缩放后的设计框）。
+
 */
+
 .poster {
+
   position: absolute;
+
   left: 58%;
+
   top: 60%;
+
   width: 35%;
+
   height: 30%;
+
   padding: calc(8 * var(--ui));
+
   border: calc(8 * var(--ui)) solid #c8c800;
+
   border-radius: calc(24 * var(--ui));
+
   background: rgba(30, 30, 30, 0.78);
+
   box-shadow: 0 calc(10 * var(--ui)) calc(30 * var(--ui)) rgba(0, 0, 0, 0.55);
+
   cursor: pointer;
+
   overflow: hidden;
+
 }
+
+
 
 .poster__inner {
+
   position: relative;
+
   width: 100%;
+
   height: 100%;
+
   border-radius: calc(8 * var(--ui));
+
   overflow: hidden;
+
   background: #5a5a5a;
+
 }
+
+
 
 /* 一张海报：填满并裁切（旧版的 `_scale_and_crop_to_fit`） */
+
 .poster__art {
+
   position: absolute;
+
   inset: 0;
+
   background-position: center;
+
   background-size: cover;
+
   /* 切换时两张并排滑动，进度由 rAF 逐帧给，所以这里没有过渡 */
+
   will-change: transform;
+
 }
+
+
 
 .poster__dots {
+
   position: absolute;
+
   left: 0;
+
   right: 0;
+
   bottom: calc(16 * var(--ui));
+
   display: flex;
+
   justify-content: center;
+
   gap: calc(8 * var(--ui));
+
 }
+
+
 
 .poster__dot {
+
   width: calc(10 * var(--ui));
+
   height: calc(10 * var(--ui));
+
   border-radius: 50%;
+
   background: rgba(255, 255, 255, 0.35);
+
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.5);
+
 }
+
+
 
 .poster__dot--on {
+
   background: #ffd700;
+
 }
+
+
 
 .menu__reset {
+
   position: absolute;
+
   left: calc(40 * var(--ui));
+
   bottom: calc(40 * var(--ui));
+
   padding: calc(8 * var(--ui)) calc(18 * var(--ui));
+
   font: inherit;
+
   font-size: calc(24 * var(--ui));
+
   color: var(--text-dim);
+
   background: rgba(8, 11, 18, 0.6);
+
   border: 1px solid var(--border);
+
   border-radius: calc(8 * var(--ui));
+
   cursor: pointer;
+
 }
+
+
 
 .menu__reset:hover {
+
   color: var(--danger);
+
   border-color: var(--danger);
+
 }
+
+
 
 .menu__version {
+
   position: absolute;
+
   right: calc(20 * var(--ui));
+
   bottom: calc(16 * var(--ui));
+
   color: rgba(220, 224, 232, 0.55);
+
   font-size: calc(22 * var(--ui));
+
   letter-spacing: 0.04em;
+
 }
 
-/* --- 货币与等级 ---------------------------------------------------------- */
 
-.currency {
-  display: flex;
-  gap: 14px;
-  align-items: center;
-}
 
-.currency__item {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  padding: 3px 10px;
-  background: var(--bg-raised);
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  font-size: 13px;
-}
+/* --- 商店 --------------------------------------------------------------- */
 
-.currency__icon {
-  width: 16px;
-  height: 16px;
-}
-
-.currency__dot {
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  background: var(--text-dim);
-}
-
-.currency__item--gold .currency__dot { background: #ffd700; }
-.currency__item--crystal .currency__dot { background: #6ec8ff; }
-.currency__item--badge .currency__dot { background: #ff9f6e; }
-
-.currency__value {
-  font-variant-numeric: tabular-nums;
-  color: var(--text);
-}
-
-.currency__label {
-  font-size: 11px;
-  color: var(--text-dim);
-}
-
-.level {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 12px;
-}
-
-.level__tag {
-  color: var(--accent);
-  font-weight: 600;
-}
-
-.level__track {
-  display: block;
-  width: 120px;
-  height: 6px;
-  border-radius: 3px;
-  background: #2a3346;
-  overflow: hidden;
-}
-
-.level__fill {
-  display: block;
-  height: 100%;
-  background: var(--accent);
-  transition: width 160ms ease-out;
-}
-
-.level__value {
-  color: var(--text-dim);
-  font-variant-numeric: tabular-nums;
-}
-
-.coming-soon {
-  padding: 1px 7px;
-  font-size: 11px;
-  font-weight: 400;
-  color: #ffd08a;
-  background: rgba(122, 90, 42, 0.35);
-  border: 1px solid #7a5a2a;
-  border-radius: 999px;
-}
-
-/* --- 轻提示 -------------------------------------------------------------- */
-
-.toasts {
-  position: fixed;
-  left: 50%;
-  bottom: 26px;
-  transform: translateX(-50%);
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  z-index: 80;
-  pointer-events: none;
-}
-
-.toast {
-  pointer-events: auto;
-  padding: 8px 16px;
-  font: inherit;
-  font-size: 13px;
-  color: var(--text);
-  background: rgba(22, 27, 38, 0.96);
-  border: 1px solid var(--border-strong);
-  border-radius: 8px;
-  cursor: pointer;
-  backdrop-filter: blur(6px);
-  text-align: left;
-}
-
-.toast--error {
-  color: #ffd0d0;
-  border-color: #7a3a3a;
-}
-
-/* --- 模态 ---------------------------------------------------------------- */
-
-/*
-  **必须加这个修饰类。** 基础 `.overlay` 是 `position: absolute`，
-  只在 `.scene-viewport` 这种有定位祖先的容器里摆得对；
-  菜单类屏幕没有那样的祖先，直接套基础类会跑到视口之外。
-  不改基础类是因为战斗结果页正依赖它原来的行为。
-*/
-.overlay--fixed {
-  position: fixed;
-  z-index: 60;
-}
-
-.overlay__panel--wide {
-  width: min(860px, 100%);
-}
-
-.modal__head {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-}
-
-.modal__title {
-  margin: 0;
-  font-size: 18px;
-}
-
-.modal__close {
-  padding: 2px 10px;
-}
-
-.modal__body {
-  margin-top: 12px;
-}
-
-.modal__footer {
-  margin-top: 18px;
-}
-
-/* --- 滚动容器 ------------------------------------------------------------ */
-
-/*
-  `min-height: 0` 是这一条的关键：父级是 column flex，
-  少了它这个子元素不肯收缩到内容高度以下，于是滚动条根本不出现。
-*/
-.scroll {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-}
-
-/* --- 卡格 ---------------------------------------------------------------- */
-
-.card-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
-  gap: 10px;
-  padding: 2px;
-}
-
-.tile {
-  position: relative;
-  display: block;
-  padding: 0;
-  overflow: hidden;
-  background: var(--bg-raised);
-  border: 1px solid var(--border);
-  border-radius: 7px;
-  cursor: pointer;
-  aspect-ratio: 2 / 3;
-}
-
-.tile--sm { border-radius: 5px; }
-.tile--md { aspect-ratio: 2 / 3; }
-.tile--lg { aspect-ratio: 2 / 3; }
-
-.tile__art {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-
-/* 没有卡面时的底板：用该卡自己的稀有度配色，至少还看得出稀有度与名字 */
-.tile__plate {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  gap: 4px;
-  width: 100%;
-  height: 100%;
-  padding: 6px;
-  text-align: center;
-  /* 底板是纯色，上面压一层暗色让白字读得清 */
-  background-image: linear-gradient(rgba(10, 13, 20, 0.62), rgba(10, 13, 20, 0.62));
-}
-
-.tile__rarity {
-  font-size: 15px;
-  font-weight: 700;
-  color: #fff;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
-}
-
-.tile__name {
-  font-size: 11px;
-  line-height: 1.3;
-  color: #eef2f8;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
-}
-
-.tile__badge {
-  position: absolute;
-  top: 4px;
-  right: 4px;
-  min-width: 20px;
-  padding: 1px 5px;
-  font-size: 11px;
-  font-weight: 700;
-  color: #0d1018;
-  background: var(--accent);
-  border-radius: 999px;
-  text-align: center;
-}
-
-.tile__note {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  padding: 2px 4px;
-  font-size: 11px;
-  color: #ffd08a;
-  background: rgba(10, 13, 20, 0.82);
-  text-align: center;
-}
-
-.tile--selected {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 2px rgba(110, 168, 255, 0.45);
-}
-
-.tile--disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-
-.tile:hover:not(:disabled):not(.tile--disabled) {
-  border-color: var(--border-strong);
-}
-
-.app-nav__dev {
-  margin-left: 5px;
-  padding: 0 4px;
-  font-size: 10px;
-  color: #ffd08a;
-  border: 1px solid #7a5a2a;
-  border-radius: 3px;
-}
-
-/* --- 图鉴 ---------------------------------------------------------------- */
-
-/*
-  `.screen` 要设 `position: relative`：卡牌详情面板（`.detail`）是
-  `position: absolute`，它需要一个定位祖先。战斗场景那边有 `.scene-viewport`
-  顶着，菜单类屏幕没有——不设的话面板会跑到视口之外。
-*/
-.screen {
-  position: relative;
-}
-
-.collection__lead {
+.shop__lead {
   margin: 4px 0 0;
   font-size: 13px;
   color: var(--text-dim);
 }
 
-.collection__stats {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  font-size: 12px;
-  color: var(--text-dim);
-  justify-content: flex-end;
-  max-width: 60%;
-}
-
-.collection__stat {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-
-.collection__stat b {
-  color: var(--text);
-  font-variant-numeric: tabular-nums;
-}
-
-.collection__stat-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-}
-
-.collection__filter {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 3px 10px;
-  font: inherit;
-  font-size: 12px;
-  color: var(--text-dim);
-  background: var(--bg-raised);
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  cursor: pointer;
-}
-
-.chip:hover:not(:disabled) {
-  background: var(--bg-raised-hover);
-}
-
-.chip--on {
-  color: #0d1018;
-  background: var(--accent);
-  border-color: var(--accent);
-}
-
-.chip:disabled {
-  opacity: 0.35;
-  cursor: not-allowed;
-}
-
-.chip__dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-}
-
-.chip__count {
-  font-variant-numeric: tabular-nums;
-  opacity: 0.75;
-}
-
-.collection__empty {
-  padding: 30px;
-  text-align: center;
-  color: var(--text-dim);
-}
-
-/* --- 配置（组卡）-------------------------------------------------------- */
-
-/*
-  左槽位、右收藏。
-
-  比例照旧版组卡界面（左 35% / 右 65%）：槽位是**定数 12 格**，宽度够摆下 3 列就行；
-  收藏是几百张卡、要的是横向密度，剩下的宽度都给它。
-*/
-.deckedit__body {
-  display: grid;
-  /* 左列放得下 3 列卡就够（约 500px），剩下的宽度全给收藏——收藏有几百张要翻 */
-  grid-template-columns: minmax(250px, 27%) 1fr;
-  gap: 18px;
-  flex: 1;
-  min-height: 0;
-}
-
-.deckedit__slots,
-.deckedit__collection {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  min-height: 0;
-}
-
-.deckedit__heading {
-  margin: 0;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-dim);
-  letter-spacing: 0.03em;
-}
-
-/*
-  3 列 × 4 行 = 12 格。空槽与有卡的槽同尺寸，格子不会因卡数变化而跳动。
-
-  `max-width` 把槽位卡压到与右侧收藏差不多的尺寸：不限宽的话左列一宽就整片放大，
-  右边还是小的，同一张卡在两边尺寸差一倍，看着像两个不同的东西。
-*/
-.deckedit__grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-  align-content: start;
-  max-width: 470px;
-}
-
-.deckedit__slot {
-  display: grid;
-  place-items: center;
-  aspect-ratio: 2 / 3;
-  border: 1px dashed var(--border);
-  border-radius: 8px;
-  color: var(--text-dim);
-  font-size: 13px;
-  font-variant-numeric: tabular-nums;
-  opacity: 0.55;
-}
-
-/* 收藏里的卡，点一下就加——鼠标给出可点的提示 */
-.deckedit__collection .tile {
-  cursor: pointer;
-}
-
-.deckedit__filter {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  /* 收藏区自己滚动，筛选条固定在上面 */
-  flex: 0 0 auto;
-}
-
-.deckedit__lead {
-  margin: 4px 0 0;
-  font-size: 13px;
-  color: var(--text-dim);
-}
-
-.deckedit__actions {
-  display: flex;
-  gap: 8px;
-}
-
-/* 「卡组已满」这类**对所有卡都一样**的提示，说一次就够 */
-.deckedit__hint {
+.shop__error {
   margin: 0;
   padding: 7px 12px;
-  border-left: 3px solid var(--accent);
-  border-radius: 6px;
-  background: rgba(110, 168, 255, 0.08);
-  color: var(--text);
-  font-size: 13px;
-}
-
-.deckedit__issues {
-  margin: 0;
-  padding: 8px 12px;
-  list-style: none;
-  border-left: 3px solid var(--danger);
-  border-radius: 6px;
-  background: rgba(255, 107, 107, 0.08);
-  color: var(--text);
-  font-size: 13px;
-}
-
-.deckedit__empty-actions {
-  display: flex;
-  gap: 10px;
-}
-
-@media (max-width: 1100px) {
-  /* 窄屏并排放不下，改成上下：槽位在上（要盯着的），收藏在下（要翻的） */
-  .deckedit__body {
-    grid-template-columns: 1fr;
-    overflow-y: auto;
-  }
-}
-
-/* --- 抽卡 --------------------------------------------------------------- */
-
-.gacha__lead {
-  margin: 4px 0 0;
-  font-size: 13px;
-  color: var(--text-dim);
-}
-
-.gacha__body {
-  display: grid;
-  grid-template-columns: 1fr 340px;
-  gap: 18px;
-  flex: 1;
-  min-height: 0;
-}
-
-/*
-  演出舞台：盖住整页（连轮盘一起），只留结果面板浮在上面。
-
-  绝对定位而不是塞进 `.gacha__body` 的一列：演出是「整屏都在翻卡」的时刻，
-  旁边还留着卡池列表会把注意力拉走；而且 `Canvas` 需要一块确定尺寸的容器，
-  挤在网格里会被 `min-height: 0` 压扁。
-*/
-.gacha__stage {
-  position: absolute;
-  inset: 0;
-  z-index: 5;
-  background: #05070c;
-}
-
-.gacha__stage canvas {
-  display: block;
-  touch-action: none;
-}
-
-.gacha__panel {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  min-height: 0;
-  overflow-y: auto;
-  padding-right: 4px;
-}
-
-.gacha__pool-name {
-  margin: 0;
-  font-size: 20px;
-  color: var(--text);
-}
-
-.gacha__desc,
-.gacha__rare {
-  margin: 0;
-  font-size: 13px;
-  color: var(--text-dim);
-}
-
-.gacha__heading {
-  margin: 0 0 6px;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-dim);
-  letter-spacing: 0.03em;
-}
-
-.gacha__probs {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  display: grid;
-  gap: 3px;
-}
-
-.gacha__prob {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  font-size: 13px;
-  color: var(--text-dim);
-}
-
-.gacha__prob-rarity {
-  flex: 1;
-}
-
-.gacha__prob-value {
-  color: var(--text);
-  font-variant-numeric: tabular-nums;
-}
-
-.gacha__prob-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-}
-
-.gacha__buttons {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-top: 2px;
-}
-
-/* 测试用的发钱按钮：明显是「工具」，不该和「单抽/十连」抢注意力 */
-.gacha__dev {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 6px;
-  padding-top: 8px;
-  border-top: 1px dashed var(--border);
-}
-
-.gacha__dev-label {
-  padding: 1px 6px;
-  border: 1px solid var(--border-strong);
-  border-radius: 4px;
-  color: var(--text-dim);
-  font-size: 11px;
-  letter-spacing: 0.05em;
-}
-
-.btn--tiny {
-  padding: 3px 9px;
-  font-size: 12px;
-}
-
-.gacha__error {
-  margin: 0;
-  padding: 7px 10px;
   border-left: 3px solid var(--danger);
   border-radius: 6px;
   background: rgba(255, 107, 107, 0.1);
@@ -2124,898 +2990,3152 @@ code {
   font-size: 13px;
 }
 
-.gacha__showcase-grid {
+.shop__shelf {
+  /* 一排最多 6 格，撑满 1920 只会把卡片拉得很宽、右边空一片；整排居中收窄 */
+  max-width: 1080px;
+  margin: 0 auto 18px;
+}
+
+.shop__heading {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-dim);
+  letter-spacing: 0.03em;
+}
+
+/* 一排货架：卡不超过 6 张，用定宽列而不是 auto-fill，卡才不会忽大忽小 */
+.shop__row {
+  margin: 0;
+  padding: 0;
+  list-style: none;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(6, minmax(0, 164px));
+  gap: 10px;
+}
+
+.shop__item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
   gap: 6px;
 }
 
-/* 轮盘 */
-
-/*
-  轮盘占满左侧。背景两层交叉淡换（见 `GachaWheel` 的注释），
-  所以这里只需要保证两层都在、都盖满。
-*/
-.wheel {
-  position: relative;
-  overflow: hidden;
-  min-height: 420px;
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  background: radial-gradient(ellipse at 50% 40%, #1a2130 0%, #0b0e15 70%);
+.shop__price {
+  font-size: 12px;
+  color: var(--text);
+  text-align: center;
+  font-variant-numeric: tabular-nums;
 }
 
-.wheel__backdrops {
+/* 售罄：盖住整格，且不挡点击（点击由卡片的 disabled 挡） */
+.shop__soldout {
   position: absolute;
   inset: 0;
-}
-
-.wheel__bg {
-  position: absolute;
-  inset: 0;
-  background-position: center;
-  background-size: cover;
-  opacity: 0;
-  transition: opacity 420ms ease;
-}
-
-/* 压暗到 0.45：池背景是插画，全亮度会把卡池名压得读不清 */
-.wheel__bg--on {
-  opacity: 0.45;
-}
-
-.wheel--still .wheel__bg {
-  transition: none;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: rgba(8, 11, 18, 0.62);
+  color: var(--text-dim);
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  pointer-events: none;
 }
 
 /*
-  `perspective` 放在舞台、卡片是它的**直接子元素**——
-  中间再夹一层（哪怕没有 transform）都会改掉投影，
-  `CardShowcase` 那边为这个坑写过一次注释，这里同理。
-
-  整排再压 -13°：斜着的一列立牌才是旧版那个手感，正对着看就只是排卡片。
+  礼包没有卡面，用一块按稀有度描边的底板当门面：
+  它卖的是「必出某个稀有度」这个承诺，所以稀有度字要大。
 */
-.wheel__stage {
-  position: relative;
-  height: 100%;
-  perspective: 1100px;
-  transform-style: preserve-3d;
-  transform: rotateX(-13deg);
-  cursor: grab;
-  touch-action: pan-y;
-}
-
-.wheel__stage:active {
-  cursor: grabbing;
-}
-
-.wheel__stage:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: -4px;
-}
-
-/*
-  卡片绝对居中，位移**全部**由行内 transform 给（那串值来自 `wheelSlots`）。
-  用负 margin 而不是 `translate(-50%,-50%)` 居中，是为了让行内 transform
-  只承载轮盘的数学——否则每处都要把 -50% 拼在前面，改一次错一次。
-*/
-.wheel__card {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 186px;
-  height: 250px;
-  margin-left: -93px;
-  margin-top: -125px;
+.shop__pack {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  padding: 14px;
+  gap: 6px;
+  width: 100%;
+  aspect-ratio: 2 / 3;
+  padding: 10px;
+  font: inherit;
+  color: var(--text);
   text-align: center;
-  border: 1px solid var(--border-strong);
-  border-radius: 12px;
-  background: rgba(18, 23, 34, 0.88);
-  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.5);
-  /* transform 每帧由 JS 写，过渡只做吸附那一下的收尾 */
-  transition: box-shadow 200ms ease, border-color 200ms ease;
-  user-select: none;
+  background: linear-gradient(160deg, #1b2130 0%, #121722 100%);
+  border: 2px solid var(--border-strong);
+  border-radius: 8px;
+  cursor: pointer;
 }
+
+.shop__pack:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.shop__pack-name {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.shop__pack-rarity {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.shop__pack-note {
+  font-size: 11px;
+  color: var(--text-dim);
+  line-height: 1.4;
+}
+
+/* --- 货币与等级 ---------------------------------------------------------- */
+
+
+
+.currency {
+
+  display: flex;
+
+  gap: 14px;
+
+  align-items: center;
+
+}
+
+
+
+.currency__item {
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 5px;
+
+  padding: 3px 10px;
+
+  background: var(--bg-raised);
+
+  border: 1px solid var(--border);
+
+  border-radius: 999px;
+
+  font-size: 13px;
+
+}
+
+
+
+.currency__icon {
+
+  width: 16px;
+
+  height: 16px;
+
+}
+
+
+
+.currency__dot {
+
+  width: 9px;
+
+  height: 9px;
+
+  border-radius: 50%;
+
+  background: var(--text-dim);
+
+}
+
+
+
+.currency__item--gold .currency__dot { background: #ffd700; }
+
+.currency__item--crystal .currency__dot { background: #6ec8ff; }
+
+.currency__item--badge .currency__dot { background: #ff9f6e; }
+
+
+
+.currency__value {
+
+  font-variant-numeric: tabular-nums;
+
+  color: var(--text);
+
+}
+
+
+
+.currency__label {
+
+  font-size: 11px;
+
+  color: var(--text-dim);
+
+}
+
+
+
+.level {
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 8px;
+
+  font-size: 12px;
+
+}
+
+
+
+.level__tag {
+
+  color: var(--accent);
+
+  font-weight: 600;
+
+}
+
+
+
+.level__track {
+
+  display: block;
+
+  width: 120px;
+
+  height: 6px;
+
+  border-radius: 3px;
+
+  background: #2a3346;
+
+  overflow: hidden;
+
+}
+
+
+
+.level__fill {
+
+  display: block;
+
+  height: 100%;
+
+  background: var(--accent);
+
+  transition: width 160ms ease-out;
+
+}
+
+
+
+.level__value {
+
+  color: var(--text-dim);
+
+  font-variant-numeric: tabular-nums;
+
+}
+
+
+
+.coming-soon {
+
+  padding: 1px 7px;
+
+  font-size: 11px;
+
+  font-weight: 400;
+
+  color: #ffd08a;
+
+  background: rgba(122, 90, 42, 0.35);
+
+  border: 1px solid #7a5a2a;
+
+  border-radius: 999px;
+
+}
+
+
+
+/* --- 轻提示 -------------------------------------------------------------- */
+
+
+
+.toasts {
+
+  position: fixed;
+
+  left: 50%;
+
+  bottom: 26px;
+
+  transform: translateX(-50%);
+
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 8px;
+
+  z-index: 80;
+
+  pointer-events: none;
+
+}
+
+
+
+.toast {
+
+  pointer-events: auto;
+
+  padding: 8px 16px;
+
+  font: inherit;
+
+  font-size: 13px;
+
+  color: var(--text);
+
+  background: rgba(22, 27, 38, 0.96);
+
+  border: 1px solid var(--border-strong);
+
+  border-radius: 8px;
+
+  cursor: pointer;
+
+  backdrop-filter: blur(6px);
+
+  text-align: left;
+
+}
+
+
+
+.toast--error {
+
+  color: #ffd0d0;
+
+  border-color: #7a3a3a;
+
+}
+
+
+
+/* --- 模态 ---------------------------------------------------------------- */
+
+
+
+/*
+
+  **必须加这个修饰类。** 基础 `.overlay` 是 `position: absolute`，
+
+  只在 `.scene-viewport` 这种有定位祖先的容器里摆得对；
+
+  菜单类屏幕没有那样的祖先，直接套基础类会跑到视口之外。
+
+  不改基础类是因为战斗结果页正依赖它原来的行为。
+
+*/
+
+.overlay--fixed {
+
+  position: fixed;
+
+  z-index: 60;
+
+}
+
+
+
+.overlay__panel--wide {
+
+  width: min(860px, 100%);
+
+}
+
+
+
+.modal__head {
+
+  display: flex;
+
+  justify-content: space-between;
+
+  align-items: center;
+
+  gap: 12px;
+
+}
+
+
+
+.modal__title {
+
+  margin: 0;
+
+  font-size: 18px;
+
+}
+
+
+
+.modal__close {
+
+  padding: 2px 10px;
+
+}
+
+
+
+.modal__body {
+
+  margin-top: 12px;
+
+}
+
+
+
+.modal__footer {
+
+  margin-top: 18px;
+
+}
+
+
+
+/* --- 滚动容器 ------------------------------------------------------------ */
+
+
+
+/*
+
+  `min-height: 0` 是这一条的关键：父级是 column flex，
+
+  少了它这个子元素不肯收缩到内容高度以下，于是滚动条根本不出现。
+
+*/
+
+.scroll {
+
+  flex: 1;
+
+  min-height: 0;
+
+  overflow-y: auto;
+
+  overscroll-behavior: contain;
+
+}
+
+
+
+/* --- 卡格 ---------------------------------------------------------------- */
+
+
+
+.card-grid {
+
+  display: grid;
+
+  grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+
+  gap: 10px;
+
+  padding: 2px;
+
+}
+
+
+
+.tile {
+
+  position: relative;
+
+  display: block;
+
+  padding: 0;
+
+  overflow: hidden;
+
+  background: var(--bg-raised);
+
+  border: 1px solid var(--border);
+
+  border-radius: 7px;
+
+  cursor: pointer;
+
+  aspect-ratio: 2 / 3;
+
+}
+
+
+
+.tile--sm { border-radius: 5px; }
+
+.tile--md { aspect-ratio: 2 / 3; }
+
+.tile--lg { aspect-ratio: 2 / 3; }
+
+
+
+.tile__art {
+
+  width: 100%;
+
+  height: 100%;
+
+  object-fit: cover;
+
+  display: block;
+
+}
+
+
+
+/* 没有卡面时的底板：用该卡自己的稀有度配色，至少还看得出稀有度与名字 */
+
+.tile__plate {
+
+  display: flex;
+
+  flex-direction: column;
+
+  justify-content: center;
+
+  align-items: center;
+
+  gap: 4px;
+
+  width: 100%;
+
+  height: 100%;
+
+  padding: 6px;
+
+  text-align: center;
+
+  /* 底板是纯色，上面压一层暗色让白字读得清 */
+
+  background-image: linear-gradient(rgba(10, 13, 20, 0.62), rgba(10, 13, 20, 0.62));
+
+}
+
+
+
+.tile__rarity {
+
+  font-size: 15px;
+
+  font-weight: 700;
+
+  color: #fff;
+
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+
+}
+
+
+
+.tile__name {
+
+  font-size: 11px;
+
+  line-height: 1.3;
+
+  color: #eef2f8;
+
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+
+}
+
+
+
+.tile__badge {
+
+  position: absolute;
+
+  top: 4px;
+
+  right: 4px;
+
+  min-width: 20px;
+
+  padding: 1px 5px;
+
+  font-size: 11px;
+
+  font-weight: 700;
+
+  color: #0d1018;
+
+  background: var(--accent);
+
+  border-radius: 999px;
+
+  text-align: center;
+
+}
+
+
+
+.tile__note {
+
+  position: absolute;
+
+  left: 0;
+
+  right: 0;
+
+  bottom: 0;
+
+  padding: 2px 4px;
+
+  font-size: 11px;
+
+  color: #ffd08a;
+
+  background: rgba(10, 13, 20, 0.82);
+
+  text-align: center;
+
+}
+
+
+
+.tile--selected {
+
+  border-color: var(--accent);
+
+  box-shadow: 0 0 0 2px rgba(110, 168, 255, 0.45);
+
+}
+
+
+
+.tile--disabled {
+
+  opacity: 0.45;
+
+  cursor: not-allowed;
+
+}
+
+
+
+.tile:hover:not(:disabled):not(.tile--disabled) {
+
+  border-color: var(--border-strong);
+
+}
+
+
+
+.app-nav__dev {
+
+  margin-left: 5px;
+
+  padding: 0 4px;
+
+  font-size: 10px;
+
+  color: #ffd08a;
+
+  border: 1px solid #7a5a2a;
+
+  border-radius: 3px;
+
+}
+
+
+
+/* --- 图鉴 ---------------------------------------------------------------- */
+
+
+
+/*
+
+  `.screen` 要设 `position: relative`：卡牌详情面板（`.detail`）是
+
+  `position: absolute`，它需要一个定位祖先。战斗场景那边有 `.scene-viewport`
+
+  顶着，菜单类屏幕没有——不设的话面板会跑到视口之外。
+
+*/
+
+.screen {
+
+  position: relative;
+
+}
+
+
+
+.collection__lead {
+
+  margin: 4px 0 0;
+
+  font-size: 13px;
+
+  color: var(--text-dim);
+
+}
+
+
+
+.collection__stats {
+
+  display: flex;
+
+  flex-wrap: wrap;
+
+  gap: 10px;
+
+  margin: 0;
+
+  padding: 0;
+
+  list-style: none;
+
+  font-size: 12px;
+
+  color: var(--text-dim);
+
+  justify-content: flex-end;
+
+  max-width: 60%;
+
+}
+
+
+
+.collection__stat {
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 5px;
+
+}
+
+
+
+.collection__stat b {
+
+  color: var(--text);
+
+  font-variant-numeric: tabular-nums;
+
+}
+
+
+
+.collection__stat-dot {
+
+  width: 8px;
+
+  height: 8px;
+
+  border-radius: 50%;
+
+}
+
+
+
+.collection__filter {
+
+  display: flex;
+
+  flex-wrap: wrap;
+
+  gap: 6px;
+
+}
+
+
+
+.chip {
+
+  display: inline-flex;
+
+  align-items: center;
+
+  gap: 5px;
+
+  padding: 3px 10px;
+
+  font: inherit;
+
+  font-size: 12px;
+
+  color: var(--text-dim);
+
+  background: var(--bg-raised);
+
+  border: 1px solid var(--border);
+
+  border-radius: 999px;
+
+  cursor: pointer;
+
+}
+
+
+
+.chip:hover:not(:disabled) {
+
+  background: var(--bg-raised-hover);
+
+}
+
+
+
+.chip--on {
+
+  color: #0d1018;
+
+  background: var(--accent);
+
+  border-color: var(--accent);
+
+}
+
+
+
+.chip:disabled {
+
+  opacity: 0.35;
+
+  cursor: not-allowed;
+
+}
+
+
+
+.chip__dot {
+
+  width: 8px;
+
+  height: 8px;
+
+  border-radius: 50%;
+
+}
+
+
+
+.chip__count {
+
+  font-variant-numeric: tabular-nums;
+
+  opacity: 0.75;
+
+}
+
+
+
+.collection__empty {
+
+  padding: 30px;
+
+  text-align: center;
+
+  color: var(--text-dim);
+
+}
+
+
+
+/* --- 配置（组卡）-------------------------------------------------------- */
+
+
+
+/*
+
+  左槽位、右收藏。
+
+
+
+  比例照旧版组卡界面（左 35% / 右 65%）：槽位是**定数 12 格**，宽度够摆下 3 列就行；
+
+  收藏是几百张卡、要的是横向密度，剩下的宽度都给它。
+
+*/
+
+.deckedit__body {
+
+  display: grid;
+
+  /* 左列放得下 3 列卡就够（约 500px），剩下的宽度全给收藏——收藏有几百张要翻 */
+
+  grid-template-columns: minmax(250px, 27%) 1fr;
+
+  gap: 18px;
+
+  flex: 1;
+
+  min-height: 0;
+
+}
+
+
+
+.deckedit__slots,
+
+.deckedit__collection {
+
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 10px;
+
+  min-height: 0;
+
+}
+
+
+
+.deckedit__heading {
+
+  margin: 0;
+
+  font-size: 13px;
+
+  font-weight: 600;
+
+  color: var(--text-dim);
+
+  letter-spacing: 0.03em;
+
+}
+
+
+
+/*
+
+  3 列 × 4 行 = 12 格。空槽与有卡的槽同尺寸，格子不会因卡数变化而跳动。
+
+
+
+  `max-width` 把槽位卡压到与右侧收藏差不多的尺寸：不限宽的话左列一宽就整片放大，
+
+  右边还是小的，同一张卡在两边尺寸差一倍，看着像两个不同的东西。
+
+*/
+
+.deckedit__grid {
+
+  display: grid;
+
+  grid-template-columns: repeat(3, 1fr);
+
+  gap: 8px;
+
+  align-content: start;
+
+  max-width: 470px;
+
+}
+
+
+
+.deckedit__slot {
+
+  display: grid;
+
+  place-items: center;
+
+  aspect-ratio: 2 / 3;
+
+  border: 1px dashed var(--border);
+
+  border-radius: 8px;
+
+  color: var(--text-dim);
+
+  font-size: 13px;
+
+  font-variant-numeric: tabular-nums;
+
+  opacity: 0.55;
+
+}
+
+
+
+/* 收藏里的卡，点一下就加——鼠标给出可点的提示 */
+
+.deckedit__collection .tile {
+
+  cursor: pointer;
+
+}
+
+
+
+.deckedit__filter {
+
+  display: flex;
+
+  flex-wrap: wrap;
+
+  gap: 6px;
+
+  /* 收藏区自己滚动，筛选条固定在上面 */
+
+  flex: 0 0 auto;
+
+}
+
+
+
+.deckedit__lead {
+
+  margin: 4px 0 0;
+
+  font-size: 13px;
+
+  color: var(--text-dim);
+
+}
+
+
+
+.deckedit__actions {
+
+  display: flex;
+
+  gap: 8px;
+
+}
+
+
+
+/* 「卡组已满」这类**对所有卡都一样**的提示，说一次就够 */
+
+.deckedit__hint {
+
+  margin: 0;
+
+  padding: 7px 12px;
+
+  border-left: 3px solid var(--accent);
+
+  border-radius: 6px;
+
+  background: rgba(110, 168, 255, 0.08);
+
+  color: var(--text);
+
+  font-size: 13px;
+
+}
+
+
+
+.deckedit__issues {
+
+  margin: 0;
+
+  padding: 8px 12px;
+
+  list-style: none;
+
+  border-left: 3px solid var(--danger);
+
+  border-radius: 6px;
+
+  background: rgba(255, 107, 107, 0.08);
+
+  color: var(--text);
+
+  font-size: 13px;
+
+}
+
+
+
+.deckedit__empty-actions {
+
+  display: flex;
+
+  gap: 10px;
+
+}
+
+
+
+@media (max-width: 1100px) {
+
+  /* 窄屏并排放不下，改成上下：槽位在上（要盯着的），收藏在下（要翻的） */
+
+  .deckedit__body {
+
+    grid-template-columns: 1fr;
+
+    overflow-y: auto;
+
+  }
+
+}
+
+
+
+/* --- 抽卡 --------------------------------------------------------------- */
+
+
+
+.gacha__lead {
+
+  margin: 4px 0 0;
+
+  font-size: 13px;
+
+  color: var(--text-dim);
+
+}
+
+
+
+.gacha__body {
+
+  display: grid;
+
+  grid-template-columns: 1fr 340px;
+
+  gap: 18px;
+
+  flex: 1;
+
+  min-height: 0;
+
+}
+
+
+
+/*
+
+  演出舞台：盖住整页（连轮盘一起），只留结果面板浮在上面。
+
+
+
+  绝对定位而不是塞进 `.gacha__body` 的一列：演出是「整屏都在翻卡」的时刻，
+
+  旁边还留着卡池列表会把注意力拉走；而且 `Canvas` 需要一块确定尺寸的容器，
+
+  挤在网格里会被 `min-height: 0` 压扁。
+
+*/
+
+.gacha__stage {
+
+  position: absolute;
+
+  inset: 0;
+
+  z-index: 5;
+
+  background: #05070c;
+
+}
+
+
+
+.gacha__stage canvas {
+
+  display: block;
+
+  touch-action: none;
+
+}
+
+
+
+.gacha__panel {
+
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 10px;
+
+  min-height: 0;
+
+  overflow-y: auto;
+
+  padding-right: 4px;
+
+}
+
+
+
+.gacha__pool-name {
+
+  margin: 0;
+
+  font-size: 20px;
+
+  color: var(--text);
+
+}
+
+
+
+.gacha__desc,
+
+.gacha__rare {
+
+  margin: 0;
+
+  font-size: 13px;
+
+  color: var(--text-dim);
+
+}
+
+
+
+.gacha__heading {
+
+  margin: 0 0 6px;
+
+  font-size: 12px;
+
+  font-weight: 600;
+
+  color: var(--text-dim);
+
+  letter-spacing: 0.03em;
+
+}
+
+
+
+.gacha__probs {
+
+  margin: 0;
+
+  padding: 0;
+
+  list-style: none;
+
+  display: grid;
+
+  gap: 3px;
+
+}
+
+
+
+.gacha__prob {
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 7px;
+
+  font-size: 13px;
+
+  color: var(--text-dim);
+
+}
+
+
+
+.gacha__prob-rarity {
+
+  flex: 1;
+
+}
+
+
+
+.gacha__prob-value {
+
+  color: var(--text);
+
+  font-variant-numeric: tabular-nums;
+
+}
+
+
+
+.gacha__prob-dot {
+
+  width: 8px;
+
+  height: 8px;
+
+  border-radius: 50%;
+
+}
+
+
+
+.gacha__buttons {
+
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 8px;
+
+  margin-top: 2px;
+
+}
+
+
+
+/* 测试用的发钱按钮：明显是「工具」，不该和「单抽/十连」抢注意力 */
+
+.gacha__dev {
+
+  display: flex;
+
+  align-items: center;
+
+  flex-wrap: wrap;
+
+  gap: 6px;
+
+  padding-top: 8px;
+
+  border-top: 1px dashed var(--border);
+
+}
+
+
+
+.gacha__dev-label {
+
+  padding: 1px 6px;
+
+  border: 1px solid var(--border-strong);
+
+  border-radius: 4px;
+
+  color: var(--text-dim);
+
+  font-size: 11px;
+
+  letter-spacing: 0.05em;
+
+}
+
+
+
+.btn--tiny {
+
+  padding: 3px 9px;
+
+  font-size: 12px;
+
+}
+
+
+
+.gacha__error {
+
+  margin: 0;
+
+  padding: 7px 10px;
+
+  border-left: 3px solid var(--danger);
+
+  border-radius: 6px;
+
+  background: rgba(255, 107, 107, 0.1);
+
+  color: var(--text);
+
+  font-size: 13px;
+
+}
+
+
+
+.gacha__showcase-grid {
+
+  display: grid;
+
+  grid-template-columns: repeat(3, 1fr);
+
+  gap: 6px;
+
+}
+
+
+
+/* 轮盘 */
+
+
+
+/*
+
+  轮盘占满左侧。背景两层交叉淡换（见 `GachaWheel` 的注释），
+
+  所以这里只需要保证两层都在、都盖满。
+
+*/
+
+.wheel {
+
+  position: relative;
+
+  overflow: hidden;
+
+  min-height: 420px;
+
+  border: 1px solid var(--border);
+
+  border-radius: 14px;
+
+  background: radial-gradient(ellipse at 50% 40%, #1a2130 0%, #0b0e15 70%);
+
+}
+
+
+
+.wheel__backdrops {
+
+  position: absolute;
+
+  inset: 0;
+
+}
+
+
+
+.wheel__bg {
+
+  position: absolute;
+
+  inset: 0;
+
+  background-position: center;
+
+  background-size: cover;
+
+  opacity: 0;
+
+  transition: opacity 420ms ease;
+
+}
+
+
+
+/* 压暗到 0.45：池背景是插画，全亮度会把卡池名压得读不清 */
+
+.wheel__bg--on {
+
+  opacity: 0.45;
+
+}
+
+
+
+.wheel--still .wheel__bg {
+
+  transition: none;
+
+}
+
+
+
+/*
+
+  `perspective` 放在舞台、卡片是它的**直接子元素**——
+
+  中间再夹一层（哪怕没有 transform）都会改掉投影，
+
+  `CardShowcase` 那边为这个坑写过一次注释，这里同理。
+
+
+
+  整排再压 -13°：斜着的一列立牌才是旧版那个手感，正对着看就只是排卡片。
+
+*/
+
+.wheel__stage {
+
+  position: relative;
+
+  height: 100%;
+
+  perspective: 1100px;
+
+  transform-style: preserve-3d;
+
+  transform: rotateX(-13deg);
+
+  cursor: grab;
+
+  touch-action: pan-y;
+
+}
+
+
+
+.wheel__stage:active {
+
+  cursor: grabbing;
+
+}
+
+
+
+.wheel__stage:focus-visible {
+
+  outline: 2px solid var(--accent);
+
+  outline-offset: -4px;
+
+}
+
+
+
+/*
+
+  卡片绝对居中，位移**全部**由行内 transform 给（那串值来自 `wheelSlots`）。
+
+  用负 margin 而不是 `translate(-50%,-50%)` 居中，是为了让行内 transform
+
+  只承载轮盘的数学——否则每处都要把 -50% 拼在前面，改一次错一次。
+
+*/
+
+.wheel__card {
+
+  position: absolute;
+
+  left: 50%;
+
+  top: 50%;
+
+  width: 186px;
+
+  height: 250px;
+
+  margin-left: -93px;
+
+  margin-top: -125px;
+
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: center;
+
+  justify-content: center;
+
+  gap: 10px;
+
+  padding: 14px;
+
+  text-align: center;
+
+  border: 1px solid var(--border-strong);
+
+  border-radius: 12px;
+
+  background: rgba(18, 23, 34, 0.88);
+
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.5);
+
+  /* transform 每帧由 JS 写，过渡只做吸附那一下的收尾 */
+
+  transition: box-shadow 200ms ease, border-color 200ms ease;
+
+  user-select: none;
+
+}
+
+
 
 .wheel__card--on {
+
   border-color: var(--accent);
+
   box-shadow:
+
     0 0 0 1px var(--accent) inset,
+
     0 22px 48px rgba(0, 0, 0, 0.55);
+
   animation: wheel-breathe 2.6s ease-in-out infinite;
+
 }
+
+
 
 /* 关掉动效时连呼吸一起停：它不是装饰，是「这个是选中的」的唯一动效线索 */
+
 .wheel--still .wheel__card--on {
+
   animation: none;
+
 }
+
+
 
 @keyframes wheel-breathe {
+
   50% {
+
     filter: brightness(1.14);
+
   }
+
 }
+
+
 
 .wheel__name {
+
   font-size: 17px;
+
   color: var(--text);
+
   line-height: 1.35;
+
 }
+
+
 
 .wheel__price {
+
   display: flex;
+
   flex-direction: column;
+
   gap: 2px;
+
   font-size: 12px;
+
   color: var(--text-dim);
+
   font-variant-numeric: tabular-nums;
+
 }
+
+
 
 .wheel__currency {
+
   margin-left: 4px;
+
 }
 
+
+
 /* Selection menu: all coordinates are in the legacy 2880 × 1800 design frame. */
+
 .screen.gacha { padding: 0; gap: 0; background: #090b13; }
+
 .gacha-menu { position: relative; width: 100%; height: 100%; min-height: 0; overflow: hidden; }
+
 .gacha-menu__backdrops, .gacha-menu__backdrop { position: absolute; inset: 0; }
+
 .gacha-menu__backdrop {
+
   background: center / cover no-repeat;
+
   opacity: 0; transition: opacity 1.2s ease;
+
 }
+
 .gacha-menu__backdrop--on { opacity: 0.76; }
+
 .gacha-menu__backdrops::after {
+
   content: ''; position: absolute; inset: 0;
+
   background: linear-gradient(90deg, rgba(6, 10, 20, 0.45), transparent 50%),
+
     linear-gradient(0deg, rgba(5, 8, 15, 0.55), transparent 30%);
+
 }
+
 .gacha-menu__frame { position: absolute; left: 50%; top: 50%; width: 2880px; height: 1800px; transform-origin: center; }
+
 .gacha-menu__preview { position: absolute; inset: 0; pointer-events: none; z-index: 1; }
+
 /* Three sizes the drawing buffer from the transformed bounds. Keep CSS filling the
+
    design frame so the parent transform does not shrink the canvas a second time. */
+
 .gacha-menu__preview canvas { display: block; width: 100% !important; height: 100% !important; }
+
 .gacha-menu__heading { position: absolute; inset: 0; z-index: 4; pointer-events: none; }
+
 .gacha-menu__heading .gacha__pool-name {
+
   position: absolute; top: 108px; left: 50%; transform: translate(-50%, -50%);
+
   font: 700 80px/1.15 'SimSun', 'Songti SC', serif; white-space: nowrap;
+
   color: #ffdabd; text-shadow: 2px 3px 3px #000, 0 0 35px #ffb16644;
+
 }
+
 .gacha-menu__heading .gacha__desc {
+
   position: absolute; top: 178px; left: 50%; transform: translate(-50%, -50%);
+
   font-size: 40px; color: #e0a7e6; white-space: nowrap; text-shadow: 1px 2px 4px #000;
+
 }
+
 .gacha-menu__currency { position: absolute; left: 2160px; top: 54px; z-index: 4; }
+
 .gacha-menu__currency .currency { gap: 18px; }
+
 .gacha-menu__currency .currency__item { gap: 9px; font-size: 27px; }
+
 .gacha-menu__currency .currency__icon { width: 36px; height: 36px; }
+
 .gacha-menu__currency .currency__value { font-size: 29px; }
+
 .gacha-menu__currency .currency__label { font-size: 24px; }
+
 .gacha-menu__frame--busy .gacha-dashboard { pointer-events: none; }
+
 .gacha-menu .gacha-dashboard {
+
   position: absolute; left: 144px; top: 90px; width: 518.4px; height: 1620px;
+
   min-height: 0; z-index: 4; overflow: visible; border: 0; border-radius: 0; background: none;
+
 }
+
 .gacha-menu .gacha-dashboard__stage {
+
   height: 100%; overflow: hidden; transform: skewX(10deg); transform-origin: top left;
+
   perspective: none; background: linear-gradient(90deg, #111b3075, #26365230);
+
   border: 1px solid #adc3f033; border-radius: 16px; touch-action: none;
+
 }
+
 .gacha-dashboard__selection {
+
   position: absolute; top: 765px; height: 90px; left: 0; right: 0;
+
   background: linear-gradient(90deg, #e59a4544, #f9d4a820, #e59a4544);
+
   border: 3px solid #ffd59977; border-radius: 8px;
+
   box-shadow: 0 0 40px #ffc47820, inset 0 0 30px #ffc47815;
+
   pointer-events: none;
+
 }
+
 .gacha-menu .gacha-dashboard__option {
+
   left: 57.6px; width: 414.72px; height: 120px; margin: 0; padding: 0 16px;
+
   transform: none; display: grid; place-items: center;
+
   background: linear-gradient(110deg, #243d63dc, #243d6360);
+
   border: 1px solid #a8c6ed38; border-radius: 12px;
+
   box-shadow: 0 10px 24px #0003; cursor: pointer;
+
   transition: top 0.4s ease, background 0.4s ease;
+
 }
+
 .gacha-menu .gacha-dashboard__option .wheel__name { font-size: 28px; font-weight: 600; }
+
 .gacha-menu .gacha-dashboard__option.wheel__card--on {
+
   background: linear-gradient(110deg, #ffcc93f5, #dc986ad9); border-color: #ffe2bd;
+
   box-shadow: 0 0 24px #efb46e55; animation: wheel-breathe 5.2s ease-in-out infinite;
+
 }
+
 .gacha-menu .gacha-dashboard__option.wheel__card--on .wheel__name { color: #cf2020; font-size: 40px; }
-.gacha-menu .gacha-menu__probability {
-  position: absolute; top: 230px; left: 1090px; width: 700px; z-index: 5;
-  display: block; overflow: visible; padding: 16px 24px; border-radius: 14px;
-  border: 1px solid #ebcf9955; background: #0e1625c9; backdrop-filter: blur(12px);
-}
-.gacha-menu__probability summary { display: flex; gap: 20px; justify-content: space-between; align-items: center; cursor: pointer; font-size: 25px; color: #cfb99a; }
-.gacha-menu__probability .gacha__rare { color: #ffdeb3; font-size: 26px; }
-.gacha-menu__probability .gacha__probs { padding-top: 18px; grid-template-columns: 1fr 1fr; gap: 10px 28px; }
-.gacha-menu__probability .gacha__prob { font-size: 24px; gap: 12px; }
-.gacha-menu__probability .gacha__prob-dot { width: 12px; height: 12px; }
+
 .gacha-menu__card-controls { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
+
 .gacha-menu__card-hit { position: absolute; appearance: none; padding: 0; background: none; border: 0; border-radius: 21px; pointer-events: auto; cursor: pointer; }
+
 .gacha-menu__card-hit:focus-visible { outline: 4px solid; outline-offset: 8px; }
+
 .gacha-menu .gacha-menu__actions {
+
   position: absolute; top: 1530px; left: 1458px; z-index: 4; margin: 0;
+
   display: flex; flex-direction: row; gap: 20px;
+
 }
+
 .gacha-menu__actions .btn {
+
   position: relative; width: 250px; height: 80px; padding: 0; font-size: 34px;
+
   color: #271809; border: 1px solid #ffe4b6; border-radius: 12px;
+
   background: linear-gradient(145deg, #ffe0a2, #eaa453); box-shadow: 0 8px 0 #6f472e99, 0 18px 30px #0004;
+
 }
+
 .gacha-menu__actions .btn:hover:not(:disabled) { background: linear-gradient(145deg, #fff0c2, #f5bd74); }
+
 .gacha-menu__actions .gacha-menu__return { background: linear-gradient(145deg, #b7d6ff, #628ace); border-color: #d1e5ff; color: #132749; }
+
 .gacha-menu__cost { position: absolute; top: -54px; left: 0; width: 100%; font-size: 29px; color: #ffe0a8; text-shadow: 0 2px 5px #000; white-space: nowrap; }
-.gacha-menu .gacha-menu__dev { position: absolute; left: 2020px; top: 1700px; z-index: 4; padding: 0; border: 0; gap: 12px; }
+
+.gacha-menu .gacha-menu__dev { position: absolute; left: 2020px; top: 1660px; z-index: 4; padding: 0; border: 0; gap: 12px; }
+
 .gacha-menu__dev .gacha__dev-label { font-size: 22px; padding: 3px 10px; }
+
 .gacha-menu__dev .btn--tiny { font-size: 23px; padding: 7px 15px; background: #102038c9; }
+
 .gacha-menu .gacha-menu__error { position: absolute; top: 1645px; left: 1350px; width: 1000px; z-index: 4; font-size: 28px; padding: 12px 20px; text-align: center; }
+
 .gacha-menu--still .gacha-menu__backdrop, .gacha-menu--still .gacha-dashboard__option { transition: none; }
+
 .gacha-menu--still .gacha-dashboard__option.wheel__card--on { animation: none; }
+
+
 
 /* 抽卡结果 */
 
+
+
 .gacha-result {
+
   width: min(760px, 100%);
+
   display: flex;
+
   flex-direction: column;
+
   gap: 12px;
+
   max-height: 100%;
+
 }
+
+
 
 .gacha-result__head {
+
   display: flex;
+
   align-items: baseline;
+
   justify-content: space-between;
+
   gap: 12px;
+
 }
+
+
 
 .gacha-result__title {
+
   margin: 0;
+
   font-size: 20px;
+
   color: var(--text);
+
 }
+
+
 
 .gacha-result__count {
+
   margin: 0;
+
   color: var(--text-dim);
+
   font-size: 13px;
+
   font-variant-numeric: tabular-nums;
+
 }
+
+
 
 .gacha-result__list {
+
   margin: 0;
+
   padding: 2px;
+
   list-style: none;
+
   display: grid;
+
   grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
+
   gap: 8px;
+
 }
 
+
+
 /*
+
   每一条按**抽到的下标**渲染，边框用该张的稀有度色：
+
   十连抽到三张同卡就是三条，一眼能看出「这张来了三次」。
+
 */
+
 .gacha-result__item {
+
   position: relative;
+
   border: 2px solid var(--border-strong);
+
   border-radius: 8px;
+
   overflow: hidden;
+
   background: #0b0e15;
+
 }
+
+
 
 .gacha-result__art {
+
   display: block;
+
   width: 100%;
+
   aspect-ratio: 2 / 3;
+
   object-fit: cover;
+
 }
+
+
 
 .gacha-result__name {
+
   display: block;
+
   padding: 4px 6px;
+
   font-size: 12px;
+
   color: var(--text);
+
   white-space: nowrap;
+
   overflow: hidden;
+
   text-overflow: ellipsis;
+
 }
+
+
 
 .gacha-result__rarity {
+
   position: absolute;
+
   top: 4px;
+
   right: 6px;
+
   font-size: 12px;
+
   font-weight: 700;
+
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+
 }
+
+
 
 .gacha-result__actions {
+
   display: flex;
+
   justify-content: flex-end;
+
   gap: 8px;
+
 }
+
+
 
 @media (max-width: 1100px) {
+
   .gacha__body {
+
     grid-template-columns: 1fr;
+
     overflow-y: auto;
+
   }
+
   .wheel {
+
     min-height: 320px;
+
   }
+
 }
+
+
 
 /* ---------------------------------------------------------------------------
+
  * 展示位的箔片
+
  *
+
  * **只在展示位（点开的大图）用，不在网格的缩略图上用。** 一屏几十张卡同时
+
  * 闪既吵又费合成，而且缩略图尺寸下条纹根本读不出来——这也正是 V-HOLO-4 的划分。
+
  *
+
  * **参考** `pokemon-cards-css`（GPL-3.0）的**视觉规律**：斜向彩虹带、
+
  * 两组错位色带互相干涉、细扫描线、跟着指针走的眩光。
+
  * **不复制其实现**——没有它的代码、类名或数值（V-HOLO-3、PLAN 第 3.3 节）。
+
  *
+
  * 自定义属性由 `useFoilPointer` 逐帧写入；**默认值就是静止态**。
+
  * ------------------------------------------------------------------------- */
 
+
+
 .showcase {
+
   position: fixed;
+
   inset: 0;
+
   z-index: 70;
+
   display: grid;
+
   place-items: center;
+
   padding: 24px;
+
   /* 背景压暗，让卡牌像被端到灯下 */
+
   background: rgba(6, 9, 15, 0.86);
+
   backdrop-filter: blur(4px);
+
 }
+
+
 
 .showcase__stage {
+
   /* 透视放在**舞台**上而不是卡片上：卡片自己还要做 rotate，
+
      两者写在同一个 transform 里会因为顺序不同得到不同的投影。 */
+
   perspective: 1400px;
+
   perspective-origin: 50% 50%;
+
 }
 
+
+
 /*
+
   左右三角形与卡片同排。
 
+
+
   两侧列**等宽**是这个写法存在的理由：写成 `justify-content: space-between`
+
   或绝对定位的话，右边那列比左边宽一点，卡牌就不在屏幕正中了——
+
   而「卡牌放大在屏幕正中」是这个展示位的要点。
 
+
+
   这一层只是排版：没有 transform、filter、透明度或混合模式，
+
   不会给卡片另建渲染上下文（卡片仍然是 `.showcase__stage` 的直接子元素）。
+
 */
+
 .showcase__viewport {
+
   display: grid;
+
   grid-template-columns: 56px auto 56px;
+
   align-items: center;
+
   justify-items: center;
+
   gap: 20px;
+
 }
 
+
+
 /*
+
   翻页动画挂在**舞台**上，不在卡片上、也不给卡片另包一层。
 
+
+
   两条都是被踩出来的：
+
   - 挂在卡片上的话，会和 `useFoilPointer` 写的倾斜抢同一个 `transform` 属性；
+
   - 给卡片包一层的话，`perspective` 只作用于直接子元素，中间那层会把投影改掉，
+
     **所有卡的倾斜幅度都会跟着变**（上一版就是这么把其他卡的翻转弄坏的）。
 
+
+
   另外这些属性**只在 `--out` / `--in` 两个类上**：静止的舞台一个动画属性都没有，
+
   计算样式与加这套翻页之前完全一致。
 
+
+
   时长由 TS 给（`SWITCH_MS` → `--switch-dur`），这里不写死第二个数。
+
 */
+
 .showcase__stage--out,
+
 .showcase__stage--in {
+
   animation-duration: var(--switch-dur, 190ms);
+
   animation-fill-mode: both;
+
 }
 
+
+
 /*
+
   `--switch-travel` 是**行进方向**：−1 表示看下一张（两张都往左走），
+
   +1 表示看上一张。旧的从 0 走到 −1 侧，新的从另一侧对称地走过来——
+
   一进一出是同一段位移的镜像，读起来像一整排卡在横移，而不是两张图各自动。
 
+
+
   **`scale(0.72)` 在这两段里方向相反**：旧卡一边走一边缩（退场），
+
   新卡从缩小状态一边走一边放大到原尺寸（到位）。
+
 */
+
 @keyframes showcase-stage-out {
+
   to {
+
     transform: translateX(calc(var(--switch-travel, -1) * 62%)) scale(0.72);
+
     opacity: 0;
+
   }
+
 }
+
+
 
 @keyframes showcase-stage-in {
+
   from {
+
     transform: translateX(calc(var(--switch-travel, -1) * -62%)) scale(0.72);
+
     opacity: 0;
+
   }
+
 }
+
+
 
 .showcase__stage--out {
+
   animation-name: showcase-stage-out;
+
   /* 被推走：加速离开，走的时候就已经「不等了」 */
+
   animation-timing-function: cubic-bezier(0.45, 0, 1, 1);
+
 }
+
+
 
 .showcase__stage--in {
+
   animation-name: showcase-stage-in;
+
   /* 滑到位：减速停下，「放大到中间」的收尾速度必须是降下来的 */
+
   animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+
 }
+
+
 
 /*
+
   系统里关了动效时把动画压到 1ms。
+
   **换卡不会因此卡住**：节奏由 TS 的定时器（`SWITCH_MS`）驱动，
+
   动画只是那一帧里的视觉效果，不是它的触发源。
+
 */
+
 @media (prefers-reduced-motion: reduce) {
+
   .showcase__stage--out,
+
   .showcase__stage--in {
+
     animation-duration: 1ms;
+
   }
+
 }
 
+
+
 .showcase__card {
+
   /* 检视：卡片跟着指针倒。幅度比网格里大得多——这里只有一张卡，
+
      倒得明显才像拿在手里 */
+
   transform: rotateX(var(--foil-tilt-x, 0deg)) rotateY(var(--foil-tilt-y, 0deg));
+
   transform-style: preserve-3d;
+
   transition: transform 90ms ease-out;
+
   position: relative;
+
   width: min(420px, 38vw);
+
   aspect-ratio: 2 / 3;
+
   border-radius: 12px;
+
   overflow: hidden;
+
   /* 实体感：卡片有厚度，投影跟着倾斜走 */
+
   box-shadow:
+
     0 2px 0 rgba(255, 255, 255, 0.12) inset,
+
     0 26px 50px rgba(0, 0, 0, 0.66),
+
     0 6px 14px rgba(0, 0, 0, 0.5);
+
   background: #0b0e15;
+
 }
+
+
 
 .showcase__art {
+
   width: 100%;
+
   height: 100%;
+
   object-fit: cover;
+
   display: block;
+
 }
+
+
 
 /* 卡牌边缘的一圈高光，读起来像有厚度的成品卡而不是一张图片 */
+
 .showcase__edge {
+
   position: absolute;
+
   inset: 0;
+
   pointer-events: none;
+
   border-radius: inherit;
+
   box-shadow:
+
     0 0 0 1px rgba(255, 255, 255, 0.28) inset,
+
     0 0 0 3px rgba(0, 0, 0, 0.5) inset;
+
 }
+
+
 
 /* 静止态就在正中；指针进来之后由 hook 改写 */
+
 .showcase__card {
+
   --foil-bg-x: 50%;
+
   --foil-bg-y: 50%;
+
   --foil-glare-x: 50%;
+
   --foil-glare-y: 50%;
+
   --foil-center: 0;
+
   /*
+
     静止态**不给满分受光**：`--foil-lit` 直接乘进眩光的透明度，
+
     给 1 的话没被碰过的卡正中央压着一团高光。
+
   */
+
   --foil-lit: 0.6;
+
   --foil-strength: 0;
+
   /* 静止态的亮度：没有被指针照到时略暗，也是参考实现的取值区间（0.5–0.8） */
+
   --foil-boost: 0.65;
+
 }
 
+
+
 /*
+
   箔片层 —— Trainer Gallery 箔的做法：
 
+
+
   > 一种带虹彩光泽的金属感。一个大尺度的 **color-dodge 线性渐变**，
+
   > 再在光标位置叠一层 **hard-light 径向渐变**，给出闪烁感。
 
+
+
   **大尺度是关键。** `background-size: 300% 400%` 让渐变的一个周期横跨整张卡，
+
   于是看到的是平滑的虹彩扫过，而不是一条条带。
 
+
+
   早先的版本做反了：两层**交叉**的 `repeating` 渐变外加扫描线，那读起来是条纹。
+
   那不是这个效果，已经删掉。
+
 */
+
 .foil {
+
   position: absolute;
+
   inset: 0;
+
   pointer-events: none;
+
   border-radius: inherit;
+
   overflow: hidden;
 
+
+
   /*
+
     **色标必须按「卡片能看到的窗口」来铺，不能按整张渐变图铺。**
 
+
+
     `background-size: 300% 400%` 意味着卡片只看到渐变图的 **0–33%**。
+
     早先的色标铺满 0–100%，于是卡片上只有头一两个色标、而且几乎平坦——
+
     表现就是「整张卡被均匀染成 1–2 种颜色」（实测正是如此）。
 
+
+
     现在每个色标间隔 5.5%、一圈 33%，**一个完整周期正好横跨一张卡**：
+
     卡片上看到的是一整圈彩虹，而不是它的一小段。
+
     循环也不会有条纹感——因为一个周期就是整个卡面宽度。
+
   */
+
   background-image: repeating-linear-gradient(
+
     115deg,
+
     var(--foil-c1) 0%,
+
     var(--foil-c2) 5.5%,
+
     var(--foil-c3) 11%,
+
     var(--foil-c4) 16.5%,
+
     var(--foil-c5) 22%,
+
     var(--foil-c6) 27.5%,
+
     var(--foil-c1) 33%
+
   );
+
   background-size: 300% 400%;
+
   background-position: var(--foil-bg-x, 50%) var(--foil-bg-y, 50%);
+
   background-repeat: no-repeat;
 
+
+
   /*
+
     彩色**只在光标附近出现，向外衰减到消失**，不覆盖整个卡面。
 
+
+
     这是参考观感里最容易被忽略的一条：光看那层 color-dodge 渐变，卡片会被
+
     整面染色；真正让它「只在鼠标附近」的是上面那层 hard-light 径向光——
+
     它外圈是暗的，把远离光标的彩色压下去。
 
+
+
     这里再用一层径向遮罩把这个衰减写死：只靠 hard-light 的明暗，
+
     衰减太软，整张卡仍然有明显的底色。
+
   */
+
   -webkit-mask-image: radial-gradient(
+
     circle at var(--foil-glare-x, 50%) var(--foil-glare-y, 50%),
+
     #000 0%,
+
     rgba(0, 0, 0, 0.55) 26%,
+
     rgba(0, 0, 0, 0) 58%
+
   );
+
   mask-image: radial-gradient(
+
     circle at var(--foil-glare-x, 50%) var(--foil-glare-y, 50%),
+
     #000 0%,
+
     rgba(0, 0, 0, 0.55) 26%,
+
     rgba(0, 0, 0, 0) 58%
+
   );
+
+
 
   mix-blend-mode: color-dodge;
+
   /*
+
     亮度按**距中心的距离**调制：越靠边越亮。
+
     这是参考实现那套光照的核心——不是均匀打亮，而是「把手里的卡偏向光源」。
+
     后面那两项是它的原值：金属箔的反射本来就需要高对比、低饱和才不会脏。
+
   */
+
   filter: brightness(var(--foil-boost, 0.65)) contrast(2.3) saturate(1);
+
   opacity: var(--foil-strength);
+
 }
 
+
+
 /*
+
   闪烁：一层 hard-light 径向渐变，中心跟着光标走。
 
+
+
   中心不是光标本值，而是 `光标 × 0.5 + 25%`——把 0..100% 压到 25..75%。
+
   直接跟满全程的话这团光会跑出卡片边缘，压窄之后它始终落在卡面上。
+
 */
+
 .foil::after {
+
   content: '';
+
   position: absolute;
+
   inset: 0;
+
   background-image: radial-gradient(
+
     farthest-corner ellipse at
+
       calc(var(--foil-glare-x, 50%) * 0.5 + 25%)
+
       calc(var(--foil-glare-y, 50%) * 0.5 + 25%),
+
     hsla(0, 0%, 100%, 0.85) 5%,
+
     hsla(280, 60%, 12%, 0.5) 40%,
+
     hsla(0, 0%, 22%, 0.9) 120%
+
   );
+
   background-size: 400% 500%;
+
   background-position: center center;
+
   mix-blend-mode: hard-light;
+
   opacity: var(--foil-lit, 0.6);
+
 }
+
+
 
 /*
+
   白色光照 —— **没有箔片的卡**（D 档，`foil.kind === 'none'`）叠的就是这一层。
+
   这一档之外的一切与加它之前完全一致。
 
+
+
   没有彩色的理由很直接：那张卡本来就是普通印刷卡，给它上虹彩是假的。
+
   但它仍然是一张有厚度的卡，指针划过时必须有反应。做法与箔片同源、
+
   参数直接复用同一个 `FoilView`：一团**跟着指针走**的白色光斑
+
   （`--foil-glare-x/y`），整层亮度按**距中心的距离**给（`--foil-boost`，越靠边越亮）。
+
 */
+
 .showcase__sheen {
+
   position: absolute;
+
   inset: 0;
+
   pointer-events: none;
+
   border-radius: inherit;
+
   /*
+
     光斑中心紧贴指针，向外衰减到没有。
+
     `screen` 是叠白光最省事的混合：暗处几乎不动、亮处提上去，
+
     不会像 `overlay` 那样把插画压灰。
 
+
+
     半径**必须给死值**（`circle 260px`）：不写的话默认是 `farthest-corner`，
+
     在这个尺寸的卡上是 700px 开外——「光斑」会铺满整张卡，
+
     读起来只是整张卡变亮了一点，看不出它跟着指针走。
+
   */
+
   background-image: radial-gradient(
+
     circle 260px at var(--foil-glare-x, 50%) var(--foil-glare-y, 50%),
+
     rgba(255, 255, 255, 0.62) 0%,
+
     rgba(255, 255, 255, 0.26) 34%,
+
     rgba(255, 255, 255, 0.08) 66%,
+
     rgba(255, 255, 255, 0) 100%
+
   );
+
   mix-blend-mode: screen;
+
   /*
+
     0.5–0.8 的受光区间乘上 0.9，落在 0.45–0.72。
+
     再高就把卡面推平了（`V-HOLO-2`：验收以「能否读清中文名」为准）。
+
   */
+
   opacity: calc(var(--foil-boost, 0.65) * 0.9);
+
 }
+
+
 
 /* --- 展示位的说明、翻页与关闭 -------------------------------------------- */
 
+
+
 /*
+
   卡牌**居中**，说明栏贴右边绝对定位。
 
+
+
   写成 flex 并排的话，说明栏会占掉一块宽度、把卡牌挤到偏离屏幕中心的位置——
+
   而「卡牌放大在屏幕正中」是这个展示位的要点。
+
 */
+
 .showcase__inner {
+
   display: grid;
+
   place-items: center;
+
   width: 100%;
+
   height: 100%;
+
 }
 
+
+
 /*
+
   介绍栏。
 
+
+
   **放大过一轮**：这一栏是玩家在读的东西（名字、数值、特性、说明），
+
   13px 在 1080p 下要凑近才看得清，而卡牌本身占了屏幕正中一大块，
+
   留白有的是。宽度、字号、行距一起加大，让这一栏真的占住右侧那块面积。
+
 */
+
 .showcase__info {
+
   position: absolute;
+
   right: 3.5vw;
+
   top: 50%;
+
   transform: translateY(-50%);
+
   width: 380px;
+
   padding: 22px 24px;
+
   /*
+
     **没有边框，也没有底板。**
 
+
+
     加过一版边框+半透明底：在压暗的背景上多出一个方框，
+
     反而把「文字浮在卡牌旁边的暗场里」这件事弄脏了。展示位这里只有两层——
+
     卡牌和说明，说明不需要再画一个盒子把自己框起来。
+
     宽度与内边距留着，那两样管的是文字排在哪儿、行有多宽。
+
   */
+
   color: var(--text-dim);
+
   font-size: 15px;
+
   line-height: 1.7;
+
 }
 
+
+
 /*
+
   名称：**宋体加粗**，颜色由调用方按稀有度给（内联，见 CardShowcase）。
 
+
+
   宋体没有真正的粗体字重，浏览器会做合成加粗——在 Windows 上正是「宋体加粗」
+
   该有的样子，不需要为此换字体（V-HUD-5：不依赖在线字体）。
+
 */
+
 .showcase__name {
+
   margin: 0 0 6px;
+
   font-family: 'SimSun', '宋体', 'Songti SC', 'Noto Serif CJK SC', serif;
+
   font-size: 30px;
+
   font-weight: 700;
+
   letter-spacing: 0.04em;
+
   line-height: 1.25;
+
 }
+
+
 
 .showcase__meta {
+
   margin: 0 0 12px;
+
 }
+
+
 
 /* 第几张 / 共几张。有翻页才显示，单张时不占地方 */
+
 .showcase__counter {
+
   font-variant-numeric: tabular-nums;
+
   letter-spacing: 0.06em;
+
 }
+
+
 
 .showcase__stats {
+
   display: flex;
+
   gap: 26px;
+
   margin: 0 0 14px;
+
   padding: 0;
+
   list-style: none;
+
 }
 
+
+
 /*
+
   数值：**字号最大的一档**，配色由调用方给（与战斗卡面上的徽标同一份
+
   `statColors.ts`，通过 `--stat-fg` / `--stat-halo` 传进来）。
 
+
+
   数字比标签大得多是有意的——玩家先看数是几，再看它是什么。
+
 */
+
 .showcase__stats li {
+
   font-size: 14px;
+
 }
 
+
+
 /*
+
   数字本身的画法照搬战斗徽标那三层（`statBadge.ts`）：
+
   **亮光晕 → 暗描边 → 实心字**，只是实心字这里换成了**竖向渐变**。
 
+
+
   渐变用 `background-clip: text` 抠进字形里：一个纯色数字和卡面上那个
+
   「金属/发光」的徽标放在一起会显得是两个系统的东西。
+
   `color-mix` 直接从 `--stat-fg` 里调亮暗，不再多维护一组色值——
+
   换了主色，渐变跟着变。
 
+
+
   **基准必须是那张卡的标准色。** 第一版下端压到 68% 亮度、又描了 2px 的暗边，
+
   整排数字看起来比战斗里的徽标暗一档——「加了光效的数字反而更暗」。
+
   现在上下两端只各偏一点（向白 18% / 向黑 14%），中间那一段就是标准色本身。
 
+
+
   边缘光同样两层：
+
   - `text-shadow` 的亮色光晕（`--stat-halo`）在**最底层**，负责往外发亮；
+
   - `-webkit-text-stroke` 的描边压在上面，把数字从任意底色上「抠」出来。
+
     描边色从 `--stat-fg` 取一半而不是纯黑：32px 的粗体数字被纯黑描边围一圈，
+
     笔画会被吃掉一部分，又细又暗。
+
   顺序和徽标里写的一致：光晕必须画在暗底之前，否则会被盖住。
+
 */
+
 .showcase__stats li b {
+
   display: block;
+
   font-size: 32px;
+
   font-weight: 700;
+
   line-height: 1.15;
+
   font-variant-numeric: tabular-nums;
 
+
+
   background-image: linear-gradient(
+
     180deg,
+
     color-mix(in srgb, var(--stat-fg, #fff) 82%, #fff) 0%,
+
     var(--stat-fg, #fff) 45%,
+
     color-mix(in srgb, var(--stat-fg, #fff) 86%, #000) 100%
+
   );
+
   -webkit-background-clip: text;
+
   background-clip: text;
+
   color: transparent;
+
   -webkit-text-stroke: 1.5px color-mix(in srgb, var(--stat-fg, #fff) 50%, #05070c);
+
   text-shadow:
+
     0 0 14px var(--stat-halo, rgba(255, 255, 255, 0.4)),
+
     0 2px 3px rgba(0, 0, 0, 0.45);
+
 }
+
+
 
 .showcase__desc {
+
   margin: 0 0 4px;
+
   color: var(--text);
+
 }
+
+
 
 .showcase__close {
+
   margin-top: 18px;
+
   font-size: 15px;
+
 }
+
+
 
 /*
+
   左右翻页：三角形按钮。
 
+
+
   用边框画三角形而不是塞一个 ◀ 字符：字形在中文/日文字体里会被替换成
+
   全角的样子、大小也随字体跑，边框三角形在哪台机器上都是同一个尺寸。
+
 */
+
 .showcase__nav {
+
   display: grid;
+
   place-items: center;
+
   width: 52px;
+
   height: 52px;
+
   padding: 0;
+
   border: 1px solid rgba(255, 255, 255, 0.16);
+
   border-radius: 50%;
+
   background: rgba(255, 255, 255, 0.05);
+
   color: var(--text);
+
   cursor: pointer;
+
   transition:
+
     background 140ms ease,
+
     border-color 140ms ease;
+
 }
+
+
 
 .showcase__nav:hover:not(:disabled) {
+
   background: rgba(255, 255, 255, 0.16);
+
   border-color: rgba(255, 255, 255, 0.36);
+
 }
+
+
 
 .showcase__nav:focus-visible {
+
   outline: 2px solid var(--accent);
+
   outline-offset: 2px;
+
 }
+
+
 
 /* 只有一张卡时不能翻——给个看得见的状态，别让按钮点了没反应 */
+
 .showcase__nav:disabled {
+
   opacity: 0.28;
+
   cursor: default;
+
 }
+
+
 
 .showcase__nav-tri {
+
   width: 0;
+
   height: 0;
+
   border-top: 9px solid transparent;
+
   border-bottom: 9px solid transparent;
+
 }
+
+
 
 .showcase__nav--prev .showcase__nav-tri {
+
   border-right: 14px solid currentColor;
+
 }
+
+
 
 .showcase__nav--next .showcase__nav-tri {
+
   border-left: 14px solid currentColor;
+
 }
+
+
 
 /* 窄屏放不下并排，改成卡牌在上、说明在下 */
+
 @media (max-width: 900px) {
+
   .showcase__card {
+
     width: min(300px, 62vw);
+
   }
+
   /* 卡变小了，光斑跟着收——半径写死之后这里必须同步改 */
+
   .showcase__sheen {
+
     background-image: radial-gradient(
+
       circle 170px at var(--foil-glare-x, 50%) var(--foil-glare-y, 50%),
+
       rgba(255, 255, 255, 0.62) 0%,
+
       rgba(255, 255, 255, 0.26) 34%,
+
       rgba(255, 255, 255, 0.08) 66%,
+
       rgba(255, 255, 255, 0) 100%
+
     );
+
   }
+
   .showcase__viewport {
+
     grid-template-columns: 40px auto 40px;
+
     gap: 10px;
+
   }
+
   .showcase__nav {
+
     width: 40px;
+
     height: 40px;
+
   }
+
   .showcase__nav-tri {
+
     border-top-width: 7px;
+
     border-bottom-width: 7px;
+
   }
+
   .showcase__nav--prev .showcase__nav-tri {
+
     border-right-width: 11px;
+
   }
+
   .showcase__nav--next .showcase__nav-tri {
+
     border-left-width: 11px;
+
   }
+
   .showcase__info {
+
     position: static;
+
     transform: none;
+
     width: min(420px, 88vw);
+
     margin-top: 16px;
+
     text-align: center;
+
   }
+
   .showcase__name {
+
     font-size: 24px;
+
   }
+
   .showcase__stats {
+
     justify-content: center;
+
   }
+
   .showcase__stats li b {
+
     font-size: 26px;
+
     /* 字号小了，描边也要细一档，否则笔画会被描边吃掉 */
+
     -webkit-text-stroke-width: 1.5px;
+
   }
+
   .showcase__inner {
+
     display: flex;
+
     flex-direction: column;
+
     overflow-y: auto;
+
     padding: 12px 0;
+
   }
+
 }
 
+
+
 /* Completion remains on the physical card stage; only lightweight actions cover it. */
+
 .gacha-complete { position: absolute; inset: 0; z-index: 6; pointer-events: none; }
+
 .gacha-complete__head { position: absolute; top: 16px; left: 50%; transform: translateX(-50%); text-align: center; color: #fff5d9; text-shadow: 0 2px 6px #382409, 0 0 18px #382409; }
+
 .gacha-complete__head h2 { margin: 0; font: 700 24px/1.2 'SimSun', serif; }
+
 .gacha-complete__head p { margin: 6px 0 0; font-size: 13px; white-space: nowrap; }
-.gacha-complete__actions { position: absolute; bottom: 24px; left: 50%; transform: translateX(-50%); display: flex; gap: 18px; pointer-events: auto; }
+
+.gacha-complete__actions { position: absolute; bottom: 48px; left: 50%; transform: translateX(-50%); display: flex; gap: 18px; pointer-events: auto; }
+
 .gacha-complete__actions .btn { min-width: 160px; min-height: 62px; padding: 10px 28px; font-size: 19px; color: #f9eacc; border-color: #b99456; background: linear-gradient(145deg, #573d27, #2c2017); box-shadow: 0 6px 20px #34210e55; }
+
 .gacha-complete__actions .btn--primary { color: #382511; background: linear-gradient(145deg, #fff2c6, #deb267); border-color: #fff0c2; }
+
 .gacha-complete__actions .btn span { display: block; font-size: 12px; margin-top: 3px; opacity: 0.8; }
+
 .gacha-complete__error { position: absolute; bottom: 99px; left: 50%; transform: translateX(-50%); max-width: 85%; pointer-events: auto; background: #332517eb; color: #fff1da; }
+
+/* One always-visible probability row on selection, reveal and completion pages. */
+.gacha-probability { position: absolute; bottom: 7px; left: 4%; right: 4%; z-index: 7; display: flex; align-items: center; gap: 18px; padding: 5px 10px; border-radius: 6px; background: #12110edf; overflow-x: auto; scrollbar-width: none; color: #f8e7bc; font-size: clamp(10px, 0.85vw, 12px); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.gacha-probability .gacha__rare { flex-shrink: 0; margin: 0; color: #f8e7bc; font-size: inherit; }
+.gacha-probability__rows { display: flex; flex: 1; justify-content: space-between; gap: 12px; list-style: none; margin: 0; padding: 0; }
+.gacha-probability__rows .gacha__prob-value { color: inherit; }

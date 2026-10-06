@@ -17,6 +17,8 @@ export type RouteId =
   | 'collection'
   | 'deck'
   | 'shop'
+  /** 活动商店。与『商店』同一块屏、不同货架，只从主菜单的「活动入口」进，不在导航栏里。 */
+  | 'activity'
   | 'settings'
   | 'battle'
   | 'probe'

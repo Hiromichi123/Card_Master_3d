@@ -203,7 +203,13 @@
 - [x] 实现组卡上限、库存限制、保存/恢复；保留实际重复卡的数量约束。
       → `domain/progression/deckView.ts` + `scenes/DeckEditorScene.tsx`（左 12 槽 / 右收藏，点击加入与移出）。上限 12、可用张数 = 拥有 − 已上阵、按下标删重复卡；改走防抖落盘、离开页面 `flush()`。
 - [ ] 迁移三章十二关的敌方配置、背景主题与奖励；地图入口与战斗返回完整。
-- [ ] 实现金币/水晶/徽章、等级/经验、常规商店和每日刷新/售罄记录。
+- [x] 实现金币/水晶/徽章、等级/经验、常规商店和每日刷新/售罄记录。
+      → `scenes/ShopScene.tsx`（常规 + 活动两套货架，同一块屏）：`buildShelf` 按
+      `store.todayKey()` 现算、售罄标识自带日键所以**跨日自动刷新**；购买走
+      `planPurchase` → `commitEconomic`，扣钱、发货、标售罄是同一笔事务
+      （旧版 `knownIssues[0]` 的「只扣钱不发货」已被用例盯住）。
+      顺带补了导入缺陷：活动商店的 `priceByRarity` 是裸数字，数据层按
+      `unknownRarityFallback.currency`（徽章）补上货币。见 `docs/validation/P5.md` 第 4.6 节。
 - [ ] 实现 operationId/battleId 去重，胜负结算/返回/重载只能领一次奖励。
 - [ ] 实现新版存档 JSON 导入/导出及用户主动旧 inventory/profile/deck 导入预览。
 - [ ] 导入按旧路径映射 cardId，未知项可见，转换不修改原存档。

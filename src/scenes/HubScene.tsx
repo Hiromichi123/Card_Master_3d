@@ -41,9 +41,9 @@ import type { RouteId } from '../app/routes';
  *
  * 1. 网页没有「退出游戏」，那格留给项目本来就有的「重置存档」。
  * 2. 旧版二级列是「活动入口 / 商店 / 工坊 / 公告 / 教学关卡」。
- *    本项目实际有的是「商店（真入口）/ 活动入口 / 融合 / Draft / 迷宫」——
- *    **活动入口照旧版的做法**：能点，点了给一句「即将开放」的提示
- *    （旧版 `_show_feature_notice` 就是这么处理未实现入口的），
+ *    本项目实际有的是「活动入口 / 商店 / 融合 / Draft / 迷宫」——
+ *    前两个已经是**真入口**（活动商店与每日商店），后三个还没做：
+ *    照旧版 `_show_feature_notice` 的做法「能点、点了给一句提示」，
  *    而不是做成灰色的禁用按钮。
  */
 
@@ -75,7 +75,7 @@ const PRIMARY: readonly Entry[] = [
 ];
 
 const SECONDARY: readonly Entry[] = [
-  { route: null, label: '活动入口', hint: '限时活动与活动商店', glow: '#ffdc78' },
+  { route: 'activity', label: '活动入口', hint: '活动商店与限时卡包', glow: '#ffdc78' },
   { route: 'shop', label: '商店', hint: '每日货架，卖完即止', glow: '#b478ff' },
   { route: null, label: '融合', hint: '五槽融合，消耗卡牌换取更高稀有度', glow: '#78d2ff', coming: true },
   { route: null, label: 'Draft', hint: '28 张候选轮流选牌', glow: '#ff78a0', coming: true },

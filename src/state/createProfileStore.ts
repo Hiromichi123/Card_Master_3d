@@ -153,6 +153,17 @@ export class ProfileStore {
 
   // --- 事务 ---------------------------------------------------------------
 
+  /**
+   * 「今天」的日键（`YYYYMMDD`）。
+   *
+   * 走**存档自己那个时钟**，不是 `new Date()`——开发期的 `?day=YYYYMMDD`
+   * 覆盖的是这个时钟，商店的每日货架要跟着它走，否则浏览器用例
+   * 会在「今天恰好是什么货架」上随机失败（`clock.ts` 开头记着这条）。
+   */
+  todayKey(): string {
+    return dayKeyOf(this.deps.clock());
+  }
+
   nextOperationId(): string {
     this.opSeq += 1;
     return `op-${this.opSeq}-${this.deps.seedSource().toString(36)}`;

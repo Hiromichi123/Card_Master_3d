@@ -5,6 +5,7 @@ import { CollectionScene } from '../scenes/CollectionScene';
 import { DeckEditorScene } from '../scenes/DeckEditorScene';
 import { EffectLabScene } from '../scenes/EffectLabScene';
 import { GachaScene } from '../scenes/GachaScene';
+import { ShopScene } from '../scenes/ShopScene';
 import { HubScene } from '../scenes/HubScene';
 import { getProfileStore } from '../state/profileStore';
 import type { ProfileStore } from '../state/createProfileStore';
@@ -164,13 +165,15 @@ function Screen({ route, snapshot, store, onNavigate, onReset }: ScreenProps) {
     case 'campaign':
       return <ScreenPlaceholder title="战役" note="关卡选择正在施工（P5-M6）。" />;
     case 'gacha':
-      return <GachaScene profile={profile} store={store} busy={snapshot.busy} />;
+      return <GachaScene profile={profile} store={store} busy={snapshot.busy} onReturn={() => onNavigate('hub')} />;
     case 'collection':
       return <CollectionScene profile={profile} />;
     case 'deck':
       return <DeckEditorScene profile={profile} store={store} />;
     case 'shop':
-      return <ScreenPlaceholder title="商店" note="每日货架正在施工（P5-M4）。" />;
+      return <ShopScene profile={profile} store={store} busy={snapshot.busy} kind="normal" />;
+    case 'activity':
+      return <ShopScene profile={profile} store={store} busy={snapshot.busy} kind="activity" />;
     case 'settings':
       return <ScreenPlaceholder title="设置" note="设置页正在施工（P5-M7）。" />;
     default:
