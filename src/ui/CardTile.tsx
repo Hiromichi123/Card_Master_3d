@@ -44,11 +44,7 @@ export interface CardTileProps {
   /** 右下角的补充说明（组卡里显示「已上阵」）。 */
   readonly note?: string | undefined;
   readonly onClick?: (() => void) | undefined;
-  /**
-   * 悬停变化。**带上元素本身**——调用方要靠它的矩形把详情框贴在卡边上
-   * （只给一个布尔值的话，父级还得自己去查 DOM）。
-   */
-  readonly onHover?: ((hovered: boolean, element: HTMLElement | null) => void) | undefined;
+  readonly onHover?: ((hovered: boolean) => void) | undefined;
 }
 
 export function CardTile({
@@ -120,8 +116,8 @@ export function CardTile({
       <div
         className={classes}
         data-card-id={cardId}
-        onMouseEnter={(event) => onHover?.(true, event.currentTarget)}
-        onMouseLeave={() => onHover?.(false, null)}
+        onMouseEnter={() => onHover?.(true)}
+        onMouseLeave={() => onHover?.(false)}
       >
         {body}
       </div>
@@ -135,8 +131,8 @@ export function CardTile({
       data-card-id={cardId}
       onClick={onClick}
       disabled={disabled}
-      onMouseEnter={(event) => onHover?.(true, event.currentTarget)}
-      onMouseLeave={() => onHover?.(false, null)}
+      onMouseEnter={() => onHover?.(true)}
+      onMouseLeave={() => onHover?.(false)}
       title={card ? `${card.name}（${rarity}）` : cardId}
     >
       {body}

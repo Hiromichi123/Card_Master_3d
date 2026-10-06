@@ -21,6 +21,7 @@ import { configFor, definitionsFor, settlementFor } from '../scenes/campaignFlow
 import type { SettlementView, StageLaunch } from '../domain/progression/campaign';
 import { planSettlement } from '../domain/progression/campaign';
 import type { BattleOutcome } from '../domain/battle/types';
+import { CardTipHost } from '../ui/CardTipHost';
 import { ToastHost } from '../ui/ToastHost';
 import { DataProbe } from './DataProbe';
 import { ErrorBoundary } from './ErrorBoundary';
@@ -215,6 +216,8 @@ export function App() {
       </main>
 
       <ToastHost />
+      {/* 悬停卡牌详情：全应用挂一次，卡片只要带 `data-card-id` 就自动有 */}
+      <CardTipHost />
 
       {/* 换屏的黑场。转场期间挡掉指针，避免点到正在淡出的那一屏 */}
       <div className={fadeOn ? 'fade fade--on' : 'fade'} aria-hidden="true" />

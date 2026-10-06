@@ -17,7 +17,6 @@ import type { Deck, ProfileState } from '../domain/progression/types';
 import type { ProfileStore } from '../state/createProfileStore';
 import { pushToast } from '../state/toastStore';
 import { useRarityIndex } from '../state/useRarityIndex';
-import { CardHoverTip } from '../ui/CardHoverTip';
 import { CardTile } from '../ui/CardTile';
 import { ScrollArea } from '../ui/ScrollArea';
 import { useParallax } from '../ui/useParallax';
@@ -54,8 +53,6 @@ export function DeckEditorScene({ profile, store }: DeckEditorSceneProps) {
   */
   const parallaxRef = useParallax();
   const background = assetManifest.shared.menu['menu_bg']?.url ?? null;
-  /** 悬停详情框：贴在被悬停的那张卡边上。 */
-  const [tip, setTip] = useState<{ cardId: string; rect: DOMRect } | null>(null);
 
   /*
     播种只做一次。**不能跟着 `profile` 变**：抽卡回来会带上新的库存与卡组，
@@ -268,13 +265,6 @@ export function DeckEditorScene({ profile, store }: DeckEditorSceneProps) {
                   cardId={slot.cardId}
                   size="sm"
                   onClick={() => handleRemove(slot.index)}
-                  onHover={(hovered, element) =>
-                    setTip(
-                      hovered && element && slot.cardId
-                        ? { cardId: slot.cardId, rect: element.getBoundingClientRect() }
-                        : null,
-                    )
-                  }
                 />
               ) : (
                 <div key={`empty-${slot.index}`} className="deckedit__slot" aria-hidden="true">
@@ -338,14 +328,12 @@ export function DeckEditorScene({ profile, store }: DeckEditorSceneProps) {
                     <span
                       key={entry.cardId}
                       className="deckedit__wrap"
-                      /* 悬停包在外面：卡被禁用时按钮不派发鼠标事件，见 CSS 的注释 */
-                      onMouseEnter={(event) =>
-                        setTip({
-                          cardId: entry.cardId,
-                          rect: event.currentTarget.getBoundingClientRect(),
-                        })
-                      }
-                      onMouseLeave={() => setTip(null)}
+                      /*
+                        悬停包在外面：卡组满时每张收藏卡都是 `disabled`，
+                        而**禁用的按钮不派发鼠标事件**。包装元素带上 `data-card-id`，
+                        全局的悬停委托（`CardTipHost`）就能认出来。
+                      */
+                      data-card-id={entry.cardId}
                     >
                     <CardTile
                       cardId={entry.cardId}
@@ -368,8 +356,6 @@ export function DeckEditorScene({ profile, store }: DeckEditorSceneProps) {
           </ScrollArea>
         </section>
       </div>
-
-      {tip && <CardHoverTip cardId={tip.cardId} rect={tip.rect} />}
     </div>
   );
 }

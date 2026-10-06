@@ -21,10 +21,17 @@ import { useRarityIndex } from '../state/useRarityIndex';
  * `transform` / `filter` / `will-change`，`position: fixed` 就会改成相对那个祖先定位——
  * 实测框整整偏了 888px（贴在屏幕外）。portal 一刀切掉这一类问题。
  */
+/** 被悬停元素的位置快照（`getBoundingClientRect()` 里要用的那几项）。 */
+export interface TipRect {
+  readonly left: number;
+  readonly top: number;
+  readonly right: number;
+  readonly bottom: number;
+}
+
 export interface CardHoverTipProps {
   readonly cardId: string;
-  /** 被悬停的那块卡的位置（`element.getBoundingClientRect()`）。 */
-  readonly rect: DOMRect;
+  readonly rect: TipRect;
 }
 
 /**
