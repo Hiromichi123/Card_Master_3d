@@ -1754,6 +1754,25 @@ code {
   min-height: 0;
 }
 
+/*
+  演出舞台：盖住整页（连轮盘一起），只留结果面板浮在上面。
+
+  绝对定位而不是塞进 `.gacha__body` 的一列：演出是「整屏都在翻卡」的时刻，
+  旁边还留着卡池列表会把注意力拉走；而且 `Canvas` 需要一块确定尺寸的容器，
+  挤在网格里会被 `min-height: 0` 压扁。
+*/
+.gacha__stage {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  background: #05070c;
+}
+
+.gacha__stage canvas {
+  display: block;
+  touch-action: none;
+}
+
 .gacha__panel {
   display: flex;
   flex-direction: column;

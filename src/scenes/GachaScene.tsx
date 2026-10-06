@@ -1,7 +1,10 @@
 import { useMemo, useState } from 'react';
 
+import type { CardDefinition } from '../domain/cards/types';
+import { GachaStage } from '../rendering/gacha/GachaStage';
+
 import { cardById, cardDatabase, gachaPools } from '../data';
-import { cardFaceUrl } from '../data/assets';
+import { backgroundUrl, cardFaceUrl } from '../data/assets';
 import { createRng, seedFrom } from '../domain/battle/rng';
 import {
   buildCardPool,
@@ -62,6 +65,15 @@ interface Run {
   readonly view: GachaResult;
 }
 
+/**
+ * 抽卡页的三个阶段。
+ *
+ * `reveal` 与 `result` 分开是有理由的：演出**还没播完**时不该先把结果列出来，
+ * 而演出结束之后舞台要留在画面上（卡片停在最终位姿）——那是这段演出的落点，
+ * 一结束就把画布撤掉，等于把刚抽到的东西收走。
+ */
+type Phase = 'select' | 'reveal' | 'result';
+
 export function GachaScene({ profile, store, busy }: GachaSceneProps) {
   const rarityIndex = useRarityIndex();
   const presentationSpeed = useSettingsStore((state) => state.presentationSpeed);
@@ -70,6 +82,15 @@ export function GachaScene({ profile, store, busy }: GachaSceneProps) {
   const pools = gachaPools.pools;
   const [poolIndex, setPoolIndex] = useState(0);
   const [run, setRun] = useState<Run | null>(null);
+  const [phase, setPhase] = useState<Phase>('select');
+  /**
+   * 这一次抽卡走不走 3D 演出。
+   *
+   * **不能靠 `phase` 推**：`result` 阶段舞台要留在后面当背景，
+   * 于是「不演出的那次」也会因为 `phase === 'result'` 把 Canvas 挂起来——
+   * 正好是「跳过」要避免的那件事（白开一个 WebGL 上下文）。
+   */
+  const [animated, setAnimated] = useState(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -133,6 +154,13 @@ export function GachaScene({ profile, store, busy }: GachaSceneProps) {
         return;
       }
       setRun({ operationId, view: outcome.view });
+      /*
+        「跳过」不走舞台：挂一个 WebGL 上下文只为了立刻跳到最后，是白花的。
+        这也是**所有不进演出的路径唯一的降级出口**（见本文件头的说明）。
+      */
+      const withStage = presentationSpeed !== 'skip';
+      setAnimated(withStage);
+      setPhase(withStage ? 'reveal' : 'result');
     } finally {
       setPending(false);
     }
@@ -144,6 +172,22 @@ export function GachaScene({ profile, store, busy }: GachaSceneProps) {
 
   const running = pending || busy;
   const cheap = !run;
+
+  /** 这一批抽到的卡（按抽出顺序，重复的也在）。 */
+  const runCards = useMemo((): CardDefinition[] => {
+    if (!run) {
+      return [];
+    }
+    return run.view.cardIds
+      .map((cardId) => cardById.get(cardId))
+      .filter((card): card is CardDefinition => card !== undefined);
+  }, [run]);
+
+  const closeRun = (): void => {
+    setRun(null);
+    setAnimated(false);
+    setPhase('select');
+  };
 
   return (
     <div className="screen gacha">
@@ -231,16 +275,22 @@ export function GachaScene({ profile, store, busy }: GachaSceneProps) {
         </aside>
       </div>
 
-      {run && (
-        <GachaResultPanel
-          run={run}
-          onContinue={() => {
-            setRun(null);
-          }}
-          onClose={() => {
-            setRun(null);
+      {/*
+        演出中与演出后舞台都留着：`reveal` 时结果面板还没出来（先看翻卡），
+        `result` 时面板浮在舞台上面，卡片停在最终位姿当背景。
+      */}
+      {run && animated && (
+        <GachaStage
+          cards={runCards}
+          backdropUrl={backgroundUrl(pool.bgType)}
+          onFinished={() => {
+            setPhase('result');
           }}
         />
+      )}
+
+      {run && phase === 'result' && (
+        <GachaResultPanel run={run} onContinue={closeRun} onClose={closeRun} />
       )}
     </div>
   );

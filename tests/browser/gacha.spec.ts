@@ -222,3 +222,117 @@ test('抽完之后再进抽卡页，不会重复发卡或扣费', async ({ page 
 
   expect(problems, `场景出现问题：\n${problems.join('\n')}`).toEqual([]);
 });
+
+/**
+ * 画布统计：**洋红占位像素比例**、平均亮度、指纹。
+ *
+ * 洋红这条是试出来的：`AssetManager` 在贴图加载失败时给的占位是**洋红/黑**
+ * 棋盘，所以「卡面没贴上」在画面上的直接证据就是一片洋红。
+ * （先试过断「饱和度」，方向是反的——实测卡面 404 时饱和度**更高**
+ * （0.19 vs 0.14），因为洋红本身很饱和；而且结果面板盖住画布之后
+ * 这个数还会再掉一截，等于同时在量两件事。换成洋红之后实测：
+ * 正常 **0**、卡面 404 时 **17.8%**，中间差两个数量级。）
+ *
+ * 走**元素截图 → base64 → 页面内解码**：不在测试里引图像库，
+ * 也不把字节数组序列化进页面（`battle.spec.ts` 记了那条：1920 宽的画布
+ * 转成数字数组要好几秒，会把断言预算耗光）。
+ */
+async function canvasStats(
+  page: Page,
+): Promise<{ magenta: number; brightness: number; fingerprint: string }> {
+  const base64 = (await page.locator('.gacha__stage canvas').screenshot()).toString('base64');
+  return page.evaluate(async (png: string) => {
+    const blob = await (await fetch(`data:image/png;base64,${png}`)).blob();
+    const bitmap = await createImageBitmap(blob);
+    const off = new OffscreenCanvas(bitmap.width, bitmap.height);
+    const ctx = off.getContext('2d');
+    if (!ctx) {
+      return { magenta: 1, brightness: 0, fingerprint: '' };
+    }
+    ctx.drawImage(bitmap, 0, 0);
+    const { data } = ctx.getImageData(0, 0, bitmap.width, bitmap.height);
+    let magenta = 0;
+    let count = 0;
+    let sum = 0;
+    let luminance = 0;
+    for (let i = 0; i < data.length; i += 4) {
+      const r = data[i] ?? 0;
+      const g = data[i + 1] ?? 0;
+      const b = data[i + 2] ?? 0;
+      // 洋红：红蓝都高、绿明显低。受光照压暗也认得出，所以阈值放得很低
+      if (r > 70 && b > 70 && g < Math.min(r, b) * 0.5) {
+        magenta += 1;
+      }
+      count += 1;
+      luminance += (r + g + b) / 3;
+      sum = (sum + r * 3 + g * 5 + b * 7) % 1_000_003;
+    }
+    return {
+      magenta: count === 0 ? 1 : magenta / count,
+      brightness: count === 0 ? 0 : luminance / count,
+      fingerprint: String(sum),
+    };
+  }, base64);
+}
+
+test('3D 舞台：卡面真的画出来了，而且演出过程中画面在动', async ({ page }) => {
+  const problems = collectProblems(page);
+  await openGacha(page);
+
+  await page.getByTestId('pull-10').click();
+  const canvas = page.locator('.gacha__stage canvas');
+  await expect(canvas).toBeVisible({ timeout: 20_000 });
+  /*
+    尺寸**要轮询**：Canvas 元素刚插进 DOM 时还是浏览器默认的 300×150，
+    R3F 要等一帧才按容器量出来。直接断言会以「300 不大于 400」失败，
+    而那跟画面本身没关系。
+  */
+  await expect
+    .poll(async () => (await canvas.boundingBox())?.width ?? 0, { timeout: 15_000 })
+    .toBeGreaterThan(400);
+  expect((await canvas.boundingBox())?.height ?? 0).toBeGreaterThan(300);
+
+  /*
+    **屏幕上不该出现洋红占位纹理**——那是贴图加载失败的标志（见 `canvasStats`）。
+    顺带要求画面不是全黑：一张没画出来的画布，亮度与洋红都会「通过」，
+    所以两条一起断。
+  */
+  await expect
+    .poll(async () => (await canvasStats(page)).brightness, { timeout: 25_000 })
+    .toBeGreaterThan(40);
+  expect((await canvasStats(page)).magenta).toBeLessThan(0.01);
+
+  // 逐次取指纹：演出中画面一直在动，四次采样至少要采到三个不同的画面
+  const prints = new Set<string>();
+  for (let i = 0; i < 4; i += 1) {
+    prints.add((await canvasStats(page)).fingerprint);
+    await page.waitForTimeout(280);
+  }
+  expect(prints.size, '画布四帧里没有变化——演出根本没在动').toBeGreaterThanOrEqual(3);
+
+  expect(problems, `场景出现问题：\n${problems.join('\n')}`).toEqual([]);
+});
+
+test('演出速度设为「跳过」时不挂 3D 舞台，结果立刻出来且只扣一次费', async ({ page }) => {
+  const problems = collectProblems(page);
+  await openGacha(page);
+
+  /*
+    走真实控件，不直接改 store。**要 `exact`**：演出速度那组按钮的外层容器
+    的可访问名是「演出 快速 跳过」，子串匹配会同时命中容器与按钮本身。
+  */
+  await page.locator('.quality').getByRole('button', { name: '跳过', exact: true }).click();
+
+  await page.getByTestId('pull-10').click();
+  await waitForResult(page);
+
+  /*
+    「跳过」是**不进演出**的那条路：挂一个 WebGL 上下文只为了立刻跳到最后是白花的。
+    这条断言同时守着「降级出口只有一个」这个设计——两条路都不演，都不重复扣费。
+  */
+  await expect(page.locator('.gacha__stage')).toHaveCount(0);
+  await expect(page.locator('.gacha-result__item')).toHaveCount(10);
+  expect((await readProfile(page))?.currencies.gold).toBe(START_GOLD - NORMAL_TEN);
+
+  expect(problems, `场景出现问题：\n${problems.join('\n')}`).toEqual([]);
+});

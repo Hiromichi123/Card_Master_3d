@@ -212,62 +212,78 @@ test('按稀有度筛选，点开后进入展示位', async ({ page }) => {
 
   /*
     **左右翻页。**
-    断的是**轨迹**而不是「点下去名字变了」——后者在动画被删掉之后照样会通过。
-    做法是在翻页之前开始逐帧采样舞台的实际矩阵：出场的卡位移必须是**负**的
-    （向左移动）、同时缩小；入场的卡位移必须是**正**的（从右侧对称出现）、
-    并放大回原尺寸。逐帧采集不会像截图那样漏掉一闪而过的中间态。
+
+    断两件事，都不依赖帧率：
+
+    1. **类名的先后顺序**（挂 MutationObserver 记下来）——证明两段动画真的跑过，
+       而不是「点下去名字变了」（后者把动画删掉也照样通过）；
+    2. **关键帧里声明的方向与缩放**（读 CSSOM）——证明旧的往左走并缩小、
+       新的从右侧放大回来。
+
+    **为什么不用逐帧采样几何**：第一版是那么写的，飞出阶段只有 170ms，
+    整套浏览器用例并行跑时（6 个 WebGL 上下文）页面的 rAF 被压得一帧都排不上，
+    于是「飞出阶段一帧都没采到」——单独跑必过、一起跑必挂。
+    那量的是机器负载，不是这个界面。
   */
   await expect(showcase.locator('.showcase__counter')).toHaveText('1 / 12');
   await page.evaluate(() => {
     const stage = document.querySelector('.showcase__stage');
-    const samples: { cls: string; x: number; scale: number }[] = [];
-    (window as unknown as { __track?: unknown }).__track = samples;
-    const deadline = performance.now() + 900;
-    const tick = (): void => {
-      if (!stage) {
-        return;
-      }
-      const raw = getComputedStyle(stage).transform;
-      const parts = raw === 'none' ? null : raw.match(/-?\d+(?:\.\d+)?/g);
-      samples.push({
-        cls: stage.className,
-        x: parts ? Number(parts[4] ?? 0) : 0,
-        scale: parts ? Number(parts[0] ?? 1) : 1,
+    const seen: string[] = [];
+    (window as unknown as { __stage?: string[] }).__stage = seen;
+    if (stage) {
+      new MutationObserver(() => seen.push(stage.className)).observe(stage, {
+        attributes: true,
+        attributeFilter: ['class'],
       });
-      if (performance.now() < deadline) {
-        requestAnimationFrame(tick);
+    }
+  });
+
+  const keyframes = await page.evaluate(() => {
+    const found: Record<string, string> = {};
+    for (const sheet of Array.from(document.styleSheets)) {
+      let rules: CSSRule[];
+      try {
+        rules = Array.from(sheet.cssRules);
+      } catch {
+        // 跨源样式表读不到，跳过（本项目的样式都是同源的）
+        continue;
       }
-    };
-    requestAnimationFrame(tick);
+      for (const rule of rules) {
+        if (rule instanceof CSSKeyframesRule) {
+          found[rule.name] = Array.from(rule.cssRules)
+            .map((frame) => (frame as CSSKeyframeRule).style.transform)
+            .join(' ');
+        }
+      }
+    }
+    return found;
   });
 
   const next = showcase.getByRole('button', { name: '下一张' });
   const prev = showcase.getByRole('button', { name: '上一张' });
 
-  // 下一张：飞到第 2 张
   await next.click();
   await expect(showcase.locator('.showcase__counter')).toHaveText('2 / 12');
   await expect(showcase.locator('.showcase__name')).toHaveText(secondName ?? '');
-  await page.waitForTimeout(500);
-
-  const track = await page.evaluate(
-    () => (window as unknown as { __track?: { cls: string; x: number; scale: number }[] }).__track ?? [],
+  const stages = await page.evaluate(
+    () => (window as unknown as { __stage?: string[] }).__stage ?? [],
   );
-  const outs = track.filter((s) => s.cls.includes('showcase__stage--out'));
-  const ins = track.filter((s) => s.cls.includes('showcase__stage--in'));
-  expect(outs.length, '飞出阶段一帧都没采到').toBeGreaterThan(0);
-  expect(ins.length, '飞入阶段一帧都没采到').toBeGreaterThan(0);
-  // 旧卡：向左走（位移为负）、同时缩小
-  expect(Math.min(...outs.map((s) => s.x))).toBeLessThan(-20);
-  expect(Math.min(...outs.map((s) => s.scale))).toBeLessThan(0.95);
-  // 新卡：从右侧进来（位移为正），并且是一路放大回原尺寸
-  expect(Math.max(...ins.map((s) => s.x))).toBeGreaterThan(20);
-  expect(Math.max(...ins.map((s) => s.scale))).toBeGreaterThan(0.99);
-  // 收尾回到正中且是原尺寸
-  const last = track[track.length - 1];
-  expect(last?.cls).toBe('showcase__stage');
-  expect(last?.x).toBe(0);
-  expect(last?.scale).toBe(1);
+  expect(stages).toContain('showcase__stage showcase__stage--out');
+  expect(stages).toContain('showcase__stage showcase__stage--in');
+  // 先出后进：旧卡离开的类名必须排在新卡进入之前
+  expect(stages.indexOf('showcase__stage showcase__stage--out')).toBeLessThan(
+    stages.indexOf('showcase__stage showcase__stage--in'),
+  );
+
+  /*
+    关键帧的方向由 `--switch-travel` 决定（看下一张时是 −1），
+    所以飞出那组用的是 `calc(var(--switch-travel) * 62%)`、飞入那组是取负——
+    字符串比对足以说明「一个往左一个从右」，而这两个值改了就会被这里拦住。
+  */
+  expect(keyframes['showcase-stage-out']).toContain('var(--switch-travel, -1) * 62%');
+  expect(keyframes['showcase-stage-out']).toContain('scale(0.72)');
+  expect(keyframes['showcase-stage-in']).toContain('var(--switch-travel, -1) * -62%');
+  expect(keyframes['showcase-stage-in']).toContain('scale(0.72)');
 
   // 上一张：回到第 1 张
   await settleFlip(page);
