@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { cardById } from '../data';
 import { cardFaceUrl } from '../data/assets';
 import { foilForRarity } from '../rendering/cards/foilModel';
-import { statColor } from '../rendering/cards/statColors';
+import { statPalette } from '../rendering/cards/statColors';
 import { useRarityIndex } from '../state/useRarityIndex';
 import { useFoilPointer } from './useFoilPointer';
 
@@ -175,6 +175,26 @@ export function CardShowcase({ cardId, cardIds, onSelect, onClose }: CardShowcas
   };
 
   /*
+    三个数值：配色与战斗卡面徽标**同一份**（`statColors.ts`）——
+    攻=红、血=绿、冷却=蓝。
+    `fg` / `halo` 交给 CSS 做渐变填充与边缘光（`.showcase__stats li b`）：
+    渐变靠 `background-clip: text`，边缘光靠「亮光晕 + 暗描边」，
+    与战斗徽标那三层（光晕 → 暗底 → 实心字）是同一套画法。
+  */
+  const stats = (['atk', 'hp', 'cd'] as const).map((kind) => {
+    const palette = statPalette(kind);
+    return {
+      kind,
+      label: { atk: '攻击', hp: '生命', cd: '冷却' }[kind],
+      value: { atk: card.atk, hp: card.hp, cd: card.cd }[kind],
+      style: {
+        ['--stat-fg' as string]: palette.fg,
+        ['--stat-halo' as string]: palette.halo,
+      },
+    };
+  });
+
+  /*
     静止时**一个动画相关的类都不加**：`.showcase__stage` 回到和以前一模一样的
     计算样式，卡片的投影、倾斜、箔片合成都不受这套翻页影响。
   */
@@ -264,20 +284,13 @@ export function CardShowcase({ cardId, cardIds, onSelect, onClose }: CardShowcas
               {index + 1} / {cardIds.length}
             </p>
           )}
-          {/*
-            数值配色与战斗卡面上的徽标**同一份**（`statColors.ts`）：
-            攻=红、血=绿、冷却=蓝。两边不一致的话，玩家会以为不是同一个数。
-          */}
           <ul className="showcase__stats">
-            <li>
-              <b style={{ color: statColor('atk') }}>{card.atk}</b>攻击
-            </li>
-            <li>
-              <b style={{ color: statColor('hp') }}>{card.hp}</b>生命
-            </li>
-            <li>
-              <b style={{ color: statColor('cd') }}>{card.cd}</b>冷却
-            </li>
+            {stats.map((stat) => (
+              <li key={stat.kind}>
+                <b style={stat.style}>{stat.value}</b>
+                {stat.label}
+              </li>
+            ))}
           </ul>
           <p className="showcase__meta">{card.rawTraits.join('、') || '没有特性'}</p>
           <p className="showcase__desc">{card.description}</p>

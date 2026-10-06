@@ -1957,9 +1957,19 @@ code {
   transform: translateY(-50%);
   width: 380px;
   padding: 22px 24px;
-  border: 1px solid var(--border);
+  /*
+    边缘要**看得见**。先用的 `--border`（#2a3346）压在一层半透明深底上，
+    在暗背景里几乎读不出边界，整块面板像浮在空气里。
+
+    三层叠出实体感：亮边框读得出轮廓、外圈一道深色把轮廓从背景里切开、
+    再往外是投影把它从页面上抬起来。
+  */
+  border: 1px solid var(--border-strong);
   border-radius: 12px;
-  background: rgba(13, 16, 24, 0.5);
+  background: rgba(13, 16, 24, 0.55);
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.6),
+    0 18px 40px rgba(0, 0, 0, 0.5);
   color: var(--text-dim);
   font-size: 15px;
   line-height: 1.7;
@@ -1999,7 +2009,8 @@ code {
 }
 
 /*
-  数值：**字号最大的一档**，颜色由调用方给（与战斗卡面上的徽标同一份配色）。
+  数值：**字号最大的一档**，配色由调用方给（与战斗卡面上的徽标同一份
+  `statColors.ts`，通过 `--stat-fg` / `--stat-halo` 传进来）。
 
   数字比标签大得多是有意的——玩家先看数是几，再看它是什么。
 */
@@ -2007,12 +2018,41 @@ code {
   font-size: 14px;
 }
 
+/*
+  数字本身的画法照搬战斗徽标那三层（`statBadge.ts`）：
+  **亮光晕 → 暗描边 → 实心字**，只是实心字这里换成了**竖向渐变**。
+
+  渐变用 `background-clip: text` 抠进字形里：一个纯色数字和卡面上那个
+  「金属/发光」的徽标放在一起会显得是两个系统的东西。
+  渐变的上端提亮、下端压暗，数字就有了体积，而不是一块平色。
+  `color-mix` 直接从 `--stat-fg` 里调亮暗，不再多维护一组色值——
+  换了主色，渐变跟着变。
+
+  边缘光同样两层：
+  - `text-shadow` 的亮色光晕（`--stat-halo`）在**最底层**，负责往外发亮；
+  - `-webkit-text-stroke` 的暗描边压在上面，把数字从任意底色上「抠」出来。
+  顺序和徽标里写的一致：光晕必须画在暗底之前，否则会被盖住。
+*/
 .showcase__stats li b {
   display: block;
   font-size: 32px;
   font-weight: 700;
   line-height: 1.15;
   font-variant-numeric: tabular-nums;
+
+  background-image: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--stat-fg, #fff) 52%, #fff) 0%,
+    var(--stat-fg, #fff) 46%,
+    color-mix(in srgb, var(--stat-fg, #fff) 68%, #000) 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-stroke: 2px color-mix(in srgb, var(--stat-fg, #fff) 26%, #05070c);
+  text-shadow:
+    0 0 14px var(--stat-halo, rgba(255, 255, 255, 0.4)),
+    0 2px 3px rgba(0, 0, 0, 0.55);
 }
 
 .showcase__desc {
@@ -2126,6 +2166,8 @@ code {
   }
   .showcase__stats li b {
     font-size: 26px;
+    /* 字号小了，描边也要细一档，否则笔画会被描边吃掉 */
+    -webkit-text-stroke-width: 1.5px;
   }
   .showcase__inner {
     display: flex;

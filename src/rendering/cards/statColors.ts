@@ -33,7 +33,13 @@ export const STAT_COLORS: Record<StatKind, StatColor> = {
   cd: { fg: '#2b6cff', halo: 'rgba(90, 150, 255, 0.42)', ring: '#cddcff' },
 };
 
-/** 取数字主色。 */
-export function statColor(kind: StatKind): string {
-  return STAT_COLORS[kind].fg;
+/**
+ * 取一类数值的整套配色。
+ *
+ * 战斗徽标用 `fg` / `halo` / `ring` 三个值画在 Canvas 上；
+ * 展示位的 DOM 用 `fg` / `halo` 交给 CSS 做渐变填充与边缘光（`.showcase__stats li b`）。
+ * 两边取的是同一份，改了这里两边一起变。
+ */
+export function statPalette(kind: StatKind): StatColor {
+  return STAT_COLORS[kind];
 }

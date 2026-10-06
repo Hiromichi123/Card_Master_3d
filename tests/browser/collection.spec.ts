@@ -159,11 +159,48 @@ test('按稀有度筛选，点开后进入展示位', async ({ page }) => {
   expect(nameStyle.family).toContain('SimSun');
   expect(Number(nameStyle.weight)).toBeGreaterThanOrEqual(700);
 
-  // 攻/血/冷却与战斗卡面徽标同一份配色（`statColors.ts`）：红 / 绿 / 蓝
-  const statColors = await showcase
+  /*
+    **介绍栏的边框要真的画出来。** 早先那版用的是最暗的一档边框色，
+    压在半透明深底上在暗背景里读不出边界，整块面板像浮在空气里。
+  */
+  const border = await showcase.locator('.showcase__info').evaluate((el) => {
+    const style = getComputedStyle(el);
+    return {
+      style: style.borderTopStyle,
+      width: parseFloat(style.borderTopWidth),
+      color: style.borderTopColor,
+    };
+  });
+  expect(border.style).toBe('solid');
+  expect(border.width).toBeGreaterThanOrEqual(1);
+  expect(border.color).not.toBe('rgba(0, 0, 0, 0)');
+
+  /*
+    攻/血/冷却：配色与战斗卡面徽标同一份（`statColors.ts`）——红 / 绿 / 蓝；
+    数字本身是**渐变填充 + 边缘光**：字色为透明、背景按字形裁切（渐变），
+    外加暗描边与亮光晕（与徽标那三层同序）。
+  */
+  const statStyles = await showcase
     .locator('.showcase__stats li b')
-    .evaluateAll((nodes) => nodes.map((node) => getComputedStyle(node).color));
-  expect(statColors).toEqual(['rgb(255, 45, 45)', 'rgb(18, 194, 74)', 'rgb(43, 108, 255)']);
+    .evaluateAll((nodes) =>
+      nodes.map((node) => {
+        const style = getComputedStyle(node);
+        return {
+          fg: style.getPropertyValue('--stat-fg').trim(),
+          gradient: style.backgroundImage.includes('linear-gradient'),
+          strokeWidth: style.webkitTextStrokeWidth,
+          glow: style.textShadow !== 'none',
+          color: style.color,
+        };
+      }),
+    );
+  expect(statStyles.map((s) => s.fg)).toEqual(['#ff2d2d', '#12c24a', '#2b6cff']);
+  for (const stat of statStyles) {
+    expect(stat.gradient).toBe(true);
+    expect(stat.strokeWidth).toBe('2px');
+    expect(stat.glow).toBe(true);
+    expect(stat.color).toBe('rgba(0, 0, 0, 0)');
+  }
 
   /*
     **左右翻页。**
