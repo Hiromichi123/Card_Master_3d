@@ -40,7 +40,7 @@ interface Entry {
 const PRIMARY: readonly Entry[] = [
   { route: 'campaign', label: '进入战斗', hint: '三章十二关，打赢拿金币与经验', accent: 'red' },
   { route: 'gacha', label: '抽卡', hint: '八个卡池，概率由配置算出', accent: 'orange' },
-  { route: 'deck', label: '出战卡组配置', hint: '最多 12 张，重复卡受拥有量限制', accent: 'blue' },
+  { route: 'deck', label: '配置', hint: '最多 12 张，重复卡受拥有量限制', accent: 'blue' },
   { route: 'collection', label: '卡牌图鉴', hint: '按稀有度筛选，看清每一张的详情', accent: 'green' },
   { route: 'shop', label: '商店', hint: '每日货架，卖完即止', accent: 'cyan' },
   { route: 'settings', label: '设置', hint: '画质、台面、视角与演出速度', accent: 'purple' },

@@ -35,8 +35,13 @@ export const ROUTES: readonly RouteMeta[] = [
   { id: 'hub', label: '主菜单', hint: '回到主界面' },
   { id: 'campaign', label: '战役', hint: '三章十二关' },
   { id: 'gacha', label: '抽卡', hint: '八个卡池' },
+  /*
+    「组卡」改名「配置」，并移到图鉴**之前**：先决定带什么上场，再回头清点自己有什么，
+    这个顺序和玩家实际的动线一致。`RouteId` 仍是 `'deck'`——改名只动标签，
+    所有按 id 的分支（`App.tsx`、`HubScene`）都不用跟着改。
+  */
+  { id: 'deck', label: '配置', hint: '编辑当前出战卡组' },
   { id: 'collection', label: '图鉴', hint: '已拥有的卡牌' },
-  { id: 'deck', label: '组卡', hint: '编辑出战卡组' },
   { id: 'shop', label: '商店', hint: '本日货架' },
   { id: 'probe', label: '数据自检', hint: '确认导入的数据被应用读到', dev: true },
   { id: 'viewer', label: '实验台', hint: '手动触发卡牌特性与攻击特效', dev: true },
