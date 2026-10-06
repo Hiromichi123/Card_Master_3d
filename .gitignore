@@ -27,6 +27,12 @@ desktop.ini
 .cache/
 scripts/__pycache__/
 
+# 外部参考工程（1000+ 文件、约 160 MiB）。
+# 只作**视觉参考**用——不参与构建、不复制其代码与素材（PLAN 第 3.3 节：
+# 参考项目多为 GPL，引用记在 assets-sources.json）。体积太大，不入库。
+# 同时已在 vite.config.ts 里排除出依赖扫描与文件监听。
+assets-library/
+
 # public/assets 下的派生纹理**要入库**：
 # 原素材在 D:\Github\card_maker，不在本仓库内；不提交派生结果的话，
 # 新克隆的仓库无法独立启动。体积约 21 MiB，来源与许可见 assets-sources.json。
