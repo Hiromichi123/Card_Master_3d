@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 
 import { cardById } from '../data';
 import { cardFaceUrl } from '../data/assets';
-import { foilKindForRarity, FOIL_TUNING } from '../rendering/cards/foilModel';
+import { foilForRarity } from '../rendering/cards/foilModel';
 import { useRarityIndex } from '../state/useRarityIndex';
 import { useFoilPointer } from './useFoilPointer';
 
@@ -30,10 +30,11 @@ export function CardShowcase({ cardId, onClose }: CardShowcaseProps) {
   const cardRef = useRef<HTMLDivElement | null>(null);
 
   const rarity = card?.rarity ?? 'D';
-  const foilKind = foilKindForRarity(rarity);
-  const tuning = FOIL_TUNING[foilKind];
+  const rarityColor = rarityIndex.colorOf(rarity);
+  const foil = foilForRarity(rarity, rarityColor);
+  const hasFoil = foil.kind !== 'none';
 
-  useFoilPointer(cardRef, foilKind !== 'none');
+  useFoilPointer(cardRef, hasFoil);
 
   // Esc 关闭。展示位盖住了整页，没有键盘出口会很难受
   useEffect(() => {
@@ -54,10 +55,21 @@ export function CardShowcase({ cardId, onClose }: CardShowcaseProps) {
   // 用缩略图会糊（纹理预算上只看一张，代价可以接受）
   const url = cardFaceUrl(cardId, 'detail') ?? cardFaceUrl(cardId, 'battle');
 
+  /*
+    色带配色**内联**而不是写成 CSS 类：每个稀有度的代表色都不同，
+    为 13 个稀有度各写一个类是没必要的重复。
+    色值来自 `rarities.json`，与卡牌外圈光晕同源。
+  */
   const foilStyle = {
-    ['--foil-strength' as string]: tuning.strength,
-    ['--foil-density' as string]: tuning.density,
-    ['--foil-scan' as string]: tuning.scanlines,
+    ['--foil-strength' as string]: foil.strength,
+    ['--foil-density' as string]: foil.geometry.density,
+    ['--foil-scan' as string]: foil.geometry.scanlines,
+    ['--foil-c1' as string]: foil.palette[0],
+    ['--foil-c2' as string]: foil.palette[1],
+    ['--foil-c3' as string]: foil.palette[2],
+    ['--foil-c4' as string]: foil.palette[3],
+    ['--foil-c5' as string]: foil.palette[4],
+    ['--foil-c6' as string]: foil.palette[5],
   };
 
   return (
@@ -88,8 +100,8 @@ export function CardShowcase({ cardId, onClose }: CardShowcaseProps) {
               </span>
             )}
 
-            {foilKind !== 'none' && (
-              <span className={`foil foil--${foilKind}`} style={foilStyle} aria-hidden="true" />
+            {hasFoil && (
+              <span className={`foil foil--${foil.kind}`} style={foilStyle} aria-hidden="true" />
             )}
 
             {/* 边缘高光与内描边：读起来像有厚度的成品卡，而不是一张图片 */}

@@ -1704,6 +1704,8 @@ code {
   --foil-strength: 0;
   --foil-density: 1;
   --foil-scan: 0;
+  /* 静止态的亮度：没有被指针照到时略暗，也是参考展示页的取值区间（0.5–0.8） */
+  --foil-boost: 0.65;
 }
 
 /*
@@ -1724,9 +1726,18 @@ code {
   pointer-events: none;
   border-radius: inherit;
   overflow: hidden;
-  opacity: calc(var(--foil-strength) * 0.55);
+  /*
+    系数从 0.55 提到 1.05：亮度按距中心调制之后，整层会被压暗到 0.5–0.8，
+    不提上来色带就跟着一起被压没了。
+  */
+  opacity: calc(var(--foil-strength) * 1.05);
   mix-blend-mode: overlay;
-  filter: contrast(1.35) saturate(1.15);
+  /*
+    亮度按**距中心的距离**调制：越靠边越亮。
+    这是展示页那套光照的核心——不是均匀打亮，而是「把手里的卡偏向光源」。
+    取值 0.5..0.8，压在全息层上；再高会把卡面推平（V-HOLO-2）。
+  */
+  filter: brightness(var(--foil-boost, 0.65)) contrast(1.35) saturate(1.15);
 
   /*
     两层斜向彩虹带（角度差 21°、周期不同）互相干涉，这是整套观感的关键手法：
@@ -1797,48 +1808,39 @@ code {
   mix-blend-mode: screen;
 }
 
-/* 每种箔片的配色。金色取中调——接近白的高光在 overlay 下会把卡面推平 */
-.foil--gold {
-  --foil-c1: #c99a2e;
-  --foil-c2: #f0d489;
-  --foil-c3: #8f6a1a;
-  --foil-c4: #e8c877;
-  --foil-c5: #6f5212;
-  --foil-c6: #d9b562;
+/*
+  画廊箔（Trainer Gallery 那一类）。
+
+  它和常规箔的差别是**几何**而不是配色：
+  - 色带更宽更柔（密度更低，由内联的 --foil-density 给）；
+  - **不画扫描线**（--foil-scan 为 0）；
+  - 多一层**大口径柔光**——那是它最显眼的特征，下面单独写。
+
+  配色仍由内联的 --foil-c1..c6 给（画廊箔是彩虹，常规箔是该稀有度的代表色）。
+*/
+.foil--tg {
+  filter: brightness(var(--foil-boost, 0.65)) contrast(1.2) saturate(1.1);
 }
 
-.foil--prism {
-  --foil-c1: #ff5f6d;
-  --foil-c2: #ffd166;
-  --foil-c3: #5ce1a0;
-  --foil-c4: #4fc3f7;
-  --foil-c5: #9a6bff;
-  --foil-c6: #ff7ad9;
-}
-
-.foil--speckle {
-  --foil-c1: #7fe0ff;
-  --foil-c2: #cfefff;
-  --foil-c3: #59b8e8;
-  --foil-c4: #ffffff;
-  --foil-c5: #8fd4ff;
-  --foil-c6: #dff3ff;
-}
-
-.foil--bands {
-  --foil-c1: #ffd36e;
-  --foil-c2: #7fe0c0;
-  --foil-c3: #7fb2ff;
-  --foil-c4: #d99bff;
-  --foil-c5: #ff8fb0;
-  --foil-c6: #fff0b0;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .showcase__card {
-    transform: none;
-    transition: none;
-  }
+/*
+  画廊箔的大口径柔光：一团很大的椭圆，中心跟着指针偏，
+  用 hard-light 压上去——既提亮又压暗，读起来像一层真的反光膜
+  而不是叠了个发光贴图。
+*/
+.foil--tg::after {
+  background-image: radial-gradient(
+    farthest-corner ellipse at
+      calc(var(--foil-glare-x, 50%) * 0.5 + 25%)
+      calc(var(--foil-glare-y, 50%) * 0.5 + 25%),
+    /* 白色核心压到 0.55：0.9 时 hard-light 会把左上角整片冲白 */
+    hsla(0, 0%, 100%, 0.55) 6%,
+    hsla(280, 60%, 14%, 0.42) 46%,
+    hsla(0, 0%, 20%, 0.9) 120%
+  );
+  background-size: 400% 500%;
+  background-position: center center;
+  mix-blend-mode: hard-light;
+  opacity: var(--foil-lit, 0.6);
 }
 
 /* --- 展示位的说明与关闭 -------------------------------------------------- */

@@ -37,6 +37,10 @@ export interface HoloUniforms {
   readonly uSpeckle: IUniform<number>;
   /** 金色收敛程度：0 纯彩虹，1 纯金。 */
   readonly uGilt: IUniform<number>;
+  /** 色带的软硬：越大带越窄越锐。画廊箔要更宽更柔。 */
+  readonly uSharpness: IUniform<number>;
+  /** 是否用彩虹：0 用 uTint 那一色（该稀有度的代表色），1 用彩虹。 */
+  readonly uRainbow: IUniform<number>;
   /** 卡面 UV 尺寸，用于把闪点保持成近似方形。 */
   readonly uUvScale: IUniform<Vector2>;
   readonly uTint: IUniform<Color>;
@@ -52,6 +56,8 @@ export function createHoloUniforms(): HoloUniforms {
     uScanlines: { value: 26 },
     uSpeckle: { value: 0.2 },
     uGilt: { value: 0 },
+    uSharpness: { value: 1 },
+    uRainbow: { value: 0 },
     uUvScale: { value: new Vector2(3, 4.5) },
     uTint: { value: new Color(1, 1, 1) },
   };
@@ -101,6 +107,8 @@ export const HOLO_FRAGMENT_SHADER = /* glsl */ `
   uniform float uScanlines;
   uniform float uSpeckle;
   uniform float uGilt;
+  uniform float uSharpness;
+  uniform float uRainbow;
   uniform vec2 uUvScale;
   uniform vec3 uTint;
 
@@ -138,10 +146,19 @@ export const HOLO_FRAGMENT_SHADER = /* glsl */ `
     float phaseA = along * uDensity * 2.0 + (look.x + look.y) * 3.4 + uTime * 0.05;
     float phaseB = across * uDensity * 0.73 - (look.x - look.y) * 2.1 - uTime * 0.03;
 
-    // 指数取高：色带要**窄**。指数低时峰很宽，整张卡会变成一层均匀色膜，
-    // 那不是全息，那是蒙了块彩色玻璃——V-HOLO-2 明确禁止。
-    float bandA = pow(0.5 + 0.5 * sin(phaseA), 6.0);
-    float bandB = pow(0.5 + 0.5 * sin(phaseB), 8.0);
+    /*
+      指数决定色带的宽窄。
+
+      指数低时峰很宽，整张卡会变成一层均匀色膜——那不是全息，
+      是蒙了块彩色玻璃（V-HOLO-2 明确禁止）。但指数过高、带子太细，
+      在缩略尺寸下又会碎成噪声。
+
+      所以它是个可调项：画廊箔要更宽更柔（uSharpness 小），
+      常规箔要更细更锐（uSharpness 大）。
+    */
+    float exponent = 2.0 + uSharpness * 5.0;
+    float bandA = pow(0.5 + 0.5 * sin(phaseA), exponent);
+    float bandB = pow(0.5 + 0.5 * sin(phaseB), exponent + 2.0);
     float bands = clamp(bandA * 0.78 + bandB * 0.42, 0.0, 1.0);
 
     /*
@@ -172,8 +189,12 @@ export const HOLO_FRAGMENT_SHADER = /* glsl */ `
       + uTime * 0.02
     );
     vec3 rainbow = hsv2rgb(vec3(hue, 0.85, 1.0));
+    // 单色箔：用该稀有度的代表色（uTint），色相只做一点点偏移，
+    // 免得整片死板；画廊箔用整圈彩虹
+    vec3 mono = uTint * (0.75 + 0.5 * hue);
+    vec3 base = mix(mono, rainbow, uRainbow);
     // 金色收敛：越接近 1 越像金箔，而不是彩虹
-    vec3 color = mix(rainbow, vec3(1.0, 0.82, 0.42), uGilt);
+    vec3 color = mix(base, vec3(1.0, 0.82, 0.42), uGilt);
 
     // 闪点：高频噪声，只在高光带里出现，模拟金属箔的颗粒
     vec2 sparkleUv = floor(vHoloUv * uUvScale * 26.0);

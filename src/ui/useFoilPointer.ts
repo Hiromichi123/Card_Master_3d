@@ -48,12 +48,17 @@ export function useFoilPointer(
       element.style.setProperty('--foil-center', view.fromCenter.toFixed(3));
       element.style.setProperty('--foil-lit', view.lit.toFixed(3));
       /*
-        倾斜角。检视不只是「反光在动」——卡片本身要跟着指针倒一点，
-        否则再准的反光也像贴了张会动的贴纸。幅度刻意小：图鉴里
-        一屏几十张卡，倒多了整页都在晃。
+        **越靠边越亮**，这是展示页那套光照的核心：不是均匀打亮，
+        而是「你把手里的卡偏向光源」。取值 0.5..0.8，压在全息层的
+        亮度上——再高就会把卡面推平（V-HOLO-2）。
       */
-      element.style.setProperty('--foil-tilt-y', `${((current.x - 0.5) * 18).toFixed(2)}deg`);
-      element.style.setProperty('--foil-tilt-x', `${((0.5 - current.y) * 18).toFixed(2)}deg`);
+      element.style.setProperty('--foil-boost', (0.5 + view.fromCenter * 0.3).toFixed(3));
+      /*
+        倾斜角。检视不只是「反光在动」——卡片本身要跟着指针倒，
+        否则再准的反光也像贴了张会动的贴纸。幅度对齐参考展示页：约 ±14°。
+      */
+      element.style.setProperty('--foil-tilt-y', `${((current.x - 0.5) * 28).toFixed(2)}deg`);
+      element.style.setProperty('--foil-tilt-x', `${((0.5 - current.y) * 28).toFixed(2)}deg`);
       return true;
     };
 
@@ -62,8 +67,14 @@ export function useFoilPointer(
       const delta = last === 0 ? 1 / 60 : Math.min((now - last) / 1000, 0.05);
       last = now;
 
-      current.x = damp(current.x, target.x, 14, delta);
-      current.y = damp(current.y, target.y, 14, delta);
+      /*
+        指针在卡面上时用较快的阻尼（跟得住），离开之后慢下来——
+        参考展示页也是这么分的：交互时跟随、松手后很软地回正。
+        直接用一条固定的快阻尼，回正会「啪」地弹回去。
+      */
+      const rate = hovering.current ? 9 : 4.5;
+      current.x = damp(current.x, target.x, rate, delta);
+      current.y = damp(current.y, target.y, rate, delta);
       write();
 
       const settled =

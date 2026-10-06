@@ -4,7 +4,8 @@ import { AdditiveBlending, DoubleSide } from 'three';
 
 import type { CardRarity } from '../../domain/cards/types';
 import { CARD_FACE_OFFSET, getCardFaceGeometry } from './cardGeometry';
-import { foilKindForRarity, FOIL_TUNING } from './foilModel';
+import { foilForRarity } from './foilModel';
+import { rarityIndex } from '../../state/useRarityIndex';
 import {
   createHoloUniforms,
   HOLO_FRAGMENT_SHADER,
@@ -69,13 +70,20 @@ export function HoloLayer({ rarity }: Props) {
     表现为卡牌一闪。参数全部来自 `FOIL_TUNING`，两处渲染端共用同一份表。
   */
   useEffect(() => {
-    const tuning = FOIL_TUNING[foilKindForRarity(rarity)];
-    uniforms.uStrength.value = tuning.strength;
-    uniforms.uDensity.value = tuning.density;
-    uniforms.uHueSpread.value = tuning.hueSpread;
-    uniforms.uScanlines.value = tuning.scanlines;
-    uniforms.uSpeckle.value = tuning.speckle;
-    uniforms.uGilt.value = tuning.gilt;
+    const spec = foilForRarity(rarity, rarityIndex().colorOf(rarity));
+    uniforms.uStrength.value = spec.strength;
+    uniforms.uDensity.value = spec.geometry.density;
+    uniforms.uScanlines.value = spec.geometry.scanlines;
+    uniforms.uSharpness.value = spec.geometry.sharpness;
+    uniforms.uRainbow.value = spec.rainbow ? 1 : 0;
+    // 单色箔用该稀有度的代表色，和卡牌外圈光晕同源
+    uniforms.uTint.value.set(rarityIndex().colorOf(rarity));
+    /*
+      星点与金色收敛是 `plain` 档的调味，画廊箔不撒星点——
+      它是「箔纸」，撒了就像撒了金粉的另一种工艺。
+    */
+    uniforms.uSpeckle.value = spec.kind === 'plain' ? 0.45 : 0;
+    uniforms.uGilt.value = 0;
   }, [rarity, uniforms]);
 
   useFrame((_, delta) => {
