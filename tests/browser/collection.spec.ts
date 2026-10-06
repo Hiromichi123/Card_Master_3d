@@ -160,25 +160,31 @@ test('按稀有度筛选，点开后进入展示位', async ({ page }) => {
   expect(Number(nameStyle.weight)).toBeGreaterThanOrEqual(700);
 
   /*
-    **介绍栏的边框要真的画出来。** 早先那版用的是最暗的一档边框色，
-    压在半透明深底上在暗背景里读不出边界，整块面板像浮在空气里。
+    **介绍栏不能有边框、也不能有底板。** 加过一版边框+半透明底，
+    在压暗的背景上多出一个方框，反而把「文字浮在卡牌旁边的暗场里」弄脏了。
+    这条断言把这个「没有盒子」的状态钉住，免得以后又被加上。
   */
-  const border = await showcase.locator('.showcase__info').evaluate((el) => {
+  const panel = await showcase.locator('.showcase__info').evaluate((el) => {
     const style = getComputedStyle(el);
     return {
-      style: style.borderTopStyle,
-      width: parseFloat(style.borderTopWidth),
-      color: style.borderTopColor,
+      borderStyle: style.borderTopStyle,
+      borderWidth: parseFloat(style.borderTopWidth),
+      background: style.backgroundColor,
+      shadow: style.boxShadow,
     };
   });
-  expect(border.style).toBe('solid');
-  expect(border.width).toBeGreaterThanOrEqual(1);
-  expect(border.color).not.toBe('rgba(0, 0, 0, 0)');
+  expect(panel.borderStyle === 'none' || panel.borderWidth === 0).toBe(true);
+  expect(panel.background).toBe('rgba(0, 0, 0, 0)');
+  expect(panel.shadow).toBe('none');
 
   /*
     攻/血/冷却：配色与战斗卡面徽标同一份（`statColors.ts`）——红 / 绿 / 蓝；
     数字本身是**渐变填充 + 边缘光**：字色为透明、背景按字形裁切（渐变），
-    外加暗描边与亮光晕（与徽标那三层同序）。
+    外加描边与亮光晕（与徽标那三层同序）。
+
+    **渐变必须围着标准色转**：第一版下端压得太暗、描边又粗又黑，
+    整排数字看起来比战斗里的徽标暗一档。所以这里直接查计算后的渐变里
+    有没有标准色那一段——只看 `--stat-fg` 是查不出「渲染出来暗不暗」的。
   */
   const statStyles = await showcase
     .locator('.showcase__stats li b')
@@ -187,7 +193,7 @@ test('按稀有度筛选，点开后进入展示位', async ({ page }) => {
         const style = getComputedStyle(node);
         return {
           fg: style.getPropertyValue('--stat-fg').trim(),
-          gradient: style.backgroundImage.includes('linear-gradient'),
+          background: style.backgroundImage,
           strokeWidth: style.webkitTextStrokeWidth,
           glow: style.textShadow !== 'none',
           color: style.color,
@@ -195,12 +201,14 @@ test('按稀有度筛选，点开后进入展示位', async ({ page }) => {
       }),
     );
   expect(statStyles.map((s) => s.fg)).toEqual(['#ff2d2d', '#12c24a', '#2b6cff']);
-  for (const stat of statStyles) {
-    expect(stat.gradient).toBe(true);
-    expect(stat.strokeWidth).toBe('2px');
+  const standard = ['rgb(255, 45, 45)', 'rgb(18, 194, 74)', 'rgb(43, 108, 255)'];
+  statStyles.forEach((stat, i) => {
+    expect(stat.background).toContain('linear-gradient');
+    expect(stat.background).toContain(standard[i] ?? '');
+    expect(stat.strokeWidth).toBe('1.5px');
     expect(stat.glow).toBe(true);
     expect(stat.color).toBe('rgba(0, 0, 0, 0)');
-  }
+  });
 
   /*
     **左右翻页。**

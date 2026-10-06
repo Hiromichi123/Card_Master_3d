@@ -1958,18 +1958,13 @@ code {
   width: 380px;
   padding: 22px 24px;
   /*
-    边缘要**看得见**。先用的 `--border`（#2a3346）压在一层半透明深底上，
-    在暗背景里几乎读不出边界，整块面板像浮在空气里。
+    **没有边框，也没有底板。**
 
-    三层叠出实体感：亮边框读得出轮廓、外圈一道深色把轮廓从背景里切开、
-    再往外是投影把它从页面上抬起来。
+    加过一版边框+半透明底：在压暗的背景上多出一个方框，
+    反而把「文字浮在卡牌旁边的暗场里」这件事弄脏了。展示位这里只有两层——
+    卡牌和说明，说明不需要再画一个盒子把自己框起来。
+    宽度与内边距留着，那两样管的是文字排在哪儿、行有多宽。
   */
-  border: 1px solid var(--border-strong);
-  border-radius: 12px;
-  background: rgba(13, 16, 24, 0.55);
-  box-shadow:
-    0 0 0 1px rgba(0, 0, 0, 0.6),
-    0 18px 40px rgba(0, 0, 0, 0.5);
   color: var(--text-dim);
   font-size: 15px;
   line-height: 1.7;
@@ -2024,13 +2019,18 @@ code {
 
   渐变用 `background-clip: text` 抠进字形里：一个纯色数字和卡面上那个
   「金属/发光」的徽标放在一起会显得是两个系统的东西。
-  渐变的上端提亮、下端压暗，数字就有了体积，而不是一块平色。
   `color-mix` 直接从 `--stat-fg` 里调亮暗，不再多维护一组色值——
   换了主色，渐变跟着变。
 
+  **基准必须是那张卡的标准色。** 第一版下端压到 68% 亮度、又描了 2px 的暗边，
+  整排数字看起来比战斗里的徽标暗一档——「加了光效的数字反而更暗」。
+  现在上下两端只各偏一点（向白 18% / 向黑 14%），中间那一段就是标准色本身。
+
   边缘光同样两层：
   - `text-shadow` 的亮色光晕（`--stat-halo`）在**最底层**，负责往外发亮；
-  - `-webkit-text-stroke` 的暗描边压在上面，把数字从任意底色上「抠」出来。
+  - `-webkit-text-stroke` 的描边压在上面，把数字从任意底色上「抠」出来。
+    描边色从 `--stat-fg` 取一半而不是纯黑：32px 的粗体数字被纯黑描边围一圈，
+    笔画会被吃掉一部分，又细又暗。
   顺序和徽标里写的一致：光晕必须画在暗底之前，否则会被盖住。
 */
 .showcase__stats li b {
@@ -2042,17 +2042,17 @@ code {
 
   background-image: linear-gradient(
     180deg,
-    color-mix(in srgb, var(--stat-fg, #fff) 52%, #fff) 0%,
-    var(--stat-fg, #fff) 46%,
-    color-mix(in srgb, var(--stat-fg, #fff) 68%, #000) 100%
+    color-mix(in srgb, var(--stat-fg, #fff) 82%, #fff) 0%,
+    var(--stat-fg, #fff) 45%,
+    color-mix(in srgb, var(--stat-fg, #fff) 86%, #000) 100%
   );
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  -webkit-text-stroke: 2px color-mix(in srgb, var(--stat-fg, #fff) 26%, #05070c);
+  -webkit-text-stroke: 1.5px color-mix(in srgb, var(--stat-fg, #fff) 50%, #05070c);
   text-shadow:
     0 0 14px var(--stat-halo, rgba(255, 255, 255, 0.4)),
-    0 2px 3px rgba(0, 0, 0, 0.55);
+    0 2px 3px rgba(0, 0, 0, 0.45);
 }
 
 .showcase__desc {
