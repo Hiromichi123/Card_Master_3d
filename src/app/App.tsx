@@ -4,6 +4,8 @@ import { BattleScene } from '../scenes/BattleScene';
 import { CollectionScene } from '../scenes/CollectionScene';
 import { DeckEditorScene } from '../scenes/DeckEditorScene';
 import { EffectLabScene } from '../scenes/EffectLabScene';
+import { ActivityScene } from '../scenes/ActivityScene';
+import { BattleMenuScene } from '../scenes/BattleMenuScene';
 import { GachaScene } from '../scenes/GachaScene';
 import { ShopScene } from '../scenes/ShopScene';
 import { HubScene } from '../scenes/HubScene';
@@ -172,8 +174,12 @@ function Screen({ route, snapshot, store, onNavigate, onReset }: ScreenProps) {
       return <DeckEditorScene profile={profile} store={store} />;
     case 'shop':
       return <ShopScene profile={profile} store={store} busy={snapshot.busy} kind="normal" />;
-    case 'activity':
+    case 'activityShop':
       return <ShopScene profile={profile} store={store} busy={snapshot.busy} kind="activity" />;
+    case 'battlemenu':
+      return <BattleMenuScene profile={profile} onNavigate={onNavigate} />;
+    case 'activity':
+      return <ActivityScene profile={profile} onNavigate={onNavigate} />;
     case 'settings':
       return <ScreenPlaceholder title="设置" note="设置页正在施工（P5-M7）。" />;
     default:

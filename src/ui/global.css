@@ -2452,7 +2452,7 @@ code {
 
   margin: 0;
 
-  font-size: calc(140 * var(--ui));
+  font-size: calc(var(--title-size, 96) * var(--ui));
 
   font-weight: 700;
 
@@ -2473,6 +2473,17 @@ code {
 }
 
 
+
+.menu__subtitle {
+  position: absolute;
+  left: 50%;
+  top: 18%;
+  transform: translateX(-50%);
+  margin: 0;
+  color: #f0f0f0;
+  font-size: calc(28 * var(--ui));
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+}
 
 .menu__deck {
 
@@ -2532,46 +2543,36 @@ code {
 
   flex-direction: column;
 
-  gap: calc(40 * var(--ui));
-
+  gap: calc(var(--row-gap, 40) * var(--ui));
   align-items: flex-start;
-
 }
 
-
-
 .menu__entry {
-
   position: relative;
-
   display: flex;
-
   align-items: center;
-
   justify-content: center;
-
-  /* **长度固定**：三角形是绝对定位的（不在流里），所以按钮宽度只由这里决定，
-
-     标签长短不会把按钮撑开或缩窄。 */
-
-  width: calc(300 * var(--ui));
-
-  height: calc(50 * var(--ui));
-
+  /*
+    **长度固定**：三角形是绝对定位的（不在流里），所以宽度只由这里决定，
+    标签长短不会把按钮撑开或缩窄。三个菜单各自给 `--entry-w`（300 / 480 / 320）。
+  */
+  width: calc(var(--entry-w, 300) * var(--ui));
+  height: calc(var(--entry-h, 50) * var(--ui));
   padding: 0;
-
-  /* 阶梯：第 n 行左移 n × 30 */
-
-  margin-left: calc(var(--row, 0) * -30 * var(--ui));
-
+  /* 阶梯：第 n 行左移 n × 阶梯（默认 30，活动大厅是 20） */
+  margin-left: calc(var(--row, 0) * var(--row-stagger, -30) * var(--ui));
   font: inherit;
-
   font-size: calc(40 * var(--ui));
-
   font-weight: 600;
-
   letter-spacing: 0.03em;
-
+  /*
+    **不折行。** 旧版是 Pygame 渲染一行字面然后居中、超出就溢出，
+    永远不会折成两行；用 CSS 默认的换行行为会让「局域网 卡组对战」
+    折成两行、第二行压在下一个按钮上（实测过）。
+    行高锁成按钮高，标签再长也只横向溢出。
+  */
+  white-space: nowrap;
+  line-height: calc(var(--entry-h, 50) * var(--ui));
   color: #191919;
 
   background: none;
@@ -2789,6 +2790,65 @@ code {
 }
 
 
+
+/* --- 活动大厅的特性卡（旧版 `activity_scene.py` 的 feature_cards）---------- */
+
+/* 三张卡各自绝对定位在设计框里（top 由行内 style 给），这层只是语义容器 */
+.feature-list {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.feature-list .feature {
+  pointer-events: auto;
+}
+
+/*
+  位置与尺寸都按旧版的比例算：宽 45%、高 10%、起点 (15%, 28%)、间隔 4%。
+  面板是深蓝半透明 + 蓝边，悬停时底色变深、边框转成金色。
+*/
+.feature {
+  position: absolute;
+  left: 15%;
+  width: 45%;
+  height: 10%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: calc(4 * var(--ui));
+  padding: calc(10 * var(--ui)) calc(24 * var(--ui));
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  /* top 由调用方按行内 style 给（start_y + idx × (高 + 间隔)） */
+  background: rgba(20, 35, 70, 0.59);
+  border: calc(3 * var(--ui)) solid rgba(120, 160, 230, 0.63);
+  border-radius: calc(16 * var(--ui));
+  cursor: pointer;
+  transition: background 140ms ease-out, border-color 140ms ease-out;
+}
+
+.feature:hover,
+.feature:focus-visible {
+  background: rgba(20, 35, 70, 0.82);
+  border-color: rgba(255, 220, 120, 0.86);
+}
+
+.feature__title {
+  font-size: calc(42 * var(--ui));
+  color: #ffe6b4;
+}
+
+.feature__desc {
+  font-size: calc(28 * var(--ui));
+  color: #d7e6ff;
+}
+
+.feature__schedule {
+  font-size: calc(28 * var(--ui));
+  color: #96dcff;
+}
 
 /* --- 活动海报轮播（旧版 `ui/activity_poster.py`）--------------------------- */
 

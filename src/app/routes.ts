@@ -17,8 +17,12 @@ export type RouteId =
   | 'collection'
   | 'deck'
   | 'shop'
-  /** 活动商店。与『商店』同一块屏、不同货架，只从主菜单的「活动入口」进，不在导航栏里。 */
+  /** 选择对战模式。旧版 `battle_menu.py`，从主菜单的「进入战斗」进。 */
+  | 'battlemenu'
+  /** 限时活动模式（活动大厅）。旧版 `activity/activity_scene.py`。 */
   | 'activity'
+  /** 活动商店。与『商店』同一块屏、不同货架，从活动大厅进。 */
+  | 'activityShop'
   | 'settings'
   | 'battle'
   | 'probe'

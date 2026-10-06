@@ -20,15 +20,24 @@ import {
 
 const DAY = '20240101';
 
-async function openShop(page: Page, from = '商店'): Promise<void> {
+/**
+ * 进商店。
+ *
+ * **两个入口的路径不一样**：常规商店在主菜单二级列上直接进；
+ * 活动商店在**活动大厅**里（旧版 `activity_scene.py` 的「活动商店」按钮），
+ * 要先过「活动入口 → 活动大厅」这一层——它不在主菜单上。
+ */
+async function openShop(page: Page, kind: 'normal' | 'activity' = 'normal'): Promise<void> {
   await openWithFreshSave(page);
   await page.goto(`/?day=${DAY}`);
   await clickNav(page, '主菜单');
-  /*
-    必须限定在 `.menu__columns` 里：导航栏上也有一个「商店」页签，
-    按名字直接找会同时命中两个（strict mode violation）。
-  */
-  await menuEntry(page, from).click();
+  if (kind === 'activity') {
+    await menuEntry(page, '活动入口').click();
+    await expect(page.locator('.menu__title')).toHaveText('限时活动模式');
+    await menuEntry(page, '活动商店').click();
+  } else {
+    await menuEntry(page, '商店').click();
+  }
   await expect(page.locator('.shop__row').first()).toBeVisible({ timeout: 30_000 });
 }
 
@@ -168,7 +177,7 @@ test('买不起：一分钱不扣、盘上不留记录、给一句提示', async
 
 test('活动入口进的是活动商店，货架与常规不同', async ({ page }) => {
   const problems = collectProblems(page);
-  await openShop(page, '活动入口');
+  await openShop(page, 'activity');
 
   await expect(page.locator('.screen__title')).toHaveText('活动商店');
   // 活动货架的三排与常规完全不同（`shops.json` 的 activityShop.shelves）
@@ -183,7 +192,7 @@ test('活动入口进的是活动商店，货架与常规不同', async ({ page 
 
 test('活动商店用徽章计价，新号买不起（徽章来自活动，还没做）', async ({ page }) => {
   const problems = collectProblems(page);
-  await openShop(page, '活动入口');
+  await openShop(page, 'activity');
 
   /*
     **活动商店的价格是徽章**。这里盯住两件事：
