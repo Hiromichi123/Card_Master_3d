@@ -12,6 +12,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  ADD_REJECTION_NOTE,
   ADD_REJECTION_TEXT,
   DECK_ISSUE_TEXT,
   DECK_LIMIT,
@@ -152,6 +153,20 @@ describe('组卡派生：文案表的守门', () => {
     expect(Object.keys(ADD_REJECTION_TEXT).sort()).toEqual([...reasons].sort());
     for (const reason of reasons) {
       expect(ADD_REJECTION_TEXT[reason].length).toBeGreaterThan(0);
+    }
+  });
+
+  /** 角标那份短文案（`ADD_REJECTION_NOTE`）必须与长文案同键——两处键集合相等。 */
+  it('长文案与角标短文案的键集合完全一致', () => {
+    expect(Object.keys(ADD_REJECTION_NOTE).sort()).toEqual(
+      Object.keys(ADD_REJECTION_TEXT).sort(),
+    );
+    for (const [reason, note] of Object.entries(ADD_REJECTION_NOTE)) {
+      expect(note.length).toBeGreaterThan(0);
+      // 短文案就该短：长了会在卡片角标上盖住卡面
+      expect(note.length).toBeLessThanOrEqual(
+        (ADD_REJECTION_TEXT[reason as keyof typeof ADD_REJECTION_TEXT] ?? '').length,
+      );
     }
   });
 });

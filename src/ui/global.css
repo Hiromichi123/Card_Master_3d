@@ -1620,6 +1620,124 @@ code {
   color: var(--text-dim);
 }
 
+/* --- 配置（组卡）-------------------------------------------------------- */
+
+/*
+  左槽位、右收藏。
+
+  比例照旧版组卡界面（左 35% / 右 65%）：槽位是**定数 12 格**，宽度够摆下 3 列就行；
+  收藏是几百张卡、要的是横向密度，剩下的宽度都给它。
+*/
+.deckedit__body {
+  display: grid;
+  /* 左列放得下 3 列卡就够（约 500px），剩下的宽度全给收藏——收藏有几百张要翻 */
+  grid-template-columns: minmax(250px, 27%) 1fr;
+  gap: 18px;
+  flex: 1;
+  min-height: 0;
+}
+
+.deckedit__slots,
+.deckedit__collection {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+}
+
+.deckedit__heading {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-dim);
+  letter-spacing: 0.03em;
+}
+
+/*
+  3 列 × 4 行 = 12 格。空槽与有卡的槽同尺寸，格子不会因卡数变化而跳动。
+
+  `max-width` 把槽位卡压到与右侧收藏差不多的尺寸：不限宽的话左列一宽就整片放大，
+  右边还是小的，同一张卡在两边尺寸差一倍，看着像两个不同的东西。
+*/
+.deckedit__grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  align-content: start;
+  max-width: 470px;
+}
+
+.deckedit__slot {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 2 / 3;
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  color: var(--text-dim);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.55;
+}
+
+/* 收藏里的卡，点一下就加——鼠标给出可点的提示 */
+.deckedit__collection .tile {
+  cursor: pointer;
+}
+
+.deckedit__filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  /* 收藏区自己滚动，筛选条固定在上面 */
+  flex: 0 0 auto;
+}
+
+.deckedit__lead {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+.deckedit__actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* 「卡组已满」这类**对所有卡都一样**的提示，说一次就够 */
+.deckedit__hint {
+  margin: 0;
+  padding: 7px 12px;
+  border-left: 3px solid var(--accent);
+  border-radius: 6px;
+  background: rgba(110, 168, 255, 0.08);
+  color: var(--text);
+  font-size: 13px;
+}
+
+.deckedit__issues {
+  margin: 0;
+  padding: 8px 12px;
+  list-style: none;
+  border-left: 3px solid var(--danger);
+  border-radius: 6px;
+  background: rgba(255, 107, 107, 0.08);
+  color: var(--text);
+  font-size: 13px;
+}
+
+.deckedit__empty-actions {
+  display: flex;
+  gap: 10px;
+}
+
+@media (max-width: 1100px) {
+  /* 窄屏并排放不下，改成上下：槽位在上（要盯着的），收藏在下（要翻的） */
+  .deckedit__body {
+    grid-template-columns: 1fr;
+    overflow-y: auto;
+  }
+}
+
 /* ---------------------------------------------------------------------------
  * 展示位的箔片
  *

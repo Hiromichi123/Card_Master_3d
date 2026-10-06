@@ -30,6 +30,14 @@ export type TileSize = 'sm' | 'md' | 'lg';
 export interface CardTileProps {
   readonly cardId: string;
   readonly count?: number | undefined;
+  /**
+   * `count` 为 1 时也显示角标。
+   *
+   * 图鉴上「只有一张」没有信息量，所以缺省只在重复时显示；
+   * 但组卡页的角标是**可用张数**，从 1 加到 0 的过程正是玩家要盯的反馈，
+   * 那时藏掉角标等于把反馈藏了。
+   */
+  readonly showCount?: boolean | undefined;
   readonly size?: TileSize | undefined;
   readonly selected?: boolean | undefined;
   readonly disabled?: boolean | undefined;
@@ -42,6 +50,7 @@ export interface CardTileProps {
 export function CardTile({
   cardId,
   count,
+  showCount = false,
   size = 'md',
   selected,
   disabled,
@@ -95,7 +104,9 @@ export function CardTile({
         />
       )}
 
-      {count !== undefined && count > 1 && <span className="tile__badge">×{count}</span>}
+      {count !== undefined && (count > 1 || showCount) && (
+        <span className="tile__badge">×{count}</span>
+      )}
       {note && <span className="tile__note">{note}</span>}
     </>
   );
@@ -104,6 +115,7 @@ export function CardTile({
     return (
       <div
         className={classes}
+        data-card-id={cardId}
         onMouseEnter={() => onHover?.(true)}
         onMouseLeave={() => onHover?.(false)}
       >
@@ -116,6 +128,7 @@ export function CardTile({
     <button
       type="button"
       className={classes}
+      data-card-id={cardId}
       onClick={onClick}
       disabled={disabled}
       onMouseEnter={() => onHover?.(true)}

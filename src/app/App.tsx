@@ -2,6 +2,7 @@ import { Suspense, useEffect, useState } from 'react';
 
 import { BattleScene } from '../scenes/BattleScene';
 import { CollectionScene } from '../scenes/CollectionScene';
+import { DeckEditorScene } from '../scenes/DeckEditorScene';
 import { EffectLabScene } from '../scenes/EffectLabScene';
 import { HubScene } from '../scenes/HubScene';
 import { getProfileStore } from '../state/profileStore';
@@ -84,6 +85,7 @@ export function App() {
             <Screen
               route={route}
               snapshot={snapshot}
+              store={store}
               onNavigate={setRoute}
               onReset={() => {
                 void store?.resetProfile();
@@ -101,6 +103,13 @@ export function App() {
 interface ScreenProps {
   readonly route: RouteId;
   readonly snapshot: ReturnType<typeof useProfileStore>;
+  /**
+   * 存档实例本身（不只是快照）。
+   *
+   * 抽卡要 `commitEconomic`（落盘前不确认），配置页要 `saveDeck`/`flush`——
+   * 这两件事都必须在屏幕里发号施令，光有只读的 `profile` 做不了。
+   */
+  readonly store: ProfileStore | null;
   readonly onNavigate: (route: RouteId) => void;
   readonly onReset: () => void;
 }
@@ -111,7 +120,7 @@ interface ScreenProps {
  * **加载门禁只对游戏屏幕生效**：数据自检与实验台是开发工具，
  * 不读存档，让它们也等存档就绪没有意义。
  */
-function Screen({ route, snapshot, onNavigate, onReset }: ScreenProps) {
+function Screen({ route, snapshot, store, onNavigate, onReset }: ScreenProps) {
   // 开发工具放行
   if (route === 'probe') {
     return <DataProbe />;
@@ -136,7 +145,9 @@ function Screen({ route, snapshot, onNavigate, onReset }: ScreenProps) {
   }
 
   const profile = snapshot.profile;
-  if (!profile) {
+  // `store` 比 `profile` 早一步就绪（profile 是从 store 里读出来的），
+  // 两者都没有才等于「还没好」
+  if (!profile || !store) {
     return <div className="app-loading">正在读取存档…</div>;
   }
 
@@ -156,7 +167,7 @@ function Screen({ route, snapshot, onNavigate, onReset }: ScreenProps) {
     case 'collection':
       return <CollectionScene profile={profile} />;
     case 'deck':
-      return <ScreenPlaceholder title="出战卡组配置" note="组卡正在施工（P5-M3）。" />;
+      return <DeckEditorScene profile={profile} store={store} />;
     case 'shop':
       return <ScreenPlaceholder title="商店" note="每日货架正在施工（P5-M4）。" />;
     case 'settings':

@@ -69,6 +69,19 @@ export const ADD_REJECTION_TEXT: Record<AddRejection, string> = {
   unknownCard: '不认识这张卡',
 };
 
+/**
+ * 同一组拒绝原因的**短文案**，用在卡片角标上。
+ *
+ * 角标位置只放得下几个字，长文案会盖住卡面；而长文案留给横幅与 toast。
+ * 键必须与 `ADD_REJECTION_TEXT` 完全一致——加一种拒绝原因时两处一起补，
+ * `deckView.test.ts` 有一条断言盯着这个覆盖关系。
+ */
+export const ADD_REJECTION_NOTE: Record<AddRejection, string> = {
+  full: '卡组已满',
+  noneLeft: '已上阵',
+  unknownCard: '不认识的卡',
+};
+
 export function addCard(deck: Deck, cardId: string, now: Date): Deck {
   return { ...deck, cardIds: [...deck.cardIds, cardId], updatedAt: now.toISOString() };
 }
