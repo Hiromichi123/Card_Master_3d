@@ -7,7 +7,7 @@
  * 而「跳过 = 播完」这种性质在 3D 里几乎没法断言。
  *
  * 曲线与 `rendering/anim/motion.ts` 同源（`V-CARD-8` 定的「出牌/部署/抽卡
- * 共用这几条曲线」）：入场是抛物线（`4t(1-t)`），落地带过冲，翻面是绕 Y 的 π。
+ * 共用这几条曲线」）：入场从槽位上方下落，落地带过冲，翻面是绕 Y 的 π。
  * 这里用纯数字三元组重写了一遍而没直接调 `motion.ts`——那个模块 import 了 three，
  * 而本层的整条价值就在于不 import 它。两边的一致性由单测里对抛物线的断言把着。
  */
@@ -15,18 +15,26 @@
 /** 卡面宽高比（`cardGeometry` 的 1 × 1.5）。 */
 export const CARD_ASPECT = 1.5;
 /** 单抽那张卡的缩放。 */
-export const SINGLE_CARD_SCALE = 1;
+export const SINGLE_CARD_SCALE = 2.5;
 /** 十连时每张卡的缩放。 */
-export const TEN_CARD_SCALE = 0.62;
+export const TEN_CARD_SCALE = 1.64;
 /** 十连的列数。 */
 export const TEN_COLUMNS = 5;
 
 /** 起飞点：画面下方偏前，像从牌堆里抬起来。 */
-export const DECK_POINT: readonly [number, number, number] = [0, -1.35, 1.1];
+export const DECK_POINT: readonly [number, number, number] = [0, -1.35, 0.25];
 /** 从起飞到落位的时长。 */
 export const FLIGHT = 0.55;
 /** 相邻两张的起飞间隔——错峰就是靠它，十张一起翻读起来是「一坨」。 */
-export const STAGGER = 0.075;
+export const STAGGER = 0.22;
+export const MENU_CAMERA_DISTANCE = 4.2;
+export const UI_EXIT = 0.45;
+export const PULL_BACK = 1.1;
+export const PUSH_IN = 0.85;
+export const FLIP_GAP = 0.12;
+export const RARE_FOCUS_HOLD = 0.65;
+export const CAMERA_RETURN = 0.45;
+export const FALL_HEIGHT = 2.2;
 /** 普通卡翻面时长。 */
 export const FLIP_BASE = 0.42;
 /** 高稀有卡的翻面时长：慢一点，让「这张不一样」读得出来。 */
@@ -96,6 +104,9 @@ export interface GachaChoreography {
   readonly content: readonly [number, number];
   /** 相机与内容中心的距离。 */
   readonly cameraDistance: number;
+  readonly landingStart: number;
+  readonly allLandedAt: number;
+  readonly revealStart: number;
 }
 
 export function createPose(): CardPose {
@@ -183,6 +194,7 @@ export interface BuildArgs {
   readonly rankOf: (rarity: string) => number;
   readonly isHighRarity: (rarity: string) => boolean;
   readonly aspect: number;
+  readonly initialCamera?: CameraPose;
   readonly fovDeg?: number;
 }
 
@@ -211,68 +223,50 @@ export function buildChoreography(args: BuildArgs): GachaChoreography {
     }
   });
 
+  const landingStart = UI_EXIT + PULL_BACK;
+  const allLandedAt = landingStart + Math.max(0, args.cards.length - 1) * STAGGER + FLIGHT;
+  const revealStart = allLandedAt + PUSH_IN;
+  let nextFlipAt = revealStart;
   const shots: CardShot[] = args.cards.map((card, index) => {
-    const slot = slots[index] ?? [0, 0];
-    const delay = index * STAGGER;
-    /*
-      翻面时刻 = 起飞延迟 + 飞行时长。**不再按列加额外错开**：
-      那样第二排的第一张会插到第一排最后一张前面翻（列错峰是 0.2s、
-      而相邻两张的起飞只差 0.075s），揭晓顺序会往回跳。
-      `STAGGER` 本身已经错开了同一列的两张（下标差 5 → 差 0.375s）。
-    */
-    const flipAt = delay + FLIGHT;
     const high = args.isHighRarity(card.rarity);
-    return {
-      index,
-      cardId: card.cardId,
-      rarity: card.rarity,
-      slot,
-      delay,
-      flight: FLIGHT,
-      flipAt,
-      flipDuration: high ? FLIP_HIGH : FLIP_BASE,
-      burstAt: delay + FLIGHT + BURST_LEAD,
-      high,
-    };
+    const flipDuration = high ? FLIP_HIGH : FLIP_BASE;
+    const flipAt = nextFlipAt;
+    nextFlipAt += flipDuration + FLIP_GAP + (index === highlightIndex ? RARE_FOCUS_HOLD + CAMERA_RETURN : 0);
+    return { index, cardId: card.cardId, rarity: card.rarity, slot: slots[index] ?? [0, 0],
+      delay: landingStart + index * STAGGER, flight: FLIGHT, flipAt, flipDuration,
+      burstAt: flipAt + flipDuration * 0.5, high };
   });
-
-  const flipEnd = shots.reduce((max, shot) => Math.max(max, shot.flipAt + shot.flipDuration), 0);
   const highlight = highlightIndex === null ? null : shots[highlightIndex];
-  const focusHold = highlight
-    ? highlight.high
-      ? FOCUS_HOLD_HIGH
-      : FOCUS_HOLD_LOW
-    : FOCUS_HOLD_LOW;
-  const total = flipEnd + focusHold;
-
+  const flipEnd = shots.reduce((max, shot) => Math.max(max, shot.flipAt + shot.flipDuration), revealStart);
+  const focusEnd = highlight ? highlight.flipAt + highlight.flipDuration + RARE_FOCUS_HOLD + CAMERA_RETURN : flipEnd;
+  const total = Math.max(flipEnd, focusEnd) + FOCUS_HOLD_LOW;
   const content: readonly [number, number] = [
     cardScale + (slots.length > 1 ? (TEN_COLUMNS - 1) * cardScale * 1.16 : 0),
     slots.length > 1 ? cardScale * CARD_ASPECT * 2.25 : cardScale * CARD_ASPECT,
   ];
   const fovDeg = args.fovDeg ?? 42;
-  const cameraDistance = frameDistance(content[0], content[1], fovDeg, args.aspect);
-
-  /*
-    相机关键帧：全景 → 翻面时略低 → 推近高亮卡 → 收回全景。
-    只在有高亮时才推近；普通十连（全低稀有）就一直是全景。
-  */
-  const rest: CameraPose = {
-    position: [0, 0.1, cameraDistance],
-    target: [0, 0, 0],
-  };
-  const flipStartedAt = shots.length > 0 ? Math.min(...shots.map((shot) => shot.flipAt)) : 0;
-  const camera: CameraKey[] = [{ at: 0, pose: rest }];
+  const cameraDistance = frameDistance(content[0], content[1], fovDeg, args.aspect) * 1.1;
+  const initial: CameraPose = args.initialCamera ?? { position: [0, 0, MENU_CAMERA_DISTANCE], target: [0, 0, 0] };
+  const dx = initial.position[0] - initial.target[0];
+  const dy = initial.position[1] - initial.target[1];
+  const dz = initial.position[2] - initial.target[2];
+  const initialDistance = Math.hypot(dx, dy, dz);
+  const pullDistance = Math.max(cameraDistance * 1.35, initialDistance * 1.35);
+  const ratio = pullDistance / Math.max(0.01, initialDistance);
+  // Preserve the exact viewing direction until the slow pullback has completed.
+  const wide: CameraPose = { position: [initial.target[0] + dx * ratio, initial.target[1] + dy * ratio,
+    initial.target[2] + dz * ratio], target: [...initial.target] };
+  const rest: CameraPose = { position: [0, 0.1, cameraDistance], target: [0, 0, 0] };
+  const camera: CameraKey[] = [{ at: 0, pose: initial }, { at: UI_EXIT, pose: initial },
+    { at: landingStart, pose: wide }, { at: allLandedAt, pose: wide }, { at: revealStart, pose: rest }];
   if (highlight) {
-    const focus: CameraPose = {
-      position: [highlight.slot[0] * 0.5, highlight.slot[1] * 0.5 + 0.05, cameraDistance * 0.52],
-      target: [highlight.slot[0], highlight.slot[1], 0],
-    };
-    camera.push({ at: flipStartedAt, pose: rest });
-    camera.push({ at: highlight.flipAt + highlight.flipDuration * 0.5, pose: focus });
-    camera.push({ at: total - 0.2, pose: rest });
-  } else {
-    camera.push({ at: total, pose: rest });
+    const focusedAt = highlight.flipAt + highlight.flipDuration;
+    const focus: CameraPose = { position: [highlight.slot[0] * 0.5, highlight.slot[1] * 0.5 + 0.05, cameraDistance * 0.52],
+      target: [highlight.slot[0], highlight.slot[1], 0] };
+    camera.push({ at: highlight.flipAt, pose: rest }, { at: focusedAt, pose: focus },
+      { at: focusedAt + RARE_FOCUS_HOLD, pose: focus }, { at: focusedAt + RARE_FOCUS_HOLD + CAMERA_RETURN, pose: rest });
   }
+  camera.push({ at: total, pose: rest });
 
   return {
     shots,
@@ -282,6 +276,9 @@ export function buildChoreography(args: BuildArgs): GachaChoreography {
     camera,
     content,
     cameraDistance,
+    landingStart,
+    allLandedAt,
+    revealStart,
   };
 }
 
@@ -316,11 +313,10 @@ export function samplePose(
   const flightT = clamp01(since / shot.flight);
   const easedFlight = easeOutCubic(flightT);
 
-  // 抛物线：起点与终点贴地，中段抬高
-  const lift = 4 * flightT * (1 - flightT) * 0.85;
-  out.position[0] = DECK_POINT[0] + (shot.slot[0] - DECK_POINT[0]) * easedFlight;
-  out.position[1] = DECK_POINT[1] + (shot.slot[1] - DECK_POINT[1]) * easedFlight + lift;
-  out.position[2] = DECK_POINT[2] * (1 - easedFlight);
+  // Descend over the target slot, stay close to the board, and keep the back facing the camera.
+  out.position[0] = shot.slot[0];
+  out.position[1] = shot.slot[1] + FALL_HEIGHT * (1 - easedFlight);
+  out.position[2] = 0.18 * (1 - easedFlight) * Math.max(1, choreo.cardScale);
 
   out.rotationY = (1 - easedFlight) * FLIGHT_TURN;
   // 落地带一点过冲：从 0.55 倍弹到 1 倍，落到手里才有分量
@@ -330,6 +326,8 @@ export function samplePose(
   const flipT = clamp01((elapsed - shot.flipAt) / shot.flipDuration);
   // 1 = 盖着 → 0 = 揭开（`CardMesh` 的约定，见 `CardPose.flip` 注释）
   out.flip = 1 - easeInOutCubic(flipT);
+  // Lift only while rotating: the far edge must clear the nearby board, then settle back at z=0.
+  out.position[2] += Math.sin(Math.PI * out.flip) * choreo.cardScale * 0.55;
   return out;
 }
 
@@ -410,4 +408,11 @@ export function flipStartedAt(choreo: GachaChoreography): number {
     (min, shot) => Math.min(min, shot.flipAt),
     Number.POSITIVE_INFINITY,
   );
+}
+
+export function landingBeamEnvelope(shot: CardShot, elapsed: number): number {
+  const age = elapsed - (shot.delay - 0.16);
+  const duration = shot.flight + 0.36;
+  if (age < 0 || age >= duration) return 0;
+  return Math.min(1, age / 0.16) * Math.min(1, (duration - age) / 0.2);
 }

@@ -1,4 +1,9 @@
-import { useCallback } from 'react';
+import { useCallback, useRef, useState } from 'react';
+import { useFrame } from '@react-three/fiber';
+import { SPEED_SCALE, useSettingsStore } from '../../state/settingsStore';
+import { useRarityIndex } from '../../state/useRarityIndex';
+import { damp } from '../anim/motion';
+import { revealEdgeHighlight } from './revealStyle';
 import type { Group } from 'three';
 
 import type { CardDefinition } from '../../domain/cards/types';
@@ -24,9 +29,30 @@ export interface GachaCardProps {
   readonly flipControl: { readonly current: number };
   /** 把外层 group 交给驱动器。 */
   readonly register: (group: Group | null) => void;
+  readonly completed: boolean;
+  readonly onPreview: (card: CardDefinition) => void;
 }
 
-export function GachaCard({ card, flipControl, register }: GachaCardProps) {
+export function GachaCard({ card, flipControl, register, completed, onPreview }: GachaCardProps) {
+  const [hovered, setHovered] = useState(false);
+  const inspection = useRef<Group>(null);
+  const high = useRarityIndex().isHighRarity(card.rarity);
+  const highlight = useRef(0);
+  const age = useRef(-1);
+  const wasRevealed = useRef(false);
+  useFrame((_, delta) => {
+    const revealed = flipControl.current < 0.001;
+    if (revealed && !wasRevealed.current) age.current = 0;
+    wasRevealed.current = revealed;
+    if (age.current >= 0) age.current += Math.min(delta, 0.05) / SPEED_SCALE[useSettingsStore.getState().presentationSpeed];
+    highlight.current = high && !completed ? revealEdgeHighlight(age.current) : 0;
+    if (inspection.current) {
+      const target = completed && hovered;
+      inspection.current.scale.setScalar(damp(inspection.current.scale.x, target ? 1.05 : 1, 14, delta));
+      inspection.current.rotation.x = damp(inspection.current.rotation.x, target ? -0.08 : 0, 14, delta);
+      inspection.current.position.z = damp(inspection.current.position.z, target ? 0.04 : 0, 14, delta);
+    }
+  });
   const ref = useCallback(
     (group: Group | null) => {
       register(group);
@@ -35,7 +61,11 @@ export function GachaCard({ card, flipControl, register }: GachaCardProps) {
   );
 
   return (
-    <group ref={ref}>
+    <group ref={ref} visible={false}>
+      <group ref={inspection}
+        onPointerOver={(event) => { if (completed) { event.stopPropagation(); setHovered(true); } }}
+        onPointerOut={() => setHovered(false)}
+        onClick={(event) => { if (completed) { event.stopPropagation(); onPreview(card); } }}>
       <CardMesh
         card={card}
         position={[0, 0, 0]}
@@ -46,11 +76,15 @@ export function GachaCard({ card, flipControl, register }: GachaCardProps) {
         /*
           不叠数值徽标：那三个数字是战斗里的动态值，抽卡时它们还没有意义；
           而且徽标贴在卡面外侧，牌翻到一半时会在背面上透出来一层。
-          数值在结果面板里给。
+          数值在点击后的卡牌预览里显示。
         */
         showStats={false}
         interactive={false}
+        glow
+        glowScale={hovered ? 2.6 : 2.2}
+        glowHighlight={highlight}
       />
+      </group>
     </group>
   );
 }

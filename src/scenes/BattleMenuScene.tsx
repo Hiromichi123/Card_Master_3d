@@ -56,7 +56,7 @@ const ENTRIES: readonly Entry[] = [
   },
   {
     label: '活动模式',
-    hint: '限时活动、迷宫与活动商店',
+    hint: '限时活动与活动商店',
     glow: '#ffdc78',
     route: 'activity',
     persistent: true,
@@ -75,7 +75,7 @@ const ENTRIES: readonly Entry[] = [
   },
   {
     label: '本地 任选对战（双人）',
-    hint: '本地 Draft：28 张候选轮流选牌（计划在 P6 阶段实现）',
+    hint: '本地选卡对战：28 张候选轮流选牌，功能暂未开放',
     glow: '#c86e32',
     route: null,
   },

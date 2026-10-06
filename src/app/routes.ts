@@ -14,6 +14,7 @@ export type RouteId =
   | 'hub'
   | 'campaign'
   | 'gacha'
+  | 'fusion'
   | 'collection'
   | 'deck'
   | 'shop'
@@ -21,6 +22,8 @@ export type RouteId =
   | 'battlemenu'
   /** 限时活动模式（活动大厅）。旧版 `activity/activity_scene.py`。 */
   | 'activity'
+  /** 迷宫第一层。旧版 `activity/maze_scene.py`，从活动大厅的第一张卡进。 */
+  | 'maze'
   /** 活动商店。与『商店』同一块屏、不同货架，从活动大厅进。 */
   | 'activityShop'
   | 'settings'
@@ -41,6 +44,7 @@ export const ROUTES: readonly RouteMeta[] = [
   { id: 'hub', label: '主菜单', hint: '回到主界面' },
   { id: 'campaign', label: '战役', hint: '三章十二关' },
   { id: 'gacha', label: '抽卡', hint: '八个卡池' },
+  { id: 'fusion', label: '融合', hint: '五槽祭坛，五张换一张' },
   /*
     「组卡」改名「配置」，并移到图鉴**之前**：先决定带什么上场，再回头清点自己有什么，
     这个顺序和玩家实际的动线一致。`RouteId` 仍是 `'deck'`——改名只动标签，

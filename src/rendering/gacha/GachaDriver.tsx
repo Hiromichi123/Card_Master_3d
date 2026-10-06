@@ -10,6 +10,7 @@ import {
   createPose,
   dueBursts,
   samplePose,
+  UI_EXIT,
 } from './choreography';
 import type { CardShot, GachaChoreography } from './choreography';
 
@@ -46,6 +47,10 @@ export interface GachaDriverProps {
    * 早于它就翻面，玩家看到的是深色底板。为 false 时时间轴不推进（1.2 秒兜底放行）。
    */
   readonly ready: boolean;
+  /** Final state for skip or the stage safety fallback. */
+  readonly instant?: boolean | undefined;
+  readonly onStarted?: (() => void) | undefined;
+  readonly onMenuHidden?: (() => void) | undefined;
 }
 
 /** 纹理预热的兜底放行时间：等太久不如先演，占位纹理至少是「有东西」。 */
@@ -59,11 +64,17 @@ export function GachaDriver({
   onBurst,
   onFinished,
   ready,
+  instant = false,
+  onStarted,
+  onMenuHidden,
 }: GachaDriverProps) {
   const timelineRef = useRef<Timeline | null>(null);
   const poseRef = useRef(createPose());
   const burstedRef = useRef(0);
   const waitedRef = useRef(0);
+  const uiHidden = useRef(false);
+  const startedRef = useRef(onStarted); startedRef.current = onStarted;
+  const hiddenRef = useRef(onMenuHidden); hiddenRef.current = onMenuHidden;
   /*
     `onFinished` 用 ref 转一手：它每次渲染都是新函数，
     直接进依赖会让整段时间轴在父组件每次重渲染时重建。
@@ -72,15 +83,18 @@ export function GachaDriver({
   onFinishedRef.current = onFinished;
 
   useEffect(() => {
+    elapsed.current = 0; burstedRef.current = 0; waitedRef.current = 0; uiHidden.current = false;
     const timeline = new Timeline(() => {
       onFinishedRef.current();
     });
     timeline.add({
       duration: choreo.total,
       easing: linear,
+      onStart: () => startedRef.current?.(),
       onUpdate: (t) => {
         const seconds = t * choreo.total;
         elapsed.current = seconds;
+        if (seconds >= UI_EXIT && !uiHidden.current) { uiHidden.current = true; hiddenRef.current?.(); }
         for (let index = 0; index < choreo.shots.length; index += 1) {
           const pose = samplePose(choreo, index, seconds, poseRef.current);
           const group = targets.current?.[index];
@@ -110,11 +124,13 @@ export function GachaDriver({
     }
     const speed = useSettingsStore.getState().presentationSpeed;
 
-    if (speed === 'skip') {
+    if (instant || speed === 'skip') {
       // 跳过不用「乘一个很小的系数」实现：那样还要花 5% 的时间，
       // 而且残留的粒子会在舞台上继续飞。显式补完 + 清干净。
       timeline.skipToEnd();
       effectDirector.skipAll();
+      burstedRef.current = elapsed.current;
+      return; // Do not spawn overdue reveal bursts after skipping the physical cards to their final poses.
     } else {
       if (!ready) {
         waitedRef.current += delta;

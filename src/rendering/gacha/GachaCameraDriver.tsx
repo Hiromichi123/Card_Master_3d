@@ -1,8 +1,8 @@
-import { useRef } from 'react';
+import { useLayoutEffect, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 
 import { damp } from '../anim/motion';
-import { createCameraPose, sampleCamera } from './choreography';
+import { createCameraPose, sampleCamera, MENU_CAMERA_DISTANCE } from './choreography';
 import type { GachaChoreography } from './choreography';
 
 /**
@@ -24,6 +24,9 @@ export interface GachaCameraDriverProps {
   readonly elapsed: () => number;
   /** 是否允许震动（设置里关掉、或系统降级动效时不震）。 */
   readonly shake: boolean;
+  readonly mode?: 'select' | 'reveal' | 'result' | undefined;
+  readonly instant?: boolean | undefined;
+  readonly menuDistance?: number | undefined;
 }
 
 /** 震动强度：高稀有的爆点更猛。 */
@@ -47,8 +50,12 @@ export function shakeAmplitudeAt(choreo: GachaChoreography, elapsed: number): nu
   return amplitude;
 }
 
-export function GachaCameraDriver({ choreo, elapsed, shake }: GachaCameraDriverProps) {
+export function GachaCameraDriver({ choreo, elapsed, shake, mode = 'reveal', instant = false, menuDistance = MENU_CAMERA_DISTANCE }: GachaCameraDriverProps) {
   const camera = useThree((state) => state.camera);
+  useLayoutEffect(() => {
+    camera.far = Math.max(80, menuDistance * 2.5);
+    camera.updateProjectionMatrix();
+  }, [camera, menuDistance]);
   const desired = useRef(createCameraPose());
   const current = useRef(createCameraPose());
   const snapped = useRef(false);
@@ -56,8 +63,13 @@ export function GachaCameraDriver({ choreo, elapsed, shake }: GachaCameraDriverP
   useFrame((_, delta) => {
     const now = elapsed();
     sampleCamera(choreo, now, desired.current);
+    if (mode === 'select') {
+      desired.current.position[0] = 0; desired.current.position[1] = 0; desired.current.position[2] = menuDistance;
+      desired.current.target[0] = desired.current.target[1] = desired.current.target[2] = 0;
+    }
 
-    if (!snapped.current) {
+
+    if (!snapped.current || mode === 'select' || instant || now <= choreo.revealStart) {
       snapped.current = true;
       for (let axis = 0; axis < 3; axis += 1) {
         current.current.position[axis] = desired.current.position[axis] ?? 0;

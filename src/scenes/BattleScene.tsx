@@ -58,6 +58,13 @@ export interface BattleSceneProps {
   readonly onFinished?: ((outcome: BattleOutcome) => void) | undefined;
   /** 结果面板上的「返回」。缺省回演示菜单。 */
   readonly onExit?: (() => void) | undefined;
+  /**
+   * 结果面板上那个返回按钮的文案。
+   *
+   * 缺省按 `onExit` 有没有来猜（战役 / 菜单）——迷宫接进来之后这条猜法不够用：
+   * 它也需要 `onExit`，但回去的是地图屏而不是战役。
+   */
+  readonly exitLabel?: string | undefined;
 }
 
 export function BattleScene({
@@ -66,6 +73,7 @@ export function BattleScene({
   settlement = null,
   onFinished,
   onExit,
+  exitLabel,
 }: BattleSceneProps = {}) {
   const profile = useSettingsStore((state) => state.profile);
   const theme = useSettingsStore((state) => state.tableTheme);
@@ -286,7 +294,7 @@ export function BattleScene({
             playerHp={snapshot.display.playerHp.player}
             enemyHp={snapshot.display.playerHp.enemy}
             settlement={settlement}
-            backLabel={onExit ? '返回战役' : '返回菜单'}
+            backLabel={exitLabel ?? (onExit ? '返回战役' : '返回菜单')}
             onRematch={() => session.start()}
             onBackToMenu={() => {
               if (onExit) {

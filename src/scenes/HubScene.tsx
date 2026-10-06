@@ -28,10 +28,8 @@ import type { RouteId } from '../app/routes';
  *    同样放最后一格）；本项目的「演示战斗」（P3 的固定 seed 对局）占掉第五格。
  *    「进入战斗」现在先进**选择对战模式**——旧版的一级第一项也是通向 `battle_menu`。
  * 2. **二级列**旧版是「活动入口 / 商店 / 工坊 / 公告 / 教学关卡」。
- *    本项目实际有的是「活动入口 / 商店 / 融合 / Draft / 迷宫」——
- *    活动入口进**活动大厅**（活动商店在它里面，不在主菜单直接进）；
- *    后三项还没做：照旧版 `_show_feature_notice` 的做法「能点、点了给一句提示」，
- *    而不是做成灰色的禁用按钮。
+ *    二级列为「活动入口 / 商店 / 融合」。活动商店在活动大厅里；
+ *    融合进入五槽实体卡祭坛，Draft 与迷宫入口已移除。
  */
 
 export interface HubSceneProps {
@@ -62,11 +60,9 @@ const PRIMARY: readonly Entry[] = [
 ];
 
 const SECONDARY: readonly Entry[] = [
-  { route: 'activity', label: '活动入口', hint: '限时活动、迷宫与活动商店', glow: '#ffdc78' },
+  { route: 'activity', label: '活动入口', hint: '限时活动与活动商店', glow: '#ffdc78' },
   { route: 'shop', label: '商店', hint: '每日货架，卖完即止', glow: '#b478ff' },
-  { route: null, label: '融合', hint: '五槽融合，消耗卡牌换取更高稀有度', glow: '#78d2ff', coming: true },
-  { route: null, label: 'Draft', hint: '28 张候选轮流选牌', glow: '#ff78a0', coming: true },
-  { route: null, label: '迷宫', hint: '第一层迷宫探索与节点战斗', glow: '#78ffc8', coming: true },
+  { route: 'fusion', label: '融合', hint: '五槽祭坛，五张卡牌融合为一张随机卡牌', glow: '#78d2ff' },
 ];
 
 export function HubScene({ profile, onNavigate, onReset }: HubSceneProps) {
@@ -96,6 +92,7 @@ export function HubScene({ profile, onNavigate, onReset }: HubSceneProps) {
 
   return (
     <MenuChrome
+      className="menu--hub"
       backgroundUrl={background}
       title="Card Master 3D"
       note={

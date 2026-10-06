@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 
 import { useParallax } from './useParallax';
+import { CrossfadeBackground } from './SceneBackground';
 
 /**
  * 「2880 × 1800 设计空间 + 整体等比缩放」的舞台。
@@ -17,19 +18,16 @@ import { useParallax } from './useParallax';
  */
 export interface DesignStageProps {
   readonly backgroundUrl: string | null;
+  readonly className?: string | undefined;
   readonly children: ReactNode;
 }
 
-export function DesignStage({ backgroundUrl, children }: DesignStageProps) {
+export function DesignStage({ backgroundUrl, children, className = '' }: DesignStageProps) {
   const parallaxRef = useParallax();
 
   return (
-    <div className="menu" ref={parallaxRef}>
-      <div
-        className="menu__bg"
-        style={backgroundUrl ? { backgroundImage: `url(${backgroundUrl})` } : undefined}
-        aria-hidden="true"
-      />
+    <div className={`menu ${className}`} ref={parallaxRef}>
+      <CrossfadeBackground url={backgroundUrl} />
       <div className="menu__scrim" aria-hidden="true" />
       <div className="menu__stage">{children}</div>
     </div>

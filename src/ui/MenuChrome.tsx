@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 
 import { ComingSoonBadge } from './ComingSoonBadge';
 import { DesignStage } from './DesignStage';
+import { visibleMenuContent } from './menuVisibility';
 
 /**
  * 三个菜单（主菜单 / 选择对战模式 / 限时活动模式）共用的外壳。
@@ -17,6 +18,7 @@ import { DesignStage } from './DesignStage';
  */
 export interface MenuChromeProps {
   readonly backgroundUrl: string | null;
+  readonly className?: string | undefined;
   readonly title: string;
   /** 标题下面的一行说明（活动大厅有，另两个没有）。 */
   readonly subtitle?: string | undefined;
@@ -38,9 +40,10 @@ export function MenuChrome({
   status,
   children,
   titleSize = 96,
+  className,
 }: MenuChromeProps) {
   return (
-    <DesignStage backgroundUrl={backgroundUrl}>
+    <DesignStage backgroundUrl={backgroundUrl} className={className}>
       {status && <div className="menu__status">{status}</div>}
 
       <h1 className="menu__title" style={{ ['--title-size' as string]: titleSize }}>
@@ -49,7 +52,7 @@ export function MenuChrome({
       {subtitle && <p className="menu__subtitle">{subtitle}</p>}
       {note}
 
-      {children}
+      {visibleMenuContent(children)}
     </DesignStage>
   );
 }

@@ -6,6 +6,7 @@ import type { Group, MeshStandardMaterial } from 'three';
 import type { CardDefinition } from '../../domain/cards/types';
 import { CARD_BACK_URL, cardFaceUrl } from '../../data/assets';
 import { useManagedTexture } from '../../services/useManagedTexture';
+import type { TextureTier } from '../../services/AssetManager';
 import { useSettingsStore } from '../../state/settingsStore';
 import { easeInOutCubic } from '../anim/easings';
 import { damp, flipAngle } from '../anim/motion';
@@ -45,6 +46,8 @@ import type { StatKind } from './statBadge';
  */
 export interface CardMeshProps {
   readonly card: CardDefinition;
+  /** Optional display resolution; battle and reveal retain their quality defaults. */
+  readonly textureTier?: TextureTier | undefined;
   readonly attackKey?: string | undefined;
   readonly position: readonly [number, number, number];
   readonly rotationY?: number | undefined;
@@ -66,6 +69,10 @@ export interface CardMeshProps {
   readonly interactive?: boolean | undefined;
   /** 是否叠加全息层。 */
   readonly holo?: boolean | undefined;
+  /** Display scenes can keep the same rarity rim as battle cards, with reveal-only emphasis. */
+  readonly glow?: boolean | undefined;
+  readonly glowScale?: number | undefined;
+  readonly glowHighlight?: Readonly<{ current: number }> | undefined;
   /** 全息强度倍数，用于查看器调参。默认 1。 */
   readonly holoScale?: number | undefined;
   /**
@@ -110,6 +117,7 @@ const FLIP_DURATION = 0.42;
 
 export function CardMesh({
   card,
+  textureTier,
   attackKey,
   position,
   rotationY = 0,
@@ -119,6 +127,9 @@ export function CardMesh({
   selected = false,
   interactive = true,
   holo,
+  glow,
+  glowScale,
+  glowHighlight,
   holoScale = 1,
   stats,
   emphasisedStats,
@@ -156,8 +167,8 @@ export function CardMesh({
   // 纹理档跟随画质：低档用缩略图，减少核显上的显存与带宽压力
   const cardTier = useSettingsStore((state) => state.profile.cardTier);
   const faceUrl = useMemo(
-    () => cardFaceUrl(card.cardId, cardTier),
-    [card.cardId, cardTier],
+    () => cardFaceUrl(card.cardId, textureTier ?? cardTier),
+    [card.cardId, cardTier, textureTier],
   );
   const faceTexture = useManagedTexture(faceUrl);
   const backTexture = useManagedTexture(CARD_BACK_URL);
@@ -320,7 +331,7 @@ export function CardMesh({
    * 手牌不描：那里一摞牌叠在一起，每张都发光会糊成一片，
    * 而且手牌本来就靠悬停抬升在提示，不需要再抢注意力。
    */
-  const showGlow = holoVisible && statLayout !== 'hand';
+  const showGlow = holoVisible && (glow ?? statLayout !== 'hand');
   // 数值徽标只在正面朝上时显示，且与全息无关（关掉全息仍要看得到数值）
   const showStatsNow = showStats && holoVisible;
 
@@ -361,7 +372,7 @@ export function CardMesh({
         />
       </mesh>
 
-      {showGlow && <CardGlow rarity={card.rarity} />}
+      {showGlow && <CardGlow rarity={card.rarity} strength={glowScale} highlight={glowHighlight} />}
 
       {showHolo && <HoloLayer rarity={card.rarity} />}
 

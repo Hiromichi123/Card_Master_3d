@@ -1,7 +1,7 @@
 import { ANIMATION_DURATION_SCALE } from '../anim/timing';
 import { useFrame } from '@react-three/fiber';
 import { useEffect, useMemo, useRef } from 'react';
-import { AdditiveBlending, MeshBasicMaterial } from 'three';
+import { AdditiveBlending, Color, MeshBasicMaterial } from 'three';
 
 import type { CardRarity } from '../../domain/cards/types';
 import { CARD_FACE_OFFSET, getCardGlowGeometry } from './cardGeometry';
@@ -58,7 +58,11 @@ const RARITY_GLOW: Record<CardRarity, { color: string; intensity: number; pulse:
   '#elna': { color: '#ff1493', intensity: 0.65, pulse: true },
 };
 
-export function CardGlow({ rarity }: { rarity: CardRarity }) {
+export function CardGlow({ rarity, strength = 1, highlight }: {
+  rarity: CardRarity;
+  strength?: number | undefined;
+  highlight?: Readonly<{ current: number }> | undefined;
+}) {
   const spec = RARITY_GLOW[rarity];
   const geometry = useMemo(() => getCardGlowGeometry(), []);
   const material = useMemo(
@@ -79,6 +83,7 @@ export function CardGlow({ rarity }: { rarity: CardRarity }) {
   const base = spec.intensity;
   const pulsing = spec.pulse;
   const elapsed = useRef(0);
+  const white = useMemo(() => new Color('white'), []);
 
   useEffect(
     () => () => {
@@ -88,18 +93,12 @@ export function CardGlow({ rarity }: { rarity: CardRarity }) {
   );
 
   useFrame((_, delta) => {
-    if (!pulsing) {
-      return;
-    }
-    // 与圣地描边同一档节奏：慢，只有一点点起伏
-    elapsed.current += Math.min(delta, 0.05) * 1000 / ANIMATION_DURATION_SCALE;
-    material.opacity = base * (0.88 + 0.12 * Math.sin(elapsed.current / 700));
+    if (pulsing) elapsed.current += Math.min(delta, 0.05) * 1000 / ANIMATION_DURATION_SCALE;
+    const flash = Math.max(0, Math.min(1, highlight?.current ?? 0));
+    material.color.set(spec.color).lerp(white, flash);
+    material.opacity = base * strength * (pulsing ? 0.88 + 0.12 * Math.sin(elapsed.current / 700) : 1) * (1 + flash * 0.5);
   });
-
-  // 不呼吸的那几档没有 useFrame 在改它，这里把初值设好
-  if (!pulsing) {
-    material.opacity = base;
-  }
+  material.opacity = base * strength;
 
   return (
     <mesh

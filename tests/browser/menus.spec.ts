@@ -94,21 +94,13 @@ test('未开放的入口点了给提示，不是死按钮', async ({ page }) => 
   const problems = collectProblems(page);
   await openHub(page);
 
-  /*
-    旧版对未实现入口的做法是「点了弹一句提示」（`_show_feature_notice`）。
-    这里**不能按精确名字找**：这三个入口带着「待开发」徽标，
-    可访问名是「融合 待开发」，`exact: true` 匹配不上。
-  */
-  await page.locator('.menu__entry').filter({ hasText: '融合' }).click();
-  await expect(page.locator('.toast')).toContainText('融合');
-
+  // Fusion is implemented; only intentionally unavailable online entries show a notice.
   await menuEntry(page, '进入战斗').click();
   await expect(page.locator('.menu__title')).toHaveText('选择对战模式');
   await menuEntry(page, '局域网 卡组对战').click();
   /*
     PLAN 第 6 节：不提供冒充联机的入口，所以这里只给解释、不开房间。
-    **按文字筛**：上一条「融合」的提示还在屏幕上（toast 有存活时间），
-    只按 `.toast` 找会同时命中两条（strict mode violation）。
+    按文字筛，避免其它提示尚未消失时产生多项匹配。
   */
   await expect(page.locator('.toast').filter({ hasText: '局域网' })).toContainText('PLAN 第 6 节');
 
@@ -126,33 +118,20 @@ test('返回主菜单回到主菜单，而不是导航栏切换', async ({ page 
   await clickNav(page, '主菜单');
 });
 
-/**
- * 换屏的黑场。
- *
- * 旧版 `ui/transition.py`：每秒 800 个 alpha，一程 255/800 ≈ **0.32 秒**，
- * 淡出到全黑 → 换场景 → 淡入。
- */
-test('换屏有黑场：先淡出到全黑，再淡入', async ({ page }) => {
+test('目录切换只交叉淡化背景，没有全屏黑场', async ({ page }) => {
   await openHub(page);
+  await menuEntry(page, '进入战斗').click();
+  await expect(page.locator('.menu__title')).toHaveText('选择对战模式');
+  await expect(page.locator('.fade')).toHaveCount(0);
+  await expect(page.locator('[data-background-layer="base"]')).toBeVisible();
+});
 
-  await clickNav(page, '图鉴');
-  // 逐帧采样黑场的不透明度（采样的是真实渲染值，不是我们的状态变量）
-  const samples: number[] = [];
-  for (let i = 0; i < 16; i += 1) {
-    samples.push(
-      await page.evaluate(() => {
-        const overlay = document.querySelector('.fade');
-        return overlay ? Number(getComputedStyle(overlay).opacity) : -1;
-      }),
-    );
-    await page.waitForTimeout(50);
-  }
-
-  expect(Math.max(...samples), '黑场没有淡到足够黑').toBeGreaterThan(0.6);
-  expect(samples[samples.length - 1], '最后应当已经淡回透明').toBe(0);
-  // 中间确实经过了「半透明」——证明是渐变而不是瞬切
-  expect(samples.some((value) => value > 0.15 && value < 0.85)).toBe(true);
-
-  // 黑场之后落在新屏幕
-  await expect(page.locator('.collection__lead')).toBeVisible();
+test('融合入口打开工坊，Draft 与迷宫入口已移除', async ({ page }) => {
+  await openHub(page);
+  await expect(page.locator('.menu__entry').filter({ hasText: 'Draft' })).toHaveCount(0);
+  await expect(page.locator('.menu__entry').filter({ hasText: '迷宫' })).toHaveCount(0);
+  await menuEntry(page, '融合').click();
+  await expect(page.getByRole('region', { name: '融合工坊' })).toBeVisible();
+  await expect(page.getByRole('button', { name: '消耗 5 张并融合' })).toBeDisabled();
+  await expect(page.getByRole('region', { name: '收藏材料' })).toBeVisible();
 });

@@ -20,6 +20,7 @@ import { useRarityIndex } from '../state/useRarityIndex';
 import { CardTile } from '../ui/CardTile';
 import { ScrollArea } from '../ui/ScrollArea';
 import { useParallax } from '../ui/useParallax';
+import { CrossfadeBackground } from '../ui/SceneBackground';
 import { assetManifest } from '../data/assets';
 
 /**
@@ -208,11 +209,7 @@ export function DeckEditorScene({ profile, store }: DeckEditorSceneProps) {
 
   return (
     <div className="screen deckedit" ref={parallaxRef}>
-      <div
-        className="menu__bg deckedit__bg"
-        style={background ? { backgroundImage: `url(${background})` } : undefined}
-        aria-hidden="true"
-      />
+      <CrossfadeBackground url={background} className="menu__bg deckedit__bg" />
       <div className="menu__scrim" aria-hidden="true" />
 
       <header className="screen__head">

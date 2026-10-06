@@ -10,6 +10,7 @@
 
 import type { CardDefinition, CardRarity } from '../domain/cards/types';
 import type { Currencies } from '../domain/progression/types';
+import type { FusionSpec } from '../domain/progression/fusion';
 
 import cardsJson from './cards.json';
 import decksJson from './decks.json';
@@ -245,6 +246,8 @@ export const shopSpecs = {
   activity: toShopSpec(shopsJson.activityShop as never),
 };
 
+export const fusionSpec = shopsJson.fusion as FusionSpec;
+
 export const shops = shopsJson as unknown as {
   available: boolean;
   normalShop: {
@@ -260,7 +263,7 @@ export const shops = shopsJson as unknown as {
     shelves: Record<string, ShopShelf>;
     refresh: { dayKeyFormat: string; seedDerivation: string; seedReproducible: boolean };
   } | null;
-  fusion: unknown | null;
+  fusion: FusionSpec | null;
   /**
    * 旧版的真实缺陷清单。**这一轮是「修不要抄」**：
    * 每条都写了新版本该怎么处理，实现时逐条对照。

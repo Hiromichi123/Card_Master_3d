@@ -1,4 +1,4 @@
-import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
+import { Suspense, useCallback, useEffect, useState } from 'react';
 
 import { BattleScene } from '../scenes/BattleScene';
 import { CollectionScene } from '../scenes/CollectionScene';
@@ -8,18 +8,21 @@ import { ActivityScene } from '../scenes/ActivityScene';
 import { CampaignScene } from '../scenes/CampaignScene';
 import { BattleMenuScene } from '../scenes/BattleMenuScene';
 import { GachaScene } from '../scenes/GachaScene';
+import { FusionScene } from '../scenes/FusionScene';
+import { MazeScene } from '../scenes/MazeScene';
 import { ShopScene } from '../scenes/ShopScene';
 import { HubScene } from '../scenes/HubScene';
 import { getProfileStore } from '../state/profileStore';
 import type { ProfileStore } from '../state/createProfileStore';
 import { pushToast } from '../state/toastStore';
-import { useSettingsStore } from '../state/settingsStore';
+import { SceneBackgroundProvider } from '../ui/SceneBackground';
 import { useProfileStore } from '../state/useProfileStore';
 import { QualityControl } from '../ui/QualityControl';
 import { ScreenPlaceholder } from '../ui/ScreenPlaceholder';
 import { configFor, definitionsFor, settlementFor } from '../scenes/campaignFlow';
 import type { SettlementView, StageLaunch } from '../domain/progression/campaign';
 import { planSettlement } from '../domain/progression/campaign';
+import { isMazeLaunch, mazeSettlementFor, planMazeSettlement } from '../scenes/mazeFlow';
 import type { BattleOutcome } from '../domain/battle/types';
 import { CardTipHost } from '../ui/CardTipHost';
 import { ToastHost } from '../ui/ToastHost';
@@ -39,14 +42,6 @@ import { ROUTES, type RouteId } from './routes';
  * 3. **关卡启动载荷**。战役选关后要把这一局的卡组与奖励带进战斗场景，
  *    它是跨屏幕的一次性数据，放这里最直观。
  */
-/**
- * 换屏时的黑场时长（毫秒）。
- *
- * 旧版 `ui/transition.py` 是「每秒 800 个 alpha」，一程 255/800 ≈ **0.32 秒**：
- * 淡出到全黑 → 切场景 → 淡入。这里照抄这个节奏。
- */
-const FADE_MS = 320;
-
 export function App() {
   const [route, setRoute] = useState<RouteId>('hub');
   const [store, setStore] = useState<ProfileStore | null>(null);
@@ -66,15 +61,22 @@ export function App() {
    * 提交是**一笔事务**（金币/经验/水晶/掉落的卡/通关记录一起写）。
    * `battleId` 进事务，所以同一局再算一次会被存档层按 id 挡掉——
    * 「返回/重载/重复点击只能领一次」靠的是这一条，不是界面上的禁用。
+   *
+   * **迷宫与战役在这里分流**：两条路径的奖励算得不一样（迷宫按节点类型与强度、
+   * 不写通关记录），但都产出 `SettlementView`、都走同一次事务提交，
+   * 所以这一段只换「算奖励」和「包事务」两个函数，后面的落盘与结果面板完全共用。
    */
   const commitSettlement = useCallback(
     async (outcome: BattleOutcome) => {
       if (!launch || !store) {
         return;
       }
-      const computed = settlementFor(launch, outcome);
+      const maze = isMazeLaunch(launch);
+      const computed = maze ? mazeSettlementFor(launch, outcome) : settlementFor(launch, outcome);
       const result = await store.commitEconomic<SettlementView>(() =>
-        planSettlement(launch, computed, store.nextOperationId()),
+        maze
+          ? planMazeSettlement(launch, computed, store.nextOperationId())
+          : planSettlement(launch, computed, store.nextOperationId()),
       );
       if (result.ok) {
         setSettlement(result.view);
@@ -85,57 +87,8 @@ export function App() {
     },
     [launch, store],
   );
-  const reduceMotion = useSettingsStore((state) => state.reduceMotion);
-
-  /*
-    转场：淡出 → 换屏 → 淡入。
-
-    **转场期间不接受新的跳转**（`busyRef`）——旧版也是这么做的
-    （`if not self.transition.is_transitioning`），否则连点两个入口会让黑场
-    与三次切屏互相追尾。
-  */
-  const [fadeOn, setFadeOn] = useState(false);
-  const pendingRef = useRef<RouteId | null>(null);
-  const busyRef = useRef(false);
-
-  const navigate = useCallback(
-    (next: RouteId) => {
-      if (busyRef.current || next === route) {
-        return;
-      }
-      if (reduceMotion) {
-        setRoute(next);
-        return;
-      }
-      busyRef.current = true;
-      pendingRef.current = next;
-      setFadeOn(true);
-    },
-    [route, reduceMotion],
-  );
-
-  useEffect(() => {
-    if (!fadeOn) {
-      return;
-    }
-    const timer = window.setTimeout(() => {
-      const next = pendingRef.current;
-      pendingRef.current = null;
-      if (next) {
-        setRoute(next);
-      }
-      setFadeOn(false);
-      /*
-        **换屏的瞬间就放开输入**，不等淡入走完。
-
-        旧版是「转场期间一律不响应」，照搬的话屏幕已经能看清了还点不动，
-        实测很别扭（用例也在这个窗口里点空过）。淡入被下一次跳转打断是可接受的：
-        `fadeOn` 从当前不透明度继续往 1 走，看起来就是又黑了一次。
-      */
-      busyRef.current = false;
-    }, FADE_MS);
-    return () => window.clearTimeout(timer);
-  }, [fadeOn]);
+  // Scene UI switches immediately; background layers blend across route mounts.
+  const navigate = useCallback((next: RouteId) => { setRoute(next); }, []);
 
   useEffect(() => {
     let alive = true;
@@ -162,10 +115,11 @@ export function App() {
   }, [snapshot.fallbackReason]);
 
   return (
+    <SceneBackgroundProvider>
     <div className="app-shell">
       <nav className="app-nav">
         <span className="app-nav__brand">Card Master 3D</span>
-        {ROUTES.map((item) => (
+        {ROUTES.filter((item) => !['maze', 'draft'].includes(item.id)).map((item) => (
           <button
             key={item.id}
             type="button"
@@ -202,9 +156,11 @@ export function App() {
                 void commitSettlement(outcome);
               }}
               onBattleExit={() => {
+                // 打完回**来的地方**：迷宫回地图屏、战役回战役屏
+                const back: RouteId = launch && isMazeLaunch(launch) ? 'maze' : 'campaign';
                 setLaunch(null);
                 setSettlement(null);
-                navigate('campaign');
+                navigate(back);
               }}
               onNavigate={navigate}
               onReset={() => {
@@ -219,9 +175,8 @@ export function App() {
       {/* 悬停卡牌详情：全应用挂一次，卡片只要带 `data-card-id` 就自动有 */}
       <CardTipHost />
 
-      {/* 换屏的黑场。转场期间挡掉指针，避免点到正在淡出的那一屏 */}
-      <div className={fadeOn ? 'fade fade--on' : 'fade'} aria-hidden="true" />
     </div>
+    </SceneBackgroundProvider>
   );
 }
 
@@ -307,6 +262,8 @@ function Screen({
                   settlement,
                   onFinished: onBattleFinished,
                   onExit: onBattleExit,
+                  // 迷宫回地图屏、战役回战役屏——按钮文案得跟着变
+                  exitLabel: isMazeLaunch(launch) ? '返回地图' : '返回战役',
                 }
               : {})}
           />
@@ -316,8 +273,19 @@ function Screen({
       return (
         <CampaignScene profile={profile} onNavigate={onNavigate} onLaunch={onStageLaunch} />
       );
+    case 'maze':
+      return (
+        <MazeScene
+          profile={profile}
+          store={store}
+          onNavigate={onNavigate}
+          onLaunch={onStageLaunch}
+        />
+      );
     case 'gacha':
       return <GachaScene profile={profile} store={store} busy={snapshot.busy} onReturn={() => onNavigate('hub')} />;
+    case 'fusion':
+      return <FusionScene profile={profile} store={store} busy={snapshot.busy} onReturn={() => onNavigate('hub')} />;
     case 'collection':
       return <CollectionScene profile={profile} />;
     case 'deck':

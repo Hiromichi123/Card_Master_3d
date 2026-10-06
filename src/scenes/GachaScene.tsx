@@ -1,14 +1,13 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 import type { CardDefinition } from '../domain/cards/types';
 import { GachaStage } from '../rendering/gacha/GachaStage';
 
 import { cardById, cardDatabase, gachaPools } from '../data';
-import { backgroundUrl, cardFaceUrl } from '../data/assets';
+import { backgroundUrl } from '../data/assets';
 import { createRng, seedFrom } from '../domain/battle/rng';
 import {
   buildCardPool,
-  formatPercent,
   planPull,
   probabilityRows,
   rarePercent,
@@ -18,11 +17,11 @@ import type { GachaResult } from '../domain/progression/types';
 import type { ProfileState } from '../domain/progression/types';
 import type { ProfileStore } from '../state/createProfileStore';
 import { useRarityIndex } from '../state/useRarityIndex';
-import { useSettingsStore } from '../state/settingsStore';
-import { CurrencyBar } from '../ui/CurrencyBar';
-import { GachaWheel } from '../ui/GachaWheel';
-import { CardTile } from '../ui/CardTile';
-import { ScrollArea } from '../ui/ScrollArea';
+import { SPEED_SCALE, useSettingsStore } from '../state/settingsStore';
+import { GachaMenu } from '../ui/GachaMenu';
+import { CardShowcase } from '../ui/CardShowcase';
+import { GachaProbabilityStrip } from '../ui/GachaProbabilityStrip';
+import { UI_EXIT } from '../rendering/gacha/choreography';
 
 /**
  * 抽卡。
@@ -58,6 +57,7 @@ export interface GachaSceneProps {
   readonly profile: ProfileState;
   readonly store: ProfileStore;
   readonly busy: boolean;
+  readonly onReturn?: (() => void) | undefined;
 }
 
 interface Run {
@@ -77,27 +77,32 @@ type Phase = 'select' | 'reveal' | 'result';
 /** 测试按钮每次发多少。 */
 const GRANT_AMOUNT = 50_000;
 
-export function GachaScene({ profile, store, busy }: GachaSceneProps) {
+export function GachaScene({ profile, store, busy, onReturn }: GachaSceneProps) {
   const rarityIndex = useRarityIndex();
   const presentationSpeed = useSettingsStore((state) => state.presentationSpeed);
-  const reduceMotion = useSettingsStore((state) => state.reduceMotion);
 
   const pools = gachaPools.pools;
   const [poolIndex, setPoolIndex] = useState(0);
   const [run, setRun] = useState<Run | null>(null);
   const [phase, setPhase] = useState<Phase>('select');
-  /**
-   * 这一次抽卡走不走 3D 演出。
-   *
-   * **不能靠 `phase` 推**：`result` 阶段舞台要留在后面当背景，
-   * 于是「不演出的那次」也会因为 `phase === 'result'` 把 Canvas 挂起来——
-   * 正好是「跳过」要避免的那件事（白开一个 WebGL 上下文）。
-   */
+  /** Skip still presents physical cards, but jumps straight to their final pose. */
   const [animated, setAnimated] = useState(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [previewId, setPreviewId] = useState<string | null>(null);
+  const [uiStarted, setUIStarted] = useState(false);
+  const [uiDismissed, setUIDismissed] = useState(false);
+  const [transitionOrigin, setTransitionOrigin] = useState<'menu' | 'result'>('menu');
+  const [outgoingCards, setOutgoingCards] = useState<readonly CardDefinition[]>([]);
+  const [showcaseHovered, setShowcaseHovered] = useState<number | null>(null);
+  const [showcasePointer, setShowcasePointer] = useState<readonly [number, number]>([0, 0]);
+  const handleStarted = useCallback(() => setUIStarted(true), []);
+  const handleMenuHidden = useCallback(() => { setUIDismissed(true); setOutgoingCards([]); }, []);
+  const handleFinished = useCallback(() => setPhase('result'), []);
 
   const pool = pools[poolIndex] ?? pools[0];
+  const showcaseCards = useMemo(() => (pool?.showcaseCards ?? []).map((id) => cardById.get(id))
+    .filter((card): card is CardDefinition => card !== undefined), [pool]);
 
   /*
     权重表按**池里写的表名**取，不按池名猜——`probTable` 就是为这件事存在的。
@@ -181,11 +186,12 @@ export function GachaScene({ profile, store, busy }: GachaSceneProps) {
         setError(outcome.message);
         return;
       }
+      setPreviewId(null);
+      setTransitionOrigin(phase === 'result' ? 'result' : 'menu');
+      setOutgoingCards(runCards);
+      setUIStarted(false); setUIDismissed(false); setShowcaseHovered(null);
       setRun({ operationId, view: outcome.view });
-      /*
-        「跳过」不走舞台：挂一个 WebGL 上下文只为了立刻跳到最后，是白花的。
-        这也是**所有不进演出的路径唯一的降级出口**（见本文件头的说明）。
-      */
+      // Skip reveals the same physical cards immediately; it never opens a result list dialog.
       const withStage = presentationSpeed !== 'skip';
       setAnimated(withStage);
       setPhase(withStage ? 'reveal' : 'result');
@@ -199,7 +205,6 @@ export function GachaScene({ profile, store, busy }: GachaSceneProps) {
   }
 
   const running = pending || busy;
-  const cheap = !run;
 
   /** 这一批抽到的卡（按抽出顺序，重复的也在）。 */
   const runCards = useMemo((): CardDefinition[] => {
@@ -212,6 +217,8 @@ export function GachaScene({ profile, store, busy }: GachaSceneProps) {
   }, [run]);
 
   const closeRun = (): void => {
+    setPreviewId(null);
+    setUIStarted(false); setUIDismissed(false); setOutgoingCards([]);
     setRun(null);
     setAnimated(false);
     setPhase('select');
@@ -219,204 +226,43 @@ export function GachaScene({ profile, store, busy }: GachaSceneProps) {
 
   return (
     <div className="screen gacha">
-      <header className="screen__head">
-        <div>
-          <h1 className="screen__title">抽卡</h1>
-          <p className="gacha__lead">
-            八个卡池，概率由权重表现算 · 演出速度：{presentationSpeed === 'skip' ? '跳过' : presentationSpeed === 'fast' ? '快速' : '正常'}
-          </p>
-        </div>
-        <CurrencyBar currencies={profile.currencies} />
-      </header>
-
-      <div className="gacha__body">
-        <GachaWheel
-          pools={pools}
-          activeIndex={poolIndex}
-          onSelect={setPoolIndex}
-          still={reduceMotion}
-        />
-
-        <aside className="gacha__panel">
-          <h2 className="gacha__pool-name">{pool.name}</h2>
-          <p className="gacha__desc">{pool.description}</p>
-
-          {/*
-            概率是**算出来的**：每一档的百分比 + 高稀有合计。
-            高稀有的口径来自 `rarities.json`（`isHighRarity`），不是硬编码一档。
-          */}
-          <ul className="gacha__probs">
-            {rows.map((row) => (
-              <li key={row.rarity} className="gacha__prob">
-                <span
-                  className="gacha__prob-dot"
-                  style={{ background: rarityIndex.colorOf(row.rarity) }}
-                  aria-hidden="true"
-                />
-                <span className="gacha__prob-rarity">{row.rarity}</span>
-                <b className="gacha__prob-value">{formatPercent(row.percent)}</b>
-              </li>
-            ))}
-          </ul>
-          <p className="gacha__rare">稀有及以上合计 {formatPercent(rare)}</p>
-
-          <div className="gacha__buttons">
-            <button
-              type="button"
-              className="btn"
-              onClick={() => void pull(1)}
-              disabled={running}
-              data-testid="pull-1"
-            >
-              单抽 · {pool.singleCost}
-              {pool.currency === 'gold' ? ' 金币' : ' 水晶'}
-            </button>
-            <button
-              type="button"
-              className="btn btn--primary"
-              onClick={() => void pull(10)}
-              disabled={running}
-              data-testid="pull-10"
-            >
-              十连 · {pool.tenCost}
-              {pool.currency === 'gold' ? ' 金币' : ' 水晶'}
-            </button>
-          </div>
-
-          {/*
-            测试用：给自己发钱。真实玩法里货币来自关卡与商店，
-            这两颗按钮只是让「抽到没钱」不至于卡住验收。
-          */}
-          <div className="gacha__dev">
-            <span className="gacha__dev-label">测试</span>
-            <button
-              type="button"
-              className="btn btn--tiny"
-              onClick={() => void grant('gold')}
-              disabled={running}
-              data-testid="grant-gold"
-            >
-              +50000 金币
-            </button>
-            <button
-              type="button"
-              className="btn btn--tiny"
-              onClick={() => void grant('crystal')}
-              disabled={running}
-              data-testid="grant-crystal"
-            >
-              +50000 水晶
-            </button>
-          </div>
-
-          {error && (
-            <p className="gacha__error" role="status">
-              {error}
-            </p>
-          )}
-
-          {/* 开奖之前列一下这个池子里会出现的卡，给个直观预期 */}
-          {cheap && pool.showcaseCards.length > 0 && (
-            <div className="gacha__showcase">
-              <h3 className="gacha__heading">可能抽到</h3>
-              <div className="gacha__showcase-grid">
-                {pool.showcaseCards.slice(0, 6).map((cardId) => (
-                  <CardTile key={cardId} cardId={cardId} size="sm" />
-                ))}
-              </div>
-            </div>
-          )}
-        </aside>
-      </div>
+      {(phase === 'select' || (phase === 'reveal' && transitionOrigin === 'menu' && !uiDismissed)) && <GachaMenu
+        pools={pools} pool={pool} poolIndex={poolIndex} onSelectPool={setPoolIndex}
+        currencies={profile.currencies} running={running || phase !== 'select'} error={error}
+        onPull={(count) => { void pull(count); }} onGrant={(currency) => { void grant(currency); }}
+        onReturn={onReturn}
+        leaving={phase === 'reveal' && uiStarted} exitSeconds={UI_EXIT * SPEED_SCALE[presentationSpeed]}
+        onHoverCard={setShowcaseHovered} onCardPointer={setShowcasePointer}
+      />}
 
       {/*
-        演出中与演出后舞台都留着：`reveal` 时结果面板还没出来（先看翻卡），
-        `result` 时面板浮在舞台上面，卡片停在最终位姿当背景。
+        演出中与演出后舞台都留着：`reveal` 时先看翻卡，
+        `result` 时实体卡可直接预览，只覆盖离开与继续抽卡的操作。
       */}
-      {run && animated && (
-        <GachaStage
-          cards={runCards}
-          backdropUrl={backgroundUrl(pool.bgType)}
-          onFinished={() => {
-            setPhase('result');
-          }}
-        />
+      <GachaStage cards={runCards} backdropUrl={backgroundUrl(pool.bgType)} onFinished={handleFinished}
+        completed={phase === 'result'} skipAnimation={!animated} onPreview={(card) => setPreviewId(card.cardId)}
+        runKey={run?.operationId ?? null} mode={phase} showcaseCards={showcaseCards}
+        showcaseHovered={showcaseHovered} showcasePointer={showcasePointer}
+        menuVisible={phase === 'select' || (phase === 'reveal' && transitionOrigin === 'menu' && !uiDismissed)}
+        outgoingCards={phase === 'reveal' && transitionOrigin === 'result' && !uiDismissed ? outgoingCards : []}
+        onStarted={handleStarted} onMenuHidden={handleMenuHidden} />
+      <GachaProbabilityStrip rows={rows} rare={rare} />
+      {run && (phase === 'result' || (phase === 'reveal' && transitionOrigin === 'result' && !uiDismissed)) && (
+        <section className={`gacha-complete${phase === 'reveal' && uiStarted ? ' gacha-complete--leaving' : ''}`} aria-label="抽卡完成"
+          style={{ ['--gacha-exit-duration' as string]: `${UI_EXIT * SPEED_SCALE[presentationSpeed]}s` }}>
+          <header className="gacha-complete__head"><h2>抽卡完成</h2><p>获得 {run.view.cardIds.length} 张卡牌 · 点击卡牌查看预览</p></header>
+          <div className="gacha-complete__actions">
+            <button type="button" className="btn" onClick={closeRun} disabled={running || phase !== 'result'}>离开</button>
+            <button type="button" className="btn btn--primary" disabled={running || phase !== 'result'} data-testid="pull-again"
+              onClick={() => void pull(run.view.cardIds.length === 1 ? 1 : 10)}>
+              继续抽卡<span>{run.view.cardIds.length === 1 ? pool.singleCost : pool.tenCost} {pool.currency === 'gold' ? '金币' : '水晶'} · {run.view.cardIds.length === 1 ? '单抽' : '十连'}</span>
+            </button>
+          </div>
+          {error && <p className="gacha__error gacha-complete__error" role="status">{error}</p>}
+        </section>
       )}
-
-      {run && phase === 'result' && (
-        <GachaResultPanel run={run} onContinue={closeRun} onClose={closeRun} />
-      )}
-    </div>
-  );
-}
-
-/**
- * 结果面板。
- *
- * **按下标逐条渲染**，不按 cardId 去重——十连抽到三张同卡就是三条，
- * 每一张都是玩家真拿到的。去重会把「抽到三张」显示成「抽到一张」。
- *
- * 现阶段这里是 DOM 列表；3D 舞台接上之后，舞台留在后面、这块浮在上面。
- */
-function GachaResultPanel({
-  run,
-  onContinue,
-  onClose,
-}: {
-  readonly run: Run;
-  readonly onContinue: () => void;
-  readonly onClose: () => void;
-}) {
-  const rarityIndex = useRarityIndex();
-  return (
-    <div className="overlay overlay--fixed" role="dialog" aria-label="抽卡结果">
-      <div className="overlay__panel gacha-result">
-        <header className="gacha-result__head">
-          <h2 className="gacha-result__title">抽卡结果</h2>
-          <p className="gacha-result__count">{run.view.cardIds.length} 张</p>
-        </header>
-        <ScrollArea>
-          <ul className="gacha-result__list">
-            {run.view.cardIds.map((cardId, index) => {
-              const rarity = run.view.rarities[index] ?? cardById.get(cardId)?.rarity ?? '';
-              return (
-                <li
-                  key={`${cardId}-${index}`}
-                  className="gacha-result__item"
-                  data-card-id={cardId}
-                  data-rarity={rarity}
-                  style={{ borderColor: rarityIndex.colorOf(rarity) }}
-                >
-                  {cardFaceUrl(cardId, 'thumbnail') && (
-                    <img
-                      className="gacha-result__art"
-                      src={cardFaceUrl(cardId, 'thumbnail') ?? ''}
-                      alt={cardById.get(cardId)?.name ?? cardId}
-                    />
-                  )}
-                  <span className="gacha-result__name">
-                    {cardById.get(cardId)?.name ?? cardId}
-                  </span>
-                  <span
-                    className="gacha-result__rarity"
-                    style={{ color: rarityIndex.colorOf(rarity) }}
-                  >
-                    {rarity}
-                  </span>
-                </li>
-              );
-            })}
-          </ul>
-        </ScrollArea>
-        <div className="gacha-result__actions">
-          <button type="button" className="btn" onClick={onClose}>
-            关闭
-          </button>
-          <button type="button" className="btn btn--primary" onClick={onContinue}>
-            继续抽卡
-          </button>
-        </div>
-      </div>
+      {previewId && <CardShowcase cardId={previewId} cardIds={[...new Set(runCards.map((card) => card.cardId))]}
+        onSelect={setPreviewId} onClose={() => setPreviewId(null)} />}
     </div>
   );
 }

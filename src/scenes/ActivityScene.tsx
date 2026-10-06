@@ -20,9 +20,8 @@ import type { RouteId } from '../app/routes';
  * 迷宫挑战（点进迷宫）/ 深渊挑战（未开放）/ 协力突袭（未开放）；
  * 按钮是「前往单人战役 / 活动商店 / 返回主菜单」。
  *
- * **不能照搬的一处**：旧版第一张卡直接进 `activity_maze_scene`，
- * 那是 P6 的范围，本项目还没有——所以三张卡都按旧版对「未开放」那张的处理，
- * 点了给一句提示。等迷宫做完，把第一张接上 `maze` 路由即可。
+ * 第一张卡照旧版直接进迷宫（`maze` 路由，即 `scenes/MazeScene.tsx`）；
+ * 另外两张按旧版对「未开放」那张的处理，点了给一句提示。
  */
 export interface ActivitySceneProps {
   readonly profile: ProfileState;
@@ -42,7 +41,7 @@ const FEATURES: readonly Feature[] = [
     title: '迷宫挑战',
     desc: '进入限时迷宫，连续挑战三个阶段首领，获得最终奖励。',
     schedule: '活动期间常驻开放',
-    route: null,
+    route: 'maze',
   },
   {
     title: '深渊挑战（未开放）',

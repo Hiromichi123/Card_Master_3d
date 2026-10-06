@@ -13,7 +13,6 @@ import { describe, expect, it } from 'vitest';
 
 import {
   CARD_ASPECT,
-  DECK_POINT,
   FLIP_HIGH,
   SINGLE_CARD_SCALE,
   STAGGER,
@@ -69,18 +68,12 @@ describe('落位', () => {
 });
 
 describe('采样：起手与收尾', () => {
-  it('时间 0 时第一张刚从牌堆起飞，其余九张还没轮到', () => {
+  it('no paid cards appear before UI exit and camera pullback have completed', () => {
     const pose = createPose();
-    // 第 0 张的延迟就是 0，它此刻在起飞点、盖着
-    samplePose(TEN_LOW, 0, 0, pose);
-    expect(pose.visible).toBe(true);
-    expect(pose.position[0]).toBeCloseTo(DECK_POINT[0], 6);
-    expect(pose.position[1]).toBeCloseTo(DECK_POINT[1], 6);
-    expect(pose.flip).toBe(1);
-
-    for (let index = 1; index < 10; index += 1) {
+    for (let index = 0; index < TEN_LOW.shots.length; index++) {
       samplePose(TEN_LOW, index, 0, pose);
-      expect(pose.visible, `第 ${index} 张不该在 0 秒就出来`).toBe(false);
+      expect(pose.visible).toBe(false);
+      expect(pose.flip).toBe(1);
     }
   });
 
@@ -98,26 +91,27 @@ describe('采样：起手与收尾', () => {
     });
   });
 
-  it('从起飞点出发：第一张刚开始飞时在牌堆附近', () => {
+  it('each face-down card starts above its own landing slot', () => {
     const pose = createPose();
-    const first = TEN_LOW.shots[0];
-    samplePose(TEN_LOW, 0, (first?.delay ?? 0) + 0.0001, pose);
+    const first = TEN_LOW.shots[0]!;
+    samplePose(TEN_LOW, 0, first.delay + 0.0001, pose);
     expect(pose.visible).toBe(true);
-    expect(pose.position[1]).toBeLessThan(DECK_POINT[1] + 0.05);
+    expect(pose.position[0]).toBeCloseTo(first.slot[0]);
+    expect(pose.position[1]).toBeGreaterThan(first.slot[1] + 2);
+    expect(pose.flip).toBe(1);
   });
 
-  it('入场是抛物线：中段抬高，两端贴地', () => {
+  it('the landing descends smoothly to the board before revealing', () => {
     const pose = createPose();
-    const shot = TEN_LOW.shots[0];
-    const at = (t: number): number => {
-      samplePose(TEN_LOW, 0, (shot?.delay ?? 0) + t, pose);
+    const shot = TEN_LOW.shots[0]!;
+    const at = (progress: number): number => {
+      samplePose(TEN_LOW, 0, shot.delay + progress * shot.flight, pose);
       return pose.position[1];
     };
-    const start = at(0.001);
-    const middle = at(0.5);
-    const end = at(1);
-    expect(middle).toBeGreaterThan(start + 0.2);
-    expect(middle).toBeGreaterThan(end + 0.2);
+    expect(at(0)).toBeGreaterThan(at(0.5));
+    expect(at(0.5)).toBeGreaterThan(at(1));
+    expect(at(1)).toBeCloseTo(shot.slot[1]);
+    expect(pose.flip).toBe(1);
   });
 });
 

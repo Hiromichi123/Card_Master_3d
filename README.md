@@ -1,184 +1,161 @@
-# Card Master 3D — 重写计划
+# Card Master 3D
 
-日期：2026-10-05。原项目：`D:\Github\card_maker`。目标项目：`D:\Github\card_master_3d`。
+把旧项目 `card_maker`（Pygame 原型）重写成**「3D 战桌 + 实体卡牌 + 立体技能特效」**的桌面浏览器版本。
+卡牌、技能族、关卡、卡池与商店货架都来自旧项目的数据；规则引擎、渲染与交互全部重写。
 
-**当前进度：P0、P1、P2、P3 已完成。**
-P3 是首个可玩战斗切片：点击「战斗场景」→「开始对局」即可和 AI 打完整局，
-固定牌组与固定随机种子，支持正常/快速/跳过三档演出。
-下一步是 P4：全部技能的表现完成度与验收样例。
+**当前版本：v1.0**（2026-10-06）· [施工清单](CONSTRUCTION_CHECKLIST.md) · [重写方案](PLAN.md) · [旧项目核查](docs/LEGACY_AUDIT.md)
 
-## 运行方式
+## 这是什么
+
+一副牌桌摆在屏幕上：手牌是能拿起来翻面的实体卡，出牌有位移与落位演出，
+技能带火球、电弧、护盾、治疗环这些立体特效；卡面是高分辨率成品卡面，
+动态 ATK/HP/CD 与卡面分开显示（改数值不用重画贴图）。
+
+战斗规则跑在一个**不依赖浏览器**的引擎里（`src/domain/`，没有一行 `three`/`react`/DOM 的 import），
+所以整局对局可以在 node 里跑完并逐事件复现；界面只负责把事件按顺序演出来。
+这条边界是重写时最先立下的，也是「同种子必定同结果」能被测试钉住的原因。
+
+## 快速开始
 
 ```bash
 npm install
-npm run dev          # http://127.0.0.1:5173
+npm run dev      # http://127.0.0.1:5173
 ```
 
-导航栏三个页签：
+运行环境：**Node >= 22.12.0**（Vite 的 `engines` 校验；本机升级过程见 [docs/VERSIONS.md](docs/VERSIONS.md) 第 1 节）。
 
-| 页签 | 内容 |
+| 命令 | 用途 |
 | --- | --- |
-| 数据自检 | 确认导入的数据被应用读到，数值与导入报告一致 |
-| 战斗场景 | 和 AI 打一整局：菜单 → 出牌 → 胜负 → 再开一局 |
-| 实验台 | 手动触发卡牌特性与 13 类攻击特效，调强度/数量/时长/配色，暂停与跳过 |
-
-导航栏右侧可切换**台面**（10 套）、**视角**（4 个预设）、画质档（低/中/高）与
-演出速度（正常/快速/跳过），并可打开性能读数条。
-
-战斗场景里点「开始对局」进入一局固定牌组的对局（固定随机种子，同种子必定同结果）。
-勾上「自动演示」则由双方 AI 出牌，正常速度跑完约两分钟。
-玩法提示在右下角：**本回合必须先出一张牌**才能结束回合（旧版规则），
-只有手上没牌或准备区与战斗区都满时才允许直接过。
-
-战斗场景里**拖动鼠标即可自由旋转视角**，滚轮缩放。取景按内容外接盒计算，
-任何预设与旋转角度下板面都不会被裁掉；窗口变化时保留你转到的方位角。
-
-```bash
-npm run typecheck    # tsc --noEmit（秒级，任何改动都跑）
-npm run test         # Vitest 单元测试（全套）
-npx playwright test  # 浏览器用例（会自动启动 dev server）
-npm run build        # 类型检查 + 生产构建
-```
+| `npm run dev` | 开发服务器 |
+| `npm run typecheck` | `tsc --noEmit`，秒级，任何改动都跑 |
+| `npm run test` | Vitest 单元测试（全套，秒级） |
+| `npx playwright test` | 浏览器用例（自动起 dev server，分钟级） |
+| `npm run build` | 类型检查 + 生产构建 |
+| `npm run preview` | 预览生产构建（本地 HTTP，不依赖任何 CDN） |
 
 **日常改动只跑相关的那几个用例**：浏览器用例要现开页面、台面贴图是逐像素现生成的，
 跑满一次是分钟级，而其中大部分与本次改动无关。改完跑
+`npx playwright test tests/browser/<对应文件>.spec.ts` 与
+`npx vitest run tests/unit/<对应文件>.test.ts` 即可，
+完整的那套留到阶段收尾、提交前跑（约定见 [CONSTRUCTION_CHECKLIST.md](CONSTRUCTION_CHECKLIST.md) 开头）。
+代价是回归要到收尾才暴露，所以**新增或改动的行为必须当场补上断言**。
 
-```bash
-npx playwright test tests/browser/<对应文件>.spec.ts
-npx vitest run tests/unit/<对应文件>.test.ts
-```
+## 已实现的玩法
 
-即可，上面那套完整的留到阶段收尾、提交前跑（约定见
-[CONSTRUCTION_CHECKLIST.md](CONSTRUCTION_CHECKLIST.md) 开头）。
+主菜单顶栏是页签，玩法分两条动线：**进入战斗**（选择对战模式）与**活动入口**（限时活动）。
 
-Node 需要 `>=22.12.0`；本机升级过程的记录见 [docs/VERSIONS.md](docs/VERSIONS.md) 第 1 节。
+| 入口 | 内容 | 对应旧版 |
+| --- | --- | --- |
+| 主菜单 | 海报轮播、视差背景、配置/图鉴/商店入口 | `menu.py` |
+| 进入战斗 → 单人战役 | 世界地图 → 章节地图 → 开战 → 结算，三章十二关 | `scenes/map/*` |
+| 进入战斗 → 活动模式 | 活动大厅：迷宫挑战 / 深渊（未开放）/ 协力（未开放） | `activity/activity_scene.py` |
+| 活动大厅 → 迷宫挑战 | **迷宫第一层**：50–60 节点的地图、走格子、普通/精英/Boss 节点、楼层商店、徽章与活动卡掉落 | `activity/maze_scene.py` |
+| 抽卡 | 8 个卡池，单抽与十连；概率由权重现算 | `gacha/*` |
+| 图鉴 | 按稀有度/拥有数筛选，悬停出详情 | `collection.py` |
+| 配置 | 组卡：上限 12 张，可用张数 = 拥有 − 已上阵 | `deck_builder_scene.py` |
+| 商店 | 常规与活动两套货架，按日刷新的售罄记录 | `shop_scene.py` / `activity_shop_scene.py` |
+| 融合 | 五槽祭坛：五张换一张，消耗/结果权重与概率由配置算出 | `workshop_scene.py` |
+| 演示战斗 / 战役 / 迷宫 | 同一套引擎，对 AI；可正常/快速/跳过三档演出 | `battle/*` |
 
-## 阅读顺序
+导航栏右侧随时可切换**台面**（10 套）、**视角**（4 个预设）、画质档（低/中/高）与演出速度（正常/快速/跳过），
+并可打开性能读数条；战斗里**拖动鼠标自由旋转视角**、滚轮缩放，「静止」会冻结台面天气而不是移除它。
+
+## 操作
+
+- **战斗**：点手牌选中、点准备槽放下；右下角随时写着「现在能做什么」（能不能结束回合、是不是非法目标）。
+  本回合必须先出一张牌才能结束回合（旧版规则），只有手上没牌或准备区与战斗区都满时才允许直接过。
+- **迷宫**：点相邻节点看详情，**再点同一个节点才出发**（旧版就是两次点击确认）；
+  走到战斗节点直接开打，走到补给节点开楼层商店；左下「清空探索记录」换一轮新地图。
+- **卡牌详情**：任何界面把鼠标停在卡上就出详情框（图鉴 / 商店 / 组卡 / 迷宫货架共用一套）。
+
+## 技术栈与目录
+
+React 19 + TypeScript + Three.js（React Three Fiber / Drei / postprocessing）+ zustand，构建用 Vite 8。
+
+| 目录 | 内容 |
+| --- | --- |
+| `src/domain/` | 纯规则：战斗引擎、技能族、抽卡/经济/战役/迷宫/融合的纯逻辑。**无 DOM、无 three** |
+| `src/rendering/` | 3D 表现：卡牌、战桌、特效、抽卡舞台、融合祭坛 |
+| `src/scenes/` | 各个屏幕（主菜单、图鉴、商店、战役、迷宫、抽卡、战斗……）与它们之间的拼装 |
+| `src/ui/` | 通用界面件：设计空间舞台、菜单壳、货币/等级条、卡牌详情 |
+| `src/state/` | 存档实例（`ProfileStore`）、React 桥、toast |
+| `src/services/save/` | 存档仓库：IndexedDB / 内存 / 必定失败三种实现 |
+| `src/data/` | 由脚本生成的规范化数据与素材清单（不要手改） |
+| `scripts/` | 构建期导入与素材脚本（Python，只在重新导入旧数据时用） |
+| `tests/unit/` `tests/browser/` | 规则单测（node 环境）与端到端用例（Playwright） |
+
+## 验证
+
+v1.0 提交前在参考机器上跑过（Intel Arc 核显 / Chrome / 1920×1080）：
+
+| 项 | 结果 |
+| --- | --- |
+| `npm run typecheck` | 通过，零错误 |
+| `npm run test` | **277 passed** |
+| `npm run build` | 通过（1.58 s，生产构建，素材全部本地，无第三方 CDN） |
+| `npx playwright test` | **37 passed / 9 failed**（4.2 min）——**不是全绿，见下节** |
+
+浏览器用例的 9 条失败分两类：**迷宫那 2 条单跑时通过**（全套并发 5 个 worker、
+同时还在跑生产构建，5 秒的落盘断言超时），**其余 6 条属于正在收尾的两摊工作**
+（抽卡页改版 `gacha.spec.ts` ×5、战斗演出 `battleSlice.spec.ts` ×1）。
+发布这个快照时如实记下来，没有把它们藏进「已知问题」以外的说法里。
+
+性能与逐项验收记录在 `docs/validation/Px.md`；日常改动的验证范围约定见
+[CONSTRUCTION_CHECKLIST.md](CONSTRUCTION_CHECKLIST.md) 开头。
+
+## 文档
 
 1. [PLAN.md](PLAN.md)：范围、技术选型、3D 表现、战斗架构、资源与存档策略。
-2. [CONSTRUCTION_CHECKLIST.md](CONSTRUCTION_CHECKLIST.md)：按阶段勾选的施工任务、依赖和验收门槛。
-3. [docs/LEGACY_AUDIT.md](docs/LEGACY_AUDIT.md)：原项目静态核查结果、迁移来源和未完成内容。
-
-P0 / P1 的关键文档：
+2. [CONSTRUCTION_CHECKLIST.md](CONSTRUCTION_CHECKLIST.md)：按阶段勾选的施工任务、依赖与验收门槛。
+3. [docs/LEGACY_AUDIT.md](docs/LEGACY_AUDIT.md)：旧项目静态核查、迁移来源与未完成内容。
 
 | 文件 | 内容 |
 | --- | --- |
-| [docs/validation/P0.md](docs/validation/P0.md) | P0 验证环境、逐项结果、发现的差异与待办 |
-| [docs/validation/P1.md](docs/validation/P1.md) | P1 逐项结果、实测性能数字、踩到并修掉的缺陷 |
-| [docs/validation/P2.md](docs/validation/P2.md) | P2 逐项结果、`rules.md` 七个待复核项的结论 |
-| [docs/rules.md](docs/rules.md) | 战斗规则基线与新旧差异（D1–D15），P2 的执行依据 |
-| [docs/SKILL_COVERAGE.md](docs/SKILL_COVERAGE.md) | 35 技能族逐族机制 + 47 种未识别 trait 的分类依据 |
-| [docs/VISUAL_SPEC.md](docs/VISUAL_SPEC.md) | 视觉规范与参考效果清单，P1 验收直接引用 |
+| [docs/rules.md](docs/rules.md) | 战斗规则基线与新旧差异（D1–D15），每条标注是否改变对局结果 |
+| [docs/SKILL_COVERAGE.md](docs/SKILL_COVERAGE.md) | 35 技能族逐族机制与 47 种未识别 trait 的分类依据 |
+| [docs/VISUAL_SPEC.md](docs/VISUAL_SPEC.md) | 视觉规范与参考效果清单 |
+| [docs/MAZE_FLOOR1.md](docs/MAZE_FLOOR1.md) | 迷宫第一层：与旧版有意不同的地方、验证结果、没验到的部分 |
 | [docs/VERSIONS.md](docs/VERSIONS.md) | 锁定的依赖版本、Node 要求、Python 边界 |
 | [docs/SLICE.md](docs/SLICE.md) | 切片牌与固定 seed 的使用方式 |
 | [docs/import-report.md](docs/import-report.md) | 由脚本生成的导入报告，随数据源更新 |
+| [docs/validation/](docs/validation/) | 每个阶段的验证环境、逐项结果、截图与录像 |
 | [assets-sources.json](assets-sources.json) | 素材来源与许可登记 |
 
-## 已确认方向
+## 数据与素材来源
 
-采用 React + TypeScript + Three.js + React Three Fiber + Drei，面向桌面浏览器。
-先完成“3D 战桌、实体卡牌、立体技能特效”的可玩战斗，再迁移已有外围玩法。
-玩法保持基本一致，允许调整场景布局、交互和实现方式；不照搬 Pygame 的 Surface 缓存、阻塞动画和临时文件通信。
+- **卡牌**：247 张有效卡 + 9 张 `#yoroi` 未完成卡（只留档，不进战斗与抽卡池）。
+- **内容**：三章十二关、12 套敌方牌组、8 个抽卡池、常规/活动商店与融合配置，
+  全部由 `scripts/import-legacy-data.py` 从旧项目导入并规范化（可重复运行、不改动原项目）。
+- **素材**：卡面/卡背/图标/海报/背景的派生纹理在 `public/assets/`，由 `scripts/prepare-assets.py` 生成。
+  原素材在旧仓库内，不在本仓库；来源与许可见 `assets-sources.json`。
+- **移植的第三方代码**：台面系统、材质数据、环境光照与天气层移植自
+  [Chessboard-three.js](https://github.com/ibra-kdbra/Chessboard-three.js)（MIT），逐文件对应见 `assets-sources.json` 的 `portedCode` 段。
+- **参考项目**：旧项目与其中的第三方素材多为 GPL，**只作视觉参考**，不复制其代码与素材。
 
-首个可玩里程碑为 P3；已有玩法迁移完成的验收点为 P7。
-局域网联机、账号服务、旧版未接入技能、空章节和未完成活动机制均不进入本轮施工。
-用户已确认采用 3D 战桌＋实体卡牌＋立体技能特效。
+## 已知限制与未完成
 
-## P0 已完成的内容
+- **浏览器用例不是全绿**：见上一节，9 条里 2 条是全套并发下的超时、6 条是抽卡页与战斗演出正在收尾的部分。
+- **未实现**：本地 Draft（28 张轮流选牌）与同机双人对战、迷宫第二层、活动增益条目、
+  设置页（画质/音量等已有状态与入口，屏幕本身还是占位）、新版存档的 JSON 导入导出。
+- **不提供**：局域网联机入口——旧版那几个入口在界面上明确标着「本版本不提供冒充联机的入口」。
+- **数据侧的既有缺陷已按计划处理**：`2-3`/`2-4` 的敌方牌组是 13 张、超过组卡上限，
+  启动关卡时裁到 12 张并在界面上说明；`#yoroi` 缺 ATK/HP/CD，列为未完成内容。
+- **P4 的「35 技能族逐族验收」仍未闭环**：引擎侧 35 族都有规则与表现映射，
+  但每一族的规则样例与 VFX 展示入口没有逐条走查。
+- 首帧耗时没有取得可信数字（P1 记过一次，留给 P7 重测）；
+  已有性能数字（中档 3.47 ms/帧、182 draw calls）是 P1 时期的实测，
+  加入抽卡舞台、迷宫与融合之后**没有重测**。
+- 生产构建是**单个 JS 包**（1.8 MB，gzip 485 kB，Vite 会给一条 chunk 体积警告），
+  没有做代码分割——首屏会把 Three.js 一起下载。
+- 迷宫只有第一层；Boss 打完后地图上盖「已通关」，不会生成下一层。
 
-**数据**（`src/data/`，全部由脚本生成，可重复运行）：
+## 更新日志
 
-- 247 张有效卡 + 9 张 `#yoroi` 未完成卡（只留档，不进战斗与抽卡池）
-- 三章十二关、12 套敌方牌组、8 个抽卡池、常规/活动商店与工坊融合配置
-- 23 张切片卡、两套 12 张演示牌组、固定 seed
+### v1.0 — 2026-10-06
 
-**规则**（`docs/rules.md`）：双方 CD 同时递减、部署填首个空槽、从左到右同下标对位、
-地对空只打本体、免疫只挡技能伤害、分身共享状态组而复制独立。
-15 条允许改动的规则逐条标注是否改变对局结果；7 项静态阅读无法确定的留给 P2 复核。
-
-**素材**（`public/assets/` + `src/data/assets.manifest.json`）：
-切片卡的三档纹理、卡背、图标、技能图、海报与背景。
-`#`、`+`、中文与空格路径已全部规范化，生成的路径中不含这些字符。
-
-**已知问题**（已记录，未静默处理）：`special`/`holiday` 概率表权重和不足 100、
-常规卡池文案 8.9% 与实际 6.3% 不符、常规商店买卡不授予卡牌、礼包不发物品、
-迷宫商店 7 条增益是死数据、敌方牌组 `2-3`/`2-4` 超过组卡上限、
-`3-1`…`3-4` 疑似占位数据。完整清单见 `docs/validation/P0.md` 第 6 节。
-
-## 复现 P0
-
-```bash
-cd D:/Github/card_master_3d
-
-# 旧数据导入与校验（只读原项目，不修改 D:\Github\card_maker）
-python scripts/import-legacy-data.py
-python scripts/import-legacy-data.py --check
-
-# 素材盘点与派生纹理（默认只做切片，--all 做全部 247 张）
-python scripts/prepare-assets.py
-python scripts/prepare-assets.py --check
-```
-
-运行环境：Python 3.11 + Pillow 10（仅离线使用，不参与运行时）。
-
-## P1 已完成的内容
-
-**工程**：Vite 8 + React 19 + TypeScript 7，严格模式类型检查零错误，
-生产构建通过。错误边界与 WebGL2 不可用提示都在。
-
-**战桌与卡牌**（`src/rendering/battle`、`src/rendering/cards`、`src/rendering/table`）：
-倾斜透视相机、世界坐标槽位（每方 5 战斗 + 8 准备）、圆角挤出的实体卡牌、
-正反面与翻面动画、阴影、悬停抬升与倾斜、手牌扇形。
-动态 ATK/HP/CD 用 Canvas 贴图与烘焙卡面分离显示。
-
-**10 套战斗台面**（导航栏「台面」下拉切换）：锦标赛、大理石厅、黑曜石、祖母绿牌室、
-霓虹网格、象牙与乌木、草原、荒原、火山、雪原。每套同时决定格子垫、边框、嵌线、
-背景与雾、槽位配色与泛光性格。贴图是程序化生成的（fbm 噪声驱动的木纹/大理石/石面），
-仓库里不放二进制纹理。
-
-**场景环境**：运行时用 `RoomEnvironment` + `PMREMGenerator` 生成环境贴图（不下载 HDR），
-灯光是「投影主光 + 冷色补光 + 低位轮廓光 + 一点环境光」。这不是美化——
-台面用 `MeshPhysicalMaterial`，没有环境贴图时 clearcoat 与材质反射参数根本不起作用。
-
-**台面天气**：草原摇草、荒原浮尘、火山余烬、雪原落雪。只影响表现、不参与规则；
-整层只用 `Points` 与一个 `InstancedMesh`，每套台面只多 1–2 次 draw call。
-导航栏的「静止」会**冻结**天气而不是移除它。
-
-台面系统、材质数据、环境光照与天气层均移植自
-[Chessboard-three.js](https://github.com/ibra-kdbra/Chessboard-three.js)（MIT），
-逐文件对应见 [assets-sources.json](assets-sources.json) 的 `portedCode` 段。
-
-**全息与特效**（`src/rendering/cards/HoloLayer.tsx`、`src/rendering/effects`）：
-视角驱动的全息叠加层按稀有度分档；固定容量粒子池 + 13 类特效模板
-（普通攻击、火球/冰封/闪电及其群体版、护盾、治疗、祝福、诅咒、流转、状态）。
-
-**实验台**：手动触发任意特效或当前卡的任意 trait，调强度/数量/时长/配色，
-可暂停冻结在任意一帧、也可立即跳过。
-
-**性能**（Intel Arc 核显，1920×1080 实测）：中档 3.47 ms/帧、182 draw calls，
-60 FPS 预算下余量约 5 倍。完整数字与测量条件见
-[docs/validation/P1.md](docs/validation/P1.md) 第 3.13 与 3.14 节。
-
-## P2 已完成的内容
-
-**引擎**（`src/domain/battle/`）：`Command → Resolution(events + patches + finalState)`。
-顺序基线按 `docs/rules.md`：胜负预检 → 双方 CD 递减 → 部署 → 上场技能 →
-从左到右攻击 → 死亡与死亡技能 → 槽位整理 → 胜负 → 换边。
-**不依赖 React / Three.js / DOM**，`src/domain/` 下没有任何对它们的 import，
-因此可以在 node 环境里跑完整局。
-
-**技能**（`src/domain/skills/rules.ts`）：35 个族全部实现，逐族机制与证据见
-[docs/SKILL_COVERAGE.md](docs/SKILL_COVERAGE.md)。
-
-**保留的旧版行为**：双方 CD 一起递减、同回合部署的卡会立刻攻击、
-免疫只挡技能伤害、地对空打本体、冰封只造成伤害。
-
-**按计划改动的地方**（编号见 `docs/rules.md` 第 10 节）：伤害不再由动画回调交付、
-胜负计入牌堆、新增回合上限平局、同时死亡改对称判定、死亡分组不用 `id()`。
-
-## 下一步
-
-P3：首个可玩战斗切片。把 `BattleState` 映射到 3D 战桌，
-点击选牌/出牌，按事件顺序播放演出并在命中节点应用 patch，
-接上 AI、胜负页与快速/跳过。执行依据是本文件的 P1/P2 产物与
-[docs/validation/P2.md](docs/validation/P2.md)。
+- 完成 P0–P3 与 P5：数据与规则基线、工程骨架与视觉样机、独立战斗引擎、
+  首个可玩战斗切片、基础玩法循环（抽卡 → 图鉴 → 组卡 → 战役 → 商店 → 结算）与统一存档。
+- 完成 P6 的迷宫第一层：生成与强度经济、runState 持久化、倾斜节点场景与走格子、
+  开战结算接线、楼层商店。
+- 完成融合工坊的规则与界面（立体祭坛的表现仍在施工）。
+- 全部素材为本地派生纹理，生产构建不依赖第三方 CDN。
