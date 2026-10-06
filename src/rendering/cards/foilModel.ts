@@ -47,7 +47,7 @@ const STRENGTH: Record<CardRarity, number> = {
   'S+': 0.56,
   SS: 0.6,
   'SS+': 0.64,
-  SSS: 0.8,
+  SSS: 0.58,
   '#elna': 0.68,
 };
 

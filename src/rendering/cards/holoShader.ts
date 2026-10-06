@@ -140,7 +140,15 @@ export const HOLO_FRAGMENT_SHADER = /* glsl */ `
 
     // 掠射时整体更亮：箔片的反射本来就出现在斜看的时候
     float glancing = 1.0 - clamp(vFacing, 0.0, 1.0);
-    vec3 color = base * (0.55 + shimmer * 0.9 + glancing * 0.35);
+
+    /*
+      **彩色收向高光点，向外淡出**——不是整面铺开。
+
+      这一条和展示位那边的径向遮罩是同一个意思：参考观感里彩色只在
+      光标附近出现。基础项压到 0.25，远离高光的地方几乎只剩一点点底色，
+      靠近时才亮起来。
+    */
+    vec3 color = base * (0.25 + shimmer * 1.35 + glancing * 0.3);
 
     /*
       叠加幅度。

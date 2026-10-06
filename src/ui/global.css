@@ -1725,18 +1725,53 @@ code {
   border-radius: inherit;
   overflow: hidden;
 
-  background-image: linear-gradient(
+  /*
+    **色标必须按「卡片能看到的窗口」来铺，不能按整张渐变图铺。**
+
+    `background-size: 300% 400%` 意味着卡片只看到渐变图的 **0–33%**。
+    早先的色标铺满 0–100%，于是卡片上只有头一两个色标、而且几乎平坦——
+    表现就是「整张卡被均匀染成 1–2 种颜色」（实测正是如此）。
+
+    现在每个色标间隔 5.5%、一圈 33%，**一个完整周期正好横跨一张卡**：
+    卡片上看到的是一整圈彩虹，而不是它的一小段。
+    循环也不会有条纹感——因为一个周期就是整个卡面宽度。
+  */
+  background-image: repeating-linear-gradient(
     115deg,
     var(--foil-c1) 0%,
-    var(--foil-c2) 20%,
-    var(--foil-c3) 40%,
-    var(--foil-c4) 60%,
-    var(--foil-c5) 80%,
-    var(--foil-c6) 100%
+    var(--foil-c2) 5.5%,
+    var(--foil-c3) 11%,
+    var(--foil-c4) 16.5%,
+    var(--foil-c5) 22%,
+    var(--foil-c6) 27.5%,
+    var(--foil-c1) 33%
   );
   background-size: 300% 400%;
   background-position: var(--foil-bg-x, 50%) var(--foil-bg-y, 50%);
   background-repeat: no-repeat;
+
+  /*
+    彩色**只在光标附近出现，向外衰减到消失**，不覆盖整个卡面。
+
+    这是参考观感里最容易被忽略的一条：光看那层 color-dodge 渐变，卡片会被
+    整面染色；真正让它「只在鼠标附近」的是上面那层 hard-light 径向光——
+    它外圈是暗的，把远离光标的彩色压下去。
+
+    这里再用一层径向遮罩把这个衰减写死：只靠 hard-light 的明暗，
+    衰减太软，整张卡仍然有明显的底色。
+  */
+  -webkit-mask-image: radial-gradient(
+    circle at var(--foil-glare-x, 50%) var(--foil-glare-y, 50%),
+    #000 0%,
+    rgba(0, 0, 0, 0.55) 26%,
+    rgba(0, 0, 0, 0) 58%
+  );
+  mask-image: radial-gradient(
+    circle at var(--foil-glare-x, 50%) var(--foil-glare-y, 50%),
+    #000 0%,
+    rgba(0, 0, 0, 0.55) 26%,
+    rgba(0, 0, 0, 0) 58%
+  );
 
   mix-blend-mode: color-dodge;
   /*
