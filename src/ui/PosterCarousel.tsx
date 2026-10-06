@@ -109,7 +109,13 @@ export function PosterCarousel({
   const easing = progress * progress * (3 - 2 * progress);
   const current = posters[index] ?? '';
   const incoming = target === null ? current : (posters[target] ?? '');
-  const shift = easing * 100 * direction;
+  /*
+    **不在切换时位移必须是 0。**
+    `progress` 在动画结束后停在 1，如果照旧算 `100%`，那一张图会一直停在屏幕外，
+    内框只剩底色——表现就是「翻完页海报变成一块灰」。
+    切换结束后 `target` 归 null，这里跟着归零。
+  */
+  const shift = target === null ? 0 : easing * 100 * direction;
 
   return (
     <div

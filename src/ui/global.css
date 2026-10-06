@@ -1205,7 +1205,8 @@ code {
 .menu__status {
   position: absolute;
   left: calc(40 * var(--ui));
-  top: calc(36 * var(--ui));
+  /* 顶部要给导航栏让位，再往下留一段空隙 */
+  top: calc(118 * var(--ui));
   display: flex;
   flex-direction: column;
   gap: calc(10 * var(--ui));
@@ -1273,7 +1274,8 @@ code {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: calc(18 * var(--ui));
+  /* **长度固定**：三角形是绝对定位的（不在流里），所以按钮宽度只由这里决定，
+     标签长短不会把按钮撑开或缩窄。 */
   width: calc(300 * var(--ui));
   height: calc(50 * var(--ui));
   padding: 0;
@@ -1346,31 +1348,43 @@ code {
 }
 
 /*
-  左右两个三角形。旧版**常态就画**（用按钮色、alpha 100），悬停时换成高亮色并变亮。
-  尺寸 20、离按钮边缘 20——都是设计单位。
+  左右两个三角形。旧版：**常态就画**（按钮色、alpha 100），悬停时换成高亮色并变亮；
+  位置在按钮**外侧** —— 顶点离按钮边 40 设计单位、底边离 20，也就是尖朝外。
+
+  三条要点，都是「和原版不一样」踩出来的：
+  1. **绝对定位**，不参与按钮内部的流。放进流里的话它俩会紧贴标签（标签长短还会推着它们跑），
+     而原版是钉在按钮两端的；顺带一个好处是按钮长度不再受标签影响；
+  2. **尖朝外**：左边那个用 `border-right` 画（顶点在左），右边用 `border-left`；
+  3. 尺寸 20 × 20 设计单位，与原版一致。
 */
 .menu__entry-tri {
-  position: relative;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
   width: 0;
   height: 0;
   border-top: calc(10 * var(--ui)) solid transparent;
   border-bottom: calc(10 * var(--ui)) solid transparent;
-  border-left: calc(20 * var(--ui)) solid color-mix(in srgb, var(--glow) 62%, transparent);
-  transition: border-left-color 160ms ease-out;
 }
 
-.menu__entry-tri--right {
-  border-left: none;
+.menu__entry-tri--left {
+  left: calc(-40 * var(--ui));
   border-right: calc(20 * var(--ui)) solid color-mix(in srgb, var(--glow) 62%, transparent);
   transition: border-right-color 160ms ease-out;
 }
 
-.menu__entry:hover .menu__entry-tri {
-  border-left-color: var(--glow);
+.menu__entry-tri--right {
+  right: calc(-40 * var(--ui));
+  border-left: calc(20 * var(--ui)) solid color-mix(in srgb, var(--glow) 62%, transparent);
+  transition: border-left-color 160ms ease-out;
+}
+
+.menu__entry:hover .menu__entry-tri--left {
+  border-right-color: var(--glow);
 }
 
 .menu__entry:hover .menu__entry-tri--right {
-  border-right-color: var(--glow);
+  border-left-color: var(--glow);
 }
 
 /* 系统关了动效时连脉动一起停：它是「鼠标停在哪一项」的反馈 */

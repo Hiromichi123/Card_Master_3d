@@ -88,6 +88,15 @@ function menuBackgroundUrl(): string | null {
 }
 
 /**
+ * 第几张海报通向哪个页面。
+ *
+ * 旧版 `scenes/menu.py` 有一张 `poster_to_scene = {0: "gacha_menu", 1: "battle_menu"}`——
+ * **按下标映射**。这里照做：两张活动海报（`poster001/002`）通向抽卡，
+ * 其余（章节入场图）通向战役。
+ */
+const POSTER_ROUTES: readonly RouteId[] = ['gacha', 'gacha', 'campaign', 'campaign', 'campaign'];
+
+/**
  * 轮播用的海报。
  *
  * manifest 的 `poster` 里有三类：`poster001/002`（**旧版那两张活动海报**，
@@ -145,7 +154,7 @@ export function HubScene({ profile, onNavigate, onReset }: HubSceneProps) {
     >
       {/* 悬停时亮起的那三层同心光晕；常态是透明的 */}
       <span className="menu__entry-glow" aria-hidden="true" />
-      <span className="menu__entry-tri" aria-hidden="true" />
+      <span className="menu__entry-tri menu__entry-tri--left" aria-hidden="true" />
       <span className="menu__entry-label">
         {entry.label}
         {entry.coming && <ComingSoonBadge />}
@@ -189,7 +198,7 @@ export function HubScene({ profile, onNavigate, onReset }: HubSceneProps) {
 
         <PosterCarousel
           posters={posters}
-          onSelect={() => onNavigate('campaign')}
+          onSelect={(index) => onNavigate(POSTER_ROUTES[index] ?? 'campaign')}
           still={reduceMotion}
         />
 
