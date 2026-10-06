@@ -74,6 +74,9 @@ interface Run {
  */
 type Phase = 'select' | 'reveal' | 'result';
 
+/** 测试按钮每次发多少。 */
+const GRANT_AMOUNT = 50_000;
+
 export function GachaScene({ profile, store, busy }: GachaSceneProps) {
   const rarityIndex = useRarityIndex();
   const presentationSpeed = useSettingsStore((state) => state.presentationSpeed);
@@ -119,6 +122,31 @@ export function GachaScene({ profile, store, busy }: GachaSceneProps) {
     () => rarePercent(slots, (rarity) => rarityIndex.isHighRarity(rarity)),
     [slots, rarityIndex],
   );
+
+  /**
+   * 测试用：直接给自己发一笔钱。
+   *
+   * 走**和抽卡同一条提交路径**（`commitEconomic`）——它不关心事务里是什么，
+   * 只保证「一次原子写」。绕过它直接改 profile 的话，货币会只存在内存里，
+   * 一刷新就回去了（那正是抽卡页面最不该出现的行为）。
+   */
+  const grant = async (currency: 'gold' | 'crystal'): Promise<void> => {
+    if (running) {
+      return;
+    }
+    setError(null);
+    const outcome = await store.commitEconomic<null>(() => ({
+      transaction: {
+        operationId: store.nextOperationId(),
+        currencyDelta: { [currency]: GRANT_AMOUNT },
+        inventoryDelta: {},
+      },
+      view: null,
+    }));
+    if (!outcome.ok) {
+      setError(outcome.message);
+    }
+  };
 
   const pull = async (count: 1 | 10): Promise<void> => {
     if (!pool || pending || busy) {
@@ -252,6 +280,32 @@ export function GachaScene({ profile, store, busy }: GachaSceneProps) {
             >
               十连 · {pool.tenCost}
               {pool.currency === 'gold' ? ' 金币' : ' 水晶'}
+            </button>
+          </div>
+
+          {/*
+            测试用：给自己发钱。真实玩法里货币来自关卡与商店，
+            这两颗按钮只是让「抽到没钱」不至于卡住验收。
+          */}
+          <div className="gacha__dev">
+            <span className="gacha__dev-label">测试</span>
+            <button
+              type="button"
+              className="btn btn--tiny"
+              onClick={() => void grant('gold')}
+              disabled={running}
+              data-testid="grant-gold"
+            >
+              +50000 金币
+            </button>
+            <button
+              type="button"
+              className="btn btn--tiny"
+              onClick={() => void grant('crystal')}
+              disabled={running}
+              data-testid="grant-crystal"
+            >
+              +50000 水晶
             </button>
           </div>
 

@@ -1841,6 +1841,30 @@ code {
   margin-top: 2px;
 }
 
+/* 测试用的发钱按钮：明显是「工具」，不该和「单抽/十连」抢注意力 */
+.gacha__dev {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--border);
+}
+
+.gacha__dev-label {
+  padding: 1px 6px;
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  color: var(--text-dim);
+  font-size: 11px;
+  letter-spacing: 0.05em;
+}
+
+.btn--tiny {
+  padding: 3px 9px;
+  font-size: 12px;
+}
+
 .gacha__error {
   margin: 0;
   padding: 7px 10px;

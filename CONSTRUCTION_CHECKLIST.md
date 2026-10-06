@@ -188,13 +188,20 @@
 
 依赖：P4。产物：抽卡 → 收藏 → 组卡 → 三章十二关 → 奖励/商店。
 
-- [ ] 建立 ProfileStore/SaveRepository、schema/content 版本、初始化与保存错误处理。
-- [ ] 实现 IndexedDB 单次事务：扣币、加卡、库存变化、售罄和奖励一起提交。
-- [ ] 单抽/十连使用浮点累计权重，迁移原卡池/费用，概率说明由配置计算。
-- [ ] 抽卡结果先确定并持久化再演出；刷新和跳过不能重复发卡或扣费。
-- [ ] 实现 3D 翻卡、高稀有聚焦/反光/粒子，复用已有卡面与 VFX 基础。
-- [ ] 实现收藏按拥有数/稀有度筛选与详情，图鉴使用分页/可见缩略图加载。
-- [ ] 实现组卡上限、库存限制、保存/恢复；保留实际重复卡的数量约束。
+- [x] 建立 ProfileStore/SaveRepository、schema/content 版本、初始化与保存错误处理。
+      → `services/save/`（IndexedDB / 内存 / 必定失败三种实现，2 秒超时与降级提示）+ `state/createProfileStore.ts`（悲观提交、busy 拒绝、失败不 publish）。见 `tests/unit/saveStore.test.ts`。
+- [x] 实现 IndexedDB 单次事务：扣币、加卡、库存变化、售罄和奖励一起提交。
+      → `domain/progression/economy.ts` 的 `applyEconomyTransaction` 折叠全部增量，`IndexedDbSaveRepository` 一次 `put`；用例断言「十连只写一次盘」与「写入失败时快照逐字节不变」。
+- [x] 单抽/十连使用浮点累计权重，迁移原卡池/费用，概率说明由配置计算。
+      → `domain/progression/gacha.ts` 的 `planPull`；8 个卡池权重表；概率用 `probabilityRows`/`rarePercent` 现算，**不渲染手写的 `probLabel`**（常规池显示 6.3%，配置里写的是 8.9%）。见 `docs/validation/P5.md` 第 3.2 节。
+- [x] 抽卡结果先确定并持久化再演出；刷新和跳过不能重复发卡或扣费。
+      → 采样与落盘在 `commitEconomic` 的同一次执行里；用例读 IndexedDB 断言「十连恰好 −4500 金币、库存恰好 +10」，被拒的抽卡盘上不留记录。见 P5.md 第 2、3.1 节。
+- [x] 实现 3D 翻卡、高稀有聚焦/反光/粒子，复用已有卡面与 VFX 基础。
+      → `rendering/gacha/`：编排层（纯逻辑，23 条单测）+ 舞台（`CardMesh` 受控翻面、`CardGlow`/`HoloLayer`、`EffectSystem` 粒子、Bloom）；高稀有翻得更慢、有额外光效、相机推近。截图见 `docs/validation/p5-gacha-*.png`。
+- [x] 实现收藏按拥有数/稀有度筛选与详情，图鉴使用分页/可见缩略图加载。
+      → `scenes/CollectionScene.tsx` + `ui/CardShowcase.tsx`（M3a）。**没有做分页**：用 `loading="lazy"` 按可见区域加载缩略图加筛选代替，理由见 `PLAN.md` 第 5 节与 P5.md 第 5 节。
+- [x] 实现组卡上限、库存限制、保存/恢复；保留实际重复卡的数量约束。
+      → `domain/progression/deckView.ts` + `scenes/DeckEditorScene.tsx`（左 12 槽 / 右收藏，点击加入与移出）。上限 12、可用张数 = 拥有 − 已上阵、按下标删重复卡；改走防抖落盘、离开页面 `flush()`。
 - [ ] 迁移三章十二关的敌方配置、背景主题与奖励；地图入口与战斗返回完整。
 - [ ] 实现金币/水晶/徽章、等级/经验、常规商店和每日刷新/售罄记录。
 - [ ] 实现 operationId/battleId 去重，胜负结算/返回/重载只能领一次奖励。
@@ -267,6 +274,6 @@
 | P2 | 已完成 | [docs/validation/P2.md](docs/validation/P2.md) |
 | P3 | 已完成 | [docs/validation/P3.md](docs/validation/P3.md) |
 | P4 | 未开始 | 待创建 docs/validation/P4.md |
-| P5 | 进行中 | 待创建 docs/validation/P5.md<br>已完成 M0 素材与数据层、M1 存档层、M2 应用外壳与主菜单、M3a 卡牌图鉴、闪卡展示位；剩组卡/抽卡/商店/战役/设置 |
+| P5 | 进行中 | [docs/validation/P5.md](docs/validation/P5.md)<br>已完成 M0 素材与数据层、M1 存档层、M2 应用外壳与主菜单、M3a 卡牌图鉴、闪卡展示位、M3 配置（组卡）、M5 抽卡；剩商店、战役与结算、设置页 |
 | P6 | 未开始 | 待创建 docs/validation/P6.md |
 | P7 | 未开始 | 待创建 docs/validation/P7.md |
