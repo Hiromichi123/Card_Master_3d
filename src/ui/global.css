@@ -1738,6 +1738,330 @@ code {
   }
 }
 
+/* --- 抽卡 --------------------------------------------------------------- */
+
+.gacha__lead {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+.gacha__body {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 18px;
+  flex: 1;
+  min-height: 0;
+}
+
+.gacha__panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.gacha__pool-name {
+  margin: 0;
+  font-size: 20px;
+  color: var(--text);
+}
+
+.gacha__desc,
+.gacha__rare {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+.gacha__heading {
+  margin: 0 0 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-dim);
+  letter-spacing: 0.03em;
+}
+
+.gacha__probs {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 3px;
+}
+
+.gacha__prob {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+.gacha__prob-rarity {
+  flex: 1;
+}
+
+.gacha__prob-value {
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.gacha__prob-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.gacha__buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.gacha__error {
+  margin: 0;
+  padding: 7px 10px;
+  border-left: 3px solid var(--danger);
+  border-radius: 6px;
+  background: rgba(255, 107, 107, 0.1);
+  color: var(--text);
+  font-size: 13px;
+}
+
+.gacha__showcase-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+/* 轮盘 */
+
+/*
+  轮盘占满左侧。背景两层交叉淡换（见 `GachaWheel` 的注释），
+  所以这里只需要保证两层都在、都盖满。
+*/
+.wheel {
+  position: relative;
+  overflow: hidden;
+  min-height: 420px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: radial-gradient(ellipse at 50% 40%, #1a2130 0%, #0b0e15 70%);
+}
+
+.wheel__backdrops {
+  position: absolute;
+  inset: 0;
+}
+
+.wheel__bg {
+  position: absolute;
+  inset: 0;
+  background-position: center;
+  background-size: cover;
+  opacity: 0;
+  transition: opacity 420ms ease;
+}
+
+/* 压暗到 0.45：池背景是插画，全亮度会把卡池名压得读不清 */
+.wheel__bg--on {
+  opacity: 0.45;
+}
+
+.wheel--still .wheel__bg {
+  transition: none;
+}
+
+/*
+  `perspective` 放在舞台、卡片是它的**直接子元素**——
+  中间再夹一层（哪怕没有 transform）都会改掉投影，
+  `CardShowcase` 那边为这个坑写过一次注释，这里同理。
+
+  整排再压 -13°：斜着的一列立牌才是旧版那个手感，正对着看就只是排卡片。
+*/
+.wheel__stage {
+  position: relative;
+  height: 100%;
+  perspective: 1100px;
+  transform-style: preserve-3d;
+  transform: rotateX(-13deg);
+  cursor: grab;
+  touch-action: pan-y;
+}
+
+.wheel__stage:active {
+  cursor: grabbing;
+}
+
+.wheel__stage:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -4px;
+}
+
+/*
+  卡片绝对居中，位移**全部**由行内 transform 给（那串值来自 `wheelSlots`）。
+  用负 margin 而不是 `translate(-50%,-50%)` 居中，是为了让行内 transform
+  只承载轮盘的数学——否则每处都要把 -50% 拼在前面，改一次错一次。
+*/
+.wheel__card {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 186px;
+  height: 250px;
+  margin-left: -93px;
+  margin-top: -125px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 14px;
+  text-align: center;
+  border: 1px solid var(--border-strong);
+  border-radius: 12px;
+  background: rgba(18, 23, 34, 0.88);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.5);
+  /* transform 每帧由 JS 写，过渡只做吸附那一下的收尾 */
+  transition: box-shadow 200ms ease, border-color 200ms ease;
+  user-select: none;
+}
+
+.wheel__card--on {
+  border-color: var(--accent);
+  box-shadow:
+    0 0 0 1px var(--accent) inset,
+    0 22px 48px rgba(0, 0, 0, 0.55);
+  animation: wheel-breathe 2.6s ease-in-out infinite;
+}
+
+/* 关掉动效时连呼吸一起停：它不是装饰，是「这个是选中的」的唯一动效线索 */
+.wheel--still .wheel__card--on {
+  animation: none;
+}
+
+@keyframes wheel-breathe {
+  50% {
+    filter: brightness(1.14);
+  }
+}
+
+.wheel__name {
+  font-size: 17px;
+  color: var(--text);
+  line-height: 1.35;
+}
+
+.wheel__price {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 12px;
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+.wheel__currency {
+  margin-left: 4px;
+}
+
+/* 抽卡结果 */
+
+.gacha-result {
+  width: min(760px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 100%;
+}
+
+.gacha-result__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.gacha-result__title {
+  margin: 0;
+  font-size: 20px;
+  color: var(--text);
+}
+
+.gacha-result__count {
+  margin: 0;
+  color: var(--text-dim);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.gacha-result__list {
+  margin: 0;
+  padding: 2px;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
+  gap: 8px;
+}
+
+/*
+  每一条按**抽到的下标**渲染，边框用该张的稀有度色：
+  十连抽到三张同卡就是三条，一眼能看出「这张来了三次」。
+*/
+.gacha-result__item {
+  position: relative;
+  border: 2px solid var(--border-strong);
+  border-radius: 8px;
+  overflow: hidden;
+  background: #0b0e15;
+}
+
+.gacha-result__art {
+  display: block;
+  width: 100%;
+  aspect-ratio: 2 / 3;
+  object-fit: cover;
+}
+
+.gacha-result__name {
+  display: block;
+  padding: 4px 6px;
+  font-size: 12px;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.gacha-result__rarity {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+}
+
+.gacha-result__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+@media (max-width: 1100px) {
+  .gacha__body {
+    grid-template-columns: 1fr;
+    overflow-y: auto;
+  }
+  .wheel {
+    min-height: 320px;
+  }
+}
+
 /* ---------------------------------------------------------------------------
  * 展示位的箔片
  *

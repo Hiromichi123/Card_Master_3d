@@ -1,7 +1,14 @@
 import { expect, test, type Page } from '@playwright/test';
 
 import { ADD_REJECTION_TEXT, DECK_LIMIT } from '../../src/domain/progression/deck';
-import type { ProfileState } from '../../src/domain/progression/types';
+
+import {
+  clickNav,
+  collectProblems,
+  openWithFreshSave,
+  patchProfile,
+  readProfile,
+} from './helpers';
 
 /**
  * 配置（组卡）的浏览器验证。
@@ -10,60 +17,27 @@ import type { ProfileState } from '../../src/domain/progression/types';
  *
  * 1. **数值类断言读 IndexedDB 的落盘值**，不读界面文本——界面文字对不对是另一回事，
  *    这里要证明的是「改动真的存下来了」；
- * 2. **文案类断言从领域常量反查**（`ADD_REJECTION_NOTE` 等），不在用例里抄一遍中文；
+ * 2. **文案类断言从领域常量反查**（`ADD_REJECTION_TEXT` 等），不在用例里抄一遍中文；
  * 3. **删卡断的是「按下标删」**：用例先把同一张卡放进卡组三次，再删中间那一个——
  *    这样「按 cardId 过滤」的错误实现会立刻露馅（它会删掉第一张）。
  */
 
-function collectProblems(page: Page): string[] {
-  const problems: string[] = [];
-  page.on('console', (message) => {
-    if (message.type() === 'error') {
-      problems.push(`console: ${message.text()}`);
+/** 左侧 12 槽的卡 id 顺序，空槽是 null。 */
+async function slotIds(page: Page): Promise<(string | null)[]> {
+  return page.evaluate(() => {
+    const grid = document.querySelector('.deckedit__grid');
+    if (!grid) {
+      return [];
     }
+    return [...grid.children].map((child) =>
+      child instanceof HTMLElement ? (child.dataset['cardId'] ?? null) : null,
+    );
   });
-  page.on('pageerror', (error) => problems.push(`pageerror: ${error.message}`));
-  page.on('requestfailed', (request) => problems.push(`requestfailed: ${request.url()}`));
-  return problems;
 }
 
-async function clickNav(page: Page, label: string): Promise<void> {
-  await page.locator('.app-nav').getByRole('button', { name: label, exact: true }).click();
-}
-
-/** 开一个干净的存档（旧存档会带着上一轮改过的卡组）。 */
-async function openWithFreshSave(page: Page): Promise<void> {
-  await page.goto('/');
-  await page.evaluate(
-    () =>
-      new Promise((resolve) => {
-        const request = indexedDB.deleteDatabase('card-master-3d');
-        request.onsuccess = request.onerror = request.onblocked = () => resolve(null);
-      }),
-  );
-  await page.reload();
-}
-
-/** 直接读落盘的存档：断「存下来了」而不是「界面写着」。 */
-async function readProfile(page: Page): Promise<ProfileState | undefined> {
-  return page.evaluate(
-    () =>
-      new Promise<ProfileState | undefined>((resolve, reject) => {
-        const open = indexedDB.open('card-master-3d');
-        open.onerror = () => reject(new Error('打不开存档库'));
-        open.onsuccess = () => {
-          const db = open.result;
-          const request = db.transaction('profile', 'readonly')
-            .objectStore('profile')
-            .get('current');
-          request.onsuccess = () => {
-            db.close();
-            resolve(request.result as ProfileState | undefined);
-          };
-          request.onerror = () => reject(new Error('读不到存档记录'));
-        };
-      }),
-  );
+/** 收藏里某张卡的那个格子。 */
+function collectionTile(page: Page, cardId: string) {
+  return page.locator(`.deckedit__collection .tile[data-card-id="${cardId}"]`);
 }
 
 /**
@@ -84,55 +58,6 @@ async function ensurePersisted(page: Page): Promise<void> {
   await collectionTile(page, target).click();
   await expect.poll(async () => (await slotIds(page)).filter(Boolean).length).toBe(DECK_LIMIT);
   await expect.poll(async () => (await readProfile(page)) !== undefined).toBe(true);
-}
-
-/** 改一份存档再写回去，用来造用例需要的初始状态（例如同一张卡有 3 张）。 */
-async function patchProfile(
-  page: Page,
-  patch: (profile: ProfileState) => ProfileState,
-): Promise<void> {
-  const current = await readProfile(page);
-  if (!current) {
-    throw new Error('存档还没落盘——先调 ensurePersisted(page) 再做 patch');
-  }
-  const next = patch(current);
-  await page.evaluate(
-    (profile) =>
-      new Promise<void>((resolve, reject) => {
-        const open = indexedDB.open('card-master-3d');
-        open.onerror = () => reject(new Error('打不开存档库'));
-        open.onsuccess = () => {
-          const db = open.result;
-          const tx = db.transaction('profile', 'readwrite');
-          tx.objectStore('profile').put(profile, 'current');
-          tx.oncomplete = () => {
-            db.close();
-            resolve();
-          };
-          tx.onerror = () => reject(new Error('写回存档失败'));
-        };
-      }),
-    next,
-  );
-  await page.reload();
-}
-
-/** 左侧 12 槽的卡 id 顺序，空槽是 null。 */
-async function slotIds(page: Page): Promise<(string | null)[]> {
-  return page.evaluate(() => {
-    const grid = document.querySelector('.deckedit__grid');
-    if (!grid) {
-      return [];
-    }
-    return [...grid.children].map((child) =>
-      child instanceof HTMLElement ? (child.dataset['cardId'] ?? null) : null,
-    );
-  });
-}
-
-/** 收藏里某张卡的那个格子。 */
-function collectionTile(page: Page, cardId: string) {
-  return page.locator(`.deckedit__collection .tile[data-card-id="${cardId}"]`);
 }
 
 /**

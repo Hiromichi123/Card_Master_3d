@@ -4,6 +4,7 @@ import { BattleScene } from '../scenes/BattleScene';
 import { CollectionScene } from '../scenes/CollectionScene';
 import { DeckEditorScene } from '../scenes/DeckEditorScene';
 import { EffectLabScene } from '../scenes/EffectLabScene';
+import { GachaScene } from '../scenes/GachaScene';
 import { HubScene } from '../scenes/HubScene';
 import { getProfileStore } from '../state/profileStore';
 import type { ProfileStore } from '../state/createProfileStore';
@@ -163,7 +164,7 @@ function Screen({ route, snapshot, store, onNavigate, onReset }: ScreenProps) {
     case 'campaign':
       return <ScreenPlaceholder title="战役" note="关卡选择正在施工（P5-M6）。" />;
     case 'gacha':
-      return <ScreenPlaceholder title="抽卡" note="卡池与演出正在施工（P5-M5）。" />;
+      return <GachaScene profile={profile} store={store} busy={snapshot.busy} />;
     case 'collection':
       return <CollectionScene profile={profile} />;
     case 'deck':
