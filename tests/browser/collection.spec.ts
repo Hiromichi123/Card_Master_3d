@@ -35,11 +35,11 @@ async function clickNav(page: Page, label: string): Promise<void> {
  *
  * **翻页期间再按是被挡掉的**（`CardShowcase` 的 `busyRef`）——两段动画
  * 一共 380ms，中途插进来的点击会让旧卡飞回去，比不响应更难看。
- * 所以连续翻页的用例必须等 swing 层回落到没有 `--out` / `--in` 类，
+ * 所以连续翻页的用例必须等舞台回落到没有 `--out` / `--in` 类，
  * 否则第二次点击会落在动画中间、什么也不发生（这个用例第一版就是这么挂的）。
  */
 async function settleFlip(page: Page): Promise<void> {
-  await expect(page.locator('.showcase__swing')).toHaveClass('showcase__swing');
+  await expect(page.locator('.showcase__stage')).toHaveClass('showcase__stage');
 }
 
 /** 开一个干净的存档（旧存档会带着上一轮的库存，图鉴数量就对不上了）。 */
@@ -135,18 +135,25 @@ test('按稀有度筛选，点开后进入展示位', async ({ page }) => {
   }
 
   /*
+    **卡片必须是舞台的直接子元素。** `perspective` 只作用于直接子元素，
+    中间夹一层就会改掉所有卡的投影——上一版为了做飞行动画给卡片包了一层，
+    结果其他卡的倾斜幅度全变了。这条断言把这个结构约束钉住。
+  */
+  expect(await card.evaluate((el) => el.parentElement?.className)).toBe('showcase__stage');
+
+  /*
     **左右翻页。**
     断的是「换卡动画真的跑过」而不是「点下去名字变了」——后者在动画被删掉之后
-    照样会通过。做法是在翻页之前挂一个 MutationObserver，把 swing 层的类名变化
+    照样会通过。做法是在翻页之前挂一个 MutationObserver，把舞台的类名变化
     记下来：录制是持续的，不会像逐帧截图那样漏掉一闪而过的中间态。
   */
   await expect(showcase.locator('.showcase__counter')).toHaveText('1 / 12');
   await page.evaluate(() => {
-    const swing = document.querySelector('.showcase__swing');
+    const stage = document.querySelector('.showcase__stage');
     const seen: string[] = [];
-    (window as unknown as { __swing?: string[] }).__swing = seen;
-    if (swing) {
-      new MutationObserver(() => seen.push(swing.className)).observe(swing, {
+    (window as unknown as { __stage?: string[] }).__stage = seen;
+    if (stage) {
+      new MutationObserver(() => seen.push(stage.className)).observe(stage, {
         attributes: true,
         attributeFilter: ['class'],
       });
@@ -160,11 +167,11 @@ test('按稀有度筛选，点开后进入展示位', async ({ page }) => {
   await next.click();
   await expect(showcase.locator('.showcase__counter')).toHaveText('2 / 12');
   await expect(showcase.locator('.showcase__name')).toHaveText(secondName ?? '');
-  const swings = await page.evaluate(
-    () => (window as unknown as { __swing?: string[] }).__swing ?? [],
+  const stages = await page.evaluate(
+    () => (window as unknown as { __stage?: string[] }).__stage ?? [],
   );
-  expect(swings).toContain('showcase__swing showcase__swing--out');
-  expect(swings).toContain('showcase__swing showcase__swing--in');
+  expect(stages).toContain('showcase__stage showcase__stage--out');
+  expect(stages).toContain('showcase__stage showcase__stage--in');
 
   // 上一张：回到第 1 张
   await settleFlip(page);
@@ -223,7 +230,9 @@ test('没有箔片的卡也跟随指针，且只叠白色光照', async ({ page 
   if (box) {
     await page.mouse.move(box.x + box.width * 0.88, box.y + box.height * 0.18);
     await expect
-      .poll(async () => card.evaluate((el) => parseFloat(el.style.getPropertyValue('--foil-tilt-y'))))
+      .poll(async () =>
+        card.evaluate((el) => parseFloat(el.style.getPropertyValue('--foil-tilt-y'))),
+      )
       .toBeGreaterThan(5);
     // 光斑跟着指针走
     await expect

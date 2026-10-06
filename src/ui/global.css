@@ -1658,6 +1658,9 @@ code {
   两侧列**等宽**是这个写法存在的理由：写成 `justify-content: space-between`
   或绝对定位的话，右边那列比左边宽一点，卡牌就不在屏幕正中了——
   而「卡牌放大在屏幕正中」是这个展示位的要点。
+
+  这一层只是排版：没有 transform、filter、透明度或混合模式，
+  不会给卡片另建渲染上下文（卡片仍然是 `.showcase__stage` 的直接子元素）。
 */
 .showcase__viewport {
   display: grid;
@@ -1668,15 +1671,20 @@ code {
 }
 
 /*
-  飞行动画挂在**外一层**上，不挂在卡片上。
+  翻页动画挂在**舞台**上，不在卡片上、也不给卡片另包一层。
 
-  卡片自己的 `transform` 已经被 `useFoilPointer` 按指针写成 `rotateX/rotateY`
-  了，两种 transform 挤在同一个属性上必然互相覆盖——倾斜会消失，
-  或者动画被卡住不动。分开两层之后两者可以同时生效。
+  两条都是被踩出来的：
+  - 挂在卡片上的话，会和 `useFoilPointer` 写的倾斜抢同一个 `transform` 属性；
+  - 给卡片包一层的话，`perspective` 只作用于直接子元素，中间那层会把投影改掉，
+    **所有卡的倾斜幅度都会跟着变**（上一版就是这么把其他卡的翻转弄坏的）。
+
+  另外这些属性**只在 `--out` / `--in` 两个类上**：静止的舞台一个动画属性都没有，
+  计算样式与加这套翻页之前完全一致。
+
+  时长由 TS 给（`SWITCH_MS` → `--switch-dur`），这里不写死第二个数。
 */
-.showcase__swing {
-  transform-style: preserve-3d;
-  /* 时长由 TS 给（`SWITCH_MS`），这里不写死第二个数 */
+.showcase__stage--out,
+.showcase__stage--in {
   animation-duration: var(--switch-dur, 190ms);
   animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   animation-fill-mode: both;
@@ -1684,12 +1692,12 @@ code {
 
 /*
   `--switch-travel` 是**飞行方向**：−1 表示两张卡都往左走（看下一张），
-  +1 表示往右走（看上一张）。飞出的卡从 0 走到 −1 侧，飞入的卡从 +1 侧走回 0，
-  于是「旧的往左飘走、新的从右边跟上」是一段连贯的横移。
+  +1 表示往右走（看上一张）。飞出的卡从 0 走到 −1 侧，飞入的卡从另一侧走回 0，
+  于是一段连贯的横移，而不是一张图突然换成另一张。
 
-  旋转与缩放跟着一起给，才有「卡从手里翻过去」的感觉而不是平移的贴纸。
+  旋转与缩放跟着一起给，才有「卡从手里翻过去」的感觉。
 */
-@keyframes showcase-swing-out {
+@keyframes showcase-stage-out {
   to {
     transform: translateX(calc(var(--switch-travel, -1) * 78%))
       rotateY(calc(var(--switch-travel, -1) * 38deg)) scale(0.86);
@@ -1697,7 +1705,7 @@ code {
   }
 }
 
-@keyframes showcase-swing-in {
+@keyframes showcase-stage-in {
   from {
     transform: translateX(calc(var(--switch-travel, -1) * -78%))
       rotateY(calc(var(--switch-travel, -1) * -38deg)) scale(0.86);
@@ -1705,12 +1713,12 @@ code {
   }
 }
 
-.showcase__swing--out {
-  animation-name: showcase-swing-out;
+.showcase__stage--out {
+  animation-name: showcase-stage-out;
 }
 
-.showcase__swing--in {
-  animation-name: showcase-swing-in;
+.showcase__stage--in {
+  animation-name: showcase-stage-in;
 }
 
 /*
@@ -1719,8 +1727,8 @@ code {
   动画只是那一帧里的视觉效果，不是它的触发源。
 */
 @media (prefers-reduced-motion: reduce) {
-  .showcase__swing--out,
-  .showcase__swing--in {
+  .showcase__stage--out,
+  .showcase__stage--in {
     animation-duration: 1ms;
   }
 }
@@ -1882,15 +1890,12 @@ code {
 
 /*
   白色光照 —— **没有箔片的卡**（D 档，`foil.kind === 'none'`）叠的就是这一层。
+  这一档之外的一切与加它之前完全一致。
 
   没有彩色的理由很直接：那张卡本来就是普通印刷卡，给它上虹彩是假的。
-  但它仍然是一张有厚度的卡，指针划过时**必须有反应**——早先这里什么都不叠、
-  连倾斜都不做，白卡在展示位里就是一张死图片。
-
-  做法与箔片同源、参数直接复用同一个 `FoilView`：
-  一团**跟着指针走**的白色光斑（`--foil-glare-x/y`），
-  整层亮度按**距中心的距离**给（`--foil-boost`，越靠边越亮）——
-  这正是箔片那套光照的核心，只是把彩色换成了白光。
+  但它仍然是一张有厚度的卡，指针划过时必须有反应。做法与箔片同源、
+  参数直接复用同一个 `FoilView`：一团**跟着指针走**的白色光斑
+  （`--foil-glare-x/y`），整层亮度按**距中心的距离**给（`--foil-boost`，越靠边越亮）。
 */
 .showcase__sheen {
   position: absolute;
@@ -1904,7 +1909,7 @@ code {
 
     半径**必须给死值**（`circle 260px`）：不写的话默认是 `farthest-corner`，
     在这个尺寸的卡上是 700px 开外——「光斑」会铺满整张卡，
-    读起来只是整张卡变亮了一点，看不出它跟着指针走（第一版就是这样）。
+    读起来只是整张卡变亮了一点，看不出它跟着指针走。
   */
   background-image: radial-gradient(
     circle 260px at var(--foil-glare-x, 50%) var(--foil-glare-y, 50%),
@@ -2008,7 +2013,7 @@ code {
 }
 
 .showcase__nav:focus-visible {
-  outline: 2px solid var(--accent, #63b3ff);
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 

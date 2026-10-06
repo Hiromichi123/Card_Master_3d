@@ -19,18 +19,19 @@ import { useFoilPointer } from './useFoilPointer';
  * 检视的映射与 3D 卡的着色器共用 `foilModel`：这边指针在卡面上走，
  * 那边相机绕着卡转，两边拿到的是同一个 `FoilView`。
  *
- * **没有箔片的卡（D 档）走的是另一条路**：卡片照样跟着指针倒，
- * 但叠的是一层**跟着指针走的白色光斑**，不是彩色箔片——见 `.showcase__sheen`。
- * 早先这里把没有箔的卡直接从检视里排除了，表现就是「白卡是张死图片」。
+ * **没有箔片的卡（D 档）走的是另一条路**：倾斜照旧，但叠的不是彩色箔片，
+ * 而是一层**只跟指针走的白光**（`.showcase__sheen`）。之前这一档完全没有检视——
+ * 指针扫过毫无反应，白卡在展示位里就是一张死图片。
  *
- * **左右三角形翻页。** 浏览顺序由调用方给（图鉴里就是当前筛选与排序下的列表），
- * 到头之后**首尾循环**，不会在两端卡住。切换是「旧卡飞出 → 新卡飞入」两段，
- * 时长见 `SWITCH_MS`，翻页期间再按不会打断（会重入的动画比不响应更难看）。
+ * 结构上有一条硬要求：**卡片必须是 `.showcase__stage` 的直接子元素**。
+ * `perspective` 只作用于直接子元素，中间夹一层（哪怕只是 `transform-style: preserve-3d`）
+ * 都会改变投影，所有卡的倾斜幅度都会跟着变。左右翻页的动画因此挂在**舞台**上，
+ * 而不是给卡片再包一层。
  */
 export interface CardShowcaseProps {
   readonly cardId: string;
   /**
-   * 可浏览的顺序。传空数组或只有一张时，左右按钮禁用。
+   * 可浏览的顺序。只有一张时左右按钮禁用。
    */
   readonly cardIds: readonly string[];
   /** 翻到另一张。选中状态由调用方持有，这边不自己存一份。 */
@@ -44,8 +45,8 @@ type FlipDir = -1 | 1;
 /**
  * 翻页动画的单程时长（毫秒）。
  *
- * **这个值是动画时长的唯一来源**：写成 `--switch-dur` 交给 CSS 的
- * `animation-duration`，两侧不会各写一个数然后对不上。
+ * **这是动画时长的唯一来源**：写成 `--switch-dur` 交给 CSS 的 `animation-duration`，
+ * 两侧不会各写一个数然后对不上。
  */
 const SWITCH_MS = 190;
 
@@ -72,11 +73,10 @@ export function CardShowcase({ cardId, cardIds, onSelect, onClose }: CardShowcas
   const hasFoil = foil.kind !== 'none';
 
   /*
-    检视对**每一张卡**都开：没有箔片的卡也要跟着指针倒，
-    只是它叠的是白光而不是彩色箔片。白卡本来就得靠「拿在手里」这个动作
-    才不像一张贴纸。
+    检视对**每一张卡**都开。有箔片的卡本来就走这条路（行为与之前完全一致），
+    变了的是没有箔片的 D 档：它们现在也跟随指针倒下，只是上面叠的是白光。
   */
-  useFoilPointer(cardRef);
+  useFoilPointer(cardRef, true);
 
   const canFlip = cardIds.length > 1;
   const index = Math.max(0, cardIds.indexOf(cardId));
@@ -165,17 +165,21 @@ export function CardShowcase({ cardId, cardIds, onSelect, onClose }: CardShowcas
     飞行的方向：下一张时两张都往左走（旧的飞出左边、新的从右边进来）。
     CSS 的 keyframes 只写一套，靠这个符号分左右。
   */
-  const swingStyle = {
+  const stageStyle = {
     ['--switch-dur' as string]: `${SWITCH_MS}ms`,
     ['--switch-travel' as string]: phase.kind === 'idle' ? -1 : -phase.dir,
   };
 
-  const swingClass =
+  /*
+    静止时**一个动画相关的类都不加**：`.showcase__stage` 回到和以前一模一样的
+    计算样式，卡片的投影、倾斜、箔片合成都不受这套翻页影响。
+  */
+  const stageClass =
     phase.kind === 'out'
-      ? 'showcase__swing showcase__swing--out'
+      ? 'showcase__stage showcase__stage--out'
       : phase.kind === 'in'
-        ? 'showcase__swing showcase__swing--in'
-        : 'showcase__swing';
+        ? 'showcase__stage showcase__stage--in'
+        : 'showcase__stage';
 
   return (
     <div
@@ -190,6 +194,8 @@ export function CardShowcase({ cardId, cardIds, onSelect, onClose }: CardShowcas
       }}
     >
       <div className="showcase__inner">
+        {/* 这一层只是排版（左右各留一列放三角形）：没有 transform / filter /
+            透明度，不会给卡片另建一个渲染上下文 */}
         <div className="showcase__viewport">
           <button
             type="button"
@@ -202,34 +208,30 @@ export function CardShowcase({ cardId, cardIds, onSelect, onClose }: CardShowcas
             <span className="showcase__nav-tri" aria-hidden="true" />
           </button>
 
-          <div className="showcase__stage">
-            {/* 飞行动画在**外一层**：卡片自己还要按指针倾斜，
-                两种 transform 写同一个元素上会互相覆盖 */}
-            <div className={swingClass} style={swingStyle}>
-              <div ref={cardRef} className="showcase__card">
-                {url ? (
-                  <img className="showcase__art" src={url} alt={card.name} draggable={false} />
-                ) : (
-                  <span
-                    className="tile__plate"
-                    style={{ background: rarityIndex.colorOf(rarity) }}
-                    aria-hidden="true"
-                  >
-                    <span className="tile__rarity">{rarity}</span>
-                    <span className="tile__name">{card.name}</span>
-                  </span>
-                )}
+          <div className={stageClass} style={stageStyle}>
+            <div ref={cardRef} className="showcase__card">
+              {url ? (
+                <img className="showcase__art" src={url} alt={card.name} draggable={false} />
+              ) : (
+                <span
+                  className="tile__plate"
+                  style={{ background: rarityIndex.colorOf(rarity) }}
+                  aria-hidden="true"
+                >
+                  <span className="tile__rarity">{rarity}</span>
+                  <span className="tile__name">{card.name}</span>
+                </span>
+              )}
 
-                {hasFoil ? (
-                  <span className={`foil foil--${foil.kind}`} style={foilStyle} aria-hidden="true" />
-                ) : (
-                  /* 没有箔片的卡：只叠一层跟着指针走的白光 */
-                  <span className="showcase__sheen" aria-hidden="true" />
-                )}
+              {hasFoil ? (
+                <span className={`foil foil--${foil.kind}`} style={foilStyle} aria-hidden="true" />
+              ) : (
+                /* 没有箔片的卡：只叠一层跟着指针走的白光 */
+                <span className="showcase__sheen" aria-hidden="true" />
+              )}
 
-                {/* 边缘高光与内描边：读起来像有厚度的成品卡，而不是一张图片 */}
-                <span className="showcase__edge" aria-hidden="true" />
-              </div>
+              {/* 边缘高光与内描边：读起来像有厚度的成品卡，而不是一张图片 */}
+              <span className="showcase__edge" aria-hidden="true" />
             </div>
           </div>
 
