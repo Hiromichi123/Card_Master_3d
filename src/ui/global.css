@@ -3059,6 +3059,256 @@ code {
   }
 }
 
+/* --- 单人战役（旧版 `scenes/map/` 的两层地图）------------------------------- */
+
+/*
+  位置与尺寸照旧版：标题 15%（世界地图）/ 12%（章节地图），
+  海报 540×360 设计单位，详情栏 (70%, 18%, 26%×68%)，
+  左下「返回上一级」(4%, 86%, 240×72)。
+*/
+.campaign__status {
+  position: absolute;
+  left: 4%;
+  top: 3%;
+  display: flex;
+  flex-direction: column;
+  gap: calc(8 * var(--ui));
+  align-items: flex-start;
+  font-size: calc(28 * var(--ui));
+}
+
+.campaign__title {
+  position: absolute;
+  left: 50%;
+  top: 15%;
+  transform: translate(-50%, -50%);
+  margin: 0;
+  font-size: calc(100 * var(--ui));
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+  color: #ffe6b4;
+  text-shadow:
+    calc(4 * var(--ui)) calc(4 * var(--ui)) 0 #000,
+    0 0 calc(30 * var(--ui)) rgba(255, 210, 140, 0.35);
+}
+
+.campaign__subtitle {
+  position: absolute;
+  left: 50%;
+  top: 21%;
+  transform: translateX(-50%);
+  margin: 0;
+  color: #dcdcff;
+  font-size: calc(40 * var(--ui));
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+}
+
+.campaign__back {
+  position: absolute;
+  left: 4%;
+  top: 86%;
+  width: calc(240 * var(--ui));
+  height: calc(72 * var(--ui));
+  font: inherit;
+  font-size: calc(38 * var(--ui));
+  color: #f0f2f6;
+  background: rgba(90, 90, 90, 0.75);
+  border: calc(2 * var(--ui)) solid rgba(150, 150, 150, 0.7);
+  border-radius: calc(10 * var(--ui));
+  cursor: pointer;
+}
+
+.campaign__back:hover {
+  background: rgba(130, 130, 130, 0.85);
+}
+
+.campaign__foot {
+  position: absolute;
+  left: 50%;
+  top: 94%;
+  transform: translateX(-50%);
+  margin: 0;
+  color: rgba(220, 226, 236, 0.8);
+  font-size: calc(26 * var(--ui));
+}
+
+/* 海报横排：世界地图从 15% 起、铺到 75%；章节地图从 7% 起、铺 62% */
+.campaign__posters {
+  position: absolute;
+  left: 15%;
+  top: 62%;
+  transform: translateY(-50%);
+  width: 60%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: calc(30 * var(--ui));
+}
+
+.campaign__poster {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(8 * var(--ui));
+  width: calc(540 * var(--ui));
+  padding: calc(10 * var(--ui));
+  font: inherit;
+  color: #fff;
+  background: rgba(20, 28, 48, 0.6);
+  border: calc(3 * var(--ui)) solid rgba(120, 160, 220, 0.4);
+  border-radius: calc(16 * var(--ui));
+  cursor: pointer;
+  transition: border-color 140ms ease-out, transform 140ms ease-out;
+}
+
+.campaign__poster:hover,
+.campaign__poster--on {
+  border-color: #ffdc78;
+  transform: translateY(calc(-4 * var(--ui)));
+}
+
+.campaign__poster-art {
+  display: block;
+  width: 100%;
+  aspect-ratio: 3 / 2;
+  object-fit: cover;
+  border-radius: calc(10 * var(--ui));
+}
+
+/* 没有海报图时的底板 */
+.campaign__poster-plate {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  aspect-ratio: 3 / 2;
+  border-radius: calc(10 * var(--ui));
+  background: linear-gradient(160deg, #26324a 0%, #151b28 100%);
+  color: #cfd8e8;
+  font-size: calc(40 * var(--ui));
+}
+
+.campaign__poster-name {
+  font-size: calc(30 * var(--ui));
+  text-align: center;
+}
+
+.campaign__poster-note {
+  font-size: calc(22 * var(--ui));
+  color: #b9c4d6;
+}
+
+.campaign__poster-done {
+  position: absolute;
+  right: calc(14 * var(--ui));
+  top: calc(14 * var(--ui));
+  padding: calc(2 * var(--ui)) calc(10 * var(--ui));
+  border-radius: calc(8 * var(--ui));
+  background: rgba(93, 220, 154, 0.85);
+  color: #0d1018;
+  font-size: calc(22 * var(--ui));
+}
+
+/* 章节地图的关卡海报：从左下往右上排（起点 7%, 56%，每关抬高一点） */
+.campaign__posters--stage {
+  left: 7%;
+  top: 56%;
+  width: 62%;
+  align-items: flex-end;
+}
+
+.campaign__posters--stage > li {
+  transform: translateY(calc(var(--index, 0) * -70 * var(--ui)));
+}
+
+.campaign__posters--stage .campaign__poster {
+  width: calc(420 * var(--ui));
+}
+
+/* 右侧详情栏 */
+.campaign__detail {
+  position: absolute;
+  left: 70%;
+  top: 18%;
+  width: 26%;
+  height: 68%;
+  display: flex;
+  flex-direction: column;
+  gap: calc(10 * var(--ui));
+  padding: calc(20 * var(--ui));
+  background: rgba(15, 22, 42, 0.72);
+  border: calc(2 * var(--ui)) solid rgba(120, 160, 220, 0.35);
+  border-radius: calc(20 * var(--ui));
+  overflow-y: auto;
+}
+
+.campaign__detail-title {
+  margin: 0;
+  font-size: calc(40 * var(--ui));
+  color: #fff;
+}
+
+.campaign__detail-line {
+  margin: 0;
+  color: #c8d2e4;
+  font-size: calc(26 * var(--ui));
+}
+
+.campaign__detail-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: calc(6 * var(--ui));
+  color: #e6ecf7;
+  font-size: calc(26 * var(--ui));
+}
+
+.campaign__done {
+  margin-left: calc(10 * var(--ui));
+  color: #5ddc9a;
+}
+
+.campaign__detail-hint {
+  margin: auto 0 0;
+  color: rgba(200, 210, 228, 0.7);
+  font-size: calc(22 * var(--ui));
+}
+
+.campaign__detail .btn {
+  margin-top: auto;
+  font-size: calc(30 * var(--ui));
+  padding: calc(10 * var(--ui)) calc(20 * var(--ui));
+}
+
+/* 结果面板里的奖励明细 */
+.settlement {
+  margin: 12px 0 0;
+  padding: 10px 14px;
+  list-style: none;
+  border-left: 3px solid var(--ok);
+  border-radius: 6px;
+  background: rgba(93, 220, 154, 0.1);
+  color: var(--text);
+  font-size: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.settlement__title {
+  font-weight: 600;
+}
+
+.settlement__line {
+  color: var(--text-dim);
+}
+
 /* --- 商店（旧版 `shop_scene.py` / `activity_shop_scene.py`）---------------- */
 
 /*

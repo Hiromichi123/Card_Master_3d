@@ -202,7 +202,10 @@
       → `scenes/CollectionScene.tsx` + `ui/CardShowcase.tsx`（M3a）。**没有做分页**：用 `loading="lazy"` 按可见区域加载缩略图加筛选代替，理由见 `PLAN.md` 第 5 节与 P5.md 第 5 节。
 - [x] 实现组卡上限、库存限制、保存/恢复；保留实际重复卡的数量约束。
       → `domain/progression/deckView.ts` + `scenes/DeckEditorScene.tsx`（左 12 槽 / 右收藏，点击加入与移出）。上限 12、可用张数 = 拥有 − 已上阵、按下标删重复卡；改走防抖落盘、离开页面 `flush()`。
-- [ ] 迁移三章十二关的敌方配置、背景主题与奖励；地图入口与战斗返回完整。
+- [x] 迁移三章十二关的敌方配置、背景主题与奖励；地图入口与战斗返回完整。
+      → `scenes/CampaignScene.tsx`（世界地图 / 章节地图两层）+ `scenes/campaignFlow.ts`。
+      悬停选中、点击进入/开战（照旧版 `world_map_scene.py`）；打完回地图并盖上「已通关」。
+      空章节「月之都」不上地图。见 `docs/validation/P5.md` 第 4.10 节。
 - [x] 实现金币/水晶/徽章、等级/经验、常规商店和每日刷新/售罄记录。
       → `scenes/ShopScene.tsx`（常规 + 活动两套货架，同一块屏）：`buildShelf` 按
       `store.todayKey()` 现算、售罄标识自带日键所以**跨日自动刷新**；购买走
@@ -210,15 +213,21 @@
       （旧版 `knownIssues[0]` 的「只扣钱不发货」已被用例盯住）。
       顺带补了导入缺陷：活动商店的 `priceByRarity` 是裸数字，数据层按
       `unknownRarityFallback.currency`（徽章）补上货币。见 `docs/validation/P5.md` 第 4.6 节。
-- [ ] 实现 operationId/battleId 去重，胜负结算/返回/重载只能领一次奖励。
+- [x] 实现 operationId/battleId 去重，胜负结算/返回/重载只能领一次奖励。
+      → 会话内 `operationId` 去重（`createProfileStore`）+ 落盘的 `battleId` 去重
+      （`applyEconomyTransaction` 的 `settledBattleIds`）。战役用例断言打完一关后
+      `settledBattleIds` 恰好 1 条；每次挑战的 `battleId` 带 `launchSeq`，所以重打能再领。
 - [ ] 实现新版存档 JSON 导入/导出及用户主动旧 inventory/profile/deck 导入预览。
 - [ ] 导入按旧路径映射 cardId，未知项可见，转换不修改原存档。
 - [ ] 验证刷新恢复、重复点击、保存失败、余额不足、库存不足、导入版本不兼容与旧路径字符。
 
 验收：
 
-- [ ] 从抽卡至组卡、通关、领奖、再购买形成完整循环，重开浏览器后可恢复。
-- [ ] 十连一次保存，金币与库存不会一边成功一边失败。
+- [x] 从抽卡至组卡、通关、领奖、再购买形成完整循环，重开浏览器后可恢复。
+      → 抽卡（`gacha.spec.ts`）、组卡（`deckEditor.spec.ts`）、战役领奖（`campaign.spec.ts`）、
+      商店购买（`shop.spec.ts`）各自的用例都读 IndexedDB 的落盘值，并在刷新后复查。
+- [x] 十连一次保存，金币与库存不会一边成功一边失败。
+      → `tests/unit/saveStore.test.ts`「一次十连只写一次盘」「写入失败时快照逐字节不变」。
 - [ ] 演示存档与用户进度分开，可随时重置演示样例而不误删用户存档。
 
 ## P6 — 本地 Draft、迷宫与工坊
@@ -280,6 +289,6 @@
 | P2 | 已完成 | [docs/validation/P2.md](docs/validation/P2.md) |
 | P3 | 已完成 | [docs/validation/P3.md](docs/validation/P3.md) |
 | P4 | 未开始 | 待创建 docs/validation/P4.md |
-| P5 | 进行中 | [docs/validation/P5.md](docs/validation/P5.md)<br>已完成 M0 素材与数据层、M1 存档层、M2 应用外壳与主菜单、M3a 卡牌图鉴、闪卡展示位、M3 配置（组卡）、M5 抽卡；剩商店、战役与结算、设置页 |
+| P5 | 进行中 | [docs/validation/P5.md](docs/validation/P5.md)<br>已完成 M0–M5：素材与数据层、存档层、应用外壳与主菜单、图鉴与展示位、配置（组卡）、抽卡、商店（常规 + 活动）、战役与结算；剩设置页与存档导入/导出 |
 | P6 | 未开始 | 待创建 docs/validation/P6.md |
 | P7 | 未开始 | 待创建 docs/validation/P7.md |

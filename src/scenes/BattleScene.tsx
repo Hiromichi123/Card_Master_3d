@@ -1,5 +1,5 @@
 import { Canvas } from '@react-three/fiber';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { PCFShadowMap } from 'three';
 
 import type { CardDefinition, SideId } from '../domain/cards/types';
@@ -14,6 +14,9 @@ import { EffectSystem } from '../rendering/effects/EffectSystem';
 import { PerfSampler } from '../rendering/PerfSampler';
 import { PostEffects } from '../rendering/postprocessing/PostEffects';
 import { DEMO_CONFIG, demoDefinitions } from '../rendering/presentation/demoBattle';
+import type { DefinitionTable } from '../rendering/presentation/demoBattle';
+import type { BattleConfig, BattleOutcome } from '../domain/battle/types';
+import type { SettlementView } from '../domain/progression/campaign';
 import { BattleSession } from '../rendering/presentation/session';
 import { useBattleSession } from '../rendering/presentation/useBattleSession';
 import { sceneFogArgs } from '../rendering/table/themes';
@@ -42,14 +45,35 @@ import { WebGLGuard } from './WebGLGuard';
  * - **点击**固定选中，之后悬停别的卡不再抢走面板；
  * - 点空白处取消固定。面板本身在 DOM 之上，点击不会穿透到场景。
  */
-export function BattleScene() {
+export interface BattleSceneProps {
+  /**
+   * 这一局的配置。缺省是 P3 的固定演示对局（主菜单的「演示战斗」）。
+   * 战役进来的每一关给的是 `planStageLaunch` 算出来的配置。
+   */
+  readonly config?: BattleConfig;
+  readonly definitions?: DefinitionTable;
+  /** 这一关的奖励（战役才有）；结果面板上多显示一段结算明细。 */
+  readonly settlement?: SettlementView | null;
+  /** 首次进入结果态时回调一次——**结算的提交时机就在这一刻**。 */
+  readonly onFinished?: ((outcome: BattleOutcome) => void) | undefined;
+  /** 结果面板上的「返回」。缺省回演示菜单。 */
+  readonly onExit?: (() => void) | undefined;
+}
+
+export function BattleScene({
+  config = DEMO_CONFIG,
+  definitions,
+  settlement = null,
+  onFinished,
+  onExit,
+}: BattleSceneProps = {}) {
   const profile = useSettingsStore((state) => state.profile);
   const theme = useSettingsStore((state) => state.tableTheme);
   const showPerf = useSettingsStore((state) => state.showPerf);
 
   const [session] = useState(
     () =>
-      new BattleSession(DEMO_CONFIG, demoDefinitions(), () => useSettingsStore.getState().presentationSpeed, {
+      new BattleSession(config, definitions ?? demoDefinitions(), () => useSettingsStore.getState().presentationSpeed, {
         play: (request) => {
           effectDirector.play(request);
         },
@@ -59,6 +83,22 @@ export function BattleScene() {
       }),
   );
   const snapshot = useBattleSession(session);
+
+  /*
+    战果上报：**进入结果态的那一刻报一次**，由 `App` 去提交结算事务。
+    用 ref 挡住重复上报——结果面板在整个结果态里都是同一个 `outcome`，
+    而 React 会因为这个组件里任何其它状态变化重渲染。
+  */
+  const reportedRef = useRef(false);
+  useEffect(() => {
+    if (reportedRef.current || !onFinished) {
+      return;
+    }
+    if (snapshot.mode === 'result' && snapshot.outcome) {
+      reportedRef.current = true;
+      onFinished(snapshot.outcome);
+    }
+  }, [snapshot.mode, snapshot.outcome, onFinished]);
 
   useEffect(() => () => session.dispose(), [session]);
 
@@ -232,6 +272,8 @@ export function BattleScene() {
 
         {snapshot.mode === 'menu' && (
           <BattleMenu
+            label={config.label ?? '对战'}
+            playerDeck={config.playerDeck}
             autoPlayer={snapshot.autoPlayer}
             onAutoPlayerChange={(on) => session.setAutoPlayer(on)}
             onStart={() => session.start()}
@@ -243,8 +285,16 @@ export function BattleScene() {
             outcome={snapshot.outcome}
             playerHp={snapshot.display.playerHp.player}
             enemyHp={snapshot.display.playerHp.enemy}
+            settlement={settlement}
+            backLabel={onExit ? '返回战役' : '返回菜单'}
             onRematch={() => session.start()}
-            onBackToMenu={() => session.toMenu()}
+            onBackToMenu={() => {
+              if (onExit) {
+                onExit();
+                return;
+              }
+              session.toMenu();
+            }}
           />
         )}
       </div>

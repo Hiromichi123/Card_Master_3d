@@ -5,6 +5,7 @@ import { CollectionScene } from '../scenes/CollectionScene';
 import { DeckEditorScene } from '../scenes/DeckEditorScene';
 import { EffectLabScene } from '../scenes/EffectLabScene';
 import { ActivityScene } from '../scenes/ActivityScene';
+import { CampaignScene } from '../scenes/CampaignScene';
 import { BattleMenuScene } from '../scenes/BattleMenuScene';
 import { GachaScene } from '../scenes/GachaScene';
 import { ShopScene } from '../scenes/ShopScene';
@@ -16,6 +17,10 @@ import { useSettingsStore } from '../state/settingsStore';
 import { useProfileStore } from '../state/useProfileStore';
 import { QualityControl } from '../ui/QualityControl';
 import { ScreenPlaceholder } from '../ui/ScreenPlaceholder';
+import { configFor, definitionsFor, settlementFor } from '../scenes/campaignFlow';
+import type { SettlementView, StageLaunch } from '../domain/progression/campaign';
+import { planSettlement } from '../domain/progression/campaign';
+import type { BattleOutcome } from '../domain/battle/types';
 import { ToastHost } from '../ui/ToastHost';
 import { DataProbe } from './DataProbe';
 import { ErrorBoundary } from './ErrorBoundary';
@@ -44,6 +49,41 @@ const FADE_MS = 320;
 export function App() {
   const [route, setRoute] = useState<RouteId>('hub');
   const [store, setStore] = useState<ProfileStore | null>(null);
+  /*
+    这一局的战役启动参数与它的结算。
+
+    它们是**跨屏幕的一次性数据**（地图屏 → 战斗屏 → 结果面板），
+    放在这一层最直观：屏幕是挂载/卸载式的，参数留在屏幕里会随卸载丢掉。
+  */
+  const [launch, setLaunch] = useState<StageLaunch | null>(null);
+  const [settlement, setSettlement] = useState<SettlementView | null>(null);
+
+  /**
+   * 提交一关的结算。
+   *
+   * 算奖励是**纯函数**（`settlementFor`，随机流由 `battleId` 派生），
+   * 提交是**一笔事务**（金币/经验/水晶/掉落的卡/通关记录一起写）。
+   * `battleId` 进事务，所以同一局再算一次会被存档层按 id 挡掉——
+   * 「返回/重载/重复点击只能领一次」靠的是这一条，不是界面上的禁用。
+   */
+  const commitSettlement = useCallback(
+    async (outcome: BattleOutcome) => {
+      if (!launch || !store) {
+        return;
+      }
+      const computed = settlementFor(launch, outcome);
+      const result = await store.commitEconomic<SettlementView>(() =>
+        planSettlement(launch, computed, store.nextOperationId()),
+      );
+      if (result.ok) {
+        setSettlement(result.view);
+        return;
+      }
+      // 存档层已经 toast 过原因；这里只补一句「奖励没发出去」
+      pushToast(`奖励没能发放：${result.message}`, 'error');
+    },
+    [launch, store],
+  );
   const reduceMotion = useSettingsStore((state) => state.reduceMotion);
 
   /*
@@ -150,6 +190,21 @@ export function App() {
               route={route}
               snapshot={snapshot}
               store={store}
+              launch={launch}
+              settlement={settlement}
+              onStageLaunch={(next) => {
+                setSettlement(null);
+                setLaunch(next);
+                navigate('battle');
+              }}
+              onBattleFinished={(outcome) => {
+                void commitSettlement(outcome);
+              }}
+              onBattleExit={() => {
+                setLaunch(null);
+                setSettlement(null);
+                navigate('campaign');
+              }}
               onNavigate={navigate}
               onReset={() => {
                 void store?.resetProfile();
@@ -177,6 +232,12 @@ interface ScreenProps {
    * 这两件事都必须在屏幕里发号施令，光有只读的 `profile` 做不了。
    */
   readonly store: ProfileStore | null;
+  /** 这一局的战役启动参数（演示战斗时为 null）。 */
+  readonly launch: StageLaunch | null;
+  readonly settlement: SettlementView | null;
+  readonly onStageLaunch: (launch: StageLaunch) => void;
+  readonly onBattleFinished: (outcome: BattleOutcome) => void;
+  readonly onBattleExit: () => void;
   readonly onNavigate: (route: RouteId) => void;
   readonly onReset: () => void;
 }
@@ -187,7 +248,18 @@ interface ScreenProps {
  * **加载门禁只对游戏屏幕生效**：数据自检与实验台是开发工具，
  * 不读存档，让它们也等存档就绪没有意义。
  */
-function Screen({ route, snapshot, store, onNavigate, onReset }: ScreenProps) {
+function Screen({
+  route,
+  snapshot,
+  store,
+  launch,
+  settlement,
+  onStageLaunch,
+  onBattleFinished,
+  onBattleExit,
+  onNavigate,
+  onReset,
+}: ScreenProps) {
   // 开发工具放行
   if (route === 'probe') {
     return <DataProbe />;
@@ -224,11 +296,23 @@ function Screen({ route, snapshot, store, onNavigate, onReset }: ScreenProps) {
     case 'battle':
       return (
         <div className="scene-viewport">
-          <BattleScene />
+          <BattleScene
+            {...(launch
+              ? {
+                  config: configFor(launch),
+                  definitions: definitionsFor([...launch.playerDeck, ...launch.enemyDeck]),
+                  settlement,
+                  onFinished: onBattleFinished,
+                  onExit: onBattleExit,
+                }
+              : {})}
+          />
         </div>
       );
     case 'campaign':
-      return <ScreenPlaceholder title="战役" note="关卡选择正在施工（P5-M6）。" />;
+      return (
+        <CampaignScene profile={profile} onNavigate={onNavigate} onLaunch={onStageLaunch} />
+      );
     case 'gacha':
       return <GachaScene profile={profile} store={store} busy={snapshot.busy} onReturn={() => onNavigate('hub')} />;
     case 'collection':
