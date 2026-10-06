@@ -22,8 +22,9 @@ function collectProblems(page: Page): string[] {
 }
 
 async function gotoBattle(page: Page): Promise<void> {
+  // 主界面 →「演示战斗」。P5 之后战斗不再是导航栏上的页签
   await page.goto('/');
-  await page.getByRole('button', { name: '战斗场景' }).click();
+  await page.getByRole('button', { name: '演示战斗' }).click();
   await expect(page.getByRole('button', { name: '开始对局' })).toBeVisible();
 }
 

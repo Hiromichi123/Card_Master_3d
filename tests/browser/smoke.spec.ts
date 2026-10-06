@@ -19,6 +19,8 @@ test.describe('应用骨架', () => {
     page.on('pageerror', (error) => errors.push(error.message));
 
     await page.goto('/');
+    // P5 之后落地页是主菜单，数据自检变成一个页签
+    await page.getByRole('button', { name: '数据自检' }).click();
 
     await expect(page.getByRole('heading', { name: '数据自检' })).toBeVisible();
 
@@ -44,6 +46,7 @@ test.describe('应用骨架', () => {
 
   test('中文名称正常渲染，没有缺字方框', async ({ page }) => {
     await page.goto('/');
+    await page.getByRole('button', { name: '数据自检' }).click();
     const firstCardName = page.locator('.probe__table tbody tr').first().locator('td').nth(1);
     await expect(firstCardName).toBeVisible();
     // 名称必须是中日韩统一表意文字，而不是替换字符或空

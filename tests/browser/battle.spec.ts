@@ -52,6 +52,18 @@ async function canvasBrightness(page: import('@playwright/test').Page): Promise<
   }, base64);
 }
 
+/**
+ * 进入演示战斗。
+ *
+ * P5 之后「战斗」不再是导航栏上的一个页签——它从主界面的「演示战斗」入口进。
+ * 用例跟着走真实路径，而不是把页签加回去迁就测试。
+ */
+async function openDemoBattle(page: Page): Promise<void> {
+  await page.goto('/');
+  await expect(page.getByRole('button', { name: '演示战斗' })).toBeVisible();
+  await page.getByRole('button', { name: '演示战斗' }).click();
+}
+
 test.describe('3D 战斗场景', () => {
   test('WebGL2 可用时渲染出战桌，且无控制台错误', async ({ page }) => {
     const problems: string[] = [];
@@ -65,8 +77,7 @@ test.describe('3D 战斗场景', () => {
       problems.push(`requestfailed: ${request.url()}`),
     );
 
-    await page.goto('/');
-    await page.getByRole('button', { name: '战斗场景' }).click();
+    await openDemoBattle(page);
 
     const canvas = page.locator('canvas');
     await expect(canvas).toBeVisible();
@@ -87,8 +98,7 @@ test.describe('3D 战斗场景', () => {
 
   test('窗口变窄时不裁掉双方区域（V-WORLD-4）', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 720 });
-    await page.goto('/');
-    await page.getByRole('button', { name: '战斗场景' }).click();
+    await openDemoBattle(page);
 
     const canvas = page.locator('canvas');
     await expect(canvas).toBeVisible();
@@ -122,8 +132,7 @@ test.describe('战斗台面主题', () => {
     });
     page.on('pageerror', (error) => problems.push(`pageerror: ${error.message}`));
 
-    await page.goto('/');
-    await page.getByRole('button', { name: '战斗场景' }).click();
+    await openDemoBattle(page);
     await page.waitForTimeout(4000);
 
     const select = page.getByLabel('战斗台面');
@@ -179,8 +188,7 @@ test.describe('相机', () => {
     const problems: string[] = [];
     page.on('pageerror', (error) => problems.push(error.message));
 
-    await page.goto('/');
-    await page.getByRole('button', { name: '战斗场景' }).click();
+    await openDemoBattle(page);
     await page.waitForTimeout(4000);
 
     const camSelect = page.getByLabel('相机视角');
