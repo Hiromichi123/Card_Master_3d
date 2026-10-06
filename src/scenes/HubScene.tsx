@@ -26,6 +26,8 @@ import type { RouteId } from '../app/routes';
 export interface HubSceneProps {
   readonly profile: ProfileState;
   readonly onNavigate: (route: RouteId) => void;
+  /** 重置存档。开发期很需要——比如新号规则变了之后，旧存档不会自己变。 */
+  readonly onReset: () => void;
 }
 
 interface Entry {
@@ -55,7 +57,7 @@ const COMING: readonly { label: string; hint: string }[] = [
   { label: '迷宫', hint: '第一层迷宫探索与节点战斗' },
 ];
 
-export function HubScene({ profile, onNavigate }: HubSceneProps) {
+export function HubScene({ profile, onNavigate, onReset }: HubSceneProps) {
   const activeDeck = profile.decks.find((deck) => deck.id === profile.activeDeckId) ?? null;
 
   return (
@@ -90,6 +92,20 @@ export function HubScene({ profile, onNavigate }: HubSceneProps) {
         </section>
 
         <section className="hub__group hub__group--side" aria-label="其它入口">
+          <button
+            type="button"
+            className="hub__entry hub__entry--slate hub__entry--small"
+            onClick={() => {
+              if (window.confirm('重置存档？当前的卡牌、货币与关卡进度都会被清掉。')) {
+                onReset();
+              }
+            }}
+            title="清空存档并按当前规则重新开号"
+          >
+            <span className="hub__entry-label">重置存档</span>
+            <span className="hub__entry-hint">按当前规则重新开号</span>
+          </button>
+
           {DEMO.map((entry) => (
             <button
               key={entry.route}

@@ -57,6 +57,8 @@ export interface ProfileStoreDeps {
   readonly contentVersion: string;
   /** 起始卡组。新号直接能玩靠它。 */
   readonly starterCardIds: readonly string[];
+  /** 开号时一并放进库存的卡。不给就只拥有起始卡组那几张。 */
+  readonly ownedCardIds?: readonly string[] | undefined;
   readonly fallbackReason?: string | null;
   /** 失败/拒绝时的提示出口。 */
   readonly onNotice?: (message: string, tone: 'info' | 'error') => void;
@@ -134,6 +136,7 @@ export class ProfileStore {
           contentVersion: this.deps.contentVersion,
           dayKey: dayKeyOf(this.deps.clock()),
           starterCardIds: this.deps.starterCardIds,
+          ownedCardIds: this.deps.ownedCardIds,
           now: this.deps.clock(),
         });
       this.profile = profile;
@@ -359,6 +362,7 @@ export class ProfileStore {
       contentVersion: this.deps.contentVersion,
       dayKey: dayKeyOf(this.deps.clock()),
       starterCardIds: this.deps.starterCardIds,
+      ownedCardIds: this.deps.ownedCardIds,
       now: this.deps.clock(),
     });
     this.profile = fresh;

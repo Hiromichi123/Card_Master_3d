@@ -26,16 +26,25 @@ export interface CreateProfileArgs {
   readonly dayKey: string;
   /** 起始卡组的 cardId 列表。超过 12 张会被截断。 */
   readonly starterCardIds: readonly string[];
+  /**
+   * 开号时一并放进库存的卡。
+   *
+   * 缺省就是起始卡组那 12 张。**传入全部卡就是「什么都拥有」的演示存档**——
+   * 现在按需求这么做，好在图鉴里浏览全部卡面；
+   * 真正的正式存档应该让玩家从零开始收集。
+   */
+  readonly ownedCardIds?: readonly string[] | undefined;
   /** 建号时刻，写进卡组的 `updatedAt`。 */
   readonly now: Date;
 }
 
 export function createInitialProfile(args: CreateProfileArgs): ProfileState {
   const cardIds = args.starterCardIds.slice(0, DECK_LIMIT);
+  const owned = args.ownedCardIds ?? cardIds;
 
   // 每张按次数记，重复的卡（如果起始牌组里有）得到正好的数量
   const inventory: Record<string, number> = {};
-  for (const cardId of cardIds) {
+  for (const cardId of owned) {
     inventory[cardId] = (inventory[cardId] ?? 0) + 1;
   }
 

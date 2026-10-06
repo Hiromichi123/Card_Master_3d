@@ -1520,3 +1520,102 @@ code {
   border: 1px solid #7a5a2a;
   border-radius: 3px;
 }
+
+/* --- 图鉴 ---------------------------------------------------------------- */
+
+/*
+  `.screen` 要设 `position: relative`：卡牌详情面板（`.detail`）是
+  `position: absolute`，它需要一个定位祖先。战斗场景那边有 `.scene-viewport`
+  顶着，菜单类屏幕没有——不设的话面板会跑到视口之外。
+*/
+.screen {
+  position: relative;
+}
+
+.collection__lead {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+.collection__stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 12px;
+  color: var(--text-dim);
+  justify-content: flex-end;
+  max-width: 60%;
+}
+
+.collection__stat {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.collection__stat b {
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.collection__stat-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.collection__filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  font: inherit;
+  font-size: 12px;
+  color: var(--text-dim);
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.chip:hover:not(:disabled) {
+  background: var(--bg-raised-hover);
+}
+
+.chip--on {
+  color: #0d1018;
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.chip:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.chip__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.chip__count {
+  font-variant-numeric: tabular-nums;
+  opacity: 0.75;
+}
+
+.collection__empty {
+  padding: 30px;
+  text-align: center;
+  color: var(--text-dim);
+}

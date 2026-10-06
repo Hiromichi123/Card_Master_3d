@@ -1,6 +1,7 @@
 import { Suspense, useEffect, useState } from 'react';
 
 import { BattleScene } from '../scenes/BattleScene';
+import { CollectionScene } from '../scenes/CollectionScene';
 import { EffectLabScene } from '../scenes/EffectLabScene';
 import { HubScene } from '../scenes/HubScene';
 import { getProfileStore } from '../state/profileStore';
@@ -84,6 +85,9 @@ export function App() {
               route={route}
               snapshot={snapshot}
               onNavigate={setRoute}
+              onReset={() => {
+                void store?.resetProfile();
+              }}
             />
           </Suspense>
         </ErrorBoundary>
@@ -98,6 +102,7 @@ interface ScreenProps {
   readonly route: RouteId;
   readonly snapshot: ReturnType<typeof useProfileStore>;
   readonly onNavigate: (route: RouteId) => void;
+  readonly onReset: () => void;
 }
 
 /**
@@ -106,7 +111,7 @@ interface ScreenProps {
  * **加载门禁只对游戏屏幕生效**：数据自检与实验台是开发工具，
  * 不读存档，让它们也等存档就绪没有意义。
  */
-function Screen({ route, snapshot, onNavigate }: ScreenProps) {
+function Screen({ route, snapshot, onNavigate, onReset }: ScreenProps) {
   // 开发工具放行
   if (route === 'probe') {
     return <DataProbe />;
@@ -137,7 +142,7 @@ function Screen({ route, snapshot, onNavigate }: ScreenProps) {
 
   switch (route) {
     case 'hub':
-      return <HubScene profile={profile} onNavigate={onNavigate} />;
+      return <HubScene profile={profile} onNavigate={onNavigate} onReset={onReset} />;
     case 'battle':
       return (
         <div className="scene-viewport">
@@ -149,7 +154,7 @@ function Screen({ route, snapshot, onNavigate }: ScreenProps) {
     case 'gacha':
       return <ScreenPlaceholder title="抽卡" note="卡池与演出正在施工（P5-M5）。" />;
     case 'collection':
-      return <ScreenPlaceholder title="卡牌图鉴" note="图鉴正在施工（P5-M3）。" />;
+      return <CollectionScene profile={profile} />;
     case 'deck':
       return <ScreenPlaceholder title="出战卡组配置" note="组卡正在施工（P5-M3）。" />;
     case 'shop':
@@ -157,6 +162,6 @@ function Screen({ route, snapshot, onNavigate }: ScreenProps) {
     case 'settings':
       return <ScreenPlaceholder title="设置" note="设置页正在施工（P5-M7）。" />;
     default:
-      return <HubScene profile={profile} onNavigate={onNavigate} />;
+      return <HubScene profile={profile} onNavigate={onNavigate} onReset={onReset} />;
   }
 }

@@ -24,6 +24,22 @@ function starterCardIds(): readonly string[] {
 }
 
 /**
+ * 演示存档：开号即拥有全部有效卡。
+ *
+ * **这是一个临时的便利设定**，按需求加：现在要能在图鉴里浏览全部卡面、
+ * 也方便验收组卡与商店。正式的存档应该让玩家从零收集——
+ * 改回 `undefined` 就恢复成「只拥有起始卡组」。
+ *
+ * 只收 `status === 'complete'`：9 张 `#yoroi` 的攻防冷却全是 0，
+ * 放进库存会污染卡池与货架。
+ */
+function ownedCardIds(): readonly string[] {
+  return cardDatabase.definitions
+    .filter((card) => card.status === 'complete')
+    .map((card) => card.cardId);
+}
+
+/**
  * 开发期的可注入项。
  *
  * - `?day=YYYYMMDD` 固定「今天」，商店/每日刷新的浏览器用例靠它才不是碰运气；
@@ -76,6 +92,7 @@ async function build(): Promise<ProfileStore> {
     seedSource: makeSeedSource(),
     contentVersion: cardDatabase.contentVersion,
     starterCardIds: starterCardIds(),
+    ownedCardIds: ownedCardIds(),
     fallbackReason: opened.fallbackReason,
     onNotice: pushToast,
   });

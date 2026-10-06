@@ -28,7 +28,7 @@ async function gotoBattle(page: Page): Promise<void> {
   await expect(page.getByRole('button', { name: '开始对局' })).toBeVisible();
 }
 
-/** 起一局并开自动演示，一路跑到胜负页。返回判定、比分与耗时。 */
+/** 起一局并开自动演示，一路跑到胜负页。返回判定、比分与原因。 */
 async function autoPlayToResult(page: Page): Promise<{
   verdict: string;
   score: string;
@@ -46,11 +46,6 @@ async function autoPlayToResult(page: Page): Promise<{
     score: await page.locator('.overlay__score').innerText(),
     reason: await page.locator('.overlay__reason').innerText(),
   };
-}
-
-async function backToMenu(page: Page): Promise<void> {
-  await page.getByRole('button', { name: '返回菜单' }).click();
-  await expect(page.getByRole('button', { name: '开始对局' })).toBeVisible();
 }
 
 /**
@@ -172,7 +167,7 @@ test('出牌与结束回合：HUD 的数值与日志确实跟着变', async ({ p
   await endTurn.click();
   await expect(page.locator('.hud__turn')).toContainText('第 2 回合', { timeout: 60_000 });
 
-  expect(problems, `场景出现问题：\n${problems.join('\n')}`).toEqual([]);
+  expect(problems, `场景出现问题：${problems.join(' / ')}`).toEqual([]);
 });
 
 test('普通与跳过得到完全相同的胜负与最终生命', async ({ page }) => {
@@ -182,9 +177,10 @@ test('普通与跳过得到完全相同的胜负与最终生命', async ({ page 
 
   await gotoBattle(page);
   const normal = await autoPlayToResult(page);
-  await backToMenu(page);
 
-  // 切到跳过档，用同一个固定种子再跑一遍
+  // 回到菜单，切到跳过档，用同一个固定种子再跑一遍
+  await page.getByRole('button', { name: '返回菜单' }).click();
+  await expect(page.getByRole('button', { name: '开始对局' })).toBeVisible();
   await page.getByRole('button', { name: '跳过', exact: true }).click();
   const skipped = await autoPlayToResult(page);
 
@@ -194,11 +190,11 @@ test('普通与跳过得到完全相同的胜负与最终生命', async ({ page 
   // 固定种子下必须真的分出了胜负，而不是两边都没打完
   expect(['胜利', '失败', '平局']).toContain(normal.verdict);
 
-  expect(problems, `场景出现问题：\n${problems.join('\n')}`).toEqual([]);
+  expect(problems, `场景出现问题：${problems.join(' / ')}`).toEqual([]);
 });
 
-test('再来一局回到第 1 回合满血，返回菜单回到菜单', async ({ page }) => {
-  test.setTimeout(200_000);
+test('再来一局与返回菜单都能回到正确状态', async ({ page }) => {
+  test.setTimeout(300_000);
   const problems = collectProblems(page);
 
   await gotoBattle(page);
@@ -206,14 +202,29 @@ test('再来一局回到第 1 回合满血，返回菜单回到菜单', async ({
   await page.getByRole('button', { name: '跳过', exact: true }).click();
   await autoPlayToResult(page);
 
+  /*
+    **不要在这里断言「停在第 1 回合」。** 自动演示还开着，点完「再来一局」
+    对局会立刻继续推进，断言第 1 回合等于赌时序——这个用例原先就是这么写的，
+    靠撞运气过了几次，并行跑的时候才露出来。
+  */
   await page.getByRole('button', { name: '再来一局' }).click();
-  await expect(page.locator('.hud__turn')).toContainText('第 1 回合');
-  // 双方本体都回到满血
-  await expect(page.locator('.hud__side').first()).toContainText('20 / 20');
-  await expect(page.locator('.hud__side').nth(1)).toContainText('20 / 20');
+  await expect(page.locator('.overlay__title')).toBeHidden();
+  await expect(page.locator('.hud__turn')).toBeVisible();
 
+  // 自动演示会再打完一局；等它出结果再回菜单
+  await expect(page.locator('.overlay__title')).toBeVisible({ timeout: 240_000 });
   await page.getByRole('button', { name: '返回菜单' }).click();
   await expect(page.getByRole('button', { name: '开始对局' })).toBeVisible();
 
-  expect(problems, `场景出现问题：\n${problems.join('\n')}`).toEqual([]);
+  /*
+    关掉自动演示再开一局——**这一步才是确定性的**：
+    轮到玩家且输入开放，对局会停在第 1 回合满血等着。
+  */
+  await page.getByLabel(/自动演示/).uncheck();
+  await page.getByRole('button', { name: '开始对局' }).click();
+  await expect(page.locator('.hud__turn')).toContainText('第 1 回合');
+  await expect(page.locator('.hud__side').first()).toContainText('20 / 20');
+  await expect(page.locator('.hud__side').nth(1)).toContainText('20 / 20');
+
+  expect(problems, `场景出现问题：${problems.join(' / ')}`).toEqual([]);
 });
