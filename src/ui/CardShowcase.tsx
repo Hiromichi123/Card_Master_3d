@@ -62,8 +62,6 @@ export function CardShowcase({ cardId, onClose }: CardShowcaseProps) {
   */
   const foilStyle = {
     ['--foil-strength' as string]: foil.strength,
-    ['--foil-density' as string]: foil.geometry.density,
-    ['--foil-scan' as string]: foil.geometry.scanlines,
     ['--foil-c1' as string]: foil.palette[0],
     ['--foil-c2' as string]: foil.palette[1],
     ['--foil-c3' as string]: foil.palette[2],

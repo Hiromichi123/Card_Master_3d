@@ -70,20 +70,12 @@ export function HoloLayer({ rarity }: Props) {
     表现为卡牌一闪。参数全部来自 `FOIL_TUNING`，两处渲染端共用同一份表。
   */
   useEffect(() => {
-    const spec = foilForRarity(rarity, rarityIndex().colorOf(rarity));
+    const color = rarityIndex().colorOf(rarity);
+    const spec = foilForRarity(rarity, color);
     uniforms.uStrength.value = spec.strength;
-    uniforms.uDensity.value = spec.geometry.density;
-    uniforms.uScanlines.value = spec.geometry.scanlines;
-    uniforms.uSharpness.value = spec.geometry.sharpness;
     uniforms.uRainbow.value = spec.rainbow ? 1 : 0;
     // 单色箔用该稀有度的代表色，和卡牌外圈光晕同源
-    uniforms.uTint.value.set(rarityIndex().colorOf(rarity));
-    /*
-      星点与金色收敛是 `plain` 档的调味，画廊箔不撒星点——
-      它是「箔纸」，撒了就像撒了金粉的另一种工艺。
-    */
-    uniforms.uSpeckle.value = spec.kind === 'plain' ? 0.45 : 0;
-    uniforms.uGilt.value = 0;
+    uniforms.uTint.value.set(color);
   }, [rarity, uniforms]);
 
   useFrame((_, delta) => {
