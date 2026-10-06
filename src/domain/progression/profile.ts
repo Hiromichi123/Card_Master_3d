@@ -7,7 +7,7 @@
  */
 
 import { DECK_LIMIT, DEFAULT_SETTINGS, SAVE_SCHEMA_VERSION } from './types';
-import type { Currencies, Deck, ProfileState, SettingsState } from './types';
+import type { Currencies, Deck, MazeRunState, ProfileState, SettingsState } from './types';
 
 /**
  * 起始货币。
@@ -106,6 +106,17 @@ export function withoutDeck(profile: ProfileState, deckId: string): ProfileState
 
 export function withActiveDeck(profile: ProfileState, deckId: string | null): ProfileState {
   return { ...profile, revision: profile.revision + 1, activeDeckId: deckId };
+}
+
+/**
+ * 写迷宫的 run 状态（走到哪、探索了哪些、每个补给节点的商店）。
+ *
+ * 与 `withSettings` / `withDeck` 同类：**非经济状态**，走防抖的浅更新通道，
+ * 不进 `EconomyTransaction`——那个通道的拒绝语义是为「钱/卡不够」设计的，
+ * 把「走到哪个格子」塞进去，会让「钱不够」连带把移动也回滚掉。
+ */
+export function withMazeRun(profile: ProfileState, run: MazeRunState | null): ProfileState {
+  return { ...profile, revision: profile.revision + 1, mazeRun: run };
 }
 
 /** 当前出战卡组；没有或指向已删除的卡组时返回 `null`。 */

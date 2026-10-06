@@ -292,3 +292,61 @@ describe('重置', () => {
     expect(profileOf(store).gacha.pullsByPool).toEqual({});
   });
 });
+
+describe('迷宫的 runState 写入', () => {
+  /** 造一个最小的 run（地图不在这一层测，只看写入与合并）。 */
+  const makeRun = (floorKey: string, version: number, playerNodeId: number) => ({
+    floorKey,
+    version,
+    playerNodeId,
+    exploredNodeIds: [0, playerNodeId].sort((a, b) => a - b),
+    shopByNode: {},
+  });
+
+  it('防抖合并成一次写盘，落盘的是最后一次', async () => {
+    // `commitCount` 只有内存实现有（生产实现没有这个计数器）
+    const repository = new MemorySaveRepository();
+    const { store } = await readyStore(repository);
+    const before = repository.commitCount;
+
+    store.saveMazeRun(makeRun('floor1', 1, 3));
+    store.saveMazeRun(makeRun('floor1', 1, 7));
+    await store.flush();
+
+    expect(repository.commitCount - before).toBe(1);
+    expect(profileOf(store).mazeRun?.playerNodeId).toBe(7);
+    // 落盘的那一份也对得上
+    const stored = await repository.load();
+    expect(stored?.mazeRun?.playerNodeId).toBe(7);
+  });
+
+  it('写 run 不会把已经扣掉的货币写回去（队列内部才读当前 profile）', async () => {
+    const { store } = await readyStore();
+    const goldBefore = profileOf(store).currencies.gold;
+
+    store.saveMazeRun(makeRun('floor1', 1, 5));
+    // 同一批里来一次真实的经济事务
+    const operationId = store.nextOperationId();
+    const result = await store.commitEconomic(() => ({
+      transaction: { operationId, currencyDelta: { gold: -100 }, inventoryDelta: {} },
+      view: null,
+    }));
+    expect(result.ok).toBe(true);
+
+    const profile = profileOf(store);
+    expect(profile.currencies.gold).toBe(goldBefore - 100);
+    // 移动也还在（经济事务用 `...profile` 展开，不碰 mazeRun）
+    expect(profile.mazeRun?.playerNodeId).toBe(5);
+  });
+
+  it('清空 run：可以写回 null', async () => {
+    const { store } = await readyStore();
+    store.saveMazeRun(makeRun('floor1', 1, 2));
+    await store.flush();
+    expect(profileOf(store).mazeRun).not.toBeNull();
+
+    store.saveMazeRun(null);
+    await store.flush();
+    expect(profileOf(store).mazeRun).toBeNull();
+  });
+});

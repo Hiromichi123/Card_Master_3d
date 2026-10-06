@@ -23,6 +23,7 @@ import {
   stages,
 } from '../../src/data';
 import { createRng, seedFrom } from '../../src/domain/battle/rng';
+import { withMazeRun } from '../../src/domain/progression/profile';
 import type { BattleOutcome } from '../../src/domain/battle/types';
 import {
   addToInventory,
@@ -729,5 +730,44 @@ describe('领域层不得依赖时间与随机', () => {
     };
     walk(root);
     expect(offenders, `领域层里出现了时间或随机：${offenders.join(', ')}`).toEqual([]);
+  });
+});
+
+describe('迷宫商店的售罄落点', () => {
+  const run = {
+    floorKey: 'floor1',
+    version: 1,
+    playerNodeId: 7,
+    exploredNodeIds: [0, 7],
+    shopByNode: {
+      '7': { dayKey: 'maze:floor1:v1:n7', seed: 4242, soldOut: [] },
+    },
+  };
+
+  it('写进 mazeRun 的那个节点，而不是全局货架', () => {
+    const profile = withMazeRun(freshProfile(), run);
+    const outcome = applyEconomyTransaction(profile, {
+      operationId: 'buy-maze-1',
+      currencyDelta: { gold: -100 },
+      inventoryDelta: {},
+      mazeSoldOut: { nodeId: '7', entryIds: ['maze:floor1:v1:n7|0|card'] },
+    });
+    expect(outcome.applied).toBe(true);
+    expect(outcome.profile.mazeRun?.shopByNode['7']?.soldOut).toEqual([
+      'maze:floor1:v1:n7|0|card',
+    ]);
+    // 全局货架不该被写脏
+    expect(outcome.profile.shop.soldOut).toEqual([]);
+  });
+
+  it('没有在跑迷宫时忽略这个字段，不会凭空造出一个 run', () => {
+    const outcome = applyEconomyTransaction(freshProfile(), {
+      operationId: 'buy-maze-2',
+      currencyDelta: { gold: -100 },
+      inventoryDelta: {},
+      mazeSoldOut: { nodeId: '7', entryIds: ['x'] },
+    });
+    expect(outcome.applied).toBe(true);
+    expect(outcome.profile.mazeRun).toBeNull();
   });
 });

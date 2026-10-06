@@ -110,6 +110,34 @@ export function applyEconomyTransaction(
     ? [...new Set([...profile.shop.soldOut, ...tx.soldOutAdditions])]
     : profile.shop.soldOut;
 
+  /*
+    迷宫楼层商店的售罄：写进**这一轮 run 的那个节点**，不是全局货架。
+    `mazeRun` 为 null（没在跑迷宫）时忽略——不该因为一笔带了这个字段的事务
+    就凭空造出一个 run。
+  */
+  const mazeRun =
+    tx.mazeSoldOut && profile.mazeRun
+      ? {
+          ...profile.mazeRun,
+          shopByNode: {
+            ...profile.mazeRun.shopByNode,
+            [tx.mazeSoldOut.nodeId]: {
+              ...(profile.mazeRun.shopByNode[tx.mazeSoldOut.nodeId] ?? {
+                dayKey: '',
+                seed: 0,
+                soldOut: [],
+              }),
+              soldOut: [
+                ...new Set([
+                  ...(profile.mazeRun.shopByNode[tx.mazeSoldOut.nodeId]?.soldOut ?? []),
+                  ...tx.mazeSoldOut.entryIds,
+                ]),
+              ],
+            },
+          },
+        }
+      : profile.mazeRun;
+
   return {
     profile: {
       ...profile,
@@ -127,6 +155,7 @@ export function applyEconomyTransaction(
             : profile.campaign.currentChapterId,
       },
       shop: { ...profile.shop, soldOut },
+      mazeRun,
       settledBattleIds: tx.settleBattleId
         ? [...profile.settledBattleIds, tx.settleBattleId]
         : profile.settledBattleIds,

@@ -151,6 +151,17 @@ export interface EconomyTransaction {
   readonly xpDelta?: number;
   /** 标记为已通关的关卡 ID。 */
   readonly clearStageId?: string;
+  /**
+   * 迷宫的**楼层商店**售罄标记，落到 `mazeRun.shopByNode[nodeId].soldOut`。
+   *
+   * 与 `soldOutAdditions`（每日货架）分开：那一个是全局的每日货架，
+   * 而迷宫商店属于「某一次 run 的某个节点」——写进全局会让每一轮 run 的
+   * 售罄标识永久累积、作废之后也清不掉。
+   */
+  readonly mazeSoldOut?: {
+    readonly nodeId: string;
+    readonly entryIds: readonly string[];
+  };
 }
 
 /** 一次抽卡的结果。**先确定并持久化，再演出**（PLAN 第 6 节）。 */

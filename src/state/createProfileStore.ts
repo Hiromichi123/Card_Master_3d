@@ -20,10 +20,11 @@ import {
   type ApplyOutcome,
 } from '../domain/progression/economy';
 import { dayKeyOf, type Clock } from '../domain/progression/clock';
-import { activeDeckOf, createInitialProfile, withActiveDeck, withDeck, withSettings, withoutDeck } from '../domain/progression/profile';
+import { activeDeckOf, createInitialProfile, withActiveDeck, withDeck, withMazeRun, withSettings, withoutDeck } from '../domain/progression/profile';
 import type { Planned } from '../domain/progression/plan';
 import type {
   Deck,
+  MazeRunState,
   ProfileState,
   SettingsState,
 } from '../domain/progression/types';
@@ -78,6 +79,8 @@ export class ProfileStore {
   private pendingDeck: Deck | null = null;
   private pendingDeleteDeckId: string | null = null;
   private pendingActiveDeckId: string | null | undefined;
+  /** `undefined` = 没有待写的迷宫状态（区别于「要写 null」）。 */
+  private pendingMazeRun: MazeRunState | null | undefined;
   private timer: ReturnType<typeof setTimeout> | null = null;
 
   private opSeq = 0;
@@ -252,6 +255,19 @@ export class ProfileStore {
     this.scheduleDebounce();
   }
 
+  /**
+   * 写迷宫 run 状态（走到哪 / 探索了哪些 / 每个节点的商店）。
+   *
+   * 与 `saveDeck` 同一条防抖合并队列：迷宫移动是低频操作，
+   * 丢了最坏回到上一次落盘的位置——不值得为它开一条悲观事务。
+   * 与结算不打架是既有机制保证的：`commitEconomic` 开头会 `flushDebounced()`，
+   * 待写的 run 先入队，结算读到的就是新位置。
+   */
+  saveMazeRun(run: MazeRunState | null): void {
+    this.pendingMazeRun = run;
+    this.scheduleDebounce();
+  }
+
   deleteDeck(deckId: string): void {
     this.pendingDeleteDeckId = deckId;
     this.scheduleDebounce();
@@ -284,10 +300,12 @@ export class ProfileStore {
     const deck = this.pendingDeck;
     const deleteId = this.pendingDeleteDeckId;
     const activeId = this.pendingActiveDeckId;
+    const mazeRun = this.pendingMazeRun;
     this.pendingSettings = null;
     this.pendingDeck = null;
     this.pendingDeleteDeckId = null;
     this.pendingActiveDeckId = undefined;
+    this.pendingMazeRun = undefined;
 
     if (settings) {
       void this.enqueue(() => this.persist((p) => withSettings(p, settings)));
@@ -300,6 +318,9 @@ export class ProfileStore {
     }
     if (activeId !== undefined) {
       void this.enqueue(() => this.persist((p) => withActiveDeck(p, activeId)));
+    }
+    if (mazeRun !== undefined) {
+      void this.enqueue(() => this.persist((p) => withMazeRun(p, mazeRun)));
     }
   }
 
