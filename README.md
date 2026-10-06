@@ -34,11 +34,22 @@ npm run dev          # http://127.0.0.1:5173
 任何预设与旋转角度下板面都不会被裁掉；窗口变化时保留你转到的方位角。
 
 ```bash
-npm run typecheck    # tsc --noEmit
-npm run test         # Vitest 单元测试
+npm run typecheck    # tsc --noEmit（秒级，任何改动都跑）
+npm run test         # Vitest 单元测试（全套）
 npx playwright test  # 浏览器用例（会自动启动 dev server）
 npm run build        # 类型检查 + 生产构建
 ```
+
+**日常改动只跑相关的那几个用例**：浏览器用例要现开页面、台面贴图是逐像素现生成的，
+跑满一次是分钟级，而其中大部分与本次改动无关。改完跑
+
+```bash
+npx playwright test tests/browser/<对应文件>.spec.ts
+npx vitest run tests/unit/<对应文件>.test.ts
+```
+
+即可，上面那套完整的留到阶段收尾、提交前跑（约定见
+[CONSTRUCTION_CHECKLIST.md](CONSTRUCTION_CHECKLIST.md) 开头）。
 
 Node 需要 `>=22.12.0`；本机升级过程的记录见 [docs/VERSIONS.md](docs/VERSIONS.md) 第 1 节。
 

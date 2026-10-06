@@ -6,6 +6,19 @@
 每阶段在 `docs/validation/Px.md` 记录验证环境、结果、截图/录像位置、规则差异和待办。
 阶段失败先修复影响验收的问题；不要用外围功能数量代替卡面与特效质量验收。
 
+**日常改动的验证范围**（2026-10-06 起）。不要每改一处就把单测与全部浏览器用例跑一遍——
+一套浏览器用例要现开页面、台面贴图是逐像素现生成的，跑满一次是分钟级，
+而其中大部分与本次改动无关。约定：
+
+- 任何改动都先跑 `npm run typecheck`（秒级）；
+- 只跑**与改动相关**的用例：`npx playwright test tests/browser/<对应文件>.spec.ts`、
+  `npx vitest run tests/unit/<对应文件>.test.ts`；
+- 全套（`npm run test` + `npx playwright test`）只在**阶段收尾、提交前**跑一次，
+  结果记进当阶段的 `docs/validation/Px.md`。
+
+代价是回归要到阶段收尾才暴露，所以**新增或改动的行为必须当场补上断言**，
+不能指望下次跑全套才发现——「这次先不测」等于「这段时间没测」。
+
 **进入 P1 之前必须先做的一件事**：把 Node 升级到 `>=22.12.0`（推荐 24.x LTS）。
 当前机器的 Node 22.11.0 不满足 Vite 的 `engines` 校验，`npm install` 无法进行。
 详见 [docs/VERSIONS.md](docs/VERSIONS.md) 第 1 节。
@@ -254,6 +267,6 @@
 | P2 | 已完成 | [docs/validation/P2.md](docs/validation/P2.md) |
 | P3 | 已完成 | [docs/validation/P3.md](docs/validation/P3.md) |
 | P4 | 未开始 | 待创建 docs/validation/P4.md |
-| P5 | 未开始 | 待创建 docs/validation/P5.md |
+| P5 | 进行中 | 待创建 docs/validation/P5.md<br>已完成 M0 素材与数据层、M1 存档层、M2 应用外壳与主菜单、M3a 卡牌图鉴、闪卡展示位；剩组卡/抽卡/商店/战役/设置 |
 | P6 | 未开始 | 待创建 docs/validation/P6.md |
 | P7 | 未开始 | 待创建 docs/validation/P7.md |

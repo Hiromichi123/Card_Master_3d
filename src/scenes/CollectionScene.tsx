@@ -47,7 +47,11 @@ export function CollectionScene({ profile }: CollectionSceneProps) {
     return sortForCollection(filtered, rarityOf, (r) => rarityIndex.rankOf(r));
   }, [profile.inventory, rarity, rarityOf, rarityIndex]);
 
-
+  /*
+    展示位左右翻页的浏览顺序**就是这个列表**——当前筛选与排序下的顺序，
+    于是「翻页」和图鉴上看到的一样，不会翻出一张当前被筛掉的卡。
+  */
+  const cardIds = useMemo(() => entries.map((entry) => entry.cardId), [entries]);
 
   return (
     <div className="screen collection">
@@ -130,7 +134,12 @@ export function CollectionScene({ profile }: CollectionSceneProps) {
       </ScrollArea>
 
       {showcaseCardId && (
-        <CardShowcase cardId={showcaseCardId} onClose={() => setShowcaseCardId(null)} />
+        <CardShowcase
+          cardId={showcaseCardId}
+          cardIds={cardIds}
+          onSelect={setShowcaseCardId}
+          onClose={() => setShowcaseCardId(null)}
+        />
       )}
     </div>
   );

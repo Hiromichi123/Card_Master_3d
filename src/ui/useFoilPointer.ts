@@ -16,21 +16,22 @@ import { foilFromPointer } from '../rendering/cards/foilModel';
  * 用 `damp` 而不是 CSS `transition`：CSS 过渡对自定义属性无能为力
  * （除非注册 `@property`，那在各浏览器上还不齐），
  * 而且阻尼在中断时从当前位置接得上，过渡要处理打断。
+ *
+ * **没有开关参数。** 早先有一个 `enabled`，调用方按「这张卡有没有箔片」传——
+ * 结果是没有箔的普通卡连倾斜都不做，看着像张死图片。现在**每一张卡都倾向指针**，
+ * 有没有箔片只决定上面叠什么层（`.foil` 或 `.showcase__sheen`），与检视无关。
  */
 
 /** 收敛到这个距离以内就停掉循环，省掉空转。 */
 const SETTLE_EPSILON = 0.0015;
 
-export function useFoilPointer(
-  ref: RefObject<HTMLElement | null>,
-  enabled: boolean,
-): void {
+export function useFoilPointer(ref: RefObject<HTMLElement | null>): void {
   /** 指针是否还在卡面上。离开后要回到中位。 */
   const hovering = useRef(false);
 
   useEffect(() => {
     const element = ref.current;
-    if (!element || !enabled) {
+    if (!element) {
       return;
     }
 
@@ -127,5 +128,5 @@ export function useFoilPointer(
         cancelAnimationFrame(raf);
       }
     };
-  }, [ref, enabled]);
+  }, [ref]);
 }

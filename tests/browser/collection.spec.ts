@@ -30,6 +30,18 @@ async function clickNav(page: Page, label: string): Promise<void> {
   await page.locator('.app-nav').getByRole('button', { name: label }).click();
 }
 
+/**
+ * 等翻页动画跑完。
+ *
+ * **翻页期间再按是被挡掉的**（`CardShowcase` 的 `busyRef`）——两段动画
+ * 一共 380ms，中途插进来的点击会让旧卡飞回去，比不响应更难看。
+ * 所以连续翻页的用例必须等 swing 层回落到没有 `--out` / `--in` 类，
+ * 否则第二次点击会落在动画中间、什么也不发生（这个用例第一版就是这么挂的）。
+ */
+async function settleFlip(page: Page): Promise<void> {
+  await expect(page.locator('.showcase__swing')).toHaveClass('showcase__swing');
+}
+
 /** 开一个干净的存档（旧存档会带着上一轮的库存，图鉴数量就对不上了）。 */
 async function openWithFreshSave(page: Page): Promise<void> {
   await page.goto('/');
@@ -98,7 +110,11 @@ test('按稀有度筛选，点开后进入展示位', async ({ page }) => {
     点开第一张：进入**展示位**——背景压暗、卡牌放大到屏幕正中。
     网格里的缩略图是纯图片，箔片只在展示位出现（V-HOLO-4）。
   */
-  await page.locator('.tile').first().click();
+  const tiles = page.locator('.tile');
+  const secondName = await tiles.nth(1).locator('img').getAttribute('alt');
+  const lastName = await tiles.last().locator('img').getAttribute('alt');
+
+  await tiles.first().click();
   const showcase = page.locator('.showcase');
   await expect(showcase).toBeVisible();
   await expect(showcase.locator('.showcase__name')).toHaveText(/[一-鿿]/);
@@ -118,9 +134,102 @@ test('按稀有度筛选，点开后进入展示位', async ({ page }) => {
       .not.toBe('50%');
   }
 
+  /*
+    **左右翻页。**
+    断的是「换卡动画真的跑过」而不是「点下去名字变了」——后者在动画被删掉之后
+    照样会通过。做法是在翻页之前挂一个 MutationObserver，把 swing 层的类名变化
+    记下来：录制是持续的，不会像逐帧截图那样漏掉一闪而过的中间态。
+  */
+  await expect(showcase.locator('.showcase__counter')).toHaveText('1 / 12');
+  await page.evaluate(() => {
+    const swing = document.querySelector('.showcase__swing');
+    const seen: string[] = [];
+    (window as unknown as { __swing?: string[] }).__swing = seen;
+    if (swing) {
+      new MutationObserver(() => seen.push(swing.className)).observe(swing, {
+        attributes: true,
+        attributeFilter: ['class'],
+      });
+    }
+  });
+
+  const next = showcase.getByRole('button', { name: '下一张' });
+  const prev = showcase.getByRole('button', { name: '上一张' });
+
+  // 下一张：飞到第 2 张，且两段动画都留下过痕迹
+  await next.click();
+  await expect(showcase.locator('.showcase__counter')).toHaveText('2 / 12');
+  await expect(showcase.locator('.showcase__name')).toHaveText(secondName ?? '');
+  const swings = await page.evaluate(
+    () => (window as unknown as { __swing?: string[] }).__swing ?? [],
+  );
+  expect(swings).toContain('showcase__swing showcase__swing--out');
+  expect(swings).toContain('showcase__swing showcase__swing--in');
+
+  // 上一张：回到第 1 张
+  await settleFlip(page);
+  await prev.click();
+  await expect(showcase.locator('.showcase__counter')).toHaveText('1 / 12');
+
+  /*
+    **首尾循环**：在第 1 张再按「上一张」应该绕到第 12 张，而不是停在原地
+    （停在原地的话按钮点了没反应，在末张按「下一张」同理）。
+  */
+  await settleFlip(page);
+  await prev.click();
+  await expect(showcase.locator('.showcase__counter')).toHaveText('12 / 12');
+  await expect(showcase.locator('.showcase__name')).toHaveText(lastName ?? '');
+
   // Esc 关闭
   await page.keyboard.press('Escape');
   await expect(showcase).toBeHidden();
+
+  expect(problems, `场景出现问题：\n${problems.join('\n')}`).toEqual([]);
+});
+
+/**
+ * 没有箔片的卡（D 档，`foilKindForRarity` 里强度为 0）。
+ *
+ * 这一档曾经**连倾斜都不做**——`useFoilPointer` 是按「有没有箔片」开关的，
+ * 于是白卡在展示位里是一张死图片。现在它照样跟着指针倒，
+ * 只是叠的是白光而不是彩色箔片。
+ */
+test('没有箔片的卡也跟随指针，且只叠白色光照', async ({ page }) => {
+  test.setTimeout(120_000);
+  const problems = collectProblems(page);
+
+  await openWithFreshSave(page);
+  await clickNav(page, '图鉴');
+  await expect(page.locator('.tile').first()).toBeVisible({ timeout: 30_000 });
+
+  await page.getByRole('button', { name: /^D/ }).click();
+  const tiles = page.locator('.tile');
+  await expect(tiles.first()).toBeVisible({ timeout: 30_000 });
+  expect(await tiles.count()).toBeGreaterThan(1);
+
+  await tiles.first().click();
+  const showcase = page.locator('.showcase');
+  const card = showcase.locator('.showcase__card');
+  await expect(card).toBeVisible();
+
+  // 这一档不该有箔片层，取而代之的是白光层
+  await expect(card.locator('.foil')).toHaveCount(0);
+  await expect(card.locator('.showcase__sheen')).toBeVisible();
+
+  const box = await card.boundingBox();
+  expect(box?.width ?? 0).toBeGreaterThan(300);
+
+  // 移到右上角：倾斜角度要明显非零，而不是停在 0deg
+  if (box) {
+    await page.mouse.move(box.x + box.width * 0.88, box.y + box.height * 0.18);
+    await expect
+      .poll(async () => card.evaluate((el) => parseFloat(el.style.getPropertyValue('--foil-tilt-y'))))
+      .toBeGreaterThan(5);
+    // 光斑跟着指针走
+    await expect
+      .poll(async () => card.evaluate((el) => el.style.getPropertyValue('--foil-glare-x')))
+      .not.toBe('50.00%');
+  }
 
   expect(problems, `场景出现问题：\n${problems.join('\n')}`).toEqual([]);
 });

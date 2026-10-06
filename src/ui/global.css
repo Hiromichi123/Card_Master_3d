@@ -1652,6 +1652,79 @@ code {
   perspective-origin: 50% 50%;
 }
 
+/*
+  左右三角形与卡片同排。
+
+  两侧列**等宽**是这个写法存在的理由：写成 `justify-content: space-between`
+  或绝对定位的话，右边那列比左边宽一点，卡牌就不在屏幕正中了——
+  而「卡牌放大在屏幕正中」是这个展示位的要点。
+*/
+.showcase__viewport {
+  display: grid;
+  grid-template-columns: 56px auto 56px;
+  align-items: center;
+  justify-items: center;
+  gap: 20px;
+}
+
+/*
+  飞行动画挂在**外一层**上，不挂在卡片上。
+
+  卡片自己的 `transform` 已经被 `useFoilPointer` 按指针写成 `rotateX/rotateY`
+  了，两种 transform 挤在同一个属性上必然互相覆盖——倾斜会消失，
+  或者动画被卡住不动。分开两层之后两者可以同时生效。
+*/
+.showcase__swing {
+  transform-style: preserve-3d;
+  /* 时长由 TS 给（`SWITCH_MS`），这里不写死第二个数 */
+  animation-duration: var(--switch-dur, 190ms);
+  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  animation-fill-mode: both;
+}
+
+/*
+  `--switch-travel` 是**飞行方向**：−1 表示两张卡都往左走（看下一张），
+  +1 表示往右走（看上一张）。飞出的卡从 0 走到 −1 侧，飞入的卡从 +1 侧走回 0，
+  于是「旧的往左飘走、新的从右边跟上」是一段连贯的横移。
+
+  旋转与缩放跟着一起给，才有「卡从手里翻过去」的感觉而不是平移的贴纸。
+*/
+@keyframes showcase-swing-out {
+  to {
+    transform: translateX(calc(var(--switch-travel, -1) * 78%))
+      rotateY(calc(var(--switch-travel, -1) * 38deg)) scale(0.86);
+    opacity: 0;
+  }
+}
+
+@keyframes showcase-swing-in {
+  from {
+    transform: translateX(calc(var(--switch-travel, -1) * -78%))
+      rotateY(calc(var(--switch-travel, -1) * -38deg)) scale(0.86);
+    opacity: 0;
+  }
+}
+
+.showcase__swing--out {
+  animation-name: showcase-swing-out;
+}
+
+.showcase__swing--in {
+  animation-name: showcase-swing-in;
+}
+
+/*
+  系统里关了动效时把动画压到 1ms。
+  **换卡不会因此卡住**：节奏由 TS 的定时器（`SWITCH_MS`）驱动，
+  动画只是那一帧里的视觉效果，不是它的触发源。
+*/
+@media (prefers-reduced-motion: reduce) {
+  .showcase__swing--out,
+  .showcase__swing--in {
+    animation-duration: 1ms;
+  }
+}
+
 .showcase__card {
   /* 检视：卡片跟着指针倒。幅度比网格里大得多——这里只有一张卡，
      倒得明显才像拿在手里 */
@@ -1807,7 +1880,48 @@ code {
   opacity: var(--foil-lit, 0.6);
 }
 
-/* --- 展示位的说明与关闭 -------------------------------------------------- */
+/*
+  白色光照 —— **没有箔片的卡**（D 档，`foil.kind === 'none'`）叠的就是这一层。
+
+  没有彩色的理由很直接：那张卡本来就是普通印刷卡，给它上虹彩是假的。
+  但它仍然是一张有厚度的卡，指针划过时**必须有反应**——早先这里什么都不叠、
+  连倾斜都不做，白卡在展示位里就是一张死图片。
+
+  做法与箔片同源、参数直接复用同一个 `FoilView`：
+  一团**跟着指针走**的白色光斑（`--foil-glare-x/y`），
+  整层亮度按**距中心的距离**给（`--foil-boost`，越靠边越亮）——
+  这正是箔片那套光照的核心，只是把彩色换成了白光。
+*/
+.showcase__sheen {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  /*
+    光斑中心紧贴指针，向外衰减到没有。
+    `screen` 是叠白光最省事的混合：暗处几乎不动、亮处提上去，
+    不会像 `overlay` 那样把插画压灰。
+
+    半径**必须给死值**（`circle 260px`）：不写的话默认是 `farthest-corner`，
+    在这个尺寸的卡上是 700px 开外——「光斑」会铺满整张卡，
+    读起来只是整张卡变亮了一点，看不出它跟着指针走（第一版就是这样）。
+  */
+  background-image: radial-gradient(
+    circle 260px at var(--foil-glare-x, 50%) var(--foil-glare-y, 50%),
+    rgba(255, 255, 255, 0.62) 0%,
+    rgba(255, 255, 255, 0.26) 34%,
+    rgba(255, 255, 255, 0.08) 66%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  mix-blend-mode: screen;
+  /*
+    0.5–0.8 的受光区间乘上 0.9，落在 0.45–0.72。
+    再高就把卡面推平了（`V-HOLO-2`：验收以「能否读清中文名」为准）。
+  */
+  opacity: calc(var(--foil-boost, 0.65) * 0.9);
+}
+
+/* --- 展示位的说明、翻页与关闭 -------------------------------------------- */
 
 /*
   卡牌**居中**，说明栏贴右边绝对定位。
@@ -1860,10 +1974,97 @@ code {
   margin-top: 14px;
 }
 
+/* 第几张 / 共几张。有翻页才显示，单张时不占地方 */
+.showcase__counter {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.06em;
+}
+
+/*
+  左右翻页：三角形按钮。
+
+  用边框画三角形而不是塞一个 ◀ 字符：字形在中文/日文字体里会被替换成
+  全角的样子、大小也随字体跑，边框三角形在哪台机器上都是同一个尺寸。
+*/
+.showcase__nav {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text);
+  cursor: pointer;
+  transition:
+    background 140ms ease,
+    border-color 140ms ease;
+}
+
+.showcase__nav:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.36);
+}
+
+.showcase__nav:focus-visible {
+  outline: 2px solid var(--accent, #63b3ff);
+  outline-offset: 2px;
+}
+
+/* 只有一张卡时不能翻——给个看得见的状态，别让按钮点了没反应 */
+.showcase__nav:disabled {
+  opacity: 0.28;
+  cursor: default;
+}
+
+.showcase__nav-tri {
+  width: 0;
+  height: 0;
+  border-top: 9px solid transparent;
+  border-bottom: 9px solid transparent;
+}
+
+.showcase__nav--prev .showcase__nav-tri {
+  border-right: 14px solid currentColor;
+}
+
+.showcase__nav--next .showcase__nav-tri {
+  border-left: 14px solid currentColor;
+}
+
 /* 窄屏放不下并排，改成卡牌在上、说明在下 */
 @media (max-width: 900px) {
   .showcase__card {
     width: min(300px, 62vw);
+  }
+  /* 卡变小了，光斑跟着收——半径写死之后这里必须同步改 */
+  .showcase__sheen {
+    background-image: radial-gradient(
+      circle 170px at var(--foil-glare-x, 50%) var(--foil-glare-y, 50%),
+      rgba(255, 255, 255, 0.62) 0%,
+      rgba(255, 255, 255, 0.26) 34%,
+      rgba(255, 255, 255, 0.08) 66%,
+      rgba(255, 255, 255, 0) 100%
+    );
+  }
+  .showcase__viewport {
+    grid-template-columns: 40px auto 40px;
+    gap: 10px;
+  }
+  .showcase__nav {
+    width: 40px;
+    height: 40px;
+  }
+  .showcase__nav-tri {
+    border-top-width: 7px;
+    border-bottom-width: 7px;
+  }
+  .showcase__nav--prev .showcase__nav-tri {
+    border-right-width: 11px;
+  }
+  .showcase__nav--next .showcase__nav-tri {
+    border-left-width: 11px;
   }
   .showcase__info {
     position: static;
