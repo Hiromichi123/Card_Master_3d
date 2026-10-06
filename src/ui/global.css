@@ -1138,102 +1138,293 @@ code {
   color: var(--text-dim);
 }
 
-/* --- 主界面 -------------------------------------------------------------- */
+/* --- 主菜单 -------------------------------------------------------------- */
 
-.hub__title {
-  margin: 0;
-  font-size: 26px;
-  letter-spacing: 0.02em;
-  color: var(--text);
-}
+/*
+  版式照旧版 `scenes/menu.py`：整屏一张背景图（跟着鼠标做视差）、
+  标题居中偏上、右侧两列**阶梯式**按钮、货币在左上、版本号在右下。
 
-.hub__subtitle {
-  margin: 4px 0 0;
-  font-size: 13px;
-  color: var(--text-dim);
-}
-
-.hub__status {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 8px;
-}
-
-.hub__columns {
-  display: flex;
-  gap: 26px;
-  align-items: flex-start;
-  flex-wrap: wrap;
-}
-
-.hub__group {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  min-width: 320px;
-}
-
-.hub__group--side {
-  min-width: 260px;
+  与旧版最大的不同是按钮不再有实心底板：旧版是「标签 + 左右两个三角形，
+  悬停时标签后面亮起该入口的代表色」。深色文字压在彩色光上才读得清，
+  所以每一项都带一层很淡的白色光晕兜底——背景图深浅不一，
+  没有它的话未悬停的标签在某些位置会糊进背景里。
+*/
+.menu {
+  position: relative;
+  height: 100%;
+  overflow: hidden;
+  /* 视差由 useParallax 逐帧写这两个变量 */
+  --parallax-x: 0px;
+  --parallax-y: 0px;
 }
 
 /*
-  入口按钮。旧版是「阶梯式」斜排 + 每项一个颜色，那是 Pygame 的画法；
-  这里保留「每项一个色带」的辨识度，但排成规整的两列——
-  斜排在这种横向宽屏里会白白浪费右边一大块。
+  `inset: -5%` 就是「放大到 110%」：视差最多平移 ±50px，
+  5% 的边距（1920 宽时是 96px）足够吃掉它，不会露边。
 */
-.hub__entry {
+.menu__bg {
+  position: absolute;
+  inset: -5%;
+  background-position: center;
+  background-size: cover;
+  background-color: #0d1018;
+  transform: translate3d(var(--parallax-x), var(--parallax-y), 0);
+  will-change: transform;
+}
+
+/* 压暗层：背景图明暗不定，不压的话金色标题与深色标签会互相打架 */
+.menu__scrim {
+  position: absolute;
+  inset: 0;
+  background:
+    /* 右侧（按钮区）再压一道，标签与背景图拉开层次 */
+    linear-gradient(270deg, rgba(6, 9, 15, 0.55) 0%, rgba(6, 9, 15, 0) 45%),
+    linear-gradient(
+      180deg,
+      rgba(6, 9, 15, 0.72) 0%,
+      rgba(6, 9, 15, 0.35) 42%,
+      rgba(6, 9, 15, 0.78) 100%
+    );
+}
+
+.menu__status {
+  position: absolute;
+  left: 28px;
+  top: 22px;
   display: flex;
   flex-direction: column;
+  gap: 8px;
   align-items: flex-start;
-  gap: 3px;
-  padding: 12px 16px 12px 20px;
-  text-align: left;
+  /* 压在图上，给一层底衬才读得稳 */
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: rgba(8, 11, 18, 0.55);
+  backdrop-filter: blur(4px);
+}
+
+/* 标题：居中、12% 高度，金色 + 硬阴影（旧版就是这么画的） */
+.menu__title {
+  position: absolute;
+  left: 50%;
+  top: 12%;
+  transform: translate(-50%, -50%);
+  margin: 0;
+  font-size: clamp(40px, 5vw, 84px);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  color: #ffd700;
+  text-shadow:
+    3px 3px 0 #000,
+    0 0 26px rgba(255, 190, 40, 0.45);
+}
+
+.menu__deck {
+  position: absolute;
+  left: 50%;
+  top: 20%;
+  transform: translateX(-50%);
+  margin: 0;
+  color: #d7c9a0;
+  font-size: 14px;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+}
+
+/*
+  两列阶梯。
+
+  整块**右对齐**（`right: 5vw`）、列内左对齐，于是「每往下一行左移 30px」
+  就是给每一项一个负的 `margin-left`。旧版是按固定 x 算的，
+  二级列因此有一部分跑到屏幕外；这里让整块自己收住。
+*/
+.menu__columns {
+  position: absolute;
+  right: 5vw;
+  top: 24%;
+  display: flex;
+  gap: 72px;
+  align-items: flex-start;
+}
+
+.menu__column {
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+  align-items: flex-start;
+}
+
+.menu__entry {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  width: 300px;
+  height: 50px;
+  padding: 0;
+  /* 阶梯：第 n 行左移 n × 30px */
+  margin-left: calc(var(--row, 0) * -30px);
   font: inherit;
-  color: var(--text);
-  background: var(--bg-raised);
-  border: 1px solid var(--border);
-  border-left: 4px solid var(--border-strong);
-  border-radius: 8px;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #1a1a1a;
+  background: none;
+  border: none;
   cursor: pointer;
-  transition: background 120ms ease-out, transform 120ms ease-out;
+  transition: transform 140ms ease-out;
+  /* 深色字压在深浅不一的背景上，靠这层淡白光晕兜底 */
+  text-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.5),
+    0 0 14px rgba(255, 255, 255, 0.35);
 }
 
-.hub__entry:hover:not(:disabled) {
-  background: var(--bg-raised-hover);
-  transform: translateX(2px);
+.menu__entry--small {
+  width: 240px;
+  height: 42px;
+  font-size: 20px;
 }
 
-.hub__entry--small {
-  padding: 8px 14px 8px 18px;
+.menu__entry:disabled {
+  cursor: not-allowed;
+  /* 比正文暗一档，但别暗到读不出——「有哪些东西、只是还没做」本身是信息 */
+  color: #2b2f38;
+  text-shadow: none;
 }
 
-.hub__entry-label {
+.menu__entry:hover:not(:disabled) {
+  transform: translateX(4px);
+}
+
+/*
+  悬停亮起的那团光。
+
+  旧版是三层递减的内缩矩形 + `sin` 脉动；这里用一层模糊的色块加脉动，
+  读起来是同一个效果，少两层合成。`--glow` 由调用方按入口给。
+*/
+.menu__entry-glow {
+  position: absolute;
+  inset: -14px -20px;
+  border-radius: 8px;
+  background: var(--glow, #fff);
+  /*
+    **常态就亮着一层**（旧版 `menu_button.py` 的 `persistent_glow`）。
+    深色标签压在插画背景上，不亮这一层就只剩一层淡白光晕兜底，
+    在花哨的位置基本读不出字——第一版就是这样。
+    悬停时再加亮并脉动，仍然读得出「亮起来的是这一项」。
+  */
+  opacity: 0.34;
+  transition: opacity 160ms ease-out;
+  pointer-events: none;
+}
+
+.menu__entry:disabled .menu__entry-glow {
+  /*
+    未开发的入口不抢注意力，但**不能压到背景图透出来**——
+    透出来之后深色标签就糊进插画里了（第一版压到 0.14 就是这样）。
+    0.3 是「一眼看出比别的暗一档、但字仍然读得出」的位置。
+  */
+  opacity: 0.3;
+}
+
+.menu__entry:hover:not(:disabled) .menu__entry-glow {
+  opacity: 0.72;
+  animation: menu-glow-pulse 1.1s ease-in-out infinite;
+}
+
+@keyframes menu-glow-pulse {
+  50% {
+    opacity: 0.92;
+  }
+}
+
+/* 标签要压在光**上面** */
+.menu__entry-label {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 16px;
-  font-weight: 600;
 }
 
-.hub__entry-hint {
-  font-size: 12px;
+/* 左右两个三角形，悬停时跟着变亮（旧版 `menu_button.py` 的画法） */
+.menu__entry-tri {
+  position: relative;
+  width: 0;
+  height: 0;
+  border-top: 9px solid transparent;
+  border-bottom: 9px solid transparent;
+  border-left: 14px solid rgba(20, 22, 28, 0.55);
+  transition: border-left-color 160ms ease-out;
+}
+
+.menu__entry-tri--right {
+  border-left: none;
+  border-right: 14px solid rgba(20, 22, 28, 0.55);
+  transition: border-right-color 160ms ease-out;
+}
+
+.menu__entry:hover:not(:disabled) .menu__entry-tri {
+  border-left-color: #14161c;
+}
+
+.menu__entry:hover:not(:disabled) .menu__entry-tri--right {
+  border-right-color: #14161c;
+}
+
+/* 系统关了动效时连脉动一起停：它不是装饰，是「鼠标停在哪一项」的反馈 */
+@media (prefers-reduced-motion: reduce) {
+  .menu__entry:hover:not(:disabled) .menu__entry-glow {
+    animation: none;
+  }
+}
+
+.menu__reset {
+  position: absolute;
+  left: 28px;
+  bottom: 26px;
+  padding: 6px 14px;
+  font: inherit;
+  font-size: 13px;
   color: var(--text-dim);
+  background: rgba(8, 11, 18, 0.6);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
 }
 
-.hub__entry--red { border-left-color: #d8503f; }
-.hub__entry--orange { border-left-color: #e08a3c; }
-.hub__entry--blue { border-left-color: #6ea8ff; }
-.hub__entry--green { border-left-color: #3fbf7f; }
-.hub__entry--cyan { border-left-color: #45c8c8; }
-.hub__entry--purple { border-left-color: #9a6bff; }
-.hub__entry--slate { border-left-color: #6b7a94; }
+.menu__reset:hover {
+  color: var(--danger);
+  border-color: var(--danger);
+}
 
-.hub__entry--locked {
-  opacity: 0.5;
-  cursor: not-allowed;
-  border-left-color: var(--border-strong);
+.menu__version {
+  position: absolute;
+  right: 14px;
+  bottom: 12px;
+  color: rgba(220, 224, 232, 0.55);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+}
+
+/* 窄屏放不下两列并排，改成单列、按钮收窄（阶梯保留，它才是这个菜单的样子） */
+@media (max-width: 1100px) {
+  .menu__columns {
+    right: 4vw;
+    top: auto;
+    bottom: 8%;
+    gap: 40px;
+  }
+  .menu__entry {
+    width: 220px;
+    font-size: 20px;
+  }
+  .menu__entry--small {
+    width: 180px;
+    font-size: 17px;
+  }
+  .menu__title {
+    top: 10%;
+  }
 }
 
 /* --- 货币与等级 ---------------------------------------------------------- */
