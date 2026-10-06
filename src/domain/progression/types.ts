@@ -139,6 +139,18 @@ export interface EconomyTransaction {
   readonly soldOutAdditions?: readonly string[];
   /** 登记为已结算的战斗 ID。 */
   readonly settleBattleId?: string;
+  /**
+   * 经验变化量。
+   *
+   * 加这两个字段是为了让「通关 1-1 = 金币 + 经验 + 可能的卡 + 通关记录」
+   * 真的能是**一次事务**——少了经验与通关，这条硬约束就做不到。
+   *
+   * 事务**从不落盘**（落盘的只有 `ProfileState`），所以这是纯追加的改动，
+   * `SAVE_SCHEMA_VERSION` 保持 1、不需要迁移。
+   */
+  readonly xpDelta?: number;
+  /** 标记为已通关的关卡 ID。 */
+  readonly clearStageId?: string;
 }
 
 /** 一次抽卡的结果。**先确定并持久化，再演出**（PLAN 第 6 节）。 */

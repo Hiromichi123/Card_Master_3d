@@ -91,8 +91,27 @@ def ensure_parent(path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
 
 
+class TruncatedSource(Exception):
+    """源图损坏或被截断，读不出来。
+
+    原素材里有这样的文件（`--all` 跑到中途撞上过一张），
+    **一个坏文件不该让整轮派生失败**——其余两百多张是好的。
+    调用点把它记进 `problems` 并跳过这一张。
+    """
+
+
 def convert(src: Path, dst: Path, long_edge: int) -> dict[str, object]:
-    """生成一张派生图，返回尺寸与字节数。若结果已存在则跳过实际写入。"""
+    """生成一张派生图，返回尺寸与字节数。若结果已存在则跳过实际写入。
+
+    源图损坏时抛 `TruncatedSource`，由调用点决定跳过还是中止。
+    """
+    try:
+        return _convert(src, dst, long_edge)
+    except OSError as exc:
+        raise TruncatedSource(f"{src}: {exc}") from exc
+
+
+def _convert(src: Path, dst: Path, long_edge: int) -> dict[str, object]:
     with Image.open(src) as img:
         src_size = img.size
         img = img.convert("RGBA") if img.mode in ("P", "LA", "RGBA") else img.convert("RGB")
@@ -149,15 +168,19 @@ def prepare_card_faces(
                 "sourceName": src.name,
                 "face": {},
             }
-            for tier, long_edge in TIERS.items():
-                dst = PUBLIC / "card" / tier / slug / f"{src.stem}.webp"
-                # thumbnail 也供 3D 使用不合适，这里只做存在性/尺寸统计
-                info = convert(src, dst, long_edge)
-                tier_totals[tier] += int(info["bytes"])
-                entry["face"][tier] = {
-                    "url": url_for(dst),
-                    **info,
-                }
+            try:
+                for tier, long_edge in TIERS.items():
+                    dst = PUBLIC / "card" / tier / slug / f"{src.stem}.webp"
+                    # thumbnail 也供 3D 使用不合适，这里只做存在性/尺寸统计
+                    info = convert(src, dst, long_edge)
+                    tier_totals[tier] += int(info["bytes"])
+                    entry["face"][tier] = {
+                        "url": url_for(dst),
+                        **info,
+                    }
+            except TruncatedSource as exc:
+                problems.append(f"{card_id} 的成品卡面读不出来，已跳过：{exc}")
+                continue
 
             # 原画：assets/cards/<rarity>/<id>.jpg|png，可能缺失
             art_entry = None
@@ -165,7 +188,11 @@ def prepare_card_faces(
                 candidate = art_dir / rarity / f"{src.stem}{ext}"
                 if candidate.exists():
                     dst = PUBLIC / "art" / slug / f"{src.stem}.webp"
-                    info = convert(candidate, dst, TIERS["detail"])
+                    try:
+                        info = convert(candidate, dst, TIERS["detail"])
+                    except TruncatedSource as exc:
+                        problems.append(f"{card_id} 的原画读不出来，已跳过：{exc}")
+                        continue
                     art_entry = {
                         "url": url_for(dst),
                         "sourceName": candidate.name,
