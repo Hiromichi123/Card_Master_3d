@@ -1141,27 +1141,26 @@ code {
 /* --- 主菜单 -------------------------------------------------------------- */
 
 /*
-  版式照旧版 `scenes/menu.py`：整屏一张背景图（跟着鼠标做视差）、
-  标题居中偏上、右侧两列**阶梯式**按钮、货币在左上、版本号在右下。
+  **设计空间 + 整体等比缩放**，照旧版 `config.py`：
+  设计分辨率 2880 × 1800，`--ui = min(视口宽/2880, 视口高/1800)`，
+  于是所有尺寸都可以写成 `calc(设计单位 * var(--ui))`，
+  位置写成相对设计框的百分比。窗口怎么变，版面比例都不变。
 
-  与旧版最大的不同是按钮不再有实心底板：旧版是「标签 + 左右两个三角形，
-  悬停时标签后面亮起该入口的代表色」。深色文字压在彩色光上才读得清，
-  所以每一项都带一层很淡的白色光晕兜底——背景图深浅不一，
-  没有它的话未悬停的标签在某些位置会糊进背景里。
+  `100vw / 2880` 是「长度 ÷ 数」= 长度，所以 `--ui` 在 1920 宽的屏上是 0.667px，
+  `calc(300 * var(--ui))` 就是 200px。取 min 而不是 max：
+  宁可两侧留边，也不让按钮被挤出视口（旧版 `SCALE_POLICY = "fit"` 是同一个选择）。
 */
 .menu {
   position: relative;
   height: 100%;
   overflow: hidden;
-  /* 视差由 useParallax 逐帧写这两个变量 */
+  --ui: min(100vw / 2880, 100vh / 1800);
   --parallax-x: 0px;
   --parallax-y: 0px;
+  background: #05070c;
 }
 
-/*
-  `inset: -5%` 就是「放大到 110%」：视差最多平移 ±50px，
-  5% 的边距（1920 宽时是 96px）足够吃掉它，不会露边。
-*/
+/* 背景铺满视口：视差靠平移它，放进设计框的话超宽窗口会露边 */
 .menu__bg {
   position: absolute;
   inset: -5%;
@@ -1172,84 +1171,100 @@ code {
   will-change: transform;
 }
 
-/* 压暗层：背景图明暗不定，不压的话金色标题与深色标签会互相打架 */
 .menu__scrim {
   position: absolute;
   inset: 0;
+  /*
+    两层：一层竖向的总压暗，一层从右侧来的横向压暗。
+
+    第二层是给按钮列的：原版按钮是深色字、没有底板，压在**它的**背景图上没问题，
+    但本项目的菜单背景是一张高饱和插画，不给按钮区单独压一道，
+    未悬停的标签就读不清了（实测过两轮）。压暗在背景上、不动按钮本身，
+    所以按钮的形态仍然与原版一致。
+  */
   background:
-    /* 右侧（按钮区）再压一道，标签与背景图拉开层次 */
-    linear-gradient(270deg, rgba(6, 9, 15, 0.55) 0%, rgba(6, 9, 15, 0) 45%),
+    linear-gradient(270deg, rgba(6, 9, 15, 0.62) 0%, rgba(6, 9, 15, 0.18) 46%, rgba(6, 9, 15, 0) 62%),
     linear-gradient(
       180deg,
-      rgba(6, 9, 15, 0.72) 0%,
-      rgba(6, 9, 15, 0.35) 42%,
-      rgba(6, 9, 15, 0.78) 100%
+      rgba(6, 9, 15, 0.68) 0%,
+      rgba(6, 9, 15, 0.34) 40%,
+      rgba(6, 9, 15, 0.74) 100%
     );
+}
+
+/* 设计框：2880 × 1800 等比缩放到视口，居中 */
+.menu__stage {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: calc(2880 * var(--ui));
+  height: calc(1800 * var(--ui));
+  transform: translate(-50%, -50%);
 }
 
 .menu__status {
   position: absolute;
-  left: 28px;
-  top: 22px;
+  left: calc(40 * var(--ui));
+  top: calc(36 * var(--ui));
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: calc(10 * var(--ui));
   align-items: flex-start;
-  /* 压在图上，给一层底衬才读得稳 */
-  padding: 10px 14px;
-  border-radius: 10px;
-  background: rgba(8, 11, 18, 0.55);
+  padding: calc(14 * var(--ui)) calc(18 * var(--ui));
+  border-radius: calc(12 * var(--ui));
+  background: rgba(8, 11, 18, 0.5);
   backdrop-filter: blur(4px);
+  font-size: calc(28 * var(--ui));
 }
 
-/* 标题：居中、12% 高度，金色 + 硬阴影（旧版就是这么画的） */
+/* 标题：居中、12% 高，金色 + 硬阴影（旧版就是这么画的） */
 .menu__title {
   position: absolute;
   left: 50%;
   top: 12%;
   transform: translate(-50%, -50%);
   margin: 0;
-  font-size: clamp(40px, 5vw, 84px);
+  font-size: calc(140 * var(--ui));
   font-weight: 700;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.05em;
   white-space: nowrap;
   color: #ffd700;
+  /* 硬阴影的偏移量也是设计单位，跟着一起缩放 */
   text-shadow:
-    3px 3px 0 #000,
-    0 0 26px rgba(255, 190, 40, 0.45);
+    calc(5 * var(--ui)) calc(5 * var(--ui)) 0 #000,
+    0 0 calc(40 * var(--ui)) rgba(255, 190, 40, 0.4);
 }
 
 .menu__deck {
   position: absolute;
   left: 50%;
-  top: 20%;
+  top: 19.5%;
   transform: translateX(-50%);
   margin: 0;
   color: #d7c9a0;
-  font-size: 14px;
+  font-size: calc(30 * var(--ui));
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
 }
 
 /*
-  两列阶梯。
-
-  整块**右对齐**（`right: 5vw`）、列内左对齐，于是「每往下一行左移 30px」
-  就是给每一项一个负的 `margin-left`。旧版是按固定 x 算的，
-  二级列因此有一部分跑到屏幕外；这里让整块自己收住。
+  两列阶梯按钮。位置就是旧版那两条式子：
+  一级列 x = 70%（= 2016/2880），y = 25%（= 450/1800）；
+  二级列 x = 一级列 x + 按钮宽 300 + 两倍阶梯 60。
+  行距 90、每往下一行整体左移 30——都是设计单位。
 */
 .menu__columns {
   position: absolute;
-  right: 5vw;
-  top: 24%;
+  left: 70%;
+  top: 25%;
   display: flex;
-  gap: 72px;
+  gap: calc(60 * var(--ui));
   align-items: flex-start;
 }
 
 .menu__column {
   display: flex;
   flex-direction: column;
-  gap: 40px;
+  gap: calc(40 * var(--ui));
   align-items: flex-start;
 }
 
@@ -1258,137 +1273,187 @@ code {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 14px;
-  width: 300px;
-  height: 50px;
+  gap: calc(18 * var(--ui));
+  width: calc(300 * var(--ui));
+  height: calc(50 * var(--ui));
   padding: 0;
-  /* 阶梯：第 n 行左移 n × 30px */
-  margin-left: calc(var(--row, 0) * -30px);
+  /* 阶梯：第 n 行左移 n × 30 */
+  margin-left: calc(var(--row, 0) * -30 * var(--ui));
   font: inherit;
-  font-size: 24px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  color: #1a1a1a;
+  font-size: calc(40 * var(--ui));
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: #191919;
   background: none;
   border: none;
   cursor: pointer;
-  transition: transform 140ms ease-out;
-  /* 深色字压在深浅不一的背景上，靠这层淡白光晕兜底 */
+  /*
+    深色字压在插画上，靠一层淡白光晕兜底（旧版背景比这张干净，没有这一层）。
+    悬停时换成该入口的彩光描边（见下）。
+  */
   text-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.5),
-    0 0 14px rgba(255, 255, 255, 0.35);
+    0 1px 0 rgba(255, 255, 255, 0.45),
+    0 0 calc(18 * var(--ui)) rgba(255, 255, 255, 0.4);
 }
 
-.menu__entry--small {
-  width: 240px;
-  height: 42px;
-  font-size: 20px;
-}
-
-.menu__entry:disabled {
-  cursor: not-allowed;
-  /* 比正文暗一档，但别暗到读不出——「有哪些东西、只是还没做」本身是信息 */
-  color: #2b2f38;
-  text-shadow: none;
-}
-
-.menu__entry:hover:not(:disabled) {
-  transform: translateX(4px);
+.menu__entry:hover {
+  text-shadow:
+    0 0 calc(4 * var(--ui)) var(--glow),
+    calc(2 * var(--ui)) calc(2 * var(--ui)) 0 var(--glow),
+    calc(-2 * var(--ui)) calc(-2 * var(--ui)) 0 var(--glow),
+    calc(2 * var(--ui)) calc(-2 * var(--ui)) 0 var(--glow),
+    calc(-2 * var(--ui)) calc(2 * var(--ui)) 0 var(--glow);
 }
 
 /*
-  悬停亮起的那团光。
+  悬停亮起的三层同心圆角光晕。
 
-  旧版是三层递减的内缩矩形 + `sin` 脉动；这里用一层模糊的色块加脉动，
-  读起来是同一个效果，少两层合成。`--glow` 由调用方按入口给。
+  旧版是画三层**内缩的圆角矩形**（不是模糊），
+  透明度 100 / 70 / 40 × 脉动（`0.5 + glow_intensity * 0.5`）。
+  这里用三段只有 spread、没有 blur 的 `box-shadow` 做同一件事：
+  圆角与硬边都在，读起来就是旧版那三层。
+  脉动直接动画这三层的透明度，等价于旧版对 alpha 的调制。
 */
 .menu__entry-glow {
   position: absolute;
-  inset: -14px -20px;
-  border-radius: 8px;
-  background: var(--glow, #fff);
-  /*
-    **常态就亮着一层**（旧版 `menu_button.py` 的 `persistent_glow`）。
-    深色标签压在插画背景上，不亮这一层就只剩一层淡白光晕兜底，
-    在花哨的位置基本读不出字——第一版就是这样。
-    悬停时再加亮并脉动，仍然读得出「亮起来的是这一项」。
-  */
-  opacity: 0.34;
-  transition: opacity 160ms ease-out;
+  inset: 0;
+  border-radius: calc(5 * var(--ui));
+  opacity: 0;
   pointer-events: none;
+  transition: opacity 160ms ease-out;
+  box-shadow:
+    0 0 0 calc(8 * var(--ui)) color-mix(in srgb, var(--glow) 39%, transparent),
+    0 0 0 calc(16 * var(--ui)) color-mix(in srgb, var(--glow) 27%, transparent),
+    0 0 0 calc(24 * var(--ui)) color-mix(in srgb, var(--glow) 16%, transparent);
 }
 
-.menu__entry:disabled .menu__entry-glow {
-  /*
-    未开发的入口不抢注意力，但**不能压到背景图透出来**——
-    透出来之后深色标签就糊进插画里了（第一版压到 0.14 就是这样）。
-    0.3 是「一眼看出比别的暗一档、但字仍然读得出」的位置。
-  */
-  opacity: 0.3;
-}
-
-.menu__entry:hover:not(:disabled) .menu__entry-glow {
-  opacity: 0.72;
+.menu__entry:hover .menu__entry-glow {
+  opacity: 1;
   animation: menu-glow-pulse 1.1s ease-in-out infinite;
 }
 
 @keyframes menu-glow-pulse {
   50% {
-    opacity: 0.92;
+    opacity: 0.5;
   }
 }
 
-/* 标签要压在光**上面** */
 .menu__entry-label {
   position: relative;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: calc(10 * var(--ui));
 }
 
-/* 左右两个三角形，悬停时跟着变亮（旧版 `menu_button.py` 的画法） */
+/*
+  左右两个三角形。旧版**常态就画**（用按钮色、alpha 100），悬停时换成高亮色并变亮。
+  尺寸 20、离按钮边缘 20——都是设计单位。
+*/
 .menu__entry-tri {
   position: relative;
   width: 0;
   height: 0;
-  border-top: 9px solid transparent;
-  border-bottom: 9px solid transparent;
-  border-left: 14px solid rgba(20, 22, 28, 0.55);
+  border-top: calc(10 * var(--ui)) solid transparent;
+  border-bottom: calc(10 * var(--ui)) solid transparent;
+  border-left: calc(20 * var(--ui)) solid color-mix(in srgb, var(--glow) 62%, transparent);
   transition: border-left-color 160ms ease-out;
 }
 
 .menu__entry-tri--right {
   border-left: none;
-  border-right: 14px solid rgba(20, 22, 28, 0.55);
+  border-right: calc(20 * var(--ui)) solid color-mix(in srgb, var(--glow) 62%, transparent);
   transition: border-right-color 160ms ease-out;
 }
 
-.menu__entry:hover:not(:disabled) .menu__entry-tri {
-  border-left-color: #14161c;
+.menu__entry:hover .menu__entry-tri {
+  border-left-color: var(--glow);
 }
 
-.menu__entry:hover:not(:disabled) .menu__entry-tri--right {
-  border-right-color: #14161c;
+.menu__entry:hover .menu__entry-tri--right {
+  border-right-color: var(--glow);
 }
 
-/* 系统关了动效时连脉动一起停：它不是装饰，是「鼠标停在哪一项」的反馈 */
+/* 系统关了动效时连脉动一起停：它是「鼠标停在哪一项」的反馈 */
 @media (prefers-reduced-motion: reduce) {
-  .menu__entry:hover:not(:disabled) .menu__entry-glow {
+  .menu__entry:hover .menu__entry-glow {
     animation: none;
   }
 }
 
+/* --- 活动海报轮播（旧版 `ui/activity_poster.py`）--------------------------- */
+
+/*
+  位置 (58%, 60%)、尺寸 35% × 30%——两个数都来自旧版
+  （`poster_topleft` 与 `poster_width/height` 就是这么按窗口算的，
+  只不过那边的「窗口」是缩放后的设计框）。
+*/
+.poster {
+  position: absolute;
+  left: 58%;
+  top: 60%;
+  width: 35%;
+  height: 30%;
+  padding: calc(8 * var(--ui));
+  border: calc(8 * var(--ui)) solid #c8c800;
+  border-radius: calc(24 * var(--ui));
+  background: rgba(30, 30, 30, 0.78);
+  box-shadow: 0 calc(10 * var(--ui)) calc(30 * var(--ui)) rgba(0, 0, 0, 0.55);
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.poster__inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: calc(8 * var(--ui));
+  overflow: hidden;
+  background: #5a5a5a;
+}
+
+/* 一张海报：填满并裁切（旧版的 `_scale_and_crop_to_fit`） */
+.poster__art {
+  position: absolute;
+  inset: 0;
+  background-position: center;
+  background-size: cover;
+  /* 切换时两张并排滑动，进度由 rAF 逐帧给，所以这里没有过渡 */
+  will-change: transform;
+}
+
+.poster__dots {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(16 * var(--ui));
+  display: flex;
+  justify-content: center;
+  gap: calc(8 * var(--ui));
+}
+
+.poster__dot {
+  width: calc(10 * var(--ui));
+  height: calc(10 * var(--ui));
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.35);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.5);
+}
+
+.poster__dot--on {
+  background: #ffd700;
+}
+
 .menu__reset {
   position: absolute;
-  left: 28px;
-  bottom: 26px;
-  padding: 6px 14px;
+  left: calc(40 * var(--ui));
+  bottom: calc(40 * var(--ui));
+  padding: calc(8 * var(--ui)) calc(18 * var(--ui));
   font: inherit;
-  font-size: 13px;
+  font-size: calc(24 * var(--ui));
   color: var(--text-dim);
   background: rgba(8, 11, 18, 0.6);
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: calc(8 * var(--ui));
   cursor: pointer;
 }
 
@@ -1399,32 +1464,11 @@ code {
 
 .menu__version {
   position: absolute;
-  right: 14px;
-  bottom: 12px;
+  right: calc(20 * var(--ui));
+  bottom: calc(16 * var(--ui));
   color: rgba(220, 224, 232, 0.55);
-  font-size: 12px;
+  font-size: calc(22 * var(--ui));
   letter-spacing: 0.04em;
-}
-
-/* 窄屏放不下两列并排，改成单列、按钮收窄（阶梯保留，它才是这个菜单的样子） */
-@media (max-width: 1100px) {
-  .menu__columns {
-    right: 4vw;
-    top: auto;
-    bottom: 8%;
-    gap: 40px;
-  }
-  .menu__entry {
-    width: 220px;
-    font-size: 20px;
-  }
-  .menu__entry--small {
-    width: 180px;
-    font-size: 17px;
-  }
-  .menu__title {
-    top: 10%;
-  }
 }
 
 /* --- 货币与等级 ---------------------------------------------------------- */
@@ -2203,6 +2247,104 @@ code {
   margin-left: 4px;
 }
 
+/* Selection menu: all coordinates are in the legacy 2880 × 1800 design frame. */
+.screen.gacha { padding: 0; gap: 0; background: #090b13; }
+.gacha-menu { position: relative; width: 100%; height: 100%; min-height: 0; overflow: hidden; }
+.gacha-menu__backdrops, .gacha-menu__backdrop { position: absolute; inset: 0; }
+.gacha-menu__backdrop {
+  background: center / cover no-repeat;
+  opacity: 0; transition: opacity 1.2s ease;
+}
+.gacha-menu__backdrop--on { opacity: 0.76; }
+.gacha-menu__backdrops::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(90deg, rgba(6, 10, 20, 0.45), transparent 50%),
+    linear-gradient(0deg, rgba(5, 8, 15, 0.55), transparent 30%);
+}
+.gacha-menu__frame { position: absolute; left: 50%; top: 50%; width: 2880px; height: 1800px; transform-origin: center; }
+.gacha-menu__preview { position: absolute; inset: 0; pointer-events: none; z-index: 1; }
+/* Three sizes the drawing buffer from the transformed bounds. Keep CSS filling the
+   design frame so the parent transform does not shrink the canvas a second time. */
+.gacha-menu__preview canvas { display: block; width: 100% !important; height: 100% !important; }
+.gacha-menu__heading { position: absolute; inset: 0; z-index: 4; pointer-events: none; }
+.gacha-menu__heading .gacha__pool-name {
+  position: absolute; top: 108px; left: 50%; transform: translate(-50%, -50%);
+  font: 700 80px/1.15 'SimSun', 'Songti SC', serif; white-space: nowrap;
+  color: #ffdabd; text-shadow: 2px 3px 3px #000, 0 0 35px #ffb16644;
+}
+.gacha-menu__heading .gacha__desc {
+  position: absolute; top: 178px; left: 50%; transform: translate(-50%, -50%);
+  font-size: 40px; color: #e0a7e6; white-space: nowrap; text-shadow: 1px 2px 4px #000;
+}
+.gacha-menu__currency { position: absolute; left: 2160px; top: 54px; z-index: 4; }
+.gacha-menu__currency .currency { gap: 18px; }
+.gacha-menu__currency .currency__item { gap: 9px; font-size: 27px; }
+.gacha-menu__currency .currency__icon { width: 36px; height: 36px; }
+.gacha-menu__currency .currency__value { font-size: 29px; }
+.gacha-menu__currency .currency__label { font-size: 24px; }
+.gacha-menu__frame--busy .gacha-dashboard { pointer-events: none; }
+.gacha-menu .gacha-dashboard {
+  position: absolute; left: 144px; top: 90px; width: 518.4px; height: 1620px;
+  min-height: 0; z-index: 4; overflow: visible; border: 0; border-radius: 0; background: none;
+}
+.gacha-menu .gacha-dashboard__stage {
+  height: 100%; overflow: hidden; transform: skewX(10deg); transform-origin: top left;
+  perspective: none; background: linear-gradient(90deg, #111b3075, #26365230);
+  border: 1px solid #adc3f033; border-radius: 16px; touch-action: none;
+}
+.gacha-dashboard__selection {
+  position: absolute; top: 765px; height: 90px; left: 0; right: 0;
+  background: linear-gradient(90deg, #e59a4544, #f9d4a820, #e59a4544);
+  border: 3px solid #ffd59977; border-radius: 8px;
+  box-shadow: 0 0 40px #ffc47820, inset 0 0 30px #ffc47815;
+  pointer-events: none;
+}
+.gacha-menu .gacha-dashboard__option {
+  left: 57.6px; width: 414.72px; height: 120px; margin: 0; padding: 0 16px;
+  transform: none; display: grid; place-items: center;
+  background: linear-gradient(110deg, #243d63dc, #243d6360);
+  border: 1px solid #a8c6ed38; border-radius: 12px;
+  box-shadow: 0 10px 24px #0003; cursor: pointer;
+  transition: top 0.4s ease, background 0.4s ease;
+}
+.gacha-menu .gacha-dashboard__option .wheel__name { font-size: 28px; font-weight: 600; }
+.gacha-menu .gacha-dashboard__option.wheel__card--on {
+  background: linear-gradient(110deg, #ffcc93f5, #dc986ad9); border-color: #ffe2bd;
+  box-shadow: 0 0 24px #efb46e55; animation: wheel-breathe 5.2s ease-in-out infinite;
+}
+.gacha-menu .gacha-dashboard__option.wheel__card--on .wheel__name { color: #cf2020; font-size: 40px; }
+.gacha-menu .gacha-menu__probability {
+  position: absolute; top: 230px; left: 1090px; width: 700px; z-index: 5;
+  display: block; overflow: visible; padding: 16px 24px; border-radius: 14px;
+  border: 1px solid #ebcf9955; background: #0e1625c9; backdrop-filter: blur(12px);
+}
+.gacha-menu__probability summary { display: flex; gap: 20px; justify-content: space-between; align-items: center; cursor: pointer; font-size: 25px; color: #cfb99a; }
+.gacha-menu__probability .gacha__rare { color: #ffdeb3; font-size: 26px; }
+.gacha-menu__probability .gacha__probs { padding-top: 18px; grid-template-columns: 1fr 1fr; gap: 10px 28px; }
+.gacha-menu__probability .gacha__prob { font-size: 24px; gap: 12px; }
+.gacha-menu__probability .gacha__prob-dot { width: 12px; height: 12px; }
+.gacha-menu__card-controls { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
+.gacha-menu__card-hit { position: absolute; appearance: none; padding: 0; background: none; border: 0; border-radius: 21px; pointer-events: auto; cursor: pointer; }
+.gacha-menu__card-hit:focus-visible { outline: 4px solid; outline-offset: 8px; }
+.gacha-menu .gacha-menu__actions {
+  position: absolute; top: 1530px; left: 1458px; z-index: 4; margin: 0;
+  display: flex; flex-direction: row; gap: 20px;
+}
+.gacha-menu__actions .btn {
+  position: relative; width: 250px; height: 80px; padding: 0; font-size: 34px;
+  color: #271809; border: 1px solid #ffe4b6; border-radius: 12px;
+  background: linear-gradient(145deg, #ffe0a2, #eaa453); box-shadow: 0 8px 0 #6f472e99, 0 18px 30px #0004;
+}
+.gacha-menu__actions .btn:hover:not(:disabled) { background: linear-gradient(145deg, #fff0c2, #f5bd74); }
+.gacha-menu__actions .gacha-menu__return { background: linear-gradient(145deg, #b7d6ff, #628ace); border-color: #d1e5ff; color: #132749; }
+.gacha-menu__cost { position: absolute; top: -54px; left: 0; width: 100%; font-size: 29px; color: #ffe0a8; text-shadow: 0 2px 5px #000; white-space: nowrap; }
+.gacha-menu .gacha-menu__dev { position: absolute; left: 2020px; top: 1700px; z-index: 4; padding: 0; border: 0; gap: 12px; }
+.gacha-menu__dev .gacha__dev-label { font-size: 22px; padding: 3px 10px; }
+.gacha-menu__dev .btn--tiny { font-size: 23px; padding: 7px 15px; background: #102038c9; }
+.gacha-menu .gacha-menu__error { position: absolute; top: 1645px; left: 1350px; width: 1000px; z-index: 4; font-size: 28px; padding: 12px 20px; text-align: center; }
+.gacha-menu--still .gacha-menu__backdrop, .gacha-menu--still .gacha-dashboard__option { transition: none; }
+.gacha-menu--still .gacha-dashboard__option.wheel__card--on { animation: none; }
+
 /* 抽卡结果 */
 
 .gacha-result {
@@ -2852,3 +2994,14 @@ code {
     padding: 12px 0;
   }
 }
+
+/* Completion remains on the physical card stage; only lightweight actions cover it. */
+.gacha-complete { position: absolute; inset: 0; z-index: 6; pointer-events: none; }
+.gacha-complete__head { position: absolute; top: 16px; left: 50%; transform: translateX(-50%); text-align: center; color: #fff5d9; text-shadow: 0 2px 6px #382409, 0 0 18px #382409; }
+.gacha-complete__head h2 { margin: 0; font: 700 24px/1.2 'SimSun', serif; }
+.gacha-complete__head p { margin: 6px 0 0; font-size: 13px; white-space: nowrap; }
+.gacha-complete__actions { position: absolute; bottom: 24px; left: 50%; transform: translateX(-50%); display: flex; gap: 18px; pointer-events: auto; }
+.gacha-complete__actions .btn { min-width: 160px; min-height: 62px; padding: 10px 28px; font-size: 19px; color: #f9eacc; border-color: #b99456; background: linear-gradient(145deg, #573d27, #2c2017); box-shadow: 0 6px 20px #34210e55; }
+.gacha-complete__actions .btn--primary { color: #382511; background: linear-gradient(145deg, #fff2c6, #deb267); border-color: #fff0c2; }
+.gacha-complete__actions .btn span { display: block; font-size: 12px; margin-top: 3px; opacity: 0.8; }
+.gacha-complete__error { position: absolute; bottom: 99px; left: 50%; transform: translateX(-50%); max-width: 85%; pointer-events: auto; background: #332517eb; color: #fff1da; }
