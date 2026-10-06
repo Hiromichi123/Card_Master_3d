@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { cardById } from '../data';
 import { cardFaceUrl } from '../data/assets';
 import { foilForRarity } from '../rendering/cards/foilModel';
+import { statColor } from '../rendering/cards/statColors';
 import { useRarityIndex } from '../state/useRarityIndex';
 import { useFoilPointer } from './useFoilPointer';
 
@@ -43,12 +44,15 @@ export interface CardShowcaseProps {
 type FlipDir = -1 | 1;
 
 /**
- * 翻页动画的单程时长（毫秒）。
+ * 翻页动画单程时长（毫秒）。**这是动画时长的唯一来源**：
+ * 写成 `--switch-dur` 交给 CSS 的 `animation-duration`，两侧不会各写一个数然后对不上。
  *
- * **这是动画时长的唯一来源**：写成 `--switch-dur` 交给 CSS 的 `animation-duration`，
- * 两侧不会各写一个数然后对不上。
+ * **两段故意不一样长**：旧卡是「被推走」，快一点（加速离开）；
+ * 新卡是「滑到位」，慢一点（减速停下）。一样长的话整段读起来是匀速平移，
+ * 没有「停稳」的感觉。
  */
-const SWITCH_MS = 190;
+const SWITCH_OUT_MS = 170;
+const SWITCH_IN_MS = 210;
 
 type SwitchPhase =
   | { readonly kind: 'idle' }
@@ -119,7 +123,7 @@ export function CardShowcase({ cardId, cardIds, onSelect, onClose }: CardShowcas
         }
       }
       setPhase({ kind: 'idle' });
-    }, SWITCH_MS);
+    }, phase.kind === 'in' ? SWITCH_IN_MS : SWITCH_OUT_MS);
     return () => window.clearTimeout(timer);
   }, [phase, onSelect]);
 
@@ -166,7 +170,7 @@ export function CardShowcase({ cardId, cardIds, onSelect, onClose }: CardShowcas
     CSS 的 keyframes 只写一套，靠这个符号分左右。
   */
   const stageStyle = {
-    ['--switch-dur' as string]: `${SWITCH_MS}ms`,
+    ['--switch-dur' as string]: `${phase.kind === 'in' ? SWITCH_IN_MS : SWITCH_OUT_MS}ms`,
     ['--switch-travel' as string]: phase.kind === 'idle' ? -1 : -phase.dir,
   };
 
@@ -248,7 +252,10 @@ export function CardShowcase({ cardId, cardIds, onSelect, onClose }: CardShowcas
         </div>
 
         <div className="showcase__info">
-          <h2 className="showcase__name">{card.name}</h2>
+          {/* 名称用该稀有度的代表色（与卡牌外圈光晕同源），字体是宋体加粗 */}
+          <h2 className="showcase__name" style={{ color: rarityColor }}>
+            {card.name}
+          </h2>
           <p className="showcase__meta">
             {card.cardId} · {rarity}
           </p>
@@ -257,19 +264,23 @@ export function CardShowcase({ cardId, cardIds, onSelect, onClose }: CardShowcas
               {index + 1} / {cardIds.length}
             </p>
           )}
+          {/*
+            数值配色与战斗卡面上的徽标**同一份**（`statColors.ts`）：
+            攻=红、血=绿、冷却=蓝。两边不一致的话，玩家会以为不是同一个数。
+          */}
           <ul className="showcase__stats">
             <li>
-              <b>{card.atk}</b>攻击
+              <b style={{ color: statColor('atk') }}>{card.atk}</b>攻击
             </li>
             <li>
-              <b>{card.hp}</b>生命
+              <b style={{ color: statColor('hp') }}>{card.hp}</b>生命
             </li>
             <li>
-              <b>{card.cd}</b>冷却
+              <b style={{ color: statColor('cd') }}>{card.cd}</b>冷却
             </li>
           </ul>
           <p className="showcase__meta">{card.rawTraits.join('、') || '没有特性'}</p>
-          <p>{card.description}</p>
+          <p className="showcase__desc">{card.description}</p>
           <button type="button" className="btn showcase__close" onClick={onClose}>
             关闭（Esc）
           </button>

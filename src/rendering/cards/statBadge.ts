@@ -1,5 +1,9 @@
 import { CanvasTexture, LinearFilter, SRGBColorSpace } from 'three';
 
+import { STAT_COLORS, type StatKind } from './statColors';
+
+export type { StatKind };
+
 /**
  * 数值徽标的贴图生成（`V-CARD-3`）。
  *
@@ -14,20 +18,11 @@ import { CanvasTexture, LinearFilter, SRGBColorSpace } from 'three';
  * 重复绘制是纯浪费。
  */
 
-export type StatKind = 'atk' | 'hp' | 'cd';
-
-/**
- * 配色：**标准红 / 绿 / 蓝**。
- *
- * 攻=红、血=绿、冷却=蓝，是最不需要解释的一套约定。
- * `halo` 是数字外围那圈细光晕的颜色，比主色亮一档——
- * 卡面是任意插画，只靠描边会在浅色区域糊掉，靠光晕才能在深浅两种底子上都跳出来。
- */
-const PALETTE: Record<StatKind, { fg: string; halo: string; ring: string }> = {
-  atk: { fg: '#ff2d2d', halo: 'rgba(255, 90, 90, 0.42)', ring: '#ffd0d0' },
-  hp: { fg: '#12c24a', halo: 'rgba(70, 230, 130, 0.42)', ring: '#c4f7d6' },
-  cd: { fg: '#2b6cff', halo: 'rgba(90, 150, 255, 0.42)', ring: '#cddcff' },
-};
+/*
+  配色住在 `statColors.ts`：展示位的 DOM 那边也要用同一份，
+  而那个模块不能为了拿色值把 three 拖进引用链。
+*/
+const PALETTE = STAT_COLORS;
 
 /** 每个徽标绘制尺寸，长宽相等。 */
 const SIZE = 128;

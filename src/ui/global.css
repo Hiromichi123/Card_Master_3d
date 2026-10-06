@@ -1686,39 +1686,41 @@ code {
 .showcase__stage--out,
 .showcase__stage--in {
   animation-duration: var(--switch-dur, 190ms);
-  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   animation-fill-mode: both;
 }
 
 /*
-  `--switch-travel` 是**飞行方向**：−1 表示两张卡都往左走（看下一张），
-  +1 表示往右走（看上一张）。飞出的卡从 0 走到 −1 侧，飞入的卡从另一侧走回 0，
-  于是一段连贯的横移，而不是一张图突然换成另一张。
+  `--switch-travel` 是**行进方向**：−1 表示看下一张（两张都往左走），
+  +1 表示看上一张。旧的从 0 走到 −1 侧，新的从另一侧对称地走过来——
+  一进一出是同一段位移的镜像，读起来像一整排卡在横移，而不是两张图各自动。
 
-  旋转与缩放跟着一起给，才有「卡从手里翻过去」的感觉。
+  **`scale(0.72)` 在这两段里方向相反**：旧卡一边走一边缩（退场），
+  新卡从缩小状态一边走一边放大到原尺寸（到位）。
 */
 @keyframes showcase-stage-out {
   to {
-    transform: translateX(calc(var(--switch-travel, -1) * 78%))
-      rotateY(calc(var(--switch-travel, -1) * 38deg)) scale(0.86);
+    transform: translateX(calc(var(--switch-travel, -1) * 62%)) scale(0.72);
     opacity: 0;
   }
 }
 
 @keyframes showcase-stage-in {
   from {
-    transform: translateX(calc(var(--switch-travel, -1) * -78%))
-      rotateY(calc(var(--switch-travel, -1) * -38deg)) scale(0.86);
+    transform: translateX(calc(var(--switch-travel, -1) * -62%)) scale(0.72);
     opacity: 0;
   }
 }
 
 .showcase__stage--out {
   animation-name: showcase-stage-out;
+  /* 被推走：加速离开，走的时候就已经「不等了」 */
+  animation-timing-function: cubic-bezier(0.45, 0, 1, 1);
 }
 
 .showcase__stage--in {
   animation-name: showcase-stage-in;
+  /* 滑到位：减速停下，「放大到中间」的收尾速度必须是降下来的 */
+  animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
 }
 
 /*
@@ -1941,48 +1943,86 @@ code {
   height: 100%;
 }
 
+/*
+  介绍栏。
+
+  **放大过一轮**：这一栏是玩家在读的东西（名字、数值、特性、说明），
+  13px 在 1080p 下要凑近才看得清，而卡牌本身占了屏幕正中一大块，
+  留白有的是。宽度、字号、行距一起加大，让这一栏真的占住右侧那块面积。
+*/
 .showcase__info {
   position: absolute;
-  right: 4vw;
+  right: 3.5vw;
   top: 50%;
   transform: translateY(-50%);
-  width: 260px;
+  width: 380px;
+  padding: 22px 24px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: rgba(13, 16, 24, 0.5);
   color: var(--text-dim);
-  font-size: 13px;
+  font-size: 15px;
+  line-height: 1.7;
 }
 
+/*
+  名称：**宋体加粗**，颜色由调用方按稀有度给（内联，见 CardShowcase）。
+
+  宋体没有真正的粗体字重，浏览器会做合成加粗——在 Windows 上正是「宋体加粗」
+  该有的样子，不需要为此换字体（V-HUD-5：不依赖在线字体）。
+*/
 .showcase__name {
-  margin: 0 0 4px;
-  font-size: 20px;
-  color: var(--text);
+  margin: 0 0 6px;
+  font-family: 'SimSun', '宋体', 'Songti SC', 'Noto Serif CJK SC', serif;
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1.25;
 }
 
 .showcase__meta {
   margin: 0 0 12px;
 }
 
-.showcase__stats {
-  display: flex;
-  gap: 14px;
-  margin: 0 0 12px;
-  padding: 0;
-  list-style: none;
-}
-
-.showcase__stats li b {
-  display: block;
-  font-size: 18px;
-  color: var(--text);
-}
-
-.showcase__close {
-  margin-top: 14px;
-}
-
 /* 第几张 / 共几张。有翻页才显示，单张时不占地方 */
 .showcase__counter {
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.06em;
+}
+
+.showcase__stats {
+  display: flex;
+  gap: 26px;
+  margin: 0 0 14px;
+  padding: 0;
+  list-style: none;
+}
+
+/*
+  数值：**字号最大的一档**，颜色由调用方给（与战斗卡面上的徽标同一份配色）。
+
+  数字比标签大得多是有意的——玩家先看数是几，再看它是什么。
+*/
+.showcase__stats li {
+  font-size: 14px;
+}
+
+.showcase__stats li b {
+  display: block;
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+}
+
+.showcase__desc {
+  margin: 0 0 4px;
+  color: var(--text);
+}
+
+.showcase__close {
+  margin-top: 18px;
+  font-size: 15px;
 }
 
 /*
@@ -2074,9 +2114,18 @@ code {
   .showcase__info {
     position: static;
     transform: none;
-    width: min(360px, 84vw);
+    width: min(420px, 88vw);
     margin-top: 16px;
     text-align: center;
+  }
+  .showcase__name {
+    font-size: 24px;
+  }
+  .showcase__stats {
+    justify-content: center;
+  }
+  .showcase__stats li b {
+    font-size: 26px;
   }
   .showcase__inner {
     display: flex;

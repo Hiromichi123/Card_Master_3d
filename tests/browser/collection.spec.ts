@@ -142,36 +142,87 @@ test('按稀有度筛选，点开后进入展示位', async ({ page }) => {
   expect(await card.evaluate((el) => el.parentElement?.className)).toBe('showcase__stage');
 
   /*
+    **介绍栏的配色必须跟着数据走。**
+    名称用该稀有度的代表色，和筛选条上那个小圆点同一个来源（`rarities.json`）——
+    写死一个颜色就断了这条链，换个稀有度就错。
+    字体要求宋体加粗：宋体没有真粗体，浏览器合成加粗即可。
+  */
+  const chipColor = await page
+    .locator('.chip--on .chip__dot')
+    .evaluate((el) => getComputedStyle(el).backgroundColor);
+  const name = showcase.locator('.showcase__name');
+  await expect(name).toHaveCSS('color', chipColor);
+  const nameStyle = await name.evaluate((el) => {
+    const style = getComputedStyle(el);
+    return { family: style.fontFamily, weight: style.fontWeight };
+  });
+  expect(nameStyle.family).toContain('SimSun');
+  expect(Number(nameStyle.weight)).toBeGreaterThanOrEqual(700);
+
+  // 攻/血/冷却与战斗卡面徽标同一份配色（`statColors.ts`）：红 / 绿 / 蓝
+  const statColors = await showcase
+    .locator('.showcase__stats li b')
+    .evaluateAll((nodes) => nodes.map((node) => getComputedStyle(node).color));
+  expect(statColors).toEqual(['rgb(255, 45, 45)', 'rgb(18, 194, 74)', 'rgb(43, 108, 255)']);
+
+  /*
     **左右翻页。**
-    断的是「换卡动画真的跑过」而不是「点下去名字变了」——后者在动画被删掉之后
-    照样会通过。做法是在翻页之前挂一个 MutationObserver，把舞台的类名变化
-    记下来：录制是持续的，不会像逐帧截图那样漏掉一闪而过的中间态。
+    断的是**轨迹**而不是「点下去名字变了」——后者在动画被删掉之后照样会通过。
+    做法是在翻页之前开始逐帧采样舞台的实际矩阵：出场的卡位移必须是**负**的
+    （向左移动）、同时缩小；入场的卡位移必须是**正**的（从右侧对称出现）、
+    并放大回原尺寸。逐帧采集不会像截图那样漏掉一闪而过的中间态。
   */
   await expect(showcase.locator('.showcase__counter')).toHaveText('1 / 12');
   await page.evaluate(() => {
     const stage = document.querySelector('.showcase__stage');
-    const seen: string[] = [];
-    (window as unknown as { __stage?: string[] }).__stage = seen;
-    if (stage) {
-      new MutationObserver(() => seen.push(stage.className)).observe(stage, {
-        attributes: true,
-        attributeFilter: ['class'],
+    const samples: { cls: string; x: number; scale: number }[] = [];
+    (window as unknown as { __track?: unknown }).__track = samples;
+    const deadline = performance.now() + 900;
+    const tick = (): void => {
+      if (!stage) {
+        return;
+      }
+      const raw = getComputedStyle(stage).transform;
+      const parts = raw === 'none' ? null : raw.match(/-?\d+(?:\.\d+)?/g);
+      samples.push({
+        cls: stage.className,
+        x: parts ? Number(parts[4] ?? 0) : 0,
+        scale: parts ? Number(parts[0] ?? 1) : 1,
       });
-    }
+      if (performance.now() < deadline) {
+        requestAnimationFrame(tick);
+      }
+    };
+    requestAnimationFrame(tick);
   });
 
   const next = showcase.getByRole('button', { name: '下一张' });
   const prev = showcase.getByRole('button', { name: '上一张' });
 
-  // 下一张：飞到第 2 张，且两段动画都留下过痕迹
+  // 下一张：飞到第 2 张
   await next.click();
   await expect(showcase.locator('.showcase__counter')).toHaveText('2 / 12');
   await expect(showcase.locator('.showcase__name')).toHaveText(secondName ?? '');
-  const stages = await page.evaluate(
-    () => (window as unknown as { __stage?: string[] }).__stage ?? [],
+  await page.waitForTimeout(500);
+
+  const track = await page.evaluate(
+    () => (window as unknown as { __track?: { cls: string; x: number; scale: number }[] }).__track ?? [],
   );
-  expect(stages).toContain('showcase__stage showcase__stage--out');
-  expect(stages).toContain('showcase__stage showcase__stage--in');
+  const outs = track.filter((s) => s.cls.includes('showcase__stage--out'));
+  const ins = track.filter((s) => s.cls.includes('showcase__stage--in'));
+  expect(outs.length, '飞出阶段一帧都没采到').toBeGreaterThan(0);
+  expect(ins.length, '飞入阶段一帧都没采到').toBeGreaterThan(0);
+  // 旧卡：向左走（位移为负）、同时缩小
+  expect(Math.min(...outs.map((s) => s.x))).toBeLessThan(-20);
+  expect(Math.min(...outs.map((s) => s.scale))).toBeLessThan(0.95);
+  // 新卡：从右侧进来（位移为正），并且是一路放大回原尺寸
+  expect(Math.max(...ins.map((s) => s.x))).toBeGreaterThan(20);
+  expect(Math.max(...ins.map((s) => s.scale))).toBeGreaterThan(0.99);
+  // 收尾回到正中且是原尺寸
+  const last = track[track.length - 1];
+  expect(last?.cls).toBe('showcase__stage');
+  expect(last?.x).toBe(0);
+  expect(last?.scale).toBe(1);
 
   // 上一张：回到第 1 张
   await settleFlip(page);
