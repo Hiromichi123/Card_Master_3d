@@ -713,6 +713,48 @@ export function mazeReward(args: {
   return { gold, xp, badges, cardId, cardRarity: cardId ? MAZE_EVENT_RARITY : null, lines };
 }
 
+/**
+ * 奖励的**预览**（详情面板用，不消耗随机数）。
+ *
+ * `mazeReward` 会推进随机流——拿它做预览会让「预览」与「实战」掷的不是同一次，
+ * 而且面板每渲染一次都会多掷一次。这里只给确定性部分：金币/经验按当前强度算，
+ * 徽章给区间，活动卡给概率。
+ */
+export function mazeRewardPreview(args: {
+  readonly nodeType: MazeNodeType;
+  readonly strength: number;
+}): {
+  readonly gold: number;
+  readonly xp: number;
+  readonly badgeRange: readonly [number, number];
+  readonly dropChance: number;
+  readonly lines: readonly string[];
+} {
+  const strength = Math.max(0.5, args.strength);
+  const gold = Math.max(1, Math.round(MAZE_REWARD.gold * strength));
+  const xp = Math.max(1, Math.round(MAZE_REWARD.xp * strength));
+  const bonus =
+    args.nodeType === 'elite'
+      ? MAZE_REWARD.badgeElite
+      : args.nodeType === 'boss'
+        ? MAZE_REWARD.badgeBoss
+        : 0;
+  const [lo, hi] = MAZE_REWARD.badgeRange;
+  const dropChance = MAZE_EVENT_CARD_DROP[args.nodeType];
+  return {
+    gold,
+    xp,
+    badgeRange: [lo + bonus, hi + bonus],
+    dropChance,
+    lines: [
+      `金币 +${gold}`,
+      `经验 +${xp}`,
+      `徽章 +${lo + bonus}–${hi + bonus}`,
+      dropChance > 0 ? `活动限定卡牌 ${Math.round(dropChance * 100)}%` : '本次没有掉落卡牌',
+    ],
+  };
+}
+
 /* ---------------------------------------------------------------------------
  * 楼层商店
  * ------------------------------------------------------------------------- */
