@@ -4460,6 +4460,117 @@ code {
 
 /* --- 配置（组卡）-------------------------------------------------------- */
 
+/*
+  背景：旧版组卡界面没有自己的背景图，这里借主菜单那张（同一套视差）。
+  压暗比菜单轻一点——这一屏是**在读卡**的，背景只是衬底。
+*/
+.deckedit__bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.deckedit > .menu__scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: linear-gradient(180deg, rgba(6, 9, 15, 0.86) 0%, rgba(6, 9, 15, 0.78) 100%);
+}
+
+/* 内容压在背景之上 */
+.deckedit > *:not(.menu__bg):not(.menu__scrim) {
+  position: relative;
+  z-index: 1;
+}
+
+/*
+  悬停包装。
+
+  **禁用的 `<button>` 不派发鼠标事件**（浏览器行为），而组卡页里卡组一满、
+  几乎每张收藏卡都是 `disabled`——于是「鼠标移上去看详情」在满卡组时完全失效。
+  做法：禁用的卡设 `pointer-events: none`，把悬停事件交给外面这层包装。
+*/
+.deckedit__wrap {
+  display: block;
+  height: 100%;
+}
+
+.deckedit__wrap > * {
+  height: 100%;
+  width: 100%;
+}
+
+.deckedit__collection .tile--disabled {
+  pointer-events: none;
+}
+
+/* 悬停详情框（旧版 `ui/tooltip.py`） */
+.cardtip {
+  position: fixed;
+  z-index: 120;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 16px;
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  background: rgba(16, 20, 30, 0.96);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6);
+  color: var(--text-dim);
+  font-size: 13px;
+  line-height: 1.6;
+  pointer-events: none;
+  /*
+    **高度封顶**：说明文字长短不一，长的那几张会让框高出视口
+    （实测贴在屏幕下方的卡上时就溢出了）。宁可截断说明——完整说明在图鉴的
+    展示位里，那里是玩家专门看卡的地方。
+  */
+  max-height: min(360px, calc(100vh - 24px)); /* 与 CardHoverTip 的 TIP_MAX_HEIGHT 一致 */
+  overflow: hidden;
+}
+
+.cardtip__name {
+  margin: 0;
+  font-size: 17px;
+}
+
+.cardtip__meta {
+  margin: 0;
+  font-size: 12px;
+}
+
+.cardtip__stats {
+  display: flex;
+  gap: 16px;
+  margin: 2px 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cardtip__stats b {
+  margin-right: 4px;
+  font-size: 18px;
+  font-variant-numeric: tabular-nums;
+}
+
+.cardtip__traits,
+.cardtip__desc {
+  margin: 0;
+}
+
+.cardtip__traits {
+  color: #ffd7a0;
+}
+
+.cardtip__desc {
+  color: var(--text);
+  /* 最多四行，超出截断（见 `.cardtip` 的注释） */
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
 
 
 /*
@@ -4478,9 +4589,15 @@ code {
 
   display: grid;
 
-  /* 左列放得下 3 列卡就够（约 500px），剩下的宽度全给收藏——收藏有几百张要翻 */
+  /*
+    左列放得下 3 列卡就够（约 500px），剩下的宽度全给收藏——收藏有几百张要翻。
 
+    **行高必须显式写成 `minmax(0, 1fr)`**：grid 的行默认是 `auto`（内容撑），
+    而右列是几百张卡，于是整行被撑到几千像素高，左列的槽位跟着一起变高、
+    第 4 行被挤出视口——「只看得见 9 张」的另一半原因就在这里。
+  */
   grid-template-columns: minmax(250px, 27%) 1fr;
+  grid-template-rows: minmax(0, 1fr);
 
   gap: 18px;
 
@@ -4536,18 +4653,34 @@ code {
 
 */
 
+/*
+  **槽位按「可用的高度」排，不是按宽度。**
+
+  早先是 `repeat(3, 1fr)` + 卡片 `aspect-ratio: 2/3`：列宽由面板宽度决定、
+  行高跟着列宽走，于是在 1080 高的窗口上 4 行加起来超过可用高度，
+  **第 4 行（第 10–12 张）被截掉**——玩家只看得见 9 张。
+
+  现在反过来：行高由容器高度均分（`repeat(4, 1fr)`），
+  卡片高度撑满格子、宽度由 2:3 的纵横比反推，列用 `auto` 跟内容走。
+  窗口再矮也只是卡片变小，不会少一行。
+*/
 .deckedit__grid {
-
   display: grid;
-
-  grid-template-columns: repeat(3, 1fr);
-
+  grid-template-columns: repeat(3, auto);
+  grid-template-rows: repeat(4, minmax(0, 1fr));
   gap: 8px;
+  /* `flex: 1` 让它吃掉左列剩下的高度；`min-height: 0` 是能缩下去的前提 */
+  flex: 1;
+  min-height: 0;
+  justify-content: start;
+}
 
-  align-content: start;
-
-  max-width: 470px;
-
+.deckedit__grid > * {
+  height: 100%;
+  width: auto;
+  aspect-ratio: 2 / 3;
+  /* 上限：窗口很高时别让槽位大到夸张 */
+  max-width: 170px;
 }
 
 

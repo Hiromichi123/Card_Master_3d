@@ -17,8 +17,11 @@ import type { Deck, ProfileState } from '../domain/progression/types';
 import type { ProfileStore } from '../state/createProfileStore';
 import { pushToast } from '../state/toastStore';
 import { useRarityIndex } from '../state/useRarityIndex';
+import { CardHoverTip } from '../ui/CardHoverTip';
 import { CardTile } from '../ui/CardTile';
 import { ScrollArea } from '../ui/ScrollArea';
+import { useParallax } from '../ui/useParallax';
+import { assetManifest } from '../data/assets';
 
 /**
  * 配置（组卡）。
@@ -44,6 +47,15 @@ export interface DeckEditorSceneProps {
 
 export function DeckEditorScene({ profile, store }: DeckEditorSceneProps) {
   const rarityIndex = useRarityIndex();
+  /*
+    背景：旧版的组卡界面**没有**自己的背景图（`deck_builder_scene.py` 里没有背景），
+    这里借主菜单那张——它是这一组界面里最中性的一张，也和其它菜单连成一套。
+    顺带把视差也带上（同一套 `useParallax` + `.menu__bg`）。
+  */
+  const parallaxRef = useParallax();
+  const background = assetManifest.shared.menu['menu_bg']?.url ?? null;
+  /** 悬停详情框：贴在被悬停的那张卡边上。 */
+  const [tip, setTip] = useState<{ cardId: string; rect: DOMRect } | null>(null);
 
   /*
     播种只做一次。**不能跟着 `profile` 变**：抽卡回来会带上新的库存与卡组，
@@ -198,7 +210,14 @@ export function DeckEditorScene({ profile, store }: DeckEditorSceneProps) {
   }
 
   return (
-    <div className="screen deckedit">
+    <div className="screen deckedit" ref={parallaxRef}>
+      <div
+        className="menu__bg deckedit__bg"
+        style={background ? { backgroundImage: `url(${background})` } : undefined}
+        aria-hidden="true"
+      />
+      <div className="menu__scrim" aria-hidden="true" />
+
       <header className="screen__head">
         <div>
           <h1 className="screen__title">配置</h1>
@@ -249,6 +268,13 @@ export function DeckEditorScene({ profile, store }: DeckEditorSceneProps) {
                   cardId={slot.cardId}
                   size="sm"
                   onClick={() => handleRemove(slot.index)}
+                  onHover={(hovered, element) =>
+                    setTip(
+                      hovered && element && slot.cardId
+                        ? { cardId: slot.cardId, rect: element.getBoundingClientRect() }
+                        : null,
+                    )
+                  }
                 />
               ) : (
                 <div key={`empty-${slot.index}`} className="deckedit__slot" aria-hidden="true">
@@ -309,8 +335,19 @@ export function DeckEditorScene({ profile, store }: DeckEditorSceneProps) {
                   const note =
                     reason && reason !== 'full' ? ADD_REJECTION_NOTE[reason] : undefined;
                   return (
-                    <CardTile
+                    <span
                       key={entry.cardId}
+                      className="deckedit__wrap"
+                      /* 悬停包在外面：卡被禁用时按钮不派发鼠标事件，见 CSS 的注释 */
+                      onMouseEnter={(event) =>
+                        setTip({
+                          cardId: entry.cardId,
+                          rect: event.currentTarget.getBoundingClientRect(),
+                        })
+                      }
+                      onMouseLeave={() => setTip(null)}
+                    >
+                    <CardTile
                       cardId={entry.cardId}
                       count={blocked ? entry.count : (row?.available ?? entry.count)}
                       /*
@@ -323,6 +360,7 @@ export function DeckEditorScene({ profile, store }: DeckEditorSceneProps) {
                       note={note}
                       onClick={() => handleAdd(entry.cardId)}
                     />
+                    </span>
                   );
                 })}
               </div>
@@ -330,6 +368,8 @@ export function DeckEditorScene({ profile, store }: DeckEditorSceneProps) {
           </ScrollArea>
         </section>
       </div>
+
+      {tip && <CardHoverTip cardId={tip.cardId} rect={tip.rect} />}
     </div>
   );
 }

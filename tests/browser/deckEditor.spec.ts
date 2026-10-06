@@ -225,3 +225,59 @@ test('没有出战卡组时可以把它启用', async ({ page }) => {
 
   expect(problems, `场景出现问题：\n${problems.join('\n')}`).toEqual([]);
 });
+
+/**
+ * 组卡页的两处版式回归：**12 个槽位必须都在视口里**，以及**悬停弹详情框**。
+ *
+ * 「只看得见 9 张」是实测踩到的：`.deckedit__body` 的 grid 行默认由内容撑，
+ * 右列几百张卡把整行顶高，左列的槽位跟着变高、第 4 行被挤出视口；
+ * 同时槽位本身又是按列宽定行高（`aspect-ratio`），在 1080 高的窗口上必然溢出。
+ * 现在行高由容器高度均分，窗口再矮也只是卡片变小。
+ */
+test('十二个槽位都在视口内，悬停卡牌弹出详情框', async ({ page }) => {
+  const problems = collectProblems(page);
+  await openDeckEditor(page);
+
+  // 槽位：12 个，且每一个的底边都在视口内
+  const slots = page.locator('.deckedit__grid > *');
+  await expect(slots).toHaveCount(DECK_LIMIT);
+  const geometry = await slots.evaluateAll((nodes) =>
+    nodes.map((node) => {
+      const rect = node.getBoundingClientRect();
+      return { top: rect.top, bottom: rect.bottom };
+    }),
+  );
+  const viewport = page.viewportSize() ?? { width: 1920, height: 1080 };
+  expect(
+    geometry.every((box) => box.top >= 0 && box.bottom <= viewport.height),
+    '有槽位被挤出视口',
+  ).toBe(true);
+
+  /*
+    悬停弹详情：**卡组满时几乎每张收藏卡都是 `disabled`**，而禁用的按钮不派发
+    鼠标事件，所以事件挂在外面那层 `.deckedit__wrap` 上——这条用例断的就是
+    「满卡组状态下也弹得出来」。
+  */
+  const wrap = page.locator('.deckedit__collection .deckedit__wrap').first();
+  await wrap.hover();
+  const tip = page.locator('.cardtip');
+  await expect(tip).toBeVisible();
+  await expect(tip.locator('.cardtip__name')).not.toBeEmpty();
+  await expect(tip.locator('.cardtip__stats b')).toHaveCount(3);
+
+  // 框必须整个落在视口里（贴在下方的卡上时最容易溢出）
+  const box = await tip.boundingBox();
+  expect(box).not.toBeNull();
+  if (box) {
+    expect(box.x).toBeGreaterThanOrEqual(0);
+    expect(box.x + box.width).toBeLessThanOrEqual(viewport.width);
+    expect(box.y).toBeGreaterThanOrEqual(0);
+    expect(box.y + box.height).toBeLessThanOrEqual(viewport.height);
+  }
+
+  // 移开就收起
+  await page.locator('.screen__title').hover();
+  await expect(page.locator('.cardtip')).toHaveCount(0);
+
+  expect(problems, `场景出现问题：\n${problems.join('\n')}`).toEqual([]);
+});
