@@ -258,6 +258,7 @@ function makePlacement(
     statLayout: placement.statLayout,
     showStats: placement.showStats ?? !faceDown,
     holo: placement.holo,
+    unyielding: placement.statLayout === 'battle' && display.groups[identity.stateGroupId]?.unyielding === true,
     stats: stats ?? undefined,
     emphasisedStats: emphasised,
   };

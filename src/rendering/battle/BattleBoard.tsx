@@ -46,6 +46,7 @@ export interface CardPlacement {
   readonly showStats?: boolean | undefined;
   /** 是否叠全息层。对手的手牌不叠。 */
   readonly holo?: boolean | undefined;
+  readonly unyielding?: boolean | undefined;
   /**
    * 这张牌上一次是从哪里来的（抽牌、还魂）。
    *
@@ -143,6 +144,7 @@ export function BattleBoard({
           statLayout={placement.statLayout}
           showStats={placement.showStats}
           holo={placement.holo}
+          unyielding={placement.unyielding}
           selected={placement.instanceId === selectedInstanceId}
           // CardMesh 只认得卡牌定义，实例身份由这里补上——
           // 直接透传 onCardClick 的话第二个参数会永远缺省。

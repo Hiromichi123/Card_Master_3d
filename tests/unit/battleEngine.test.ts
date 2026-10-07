@@ -61,6 +61,8 @@ function card(spec: CardSpec): CardDefinition {
  */
 const TEST_FAMILIES: Record<string, string> = {
   火球: 'fireball',
+  // 本项目新增的族（旧注册表里没有），与 src/domain/skills/families.ts 一致
+  圣盾: 'holyShield',
   冰封: 'iceSeal',
   群体火球: 'groupFireball',
   防御: 'defense',
@@ -772,5 +774,89 @@ describe('完整对局', () => {
       instanceId: state.zones.player.hand[0] as string,
     }).finalState;
     expect(after.outcome).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 圣盾（本项目新增的族，旧注册表里没有——见 docs/rules.md）
+// ---------------------------------------------------------------------------
+
+describe('圣盾', () => {
+  /**
+   * 把攻方与守方各摆进战斗区，结束一个回合，量守方掉了多少血、圣盾触发了几次。
+   *
+   * 攻方 rd 0，所以这一回合里它会先放技能（BEFORE_ATTACK）、再打一次普通攻击；
+   * 守方 cd 9，这一回合不动手，掉的血全部来自攻方。
+   */
+  function oneTurn(
+    attacker: { atk?: number; traits?: readonly string[] },
+    defenderTraits: readonly string[],
+  ): { damage: number; triggers: Record<string, number>; log: string[] } {
+    const definitions = table(
+      { id: 'A', atk: attacker.atk ?? 2, hp: 9, cd: 0, traits: attacker.traits ?? [] },
+      { id: 'D', atk: 1, hp: 9, cd: 9, traits: defenderTraits },
+    );
+    const state = createBattle(
+      { seed: 7, playerDeck: ['A'], enemyDeck: ['D'], rules: { turnLimit: 20 } },
+      definitions,
+    );
+    const attackerId = state.zones.player.hand[0] as string;
+    const defenderId = state.zones.enemy.hand[0] as string;
+    state.zones.player.hand = [];
+    state.zones.player.battle[0] = attackerId;
+    state.instances[attackerId]!.zone = 'battle';
+    state.zones.enemy.hand = [];
+    state.zones.enemy.battle[0] = defenderId;
+    state.instances[defenderId]!.zone = 'battle';
+    state.cardsPlayedThisTurn = 1;
+
+    const groupId = state.instances[defenderId]!.stateGroupId;
+    const before = state.groups[groupId]!.hp;
+    const resolution = applyCommand(state, { kind: 'endTurn', side: 'player' });
+
+    const triggers: Record<string, number> = {};
+    for (const event of resolution.events) {
+      if (event.type === 'SkillTriggered' && event.family) {
+        triggers[event.family] = (triggers[event.family] ?? 0) + 1;
+      }
+    }
+
+    return {
+      damage: before - resolution.finalState.groups[groupId]!.hp,
+      triggers,
+      log: resolution.events.map((event) => event.type),
+    };
+  }
+
+  it('技能伤害也减 n——这正是它与防御的区别', () => {
+    // 攻方 atk 2 + 火球3：技能 3 点 + 普攻 2 点
+    const shielded = oneTurn({ traits: ['火球3'] }, ['圣盾2']);
+    const defended = oneTurn({ traits: ['火球3'] }, ['防御2']);
+
+    // 圣盾2：技能 3−2=1，普攻 2−2=0 → 共 1
+    expect(shielded.damage).toBe(1);
+    // 防御2 只挡普通攻击：技能照扣 3，普攻 2−2=0 → 共 3
+    expect(defended.damage).toBe(3);
+  });
+
+  it('普通攻击同样被减 n', () => {
+    // 攻方没有技能，只有一次 atk 3 的普通攻击
+    expect(oneTurn({ atk: 3 }, ['圣盾1']).damage).toBe(2);
+    // 对照：白板防守方照扣 3
+    expect(oneTurn({ atk: 3 }, []).damage).toBe(3);
+  });
+
+  it('两条路径各发一次 SkillTriggered——动画就是吃这个事件的', () => {
+    /*
+      演出层只认 `SkillTriggered`：**发一次就播一次护盾**。
+      所以「普通攻击和法术攻击都触发动画」在规则层的判据就是触发次数：
+      圣盾 2 次（技能 + 普攻），防御 1 次（只有普攻那条路）。
+    */
+    const shielded = oneTurn({ atk: 3, traits: ['火球3'] }, ['圣盾1']);
+    expect(shielded.damage).toBe(4); // 技能 3−1=2 + 普攻 3−1=2
+    expect(shielded.triggers['holyShield']).toBe(2);
+
+    const defended = oneTurn({ atk: 3, traits: ['火球3'] }, ['防御1']);
+    expect(defended.triggers['defense']).toBe(1);
   });
 });

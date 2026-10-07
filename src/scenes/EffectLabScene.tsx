@@ -3,7 +3,7 @@ import { Canvas, useFrame } from '@react-three/fiber';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
 import { PCFShadowMap, type Group } from 'three';
 
-import { cardById, slice } from '../data';
+import { cardById, cardDatabase, slice } from '../data';
 import type { CardDefinition } from '../domain/cards/types';
 import { FLYING_CARD_LIFT } from '../rendering/anim/combatMotion';
 import { CardMesh } from '../rendering/cards/CardMesh';
@@ -11,6 +11,7 @@ import { holoIntensityForRarity } from '../rendering/cards/HoloLayer';
 import { effectDirector } from '../rendering/effects/effectDirector';
 import { particleStats } from '../rendering/effects/particleStats';
 import { EffectSystem } from '../rendering/effects/EffectSystem';
+import { FAMILY_TINT } from '../rendering/effects/familyMap';
 import { FAMILY_TO_EFFECT, type EffectTemplateId } from '../rendering/effects/templates';
 import { PerfSampler } from '../rendering/PerfSampler';
 import { PostEffects } from '../rendering/postprocessing/PostEffects';
@@ -21,7 +22,7 @@ import { PerfOverlay } from '../ui/PerfOverlay';
 import { WebGLGuard } from './WebGLGuard';
 
 /**
- * 实验台（原「开发查看器」）。
+ * 实验台
  *
  * 存在的理由：卡牌质感与特效都是**视角与时间相关**的。战斗全景里卡牌只有
  * 几十像素、特效一闪而过，既看不出全息色带是否跟视角走，也看不出火球
@@ -30,11 +31,6 @@ import { WebGLGuard } from './WebGLGuard';
  *
  * ## 阵型：第二行一张施法卡，上排三张目标
  *
- * 上一版的阵型是「三张一排、选中的那张在正中」，问题有两个：
- * 对面是谁**不由你决定**（两侧只是切片里的相邻卡），而且特效的目标点
- * 与「对位」这个规则概念对不上——实验台想验的恰恰是「这张牌打到那个身上会怎样」。
- *
- * 现在改成两排：
  * - **第二行（近相机）一张施法卡**，四个槽都可以在下拉框里任选，点 3D 里的卡
  *   也与施法卡**对调**（四个位置永远是四张不同的卡）；
  * - **上排三张目标**，中槽正好在施法卡正上方，就是规则里的**对位**；
@@ -55,8 +51,21 @@ import { WebGLGuard } from './WebGLGuard';
  * 这条只动表现，不动任何规则判定。
  */
 
-const TEMPLATE_LABELS: { id: EffectTemplateId; label: string }[] = [
+/**
+ * 模板按钮表。
+ *
+ * `family` 是给「同一个模板、不同族色」用的：圣盾与护盾是同一段演出，
+ * 靠族名去 `FAMILY_TINT` 取金色（见 `playTemplate` 的 color 参数）。
+ */
+const TEMPLATE_LABELS: { id: EffectTemplateId; label: string; family?: string }[] = [
   { id: 'normalAttack', label: '普通攻击' },
+  { id: 'slash', label: '斩击', family: 'slash' },
+  { id: 'groupSlash', label: '群体斩击', family: 'groupSlash' },
+  { id: 'swordDance', label: '剑舞', family: 'swordDance' },
+  { id: 'swordDance', label: '斩杀', family: 'execute' },
+  { id: 'lifeDrain', label: '献祭', family: 'sacrifice' },
+  { id: 'flow', label: '传送', family: 'teleport' },
+  { id: 'groupSwordDance', label: '群体剑舞', family: 'groupSwordDance' },
   { id: 'fireball', label: '火球' },
   { id: 'iceSeal', label: '冰封' },
   { id: 'lightning', label: '闪电' },
@@ -64,14 +73,27 @@ const TEMPLATE_LABELS: { id: EffectTemplateId; label: string }[] = [
   { id: 'groupIceSeal', label: '群体冰封' },
   { id: 'groupLightning', label: '群体闪电' },
   { id: 'shield', label: '护盾 / 防御' },
+  { id: 'shield', label: '圣盾', family: 'holyShield' },
   { id: 'heal', label: '治愈 / 恢复' },
   { id: 'buff', label: '祝福 / 振奋' },
-  { id: 'curse', label: '诅咒 · Voltaic Snare' },
-  { id: 'injury', label: '受伤 · 红色地面电弧' },
+  { id: 'curse', label: '诅咒' },
+  { id: 'instantDeath', label: '即死', family: 'instantDeath' },
+  { id: 'armorBreak', label: '闪避赋予', family: 'grantDodge' },
+  { id: 'shield', label: '法术反弹', family: 'spellReflect' },
+  { id: 'normalAttack', label: '伤害n', family: 'directDamage' },
+  { id: 'normalAttack', label: '群体伤害n', family: 'groupPhysicalDamage' },
+  { id: 'injury', label: '受伤' },
   { id: 'debuff', label: '其它减益' },
   { id: 'flow', label: '抽卡 / 转移' },
   { id: 'bombard', label: '炮击' },
-  { id: 'deathBurst', label: '死亡爆裂 / 自毁' },
+  { id: 'groupBombard', label: '群体爆破' },
+  { id: 'deathBurst', label: '自毁' },
+  { id: 'deathBombard', label: '死亡爆裂' },
+  { id: 'ranged', label: '远射' },
+  { id: 'piercing', label: '贯穿' },
+  { id: 'groupPiercing', label: '群体贯穿', family: 'groupPiercing' },
+  { id: 'slash', label: '临点坍缩', family: 'criticalCollapse' },
+  { id: 'status', label: '不屈遮罩（开 / 关）', family: 'unyielding' },
   { id: 'groupHeal', label: '群体治愈' },
   { id: 'armorBreak', label: '破甲' },
   { id: 'dodge', label: '闪避残影' },
@@ -207,6 +229,7 @@ export function EffectLabScene() {
   const [durationScale, setDurationScale] = useState(1);
   const [color, setColor] = useState<string>('');
   const [paused, setPaused] = useState(false);
+  const [unyieldingPreview, setUnyieldingPreview] = useState(false);
   const [lastEffect, setLastEffect] = useState('（尚未触发）');
   const [particles, setParticles] = useState({ alive: 0, capacity: 0, peak: 0 });
 
@@ -217,8 +240,10 @@ export function EffectLabScene() {
 
   const cards = useMemo(
     () =>
-      slice.cards
-        .map((entry) => cardById.get(entry.cardId))
+      [...new Set([...slice.cards.map((entry) => entry.cardId),
+        ...cardDatabase.definitions.filter((card) => card.skills.some((skill) =>
+          ['ranged', 'piercing', 'bombard', 'groupBombard', 'explodeOnDeath', 'instantDeath', 'spellReflect', 'grantDodge', 'directDamage', 'groupPhysicalDamage', 'slash', 'groupSlash', 'swordDance', 'groupSwordDance', 'sacrifice', 'execute', 'teleport', 'groupPiercing', 'criticalCollapse', 'unyielding'].includes(skill.family ?? ''))).map((card) => card.cardId)])]
+        .map((id) => cardById.get(id))
         .filter((card): card is CardDefinition => card !== undefined),
     [],
   );
@@ -278,26 +303,35 @@ export function EffectLabScene() {
 
   const playTemplate = useCallback(
     (template: EffectTemplateId, label: string, overrideIntensity?: number, family?: string | null) => {
+      if (family === 'unyielding') {
+        setUnyieldingPreview((current) => !current);
+        setLastEffect('不屈 · 切换施法卡持续遮罩');
+        return;
+      }
       const from = castAt(sourcePosition, liftOf(source));
       // 上排存在时：主目标是正上方那张（对位），另外两张走 `extraTargets`。
       // 打一张还是打三张**由配方按族名判定**（`group*` 才铺开），这里只给目标点——
       // 与战斗里 `eventEffects.ts` 的 `targetsOf` 给的是同一份东西：第一个是主目标，
       // 其余是额外目标。所以「对群打三张、对单只打对位」在实验台上看到的就是真实规则。
       const self = impactAt(sourcePosition, liftOf(source));
-      const primary = template === 'injury' ? self : (targetPoints[ALIGNED_SLOT] ?? targetPoints[0] ?? self);
+      const direct = template === 'ranged' || template === 'piercing' || template === 'groupPiercing';
+      const selfBurst = template === 'injury' || template === 'deathBurst' || family === 'criticalCollapse';
+      const primary: Vec3 = selfBurst ? self : direct ? [SOURCE_X, IMPACT_Y + 0.4, TARGET_Z - 1.35]
+        : (targetPoints[ALIGNED_SLOT] ?? targetPoints[0] ?? self);
       const extra = targetPoints.filter((_, slot) => slot !== ALIGNED_SLOT);
-      const spreads = template.startsWith('group') || family?.startsWith('group') === true;
+      const spreads = template === 'deathBombard' || template.startsWith('group') || family?.startsWith('group') === true || family === 'teleport';
       const aimed =
-        template === 'injury' ? '作用于自身' : targetPoints.length === 0 ? '单张大图：落在自己身上' : spreads ? '三张' : '只打对位';
+        selfBurst ? '作用于自身' : template === 'groupPiercing' ? '战场五路平行贯穿，独立命中本体' : direct ? '越过对位命中本体' : targetPoints.length === 0 ? '单张大图：落在自己身上' : spreads ? '三张' : '只打对位';
 
       effectDirector.play({
         template,
         family: family ?? undefined,
         sourceInstanceId: source?.cardId,
-        from,
+        from: template === 'deathBombard' ? self : from,
         to: primary,
         extraTargets: extra,
-        color: color || undefined,
+        // 「原色」时用族自己的颜色（圣盾是金色），没登记的族交给模板自带配色
+        color: color || (family ? FAMILY_TINT[family] : undefined) || undefined,
         intensity: overrideIntensity ?? intensity,
         countScale,
         // 演出速度只压缩播放时长，不影响任何规则结果（V-FX-5）
@@ -329,7 +363,7 @@ export function EffectLabScene() {
       // 族名要一路带下去：`群体振奋` 这类族的模板是 `buff`，靠族名才认得出是群体
       playTemplate(template, raw, param ?? 1, family);
     },
-    [playTemplate],
+    [playTemplate, source],
   );
 
   if (!source) {
@@ -342,7 +376,7 @@ export function EffectLabScene() {
   const staged: StagedCard[] =
     layout === 'formation'
       ? [
-          { key: 'source', card: source, position: sourcePosition, flying: isFlying(source) },
+          { key: 'source', card: source, position: sourcePosition, flying: isFlying(source), unyielding: unyieldingPreview },
           ...targets.map((card, index) => ({
             key: `target-${index}`,
             card,
@@ -350,7 +384,7 @@ export function EffectLabScene() {
             flying: isFlying(card),
           })),
         ]
-      : [{ key: 'source', card: source, position: [0, 0, 0], flying: isFlying(source) }];
+      : [{ key: 'source', card: source, position: [0, 0, 0], flying: isFlying(source), unyielding: unyieldingPreview }];
 
   const cardOption = (card: CardDefinition): ReactElement => (
     <option key={card.cardId} value={card.cardId}>
@@ -540,9 +574,10 @@ export function EffectLabScene() {
             <div className="lab__buttons">
               {TEMPLATE_LABELS.map((item) => (
                 <button
-                  key={item.id}
+                  /* 圣盾与护盾是同一个模板 id，key 得把族名带上，否则 React 会报重复 key */
+                  key={item.family ?? item.id}
                   type="button"
-                  onClick={() => playTemplate(item.id, item.label)}
+                  onClick={() => playTemplate(item.id, item.label, undefined, item.family)}
                 >
                   {item.label}
                 </button>
@@ -674,6 +709,7 @@ export function EffectLabScene() {
 }
 
 interface StagedCard {
+  readonly unyielding?: boolean;
   readonly key: string;
   readonly card: CardDefinition;
   readonly position: Vec3;
@@ -708,6 +744,7 @@ function LabStage({
           card={entry.card}
           position={entry.position}
           flying={entry.flying}
+          unyielding={entry.unyielding}
           faceDown={faceDown}
           holo={holoEnabled}
           holoScale={holoScale}
@@ -721,6 +758,7 @@ function LabStage({
 }
 
 interface LabCardProps {
+  readonly unyielding?: boolean | undefined;
   readonly card: CardDefinition;
   /** 槽位在台面上的坐标；卡的**抬升**（飞行）由本组件自己叠上去。 */
   readonly position: Vec3;
@@ -744,6 +782,7 @@ interface LabCardProps {
  */
 function LabCard({
   card,
+  unyielding,
   position,
   flying,
   faceDown,
@@ -775,6 +814,7 @@ function LabCard({
         faceDown={faceDown}
         holo={holo}
         holoScale={holoScale}
+        unyielding={unyielding}
         onClick={onCardClick}
       />
     </group>

@@ -29,7 +29,8 @@ import type { SideId } from '../../domain/cards/types';
 import type { PresentationSpeed } from '../../state/settingsStore';
 import type { SlotZone } from '../battle/layout';
 import { handPointOf, slotPosition } from '../battle/placements';
-import { pilePosition } from '../battle/layout';
+import { pilePosition, BATTLE_CARD_SCALE, CARD_SIZE } from '../battle/layout';
+import { FLYING_CARD_LIFT } from '../anim/combatMotion';
 import { AI_THINK_SECONDS } from './constants';
 import { PresentationDirector } from './director';
 import {
@@ -145,6 +146,13 @@ export class BattleSession {
       skipEffects: () => this.effects.skipAll(),
       log: (line) => this.pushLog(line),
       worldPointOf: (instanceId) => this.worldPointOf(instanceId),
+      cardFacePointOf: (instanceId) => {
+        const point = this.worldPointOf(instanceId);
+        const identity = this.display.instances[instanceId];
+        const definition = identity ? cardById.get(identity.definitionId) : undefined;
+        const lift = definition?.rawTraits.includes('飞行') ? FLYING_CARD_LIFT : 0;
+        return [point[0], point[1] + lift + CARD_SIZE.thickness * BATTLE_CARD_SCALE + 0.025, point[2]];
+      },
       slotPointOf: (side, zone, slotIndex) => this.slotPointOf(side, zone, slotIndex),
       pilePointOf: (side, kind) => pilePosition(side, kind),
       playerAnchor: (side) => playerAnchorPoint(side),

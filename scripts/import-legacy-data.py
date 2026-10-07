@@ -146,6 +146,11 @@ REGISTRY_RULES: list[tuple[str, str, str]] = [
     ("bombard", "regex", r"炮击(\d+)"),
     ("groupBombard", "regex", r"群体爆破(\d+)"),
     ("explodeOnDeath", "exact", r"爆裂"),
+    # ---- 以下不是旧注册表的规则，是本项目新增的族 -------------------------
+    # 旧项目只有卡面数据（`assets/outputs/S+/cards.json:3` 写着「圣盾1」），没有实现。
+    # 放在这个列表里是为了让生成的 skills 记录带上 family 与 param，
+    # 与 `src/domain/skills/families.ts` 的 EXTRA_FAMILY_IDS 一一对应。
+    ("holyShield", "regex", r"圣盾(\d+)"),
 ]
 
 # 旧项目 game/skills/skill_registry.py 的工厂名，用于核对“35 族”这一数字。
@@ -189,6 +194,7 @@ FAMILY_NAMES: dict[str, str] = {
     "bombard": "炮击n",
     "groupBombard": "群体爆破n",
     "explodeOnDeath": "爆裂",
+    "holyShield": "圣盾n",
 }
 
 # 战斗场景实现的规则，不在注册表里。见 battle_base_scene.py:1344 附近。
@@ -1006,6 +1012,29 @@ def load_trait_overlay(problems: list[str]) -> dict[str, Any]:
 # --------------------------------------------------------------------------
 
 
+def apply_content_rules(cards_payload: dict[str, Any]) -> list[str]:
+    """
+    生成期的**内容规则**（不是旧数据的翻译）。
+
+    `自毁` 卡的血量一律记 0：这类卡是**一次性**的——上场即执行自己的行动，
+    然后被消耗掉，留在台面上的那 5 点血没有意义（旧数据里 19 张全是 5）。
+    引擎那边由 `isSelfDestructCard` 认这一类卡（`src/domain/cards/traits.ts`），
+    数值徽标也不显示它们的 HP。
+
+    **为什么写在这里而不是去改旧项目的数据**：导入脚本对旧项目**只读**
+    （P0 验收：「导入可重复运行、不修改原项目」），所以这类修正只能落在生成期；
+    写在这里，重跑导入不会把这 19 张退回 5。
+
+    返回被改动的 cardId（进导入报告，便于核对）。
+    """
+    changed: list[str] = []
+    for definition in cards_payload["definitions"]:
+        if "自毁" in definition["rawTraits"] and definition["hp"] != 0:
+            changed.append(f"{definition['cardId']}（{definition['hp']} → 0）")
+            definition["hp"] = 0
+    return changed
+
+
 def validate_cards(cards: dict[str, Any], problems: list[str]) -> dict[str, Any]:
     definitions = cards["definitions"]
     complete = [d for d in definitions if d["status"] == "complete"]
@@ -1017,7 +1046,8 @@ def validate_cards(cards: dict[str, Any], problems: list[str]) -> dict[str, Any]
         problems.append(f"cardId 重复: {duplicates}")
 
     for d in complete:
-        if d["hp"] <= 0:
+        # 自毁卡的 hp 就该是 0（见 apply_content_rules），其余 complete 卡必须为正
+        if d["hp"] < 0 or (d["hp"] == 0 and "自毁" not in d["rawTraits"]):
             problems.append(f"{d['cardId']} 是 complete 但 hp={d['hp']}")
         if d["cd"] < 0:
             problems.append(f"{d['cardId']} 是 complete 但 cd={d['cd']} 为负")
@@ -1098,6 +1128,7 @@ def render_report(
     slice_data: dict[str, Any] | None,
     shops: dict[str, Any],
     problems: list[str],
+    self_destruct_zeroed: list[str] | None = None,
 ) -> str:
     lines: list[str] = []
     add = lines.append
@@ -1116,7 +1147,19 @@ def render_report(
     add(f"| 其中数据完整（可进战斗与卡池） | {validation['complete']} |")
     add(f"| 其中数据不完整（仅留档） | {validation['incomplete']} |")
     add(f"| 不同 trait 字符串 | {validation['distinctTraits']} |")
+    zeroed = self_destruct_zeroed or []
+    add(f"| 其中「自毁」卡 hp 置零（本项目的内容规则） | {len(zeroed)} |")
     add("")
+    if zeroed:
+        add(
+            "`自毁` 是一次性卡：上场即执行行动然后被消耗，血量没有意义，"
+            "所以生成期把它们的 `hp` 一律记 0（旧数据里是 5）。"
+            "导入脚本对旧项目只读，这类修正落在生成期，重跑不会退回。"
+        )
+        add("")
+        add("被改动的卡：" + "、".join(f"`{item}`" for item in zeroed))
+        add("")
+
     add("按 trait 解析结果的分布。**出现次数**是卡面上的累计出现（热门 trait 会被放大），")
     add("**不同 trait** 才是与「118 种」「47 种未识别」对齐的口径：")
     add("")
@@ -1129,7 +1172,8 @@ def render_report(
     recognized = validation["recognizedFamilyCount"]
     add(
         f"注册表识别族数：{recognized}（旧源码 `skill_registry.py` 导入的工厂数 "
-        f"{validation['registryFactoryCount']}）。"
+        f"{validation['registryFactoryCount']}，其余 {recognized - validation['registryFactoryCount']} "
+        "个是本项目新增的族——旧项目只有卡面数据、没有实现）。"
     )
     add("")
     scene_rule_traits = sorted(
@@ -1483,6 +1527,8 @@ def main() -> int:
     overlay = load_trait_overlay(problems)
 
     cards_payload = load_cards(legacy, overlay, problems)
+    # 内容规则（自毁卡 hp=0）必须在校验之前套上，否则校验会按旧值放行/报错
+    self_destruct_zeroed = apply_content_rules(cards_payload)
     validation = validate_cards(cards_payload, problems)
     card_ids = {d["cardId"] for d in cards_payload["definitions"]}
     stages = load_stages(legacy, problems)
@@ -1544,7 +1590,15 @@ def main() -> int:
     report_path = REPORT_OUT
     # 报告内容只依赖数据本身，不依赖“本次哪些文件有差异”，否则会自我引用。
     report_expected = render_report(
-        cards_payload, validation, stages, gacha, decks, slice_data, shops, problems
+        cards_payload,
+        validation,
+        stages,
+        gacha,
+        decks,
+        slice_data,
+        shops,
+        problems,
+        self_destruct_zeroed,
     )
     existing_report = (
         report_path.read_text(encoding="utf-8") if report_path.exists() else None

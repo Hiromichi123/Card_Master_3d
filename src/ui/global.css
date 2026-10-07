@@ -3183,17 +3183,6 @@ code {
   海报 540×360 设计单位，详情栏 (70%, 18%, 26%×68%)，
   左下「返回上一级」(4%, 86%, 240×72)。
 */
-.campaign__status {
-  position: absolute;
-  left: 4%;
-  top: 3%;
-  display: flex;
-  flex-direction: column;
-  gap: calc(8 * var(--ui));
-  align-items: flex-start;
-  font-size: calc(28 * var(--ui));
-}
-
 .campaign__title {
   position: absolute;
   left: 50%;
@@ -3210,10 +3199,16 @@ code {
     0 0 calc(30 * var(--ui)) rgba(255, 210, 140, 0.35);
 }
 
+/* 章节地图的标题更小、更靠上（旧版 chapter_map_scene.py 是 72 号字 @12%） */
+.campaign--chapter .campaign__title {
+  top: 12%;
+  font-size: calc(72 * var(--ui));
+}
 .campaign__subtitle {
   position: absolute;
   left: 50%;
-  top: 21%;
+  /* 旧版是 title_y + 60 个设计单位，不是另一个百分比 */
+  top: calc(15% + 60 * var(--ui));
   transform: translateX(-50%);
   margin: 0;
   color: #dcdcff;
@@ -3221,6 +3216,10 @@ code {
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
 }
 
+.campaign--chapter .campaign__subtitle {
+  top: 20%;
+  font-size: calc(32 * var(--ui));
+}
 .campaign__back {
   position: absolute;
   left: 4%;
@@ -3228,14 +3227,13 @@ code {
   width: calc(240 * var(--ui));
   height: calc(72 * var(--ui));
   font: inherit;
-  font-size: calc(38 * var(--ui));
+  font-size: calc(42 * var(--ui));
   color: #f0f2f6;
   background: rgba(90, 90, 90, 0.75);
   border: calc(2 * var(--ui)) solid rgba(150, 150, 150, 0.7);
   border-radius: calc(10 * var(--ui));
   cursor: pointer;
 }
-
 .campaign__back:hover {
   background: rgba(130, 130, 130, 0.85);
 }
@@ -3243,82 +3241,88 @@ code {
 .campaign__foot {
   position: absolute;
   left: 50%;
-  top: 94%;
+  top: 90%;
   transform: translateX(-50%);
   margin: 0;
-  color: rgba(220, 226, 236, 0.8);
-  font-size: calc(26 * var(--ui));
+  color: #ffffff;
+  font-size: calc(40 * var(--ui));
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
 }
-
 /* 海报横排：世界地图从 15% 起、铺到 75%；章节地图从 7% 起、铺 62% */
+/* 海报的**中心**落在 15% 与 75%（旧版 center_x = 15% + 60%·i/(n-1)），
+   所以容器要比那条 60% 的带子左右各放宽半张海报，再用 space-between 平分。 */
 .campaign__posters {
   position: absolute;
-  left: 15%;
-  top: 62%;
+  left: calc(15% - 270 * var(--ui));
+  top: 60%;
   transform: translateY(-50%);
-  width: 60%;
+  width: calc(60% + 540 * var(--ui));
   margin: 0;
   padding: 0;
   list-style: none;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: calc(30 * var(--ui));
 }
-
 .campaign__poster {
   position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: calc(8 * var(--ui));
+  display: block;
   width: calc(540 * var(--ui));
-  padding: calc(10 * var(--ui));
+  height: calc(360 * var(--ui));
+  padding: 0;
+  overflow: hidden;
   font: inherit;
   color: #fff;
-  background: rgba(20, 28, 48, 0.6);
-  border: calc(3 * var(--ui)) solid rgba(120, 160, 220, 0.4);
+  background: rgba(20, 20, 35, 0.82);
+  /* 旧版常态就是金边（BORDER_COLOR 255,215,120），悬停转白，选中转亮金 + 一层辉光 */
+  border: calc(4 * var(--ui)) solid #ffd778;
   border-radius: calc(16 * var(--ui));
   cursor: pointer;
-  transition: border-color 140ms ease-out, transform 140ms ease-out;
+  transition: border-color 140ms ease-out, box-shadow 140ms ease-out;
+}
+/* 一条规则管两个状态是旧写法，这里拆开：悬停＝白框，选中＝亮金框 + 辉光 */
+.campaign__poster:hover {
+  border-color: #ffffff;
 }
 
-.campaign__poster:hover,
 .campaign__poster--on {
-  border-color: #ffdc78;
-  transform: translateY(calc(-4 * var(--ui)));
+  border-color: #ffc828;
+  box-shadow: 0 0 calc(26 * var(--ui)) rgba(255, 220, 120, 0.5);
 }
-
 .campaign__poster-art {
+  position: absolute;
+  inset: 0;
   display: block;
   width: 100%;
-  aspect-ratio: 3 / 2;
+  height: 100%;
   object-fit: cover;
-  border-radius: calc(10 * var(--ui));
 }
-
 /* 没有海报图时的底板 */
 .campaign__poster-plate {
+  position: absolute;
+  inset: 0;
   display: grid;
   place-items: center;
-  width: 100%;
-  aspect-ratio: 3 / 2;
-  border-radius: calc(10 * var(--ui));
-  background: linear-gradient(160deg, #26324a 0%, #151b28 100%);
-  color: #cfd8e8;
+  padding: 0 calc(20 * var(--ui));
+  text-align: center;
+  background: linear-gradient(160deg, #3c3c46 0%, #23232b 100%);
+  color: #f5f5f5;
   font-size: calc(40 * var(--ui));
 }
-
 .campaign__poster-name {
-  font-size: calc(30 * var(--ui));
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 18%;
+  display: grid;
+  place-items: center;
+  padding: 0 calc(10 * var(--ui));
+  background: rgba(0, 0, 0, 0.63);
+  font-size: calc(34 * var(--ui));
   text-align: center;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
 }
-
-.campaign__poster-note {
-  font-size: calc(22 * var(--ui));
-  color: #b9c4d6;
-}
-
 .campaign__poster-done {
   position: absolute;
   right: calc(14 * var(--ui));
@@ -3330,22 +3334,26 @@ code {
   font-size: calc(22 * var(--ui));
 }
 
-/* 章节地图的关卡海报：从左下往右上排（起点 7%, 56%，每关抬高一点） */
+/* 章节地图的关卡海报：栅格。位置由每个 li 自己给（列数随关数变，
+   见 CampaignScene 的 ChapterMap），所以这里只清掉世界地图那套布局。 */
 .campaign__posters--stage {
-  left: 7%;
-  top: 56%;
-  width: 62%;
-  align-items: flex-end;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  transform: none;
+  display: block;
 }
 
 .campaign__posters--stage > li {
-  transform: translateY(calc(var(--index, 0) * -70 * var(--ui)));
+  position: absolute;
+  transform: translate(-50%, -50%);
 }
 
 .campaign__posters--stage .campaign__poster {
-  width: calc(420 * var(--ui));
+  width: calc(540 * var(--ui));
+  height: calc(360 * var(--ui));
 }
-
 /* 右侧详情栏 */
 .campaign__detail {
   position: absolute;
@@ -3361,8 +3369,24 @@ code {
   border: calc(2 * var(--ui)) solid rgba(120, 160, 220, 0.35);
   border-radius: calc(20 * var(--ui));
   overflow-y: auto;
+  /*
+    面板**不吃点击**：旧版世界地图里，最后一张海报的右半边本来就压在详情栏下面
+    （海报中心 15%~75%、宽 540/2880 = 18.75%，面板从 70% 起），
+    而旧版的面板是纯展示、不接事件，鼠标照样落在海报上。
+    这里照做——只是把面板里的按钮重新开回 auto，否则「进入章节 / 出战」点不动。
+  */
+  pointer-events: none;
 }
 
+.campaign__detail .btn {
+  pointer-events: auto;
+}
+
+/* 章节地图的详情栏窄一点、更靠右（旧版是 (72%, 18%, 24%×68%)） */
+.campaign--chapter .campaign__detail {
+  left: 72%;
+  width: 24%;
+}
 .campaign__detail-title {
   margin: 0;
   font-size: calc(40 * var(--ui));

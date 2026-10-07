@@ -13,6 +13,7 @@ import type { Currencies } from '../domain/progression/types';
 import type { FusionSpec } from '../domain/progression/fusion';
 
 import cardsJson from './cards.json';
+import { withModernTraits } from '../domain/skills/modernTraits';
 import decksJson from './decks.json';
 import gachaPoolsJson from './gacha-pools.json';
 import incompleteJson from './incomplete-cards.json';
@@ -58,7 +59,7 @@ export interface CardDatabase {
 
 export const cardDatabase: CardDatabase = {
   contentVersion: (cardsJson as { contentVersion?: string }).contentVersion ?? '未知',
-  definitions: rawDefinitions as CardDefinition[],
+  definitions: (rawDefinitions as CardDefinition[]).map(withModernTraits),
 };
 
 /** cardId → 定义。战斗与界面都通过它取卡，不使用数组下标。 */

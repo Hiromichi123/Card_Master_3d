@@ -68,7 +68,7 @@ export const SKILL_FAMILIES = [
   { id: 'delay', sourceName: '延迟n', category: 'deckPrep', hasParam: true, purity: 'scene',
     summary: '敌方最左的占用中准备槽 CD +n' },
   { id: 'selfDestruct', sourceName: '自毁', category: 'deckPrep', hasParam: false, purity: 'scene',
-    summary: '自己 HP=0 并移除；不取消同回合待执行的攻击' },
+    summary: '上场立即执行一次技能与有效攻击，随后 HP 归零并离场；自毁最后结算' },
 
   // 增益与弱化（6）
   { id: 'blessing', sourceName: '祝福n', category: 'buff', hasParam: true, purity: 'pure',
@@ -106,7 +106,7 @@ export const SKILL_FAMILIES = [
   { id: 'berserk', sourceName: '狂暴', category: 'afterAttack', hasParam: false, purity: 'pure',
     summary: '攻击后损失等于自身 ATK 的 HP，并把实际损失永久加到 ATK' },
   { id: 'explodeOnDeath', sourceName: '爆裂', category: 'blast', hasParam: false, purity: 'scene',
-    summary: '死亡时对对位槽位造成固定 2 点伤害（数值写死在旧工厂里）' },
+    summary: '离场时原地爆裂并向敌方全体发炮；默认 2 伤害，带数字时使用该值' },
 
   // 单位复制（2）
   { id: 'clone', sourceName: '分身', category: 'copy', hasParam: false, purity: 'scene',
@@ -129,6 +129,50 @@ export const SKILL_FAMILIES = [
     summary: '死亡后回到手牌，没有一次性标记' },
   { id: 'rebirth', sourceName: '复活', category: 'special', hasParam: false, purity: 'declarative',
     summary: '死亡后回到准备区，带一次性标记，需要空准备槽' },
+
+  // ---- 本项目新增（1）------------------------------------------------------
+  /*
+    旧注册表里**没有**这一族（旧项目只到卡面数据为止，没有实现），
+    但 `S+_001` 的卡面写着「圣盾1」，所以由本项目补上，见 docs/rules.md。
+    与唯一那张带它的卡的来源地 `assets/outputs/S+/cards.json:3` 对齐。
+  */
+  { id: 'holyShield', sourceName: '圣盾n', category: 'defenseHeal', hasParam: true, purity: 'pure',
+    summary: '受到的伤害各减 n 点；普通攻击与技能伤害都触发（防御只挡普通攻击）' },
+  // 3D 用户明确指定的新机制（旧版未实现）。
+  { id: 'ranged', sourceName: '远射', category: 'special', hasParam: false, purity: 'declarative',
+    summary: '普通攻击越过对位卡直击对方本体，留下直线烟雾拖尾' },
+  { id: 'piercing', sourceName: '贯穿n', category: 'special', hasParam: true, purity: 'declarative',
+    summary: '攻击前独立对本体造成 n 点伤害，金色光线拖尾，无爆炸；不改变普通攻击目标' },
+  { id: 'directDamage', sourceName: '伤害n', category: 'special', hasParam: true, purity: 'pure',
+    summary: '攻击前对随机敌方单位单独造成 n 点普通攻击，与贯穿n独立结算' },
+  { id: 'instantDeath', sourceName: '即死n', category: 'special', hasParam: true, purity: 'scene',
+    summary: '黑色诅咒命中随机敌方单位，立刻清空 HP 并离场' },
+  { id: 'spellReflect', sourceName: '法术反弹', category: 'special', hasParam: false, purity: 'declarative',
+    summary: '在场时立即将敌方进攻法术整个反射回施法方，一次法术只反射一次' },
+  { id: 'grantDodge', sourceName: '闪避赋予n', category: 'buff', hasParam: true, purity: 'pure',
+    summary: '给随机友方闪避n，持续至离场，重复赋予保留最高等级' },
+  { id: 'groupPhysicalDamage', sourceName: '群体伤害n', category: 'afterAttack', hasParam: true, purity: 'scene',
+    summary: '敌方全体分别受到 n 点普通攻击，正常触发防御、闪避与反击' },
+  { id: 'slash', sourceName: '斩击n', category: 'element', hasParam: true, purity: 'pure',
+    summary: '攻击前对当前对位单位造成 n 点技能伤害，交叉两道弧形刀光' },
+  { id: 'groupSlash', sourceName: '群体斩击n', category: 'element', hasParam: true, purity: 'pure',
+    summary: '攻击前对敌方全部战斗单位各造成 n 点技能伤害' },
+  { id: 'swordDance', sourceName: '剑舞n', category: 'special', hasParam: true, purity: 'pure',
+    summary: '对位直接扣除 n HP，多方向连续弧斩，无视飞行、防御、闪避、免疫、圣盾和法术反弹' },
+  { id: 'groupSwordDance', sourceName: '群体剑舞n', category: 'special', hasParam: true, purity: 'pure',
+    summary: '敌方全部战斗单位各直接扣除 n HP，多段刀光不重复乘算伤害' },
+  { id: 'sacrifice', sourceName: '献祭n', category: 'defenseHeal', hasParam: true, purity: 'scene',
+    summary: '每个自身回合从其它在场友方总共吸取至多 n HP，按实际吸取量恢复自身，满血或无友方时跳过' },
+  { id: 'execute', sourceName: '斩杀', category: 'special', hasParam: false, purity: 'scene',
+    summary: '己方攻击前，若对位当前 HP 严格低于自身当前 HP，立即击杀并离场，深红剑舞' },
+  { id: 'teleport', sourceName: '传送', category: 'special', hasParam: false, purity: 'pure',
+    summary: '每个自身回合随机重排敌方战斗卡顺序，保持空槽并同步真实对位关系' },
+  { id: 'groupPiercing', sourceName: '群体贯穿n', category: 'special', hasParam: true, purity: 'pure',
+    summary: '五条平行金色贯穿光线，每条独立对敌方本体造成 n 点伤害，不伤害战斗卡' },
+  { id: 'criticalCollapse', sourceName: '临点坍缩', category: 'afterAttack', hasParam: false, purity: 'scene',
+    summary: '普攻实际命中对位时，减伤后超过对位剩余 HP 的伤害返还自身，红色斩击' },
+  { id: 'unyielding', sourceName: '不屈', category: 'special', hasParam: false, purity: 'declarative',
+    summary: '首次 HP 归零后继续在场行动，到下一个自身回合结束离场，鲜红边缘暗中心遮罩' },
 ] as const satisfies readonly SkillFamily[];
 
 export type SkillFamilyId = (typeof SKILL_FAMILIES)[number]['id'];
@@ -141,5 +185,17 @@ export const SKILL_FAMILY_BY_ID: ReadonlyMap<string, SkillFamily> = new Map(
   SKILL_FAMILIES.map((family) => [family.id, family]),
 );
 
-/** 旧注册表的工厂数量，用于断言 35 这个数字没有漂移。 */
-export const EXPECTED_FAMILY_COUNT = 35;
+/** 旧版 35 族 + 用户指定的 3 个新版族。 */
+export const LEGACY_FAMILY_COUNT = 35;
+
+/**
+ * 本项目新增的族（旧注册表里没有这几个）。
+ *
+ * 数据自检里「技能族」这个数 = 旧注册表的 35 **加上**这里列出的几个，
+ * 所以它不再是 35——两个数不一样是**预期**，不是漂移。
+ * 新加族时把它加进这个数组，`EXPECTED_FAMILY_COUNT` 会跟着走。
+ */
+export const EXTRA_FAMILY_IDS = ['holyShield', 'ranged', 'piercing', 'directDamage', 'instantDeath', 'spellReflect', 'grantDodge', 'groupPhysicalDamage', 'slash', 'groupSlash', 'swordDance', 'groupSwordDance', 'sacrifice', 'execute', 'teleport', 'groupPiercing', 'criticalCollapse', 'unyielding'] as const;
+
+/** 表里应有的族数。 */
+export const EXPECTED_FAMILY_COUNT = LEGACY_FAMILY_COUNT + EXTRA_FAMILY_IDS.length;

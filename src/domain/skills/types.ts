@@ -55,6 +55,8 @@ export interface SkillSpec {
  */
 export type SkillTrigger =
   | 'ON_DEPLOY'
+  /** 3D: once per friendly turn, after deployments and before the attack row. */
+  | 'OWN_TURN'
   | 'BEFORE_ATTACK'
   | 'ON_DAMAGED'
   | 'AFTER_DAMAGED'

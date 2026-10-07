@@ -171,6 +171,10 @@ export interface CardInstance {
 
 /** 需要跨回合保留的一次性标记。 */
 export interface CardMarks {
+  /** Granted dodge level; removed when this instance leaves battle. */
+  grantedDodge?: number;
+  /** Only while a one-use card resolves its deployment cast (including zero-HP spell cards). */
+  deploymentCast?: boolean;
   /** 不死：致命伤害时保留 1 点生命，之后清除。 */
   undyingUsed: boolean;
   /** 复活：已经触发过复活。 */
@@ -188,7 +192,16 @@ export interface CardMarks {
  * 新版保留这一语义，但把共享范围显式建模，避免“模板被实例修改”的污染。
  * 复制（copy）不加入任何共享组，各自持有独立状态。
  */
+export interface UnyieldingState {
+  active: boolean;
+  used: boolean;
+  /** The next full friendly turn after the lethal hit. */
+  expiresAfterTurn: number;
+}
+
 export interface CombatStateGroup {
+  /** Shared by clones; activation is consumed once per deployment lifecycle. */
+  unyielding?: UnyieldingState;
   readonly groupId: string;
   readonly owner: SideId;
   /** 当前生命值。组内任一成员受击都会改动这里——分身共享的就是它。 */

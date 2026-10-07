@@ -29,7 +29,11 @@ import type { SideId } from '../../domain/cards/types';
 import { Timeline } from '../anim/Timeline';
 import { ATTACK_OUT_SECONDS, hpLossValues, hpStepSeconds } from '../anim/combatMotion';
 import type { SlotZone } from '../battle/layout';
+import { deathBlastIndex } from './eventEffects';
+import { BOMBARD_HIT_SECONDS, DEATH_BOMBARD_HIT_SECONDS, RANGED_HIT_SECONDS } from '../effects/artilleryTiming';
 import { SPEED_SCALE, type PresentationSpeed } from '../../state/settingsStore';
+import { FAMILY_TO_EFFECT } from '../effects/familyMap';
+import { slashTiming, usesSlash } from '../effects/slashTiming';
 import {
   DEFAULT_BEAT,
   EMPHASIS_SECONDS,
@@ -78,6 +82,7 @@ export interface DirectorDeps {
   readonly skipEffects: () => void;
   readonly log: (line: string) => void;
   readonly worldPointOf: (instanceId: string) => Point;
+  readonly cardFacePointOf?: ((instanceId: string) => Point) | undefined;
   readonly slotPointOf: (side: SideId, zone: SlotZone, slotIndex: number) => Point;
   /** 某一方的牌堆 / 弃牌堆在桌上的位置。抽牌与还魂的起点是这里。 */
   readonly pilePointOf: (side: SideId, kind: 'deck' | 'discard') => Point;
@@ -158,10 +163,33 @@ export function buildBeats(resolution: Resolution, deps: DirectorDeps): Beat[] {
   const beats: Beat[] = [];
   const patchesAt = groupPatches(resolution.patches);
   const events = resolution.events;
+  const pendingDeathProxies = new Map<string, Set<string>>();
 
   events.forEach((event, index) => {
     const patches = patchesAt.get(event.seq) ?? [];
-    const duration = (event.type === 'AttackDeclared' || (event.type === 'SkillTriggered' && event.family === 'counter')) ? ATTACK_OUT_SECONDS : EVENT_BEAT[event.type] ?? DEFAULT_BEAT;
+    const blast = event.type === 'CardDied' && deathBlastIndex(events, index, event.instanceId) >= 0;
+    const previous = events[index - 1];
+    const fatal = event.type === 'DamageApplied' && (event.source === 'instantDeath' || event.source === 'unyielding');
+    const consumption = event.type === 'DamageApplied' && event.source === 'selfInflicted'
+      && previous?.type === 'SkillTriggered' && previous.instanceId === event.instanceId && previous.family === 'selfDestruct';
+    const immediateDeath = event.type === 'CardDied' && previous?.type === 'DamageApplied' && previous.source === 'instantDeath' && event.collapsedInstanceIds.includes(previous.instanceId);
+    const slashTemplate = (event.type === 'SkillTriggered' || event.type === 'SpellReflected') && event.family
+      ? FAMILY_TO_EFFECT[event.family] : undefined;
+    const slashHit = slashTemplate && usesSlash(slashTemplate) ? slashTiming(slashTemplate).hit : undefined;
+    const duration = consumption || fatal || blast || immediateDeath ? 0
+      : slashHit !== undefined ? slashHit
+      : event.type === 'UnyieldingChanged' ? 0
+      : event.type === 'LifeTransferred' ? 0.42
+      : event.type === 'FormationShuffled' ? 0.3
+      : event.type === 'AttackDeclared' ? (event.attackKind ? RANGED_HIT_SECONDS : ATTACK_OUT_SECONDS)
+      : event.type === 'SkillTriggered' && ['ranged', 'directDamage', 'groupPhysicalDamage', 'selfDestruct', 'sacrifice', 'unyielding'].includes(event.family ?? '') ? 0
+      : event.type === 'SkillTriggered' && ['piercing', 'groupPiercing'].includes(event.family ?? '') ? RANGED_HIT_SECONDS
+      : event.type === 'SkillTriggered' && event.family === 'grantDodge' ? 0.3
+      : (event.type === 'SkillTriggered' && event.family === 'explodeOnDeath') || (event.type === 'SpellReflected' && event.family === 'explodeOnDeath') ? DEATH_BOMBARD_HIT_SECONDS
+      : (event.type === 'SkillTriggered' || event.type === 'SpellReflected') && ['bombard', 'groupBombard'].includes(event.family ?? '') ? BOMBARD_HIT_SECONDS
+      : event.type === 'SpellReflected' ? (event.family === 'lightning' || event.family === 'groupLightning' ? 0.26 : 0.42)
+      : event.type === 'SkillTriggered' && event.family === 'counter' ? ATTACK_OUT_SECONDS
+      : EVENT_BEAT[event.type] ?? DEFAULT_BEAT;
 
     const beat: Beat = {
       duration,
@@ -169,6 +197,7 @@ export function buildBeats(resolution: Resolution, deps: DirectorDeps): Beat[] {
         // 坐标在这一刻解析：显示状态还没被本步改动，正是「出手前」的那一帧
         const context: EffectContext = {
           worldPointOf: deps.worldPointOf,
+          cardFacePointOf: deps.cardFacePointOf,
           slotPointOf: deps.slotPointOf,
           playerAnchor: deps.playerAnchor,
           events,
@@ -198,7 +227,7 @@ export function buildBeats(resolution: Resolution, deps: DirectorDeps): Beat[] {
       },
     };
 
-    const hpLoss = event.type === 'DamageApplied' || event.type === 'PlayerHpChanged'
+    const hpLoss = !consumption && !fatal && (event.type === 'DamageApplied' || event.type === 'PlayerHpChanged')
       ? hpLossValues(event.hpBefore, event.hpAfter) : [];
     if (hpLoss.length === 0) {
       beats.push(beat);
@@ -219,7 +248,7 @@ export function buildBeats(resolution: Resolution, deps: DirectorDeps): Beat[] {
       });
     }
 
-    if (touchesStats(event)) {
+    if (touchesStats(event) && !consumption && !fatal) {
       beats.push({
         duration: EMPHASIS_SECONDS,
         onComplete: () => {
@@ -236,7 +265,11 @@ export function buildBeats(resolution: Resolution, deps: DirectorDeps): Beat[] {
         「取消演出不依赖动画回调」就是靠这一点成立的。
       */
       const ids = new Set(event.collapsedInstanceIds);
-      beats.push({
+      if (blast) {
+        // Start death artillery while the source location still exists; keep its
+        // proxy through the hit instead of clearing it before ON_DEATH executes.
+        pendingDeathProxies.set(event.instanceId, ids);
+      } else beats.push({
         duration: PROXY_EXIT_SECONDS,
         onComplete: () => {
           deps.display.proxies = deps.display.proxies.filter(
@@ -245,6 +278,16 @@ export function buildBeats(resolution: Resolution, deps: DirectorDeps): Beat[] {
           deps.publish();
         },
       });
+    }
+    if (event.type === 'CardMoved' && event.from === 'battle') {
+      const ids = pendingDeathProxies.get(event.instanceId);
+      if (ids) {
+        beats.push({ duration: 0, onComplete: () => {
+          deps.display.proxies = deps.display.proxies.filter((proxy) => !ids.has(proxy.instanceId));
+          deps.publish();
+        } });
+        pendingDeathProxies.delete(event.instanceId);
+      }
     }
   });
 

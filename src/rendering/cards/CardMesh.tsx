@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Group, MeshStandardMaterial } from 'three';
 
 import type { CardDefinition } from '../../domain/cards/types';
+import { isSelfDestructCard } from '../../domain/cards/traits';
 import { CARD_BACK_URL, cardFaceUrl } from '../../data/assets';
 import { useManagedTexture } from '../../services/useManagedTexture';
 import type { TextureTier } from '../../services/AssetManager';
@@ -20,6 +21,7 @@ import {
   getCardFaceGeometry,
 } from './cardGeometry';
 import { CardGlow } from './CardGlow';
+import { UnyieldingOverlay } from './UnyieldingOverlay';
 import { HoloLayer, holoIntensityForRarity } from './HoloLayer';
 import { StatBadges, type StatLayout } from './StatBadges';
 import type { StatKind } from './statBadge';
@@ -49,6 +51,7 @@ export interface CardMeshProps {
   /** Optional display resolution; battle and reveal retain their quality defaults. */
   readonly textureTier?: TextureTier | undefined;
   readonly attackKey?: string | undefined;
+  readonly unyielding?: boolean | undefined;
   readonly position: readonly [number, number, number];
   readonly rotationY?: number | undefined;
   readonly rotationX?: number | undefined;
@@ -119,6 +122,7 @@ export function CardMesh({
   card,
   textureTier,
   attackKey,
+  unyielding = false,
   position,
   rotationY = 0,
   rotationX = -Math.PI / 2,
@@ -376,12 +380,15 @@ export function CardMesh({
 
       {showHolo && <HoloLayer rarity={card.rarity} />}
 
+      {unyielding && holoVisible && <UnyieldingOverlay />}
+
       {showStatsNow && (
         <StatBadges
           atk={stats?.atk ?? card.atk}
           hp={stats?.hp ?? card.hp}
           cd={stats?.cd ?? card.cd}
           emphasised={emphasisedStats}
+          showCombatStats={!isSelfDestructCard(card)}
           layout={statLayout}
         />
       )}

@@ -1,5 +1,7 @@
 import { expect, test } from '@playwright/test';
 
+import { EXPECTED_FAMILY_COUNT } from '../../src/domain/skills/families';
+
 /**
  * P1 骨架的浏览器冒烟测试。
  *
@@ -29,7 +31,8 @@ test.describe('应用骨架', () => {
       ['卡牌条目', '256'],
       ['数据完整', '247'],
       ['数据不完整', '9'],
-      ['技能族', '35'],
+      // 从 families.ts 派生，不再手写：新增族时面板与用例一起动
+      ['技能族', String(EXPECTED_FAMILY_COUNT)],
       ['关卡', '12'],
       ['切片卡', '23'],
     ];
@@ -63,6 +66,18 @@ test.describe('应用骨架', () => {
     const meta = page.locator('.lab__meta').first();
     await expect(meta).toContainText('A_011');
     await expect(meta).toContainText('火球1、冰封1、闪电1');
+
+    /*
+      圣盾在模板区里紧跟「护盾 / 防御」：它与护盾是同一段演出，
+      只是按族色取金色（`FAMILY_TINT`），所以按钮**名字不同、模板相同**。
+    */
+    const templates = page
+      .locator('.lab__section', { hasText: '攻击与特效' })
+      .getByRole('button');
+    const labels = await templates.allTextContents();
+    const defenseIndex = labels.indexOf('护盾 / 防御');
+    expect(defenseIndex, '模板区里没有「护盾 / 防御」').toBeGreaterThanOrEqual(0);
+    expect(labels[defenseIndex + 1], '圣盾没有紧跟防御').toBe('圣盾');
 
     // 手动触发一个特效：活跃粒子数应当被推起来
     const particleRow = page.locator('.lab__meta').last();

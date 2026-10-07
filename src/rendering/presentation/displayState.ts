@@ -32,6 +32,7 @@ export interface DisplayCard {
 
 /** 组上的可变战斗数值。分身按 `stateGroupId` 共享同一份。 */
 export interface DisplayGroup {
+  unyielding?: boolean;
   hp: number;
   maxHp: number;
   atk: number;
@@ -135,7 +136,7 @@ export function displayFromState(state: BattleState): DisplayState {
     cd[instanceId] = card.cd;
   }
   for (const [groupId, group] of Object.entries(state.groups)) {
-    groups[groupId] = { hp: group.hp, maxHp: group.maxHp, atk: group.atk };
+    groups[groupId] = { hp: group.hp, maxHp: group.maxHp, atk: group.atk, unyielding: group.unyielding?.active ?? false };
   }
 
   return {
@@ -185,7 +186,7 @@ export function syncIdentities(display: DisplayState, state: BattleState): void 
   }
   for (const [groupId, group] of Object.entries(state.groups)) {
     if (!(groupId in display.groups)) {
-      display.groups[groupId] = { hp: group.hp, maxHp: group.maxHp, atk: group.atk };
+      display.groups[groupId] = { hp: group.hp, maxHp: group.maxHp, atk: group.atk, unyielding: group.unyielding?.active ?? false };
     }
   }
 }
@@ -323,6 +324,8 @@ export function applyEventToDisplay(display: DisplayState, event: BattleEvent): 
     }
 
     case 'CardDied': {
+      const group = display.groups[event.groupId];
+      if (group) group.unyielding = false;
       const side = display.zones[event.side];
       // `collapsedInstanceIds` 是整组的成员，**包含** primary 自己。
       // 分身共享一份状态，所以整组只死一次、只弃一张牌。
@@ -335,6 +338,18 @@ export function applyEventToDisplay(display: DisplayState, event: BattleEvent): 
       }
       // 弃牌数不在这里 +1：不死/复活同样会发 `CardDied`，但那张牌不进弃牌堆。
       // 真正进堆时引擎会补一条 `CardMoved → discard`，由上面那个分支计数。
+      break;
+    }
+
+    case 'UnyieldingChanged': {
+      const group = display.groups[event.groupId];
+      if (group) group.unyielding = event.active;
+      break;
+    }
+
+    case 'FormationShuffled': {
+      // Apply the full permutation atomically; swaps cannot be replayed as individual moves.
+      display.zones[event.side].battle = [...event.order];
       break;
     }
 
@@ -464,6 +479,7 @@ export function projectDisplay(display: DisplayState): string {
     playerHp: display.playerHp,
     zones: display.zones,
     groups: groupHp,
+    unyielding: Object.keys(display.groups).filter((id) => display.groups[id]?.unyielding).sort(),
     cd: display.cd,
   });
 }

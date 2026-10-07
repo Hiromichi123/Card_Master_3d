@@ -3,9 +3,14 @@
 把旧项目 `card_maker`（Pygame 原型）重写成**「3D 战桌 + 实体卡牌 + 立体技能特效」**的桌面浏览器版本。
 卡牌、技能族、关卡、卡池与商店货架都来自旧项目的数据；规则引擎、渲染与交互全部重写。
 
-**当前版本：v1.0**（2026-10-06）· [施工清单](CONSTRUCTION_CHECKLIST.md) · [重写方案](PLAN.md) · [旧项目核查](docs/LEGACY_AUDIT.md)
+**当前版本：v1.2**（2026-10-08）· [施工清单](CONSTRUCTION_CHECKLIST.md) · [重写方案](PLAN.md) · [旧项目核查](docs/LEGACY_AUDIT.md)
 
 ## 这是什么
+
+卡面与卡牌数据**由同级的工具仓库 [`cardmaker`](../cardmaker) 制作并直接写进本项目**
+（旧的 2D 仓库 `card_maker` 已归档，不再参与构建）。做一张新卡：在那边挑一张原图素材、
+裁剪构图、填数值与特性，导出时写 `src/data/cards.json`、`src/data/assets.manifest.json`、
+`public/assets/card/{thumbnail,battle,detail}/…` 与原画、并把素材改名成卡号。
 
 一副牌桌摆在屏幕上：手牌是能拿起来翻面的实体卡，出牌有位移与落位演出，
 技能带火球、电弧、护盾、治疗环这些立体特效；卡面是高分辨率成品卡面，
@@ -82,7 +87,7 @@ React 19 + TypeScript + Three.js（React Three Fiber / Drei / postprocessing）+
 | `src/ui/` | 通用界面件：设计空间舞台、菜单壳、货币/等级条、卡牌详情 |
 | `src/state/` | 存档实例（`ProfileStore`）、React 桥、toast |
 | `src/services/save/` | 存档仓库：IndexedDB / 内存 / 必定失败三种实现 |
-| `src/data/` | 由脚本生成的规范化数据与素材清单（不要手改） |
+| `src/data/` | 规范化数据与素材清单。初版由脚本生成，之后由 `cardmaker` 追加/更新——**手改之前先想清楚谁会覆盖它** |
 | `scripts/` | 构建期导入与素材脚本（Python，只在重新导入旧数据时用） |
 | `tests/unit/` `tests/browser/` | 规则单测（node 环境）与端到端用例（Playwright） |
 
@@ -125,11 +130,15 @@ v1.0 提交前在参考机器上跑过（Intel Arc 核显 / Chrome / 1920×1080�
 
 ## 数据与素材来源
 
-- **卡牌**：247 张有效卡 + 9 张 `#yoroi` 未完成卡（只留档，不进战斗与抽卡池）。
+- **卡牌**：**274 张有效卡** + 9 张 `#yoroi` 未完成卡（只留档，不进战斗与抽卡池）。
+  其中 27 张是 v1.2 用 `cardmaker` 新做的——素材是原先按中文名 / Twitter 名命名、
+  旧脚本按卡号查找时够不到的那批插画。
 - **内容**：三章十二关、12 套敌方牌组、8 个抽卡池、常规/活动商店与融合配置，
-  全部由 `scripts/import-legacy-data.py` 从旧项目导入并规范化（可重复运行、不改动原项目）。
-- **素材**：卡面/卡背/图标/海报/背景的派生纹理在 `public/assets/`，由 `scripts/prepare-assets.py` 生成。
-  原素材在旧仓库内，不在本仓库；来源与许可见 `assets-sources.json`。
+  初版由 `scripts/import-legacy-data.py` 从旧项目导入并规范化，之后由 `cardmaker` 继续追加。
+- **素材**：卡面/卡背/图标/海报/背景的派生纹理在 `public/assets/`。卡面与原画现在由
+  `cardmaker` 现场编码写入（三档卡面 + 原画各一张 WebP）；`scripts/prepare-assets.py`
+  是初版的一次性工具，它读的旧源树已归档，**对新卡不再需要**。
+  原图素材保存在 `cardmaker` 仓库的 `cards/`（不入库）；来源与许可见 `assets-sources.json`。
 - **移植的第三方代码**：台面系统、材质数据、环境光照与天气层移植自
   [Chessboard-three.js](https://github.com/ibra-kdbra/Chessboard-three.js)（MIT），逐文件对应见 `assets-sources.json` 的 `portedCode` 段。
 - **参考项目**：旧项目与其中的第三方素材多为 GPL，**只作视觉参考**，不复制其代码与素材。
@@ -152,6 +161,35 @@ v1.0 提交前在参考机器上跑过（Intel Arc 核显 / Chrome / 1920×1080�
 - 迷宫只有第一层；Boss 打完后地图上盖「已通关」，不会生成下一层。
 
 ## 更新日志
+
+### v1.2 — 2026-10-08
+
+**卡面制作搬到同级工具仓库 [`cardmaker`](../cardmaker)。** 旧的 2D 仓库 `card_maker` 归档，
+不再参与构建。做卡面变成：挑原图 → 裁剪（铺满缩放 + 固定 2:3 的框，从源分辨率取块）→
+填数值与特性 → 实时预览 → 导出。导出直接写 `src/data/cards.json`、
+`src/data/assets.manifest.json`、三档卡面与原画的 WebP，并把原图改名成卡号。
+只改数值时不重编图片（卡面里烘着卡名，名字与 level 没动就不必动）；
+改卡号走「改名」：旧条目从数据与索引里一并撤掉。
+
+- 新做 **27 张卡**（274 张有效 / 9 张 `#yoroi` 未完成），素材来自原先够不到的那批插画。
+- 技能族从 43 增至 **47**：新增 斩击 / 群体斩击 / 剑舞 / 群体剑舞，各自的规则与特效
+  （`SlashSkillVisuals.ts`、`slashTiming.ts`）。
+- 炮击 / 群体爆破 / 死亡爆裂 / 远射 / 贯穿 改用 three.quarks 粒子
+  （`QuarksSkillVisuals.ts`、`artilleryTiming.ts`），见 [docs/QUARKS_ARTILLERY.md](docs/QUARKS_ARTILLERY.md)。
+- trait 扩充与调整（自毁一次性、法术反弹、闪避赋予、即死、伤害n、贯穿n…），
+  见 [docs/TRAIT_EXPANSION.md](docs/TRAIT_EXPANSION.md) 与 [docs/SELF_DESTRUCT_UPDATE.md](docs/SELF_DESTRUCT_UPDATE.md)；
+  另新增按功能整理的 [docs/TRAIT_REFERENCE.md](docs/TRAIT_REFERENCE.md)。
+- 同一张卡上**同名 trait 可重复**（写两遍触发两次），现有 8 张卡这么做。
+
+本版同样是**当前工作区的整棵快照**，含并行会话在建的内容。
+卡面/特效的观感由人工确认，未逐族走查（P4 的验收仍未闭环）。
+
+### v1.1 — 2026-10-07
+
+- 战斗设置（台面/视角/画质/演出/震动/静止）从抬头搬进战斗界面，抬头可收起。
+- 玩家状态统一成一块面板（含原项目默认头像）；商店货架居中与卡包卡背；抽卡加「跳过演出」。
+- 修地对空改道方向写反（伤害原本打到攻击者自己家的本体），并让它计入 `attack.dealt` 以触发吸血。
+- 含并行会话在建的内容：本地双人对战、LinearAbility 特效子集。
 
 ### v1.0 — 2026-10-06
 

@@ -8,14 +8,18 @@ import {
   battleInstances,
   groupOf,
   isSilenced,
+  isBattleActive,
+  hasFamily,
   opponentOf,
   SKILL_RULES,
+  OFFENSIVE_SPELL_FAMILIES,
   traitsOf,
   type AttackState,
   type SkillContext,
 } from '../skills/rules';
 
 import { createRng, type Rng } from './rng';
+import { isSelfDestructCard } from '../cards/traits';
 import {
   DEFAULT_BATTLE_RULES,
   type BattleConfig,
@@ -305,14 +309,48 @@ class Resolver {
         value: event.to,
       });
     }
+    if (event.type === 'DamageApplied' && event.hpBefore > 0 && event.hpAfter === 0) {
+      const instance = this.state.instances[event.instanceId];
+      if (instance) activateUnyielding(this, this.state, instance);
+    }
   }
 
-  /** 造成伤害。返回实际伤害值。 */
-  damage(target: CardInstance, amount: number): number {
+  /**
+   * 造成伤害。返回实际伤害值。
+   *
+   * `onDamagedRan`：这条伤害**已经**跑过一次 `ON_DAMAGED`（卡打卡那条路在
+   * `resolveAttack` 里跑过了）。圣盾挂的就是 ON_DAMAGED，不告诉它一声就会减两次——
+   * 一次在 `resolveAttack`，一次在这里。
+   */
+  damage(target: CardInstance, amount: number, onDamagedRan = false): number {
     const group = groupOf(this.state, target);
+    /*
+      圣盾：**技能**伤害也吃减伤（防御只管普通攻击——它就挂在 ON_DAMAGED 上，
+      而那条路只有 `resolveAttack` 会走）。
+
+      这里用一个临时的 `AttackState` 走一遍 ON_DAMAGED，只挑 `holyShield` 这一个族：
+      - 顺带发出 `SkillTriggered`，演出层据此播金色护盾（「法术攻击也触发动画」）；
+      - **不能**跑全部 ON_DAMAGED 技能，否则防御/闪避会开始挡技能伤害，
+        那是另一条规则，不该被这条路径顺带改掉。
+
+      `attacker` 填自己：这条路上没有攻击方（伤害可能来自死亡爆裂、反击等），
+      而圣盾的规则不读它。
+    */
+    const shieldCarrier: AttackState = {
+      attacker: target,
+      defenderSlot: null,
+      damage: amount,
+      armorBreak: 0,
+      dodged: false,
+      dealt: 0,
+    };
+    if (!onDamagedRan) {
+      triggerSkills(this, this.state, target, 'ON_DAMAGED', shieldCarrier, null, 'all', 'holyShield');
+    }
+
     // 免疫只挡**技能**伤害，普通攻击绕过它（docs/rules.md 第 4.5 节）
     const before = group.hp;
-    const dealt = Math.max(0, Math.min(before, amount));
+    const dealt = Math.max(0, Math.min(before, shieldCarrier.damage));
     group.hp = before - dealt;
     this.emit({
       type: 'DamageApplied',
@@ -321,9 +359,46 @@ class Resolver {
       amount: dealt,
       hpBefore: before,
       hpAfter: group.hp,
-      source: 'skill',
+      source: onDamagedRan ? 'normalAttack' : 'skill',
     });
     return dealt;
+  }
+
+  /** Sword dance bypasses every incoming-damage hook; deaths still use the standard pipeline. */
+  trueDamage(target: CardInstance, amount: number, source: 'trueDamage' | 'collapse' = 'trueDamage'): number {
+    const group = groupOf(this.state, target);
+    const before = group.hp;
+    const dealt = Math.max(0, Math.min(before, amount));
+    group.hp = before - dealt;
+    this.emit({ type: 'DamageApplied', side: group.owner, instanceId: target.instanceId,
+      amount: dealt, hpBefore: before, hpAfter: group.hp, source });
+    return dealt;
+  }
+
+  damagePlayer(side: SideId, amount: number, source: DamageSource): number {
+    const before = this.state.hp[side];
+    const dealt = Math.max(0, Math.min(before, amount));
+    this.state.hp[side] = before - dealt;
+    this.emit({ type: 'PlayerHpChanged', side, amount: dealt, hpBefore: before,
+      hpAfter: this.state.hp[side], source });
+    return dealt;
+  }
+
+  transferLife(recipient: CardInstance, donor: CardInstance, requested: number): number {
+    if (recipient.zone !== 'battle' || donor.zone !== 'battle' || recipient.owner !== donor.owner ||
+      recipient.stateGroupId === donor.stateGroupId) return 0;
+    const receiver = groupOf(this.state, recipient);
+    const giver = groupOf(this.state, donor);
+    const amount = Math.max(0, Math.min(requested, giver.hp, receiver.maxHp - receiver.hp));
+    if (!isBattleActive(this.state, recipient) || amount <= 0) return 0;
+    this.emit({ type: 'LifeTransferred', side: recipient.owner, recipientId: recipient.instanceId,
+      donorId: donor.instanceId, amount });
+    const before = giver.hp;
+    giver.hp -= amount;
+    this.emit({ type: 'DamageApplied', side: donor.owner, instanceId: donor.instanceId,
+      amount, hpBefore: before, hpAfter: giver.hp, source: 'sacrifice' });
+    this.heal(recipient, amount);
+    return amount;
   }
 
   heal(target: CardInstance, amount: number): number {
@@ -390,6 +465,7 @@ class Resolver {
         revivedUsed: false,
         skillImmune: definition.rawTraits.includes('免疫'),
         silenced: false,
+        grantedDodge: source.marks.grantedDodge ?? 0,
       },
     };
     zones.battle[slot] = instanceId;
@@ -410,54 +486,109 @@ function triggerSkills(
   resolver: Resolver,
   state: BattleState,
   instance: CardInstance,
-  trigger: 'ON_DEPLOY' | 'BEFORE_ATTACK' | 'ON_DAMAGED' | 'AFTER_DAMAGED' | 'AFTER_ATTACK' | 'ON_DEATH',
+  trigger: 'ON_DEPLOY' | 'OWN_TURN' | 'BEFORE_ATTACK' | 'ON_DAMAGED' | 'AFTER_DAMAGED' | 'AFTER_ATTACK' | 'ON_DEATH',
   attack: AttackState | null,
   deathSlot: number | null,
+  scope: 'all' | 'effects' | 'selfDestruct' = 'all',
+  /**
+   * 只触发这一个族。
+   *
+   * 技能伤害路径要用它：圣盾要挡技能伤害，但不能顺手把「防御/闪避」也带进来
+   * （那两族只该在卡打卡那条路上生效，见 `Resolver.damage`）。
+   */
+  onlyFamily?: string,
 ): void {
   const definition = state.definitions[instance.definitionId];
   if (!definition) {
     return;
   }
 
-  for (const skill of definition.skills) {
-    if (!skill.family) {
-      continue;
-    }
-    // 未识别的 trait 不参与战斗（PLAN 第 4.3 节）
-    if (skill.resolution !== 'implemented' && skill.resolution !== 'alias') {
-      continue;
-    }
+  const skills = [...definition.skills];
+  const giftedDodge = instance.marks.grantedDodge ?? 0;
+  const hasDodge = skills.some((skill) => skill.family === 'dodge' &&
+    (skill.resolution === 'implemented' || skill.resolution === 'alias'));
+  if (trigger === 'ON_DAMAGED' && giftedDodge > 0 && !hasDodge) {
+    skills.push({ raw: `闪避${giftedDodge}（赋予）`, family: 'dodge', param: giftedDodge, resolution: 'implemented' });
+  }
+  for (const skill of skills) {
+    if (!skill.family || (onlyFamily !== undefined && skill.family !== onlyFamily)) continue;
+    if (skill.resolution !== 'implemented' && skill.resolution !== 'alias') continue;
+    if (scope === 'effects' && skill.family === 'selfDestruct') continue;
+    if (scope === 'selfDestruct' && skill.family !== 'selfDestruct') continue;
     const rule = SKILL_RULES[skill.family];
-    if (!rule || rule.trigger !== trigger) {
-      continue;
+    if (!rule || rule.trigger !== trigger) continue;
+    if (skill.family === 'criticalCollapse' && (onlyFamily !== 'criticalCollapse' || (attack?.overflow ?? 0) <= 0)) continue;
+    if (trigger !== 'ON_DEATH' && (instance.zone !== 'battle' || !isBattleActive(state, instance))) break;
+
+    // Skip unmet conditional traits before emitting a skill or starting an animation.
+    if (skill.family === 'sacrifice') {
+      const selfGroup = groupOf(state, instance);
+      if (selfGroup.hp >= selfGroup.maxHp || (skill.param ?? 1) <= 0 ||
+        !battleInstances(state, instance.owner).some(({ instance: donor }) =>
+          donor.stateGroupId !== instance.stateGroupId && groupOf(state, donor).hp > 0)) continue;
     }
+    if (skill.family === 'execute') {
+      const id = state.zones[opponentOf(instance.owner)].battle[attack?.defenderSlot ?? instance.slotIndex];
+      const target = id ? state.instances[id] : undefined;
+      if (state.currentSide !== instance.owner || !target || !isBattleActive(state, target) ||
+        groupOf(state, target).hp >= groupOf(state, instance).hp) continue;
+    }
+    if (skill.family === 'teleport' &&
+      battleInstances(state, opponentOf(instance.owner)).filter(({ instance: target }) => isBattleActive(state, target)).length < 2) continue;
 
-    resolver.emit({
-      type: 'SkillTriggered',
-      side: instance.owner,
-      instanceId: instance.instanceId,
-      trigger,
-      family: skill.family,
-      raw: skill.raw,
-      param: skill.param,
-    });
+    // Slash families require live battlefield targets before they can be reflected or animated.
+    if (['slash', 'swordDance'].includes(skill.family)) {
+      const alignedId = state.zones[opponentOf(instance.owner)].battle[attack?.defenderSlot ?? instance.slotIndex];
+      const aligned = alignedId ? state.instances[alignedId] : undefined;
+      if (!aligned || !isBattleActive(state, aligned)) continue;
+    } else if (['groupSlash', 'groupSwordDance'].includes(skill.family) &&
+      !battleInstances(state, opponentOf(instance.owner)).some(({ instance: target }) => isBattleActive(state, target))) continue;
 
+    resolver.emit({ type: 'SkillTriggered', side: instance.owner, instanceId: instance.instanceId,
+      trigger, family: skill.family, raw: skill.raw, param: skill.param });
+
+    // An active reflector protects its entire side immediately. Run the captured
+    // incoming spell once with reversed ownership; never dispatch another cast.
+    const reflector = OFFENSIVE_SPELL_FAMILIES.has(skill.family)
+      ? battleInstances(state, opponentOf(instance.owner)).map((entry) => entry.instance).find((card) =>
+        isBattleActive(state, card) && traitsOf(state, card).includes('法术反弹') &&
+        !isSilenced(state, card.owner, card.slotIndex))
+      : undefined;
+    if (reflector) resolver.emit({ type: 'SpellReflected', side: reflector.owner,
+      casterId: instance.instanceId, reflectorId: reflector.instanceId,
+      family: skill.family, raw: skill.raw, param: skill.param });
+    const owner = reflector?.owner ?? instance.owner;
     const ctx: SkillContext = {
-      state,
-      rng: resolver.rng,
-      owner: instance.owner,
-      self: instance,
-      param: skill.param ?? 1,
-      attack,
-      deathSlot,
+      state, rng: resolver.rng, owner,
+      self: reflector ? { ...instance, owner } : instance,
+      ...(reflector && instance.zone === 'battle' && isBattleActive(state, instance) ? { reflectedTarget: instance } : {}),
+      param: skill.param ?? (skill.family === 'explodeOnDeath' ? 2 : 1), attack, deathSlot,
       emit: (event) => resolver.emit(event),
-      damage: (target, amount, _source: DamageSource) => resolver.damage(target, amount),
+      damage: (target, amount, source: DamageSource) => source === 'trueDamage' || source === 'collapse'
+        ? resolver.trueDamage(target, amount, source) : resolver.damage(target, amount),
       heal: (target, amount) => resolver.heal(target, amount),
-      discard: () => undefined,
-      placeInPrep: () => false,
+      drainAlly: (donor, amount) => resolver.transferLife(instance, donor, amount),
+      damagePlayer: (side, amount, source) => resolver.damagePlayer(side, amount, source),
+      discard: () => undefined, placeInPrep: () => false,
       createDuplicate: (source, mode, slot) => resolver.duplicate(source, mode, slot),
+      kill: (target) => {
+        const group = groupOf(state, target);
+        const before = group.hp;
+        group.hp = 0;
+        resolver.emit({ type: 'DamageApplied', side: target.owner, instanceId: target.instanceId,
+          amount: before, hpBefore: before, hpAfter: 0, source: 'instantDeath' });
+        removeDead(resolver, state);
+      },
+      grantDodge: (target, level) => {
+        target.marks.grantedDodge = Math.max(target.marks.grantedDodge ?? 0, level);
+        resolver.emit({ type: 'DodgeGranted', side: target.owner, instanceId: target.instanceId,
+          sourceInstanceId: instance.instanceId, level: target.marks.grantedDodge });
+      },
+      physicalAttack: (target, amount) => resolvePhysicalHit(resolver, state, instance, target, amount,
+        skill.family === 'groupPhysicalDamage'),
     };
     rule.apply(ctx);
+    if (['directDamage', 'groupPhysicalDamage', 'slash', 'groupSlash', 'swordDance', 'groupSwordDance', 'sacrifice'].includes(skill.family)) removeDead(resolver, state);
   }
 }
 
@@ -465,19 +596,56 @@ function triggerSkills(
 // 一次攻击
 // ---------------------------------------------------------------------------
 
+/** Overflow belongs to an actual card hit, never to a redirected/base attack or another skill. */
+function returnAttackOverflow(resolver: Resolver, state: BattleState, attacker: CardInstance,
+  attack: AttackState, targetHpBefore: number): void {
+  attack.overflow = Math.max(0, attack.damage - targetHpBefore);
+  if (attack.overflow <= 0 || !hasFamily(state, attacker, 'criticalCollapse') ||
+    isSilenced(state, attacker.owner, attacker.slotIndex)) return;
+  triggerSkills(resolver, state, attacker, 'AFTER_ATTACK', attack, null, 'all', 'criticalCollapse');
+}
+
+/** Physical skill hits share normal mitigation/counters and emit the ordinary lunge request. */
+function resolvePhysicalHit(resolver: Resolver, state: BattleState, attacker: CardInstance,
+  defender: CardInstance, amount: number, allowDeadAttacker = false): void {
+  if (defender.zone !== 'battle' || !isBattleActive(state, defender) ||
+    (!allowDeadAttacker && !isBattleActive(state, attacker))) return;
+  const slot = defender.slotIndex;
+  const attack: AttackState = { attacker, defenderSlot: slot, damage: amount,
+    armorBreak: 0, dodged: false, dealt: 0 };
+  resolver.emit({ type: 'AttackDeclared', side: attacker.owner, attackerId: attacker.instanceId,
+    targetInstanceId: defender.instanceId, targetSlot: slot });
+  const redirected = traitsOf(state, defender).includes('飞行') && !traitsOf(state, attacker).includes('飞行');
+  if (redirected) {
+    attack.dealt = resolver.damagePlayer(defender.owner, amount, 'flyingRedirect');
+  } else {
+    if (!isSilenced(state, defender.owner, slot)) triggerSkills(resolver, state, defender, 'ON_DAMAGED', attack, null);
+    const targetHpBefore = groupOf(state, defender).hp;
+    attack.dealt = resolver.damage(defender, attack.damage, true);
+    returnAttackOverflow(resolver, state, attacker, attack, targetHpBefore);
+    if (attack.dealt > 0 && !isSilenced(state, defender.owner, slot)) {
+      triggerSkills(resolver, state, defender, 'AFTER_DAMAGED', attack, null);
+    }
+  }
+  if (isBattleActive(state, attacker) && !isSilenced(state, attacker.owner, attacker.slotIndex)) {
+    triggerSkills(resolver, state, attacker, 'AFTER_ATTACK', attack, null);
+  }
+}
+
 function resolveAttack(
   resolver: Resolver,
   state: BattleState,
   attacker: CardInstance,
   attackerSlot: number,
+  oneUseDeployment = false,
 ): void {
   const side = attacker.owner;
   const other = opponentOf(side);
   const defenderId = state.zones[other].battle[attackerSlot] ?? null;
-  const defender = defenderId ? (state.instances[defenderId] ?? null) : null;
+  let defender = defenderId ? (state.instances[defenderId] ?? null) : null;
 
   const group = groupOf(state, attacker);
-  if (group.hp <= 0) {
+  if (!isBattleActive(state, attacker)) {
     // 已经死了的不再发起行动（差异记录 D10）
     return;
   }
@@ -497,17 +665,25 @@ function resolveAttack(
     triggerSkills(resolver, state, attacker, 'BEFORE_ATTACK', attack, null);
   }
 
-  // 自毁可能把攻击者自己打死；死亡后不再继续这次攻击
-  if (groupOf(state, attacker).hp <= 0) {
+  const currentDefenderId = state.zones[other].battle[attackerSlot];
+  defender = currentDefenderId ? state.instances[currentDefenderId] ?? null : null;
+  const hadPhysicalSkill = state.definitions[attacker.definitionId]?.skills.some((skill) =>
+    ['directDamage', 'groupPhysicalDamage', 'piercing', 'groupPiercing', 'slash', 'groupSlash', 'swordDance', 'groupSwordDance'].includes(skill.family ?? '')) ?? false;
+  // A one-use deployment runs the existing active effects first. Zero-ATK spells
+  // do not produce a meaningless normal attack; attack-based cards still strike once.
+  if (attacker.zone !== 'battle' || state.zones[side].battle[attackerSlot] !== attacker.instanceId || !isBattleActive(state, attacker) || ((oneUseDeployment || hadPhysicalSkill) && attack.damage <= 0)) {
     return;
   }
 
+  const traits = traitsOf(state, attacker);
+  const directKind: 'ranged' | null = silenced ? null : traits.includes('远射') ? 'ranged' : null;
   resolver.emit({
     type: 'AttackDeclared',
     side,
     attackerId: attacker.instanceId,
-    targetInstanceId: defender?.instanceId ?? null,
+    targetInstanceId: directKind ? null : defender?.instanceId ?? null,
     targetSlot: attackerSlot,
+    ...(directKind ? { attackKind: directKind } : {}),
   });
 
   const attackerIsFlying = traitsOf(state, attacker).includes('飞行');
@@ -519,7 +695,10 @@ function resolveAttack(
    */
   let hitCard = false;
 
-  if (defender && traitsOf(state, defender).includes('飞行') && !attackerIsFlying) {
+  if (directKind) {
+    // The aligned card is neither damaged nor asked to defend/counter this shot.
+    attack.dealt = resolver.damagePlayer(other, attack.damage, directKind);
+  } else if (defender && traitsOf(state, defender).includes('飞行') && !attackerIsFlying) {
     // 地对空：**不能伤害飞行卡**，改为把攻击者的原始 atk 打到**飞行卡所属方**的本体上。
     // 这条路径绕过防御/闪避/免疫（旧版 `BBS:1347-1368` 就是这样，docs/rules.md 第 4.3 节）
     //
@@ -551,8 +730,11 @@ function resolveAttack(
       attack.damage = swapped.damage;
       attack.dodged = swapped.dodged;
     }
-    const dealt = resolver.damage(defender, attack.damage);
+    // 已经跑过 ON_DAMAGED（防御/闪避/圣盾都在那一步），别再让它跑一遍
+    const targetHpBefore = groupOf(state, defender).hp;
+    const dealt = resolver.damage(defender, attack.damage, true);
     attack.dealt = dealt;
+    returnAttackOverflow(resolver, state, attacker, attack, targetHpBefore);
   } else {
     // 对位空槽：固定 atk 打本体
     const before = state.hp[other];
@@ -572,13 +754,11 @@ function resolveAttack(
 
   // 受击后：反击只在**确实打在这张卡上**、且造成了伤害时触发
   if (defender && hitCard && attack.dealt > 0 && !isSilenced(state, other, attackerSlot)) {
-    const swapped: AttackState = { ...attack, attacker: defender };
-    triggerSkills(resolver, state, defender, 'AFTER_DAMAGED', swapped, null);
-    attack.dealt = swapped.dealt;
+    triggerSkills(resolver, state, defender, 'AFTER_DAMAGED', attack, null);
   }
 
   // 攻击后：吸血 / 受伤 / 狂暴
-  if (!silenced && groupOf(state, attacker).hp > 0) {
+  if (!silenced && isBattleActive(state, attacker)) {
     triggerSkills(resolver, state, attacker, 'AFTER_ATTACK', attack, null);
   }
 }
@@ -587,8 +767,36 @@ function resolveAttack(
 // 死亡与整理
 // ---------------------------------------------------------------------------
 
+function activateUnyielding(resolver: Resolver, state: BattleState, instance: CardInstance): void {
+  const group = groupOf(state, instance);
+  if (instance.zone !== 'battle' || group.deathHandled || group.unyielding?.used || !hasFamily(state, instance, 'unyielding')) return;
+  // turnNumber increments only when control returns to player. Enemy's next turn
+  // can still have the current number when its lethal hit occurred on player's turn.
+  const expiresAfterTurn = state.turnNumber + (state.currentSide === group.owner || group.owner === 'player' ? 1 : 0);
+  group.unyielding = { active: true, used: true, expiresAfterTurn };
+  resolver.emit({ type: 'UnyieldingChanged', side: group.owner, instanceId: instance.instanceId,
+    groupId: group.groupId, active: true, expiresAfterTurn });
+}
+
+function expireUnyielding(resolver: Resolver, state: BattleState): void {
+  for (const group of Object.values(state.groups)) {
+    const status = group.unyielding;
+    if (!status?.active || group.owner !== state.currentSide || state.turnNumber < status.expiresAfterTurn) continue;
+    const primary = group.memberIds.map((id) => state.instances[id]).find((card) => card?.zone === 'battle');
+    if (!primary) { status.active = false; continue; }
+    status.active = false;
+    resolver.emit({ type: 'UnyieldingChanged', side: group.owner, instanceId: primary.instanceId,
+      groupId: group.groupId, active: false, expiresAfterTurn: status.expiresAfterTurn });
+    const before = group.hp;
+    group.hp = 0;
+    resolver.emit({ type: 'DamageApplied', side: group.owner, instanceId: primary.instanceId,
+      amount: before, hpBefore: before, hpAfter: 0, source: 'unyielding' });
+  }
+}
+
 function removeDead(resolver: Resolver, state: BattleState): void {
   const sides: SideId[] = ['player', 'enemy'];
+  while (true) {
 
   // 按**状态组**分组：分身共享一份状态，只处理一次
   const deadGroups = new Map<string, { side: SideId; slot: number; members: CardInstance[] }>();
@@ -603,7 +811,7 @@ function removeDead(resolver: Resolver, state: BattleState): void {
         return;
       }
       const group = groupOf(state, instance);
-      if (group.hp > 0 || group.deathHandled) {
+      if (group.hp > 0 || group.deathHandled || group.unyielding?.active || instance.marks.deploymentCast) {
         return;
       }
       const existing = deadGroups.get(group.groupId);
@@ -615,6 +823,7 @@ function removeDead(resolver: Resolver, state: BattleState): void {
     });
   }
 
+  if (deadGroups.size === 0) return;
   for (const [, entry] of deadGroups) {
     const primary = entry.members[0];
     if (!primary) {
@@ -660,8 +869,12 @@ function removeDead(resolver: Resolver, state: BattleState): void {
           battleRow[slot] = null;
         }
       });
-      member.zone = 'discard';
-      member.slotIndex = -1;
+      member.marks.grantedDodge = 0;
+      // Preserve the primary's hand/prep destination chosen by its revival rule.
+      if (!revived || member.instanceId !== primary.instanceId) {
+        member.zone = 'discard';
+        member.slotIndex = -1;
+      }
     }
     if (!revived) {
       zones.discard.push(primary.instanceId);
@@ -681,6 +894,7 @@ function removeDead(resolver: Resolver, state: BattleState): void {
       });
     }
     group.deathHandled = false;
+  }
   }
 }
 
@@ -926,8 +1140,17 @@ function endTurn(resolver: Resolver, state: BattleState): void {
     deployReady(resolver, state, side);
   }
 
-  // 4. 当前方从左到右逐个攻击
+  // 4. Friendly-turn traits fire once per deployed holder, independently of attacks.
   const attacker = state.currentSide;
+  const turnHolders = [...battleInstances(state, attacker)];
+  for (const { instance } of turnHolders) {
+    if (instance.zone !== 'battle' || !isBattleActive(state, instance) ||
+      !state.zones[attacker].battle.includes(instance.instanceId) || isSilenced(state, attacker, instance.slotIndex)) continue;
+    triggerSkills(resolver, state, instance, 'OWN_TURN', null, null);
+    removeDead(resolver, state);
+  }
+
+  // Current side attacks from left to right after the friendly-turn effects.
   const slots = state.zones[attacker].battle.length;
   for (let index = 0; index < slots; index += 1) {
     const instanceId = state.zones[attacker].battle[index];
@@ -939,13 +1162,14 @@ function endTurn(resolver: Resolver, state: BattleState): void {
       continue;
     }
     // 已经死掉的不再行动
-    if (groupOf(state, instance).hp <= 0) {
+    if (!isBattleActive(state, instance)) {
       continue;
     }
     resolveAttack(resolver, state, instance, index);
   }
 
-  // 5. 死亡与死亡技能
+  // 5. A zero-HP unyielding unit expires only after its next full friendly action row.
+  expireUnyielding(resolver, state);
   removeDead(resolver, state);
 
   // 6. 槽位整理
@@ -1017,6 +1241,12 @@ function deployReady(resolver: Resolver, state: BattleState, side: SideId): void
       // 战斗区满，留在准备区等下一次
       continue;
     }
+    const enteringGroup = groupOf(state, instance);
+    if (!zones.battle.some((id) => id && state.instances[id]?.stateGroupId === instance.stateGroupId)) {
+      delete enteringGroup.unyielding;
+    }
+    const enteringDefinition = state.definitions[instance.definitionId];
+    if (enteringDefinition && isSelfDestructCard(enteringDefinition)) instance.marks.deploymentCast = true;
     zones.prep[prepSlot] = null;
     zones.battle[battleSlot] = instanceId;
     instance.zone = 'battle';
@@ -1028,9 +1258,22 @@ function deployReady(resolver: Resolver, state: BattleState, side: SideId): void
       instanceId,
       battleSlot,
     });
-    // 上场技能
+    const definition = state.definitions[instance.definitionId];
+    const oneUse = definition !== undefined && isSelfDestructCard(definition);
+    // Deployment abilities resolve first. One-use cards also execute their active
+    // action here, regardless of which side's turn caused them to enter the board.
     if (!isSilenced(state, side, battleSlot)) {
-      triggerSkills(resolver, state, instance, 'ON_DEPLOY', null, null);
+      triggerSkills(resolver, state, instance, 'ON_DEPLOY', null, null, 'effects');
+      if (oneUse && isBattleActive(state, instance)) {
+        resolveAttack(resolver, state, instance, battleSlot, true);
+      }
+    }
+    if (oneUse) {
+      // Consumption is last and unconditional: silence can block the effect,
+      // but a consumed spell never remains as a permanent unit on the board.
+      triggerSkills(resolver, state, instance, 'ON_DEPLOY', null, null, 'selfDestruct');
+      delete instance.marks.deploymentCast;
+      removeDead(resolver, state);
     }
   }
 }
@@ -1115,7 +1358,8 @@ export function stateFingerprint(state: BattleState): string {
     hp: state.hp,
     zones: state.zones,
     groups: Object.values(state.groups)
-      .map((group) => [group.groupId, group.hp, group.atk])
+      .map((group) => [group.groupId, group.hp, group.atk, group.unyielding?.active ?? false,
+        group.unyielding?.active ? group.unyielding.expiresAfterTurn - state.turnNumber : null])
       .sort((a, b) => String(a[0]).localeCompare(String(b[0]))),
   });
 }

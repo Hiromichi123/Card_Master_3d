@@ -4,6 +4,10 @@ import { ATTACK_OUT_SECONDS, ATTACK_RETURN_SECONDS } from '../anim/combatMotion'
 import type { EffectContext } from './templates';
 import type { EffectTemplateId } from './familyMap';
 import { usesLinearAbility } from './NamedSkillVisuals';
+import { usesQuarks } from './QuarksSkillVisuals';
+import { quarksTiming } from './artilleryTiming';
+import { LAYOUT } from '../battle/layout';
+import { slashTiming, usesSlash } from './slashTiming';
 import type { SkillVisualHandle, VisualPhase } from './SkillVisualPool';
 
 const UP = new Vector3(0, 1, 0);
@@ -15,14 +19,21 @@ const PALETTE = {
 
 /** These durations are shared with the event adapter; no damage is calculated here. */
 export function skillImpactSeconds(template: EffectTemplateId): number {
+  if (template === 'dodgeGrant') return skillImpactSeconds('armorBreak');
   if (template === 'normalAttack') return ATTACK_OUT_SECONDS;
+  if (usesSlash(template)) return slashTiming(template).hit;
+  if (usesQuarks(template)) { const timing = quarksTiming(template); return timing.charge + timing.travel; }
   if (template === 'lightning' || template === 'groupLightning') return 0.26;
-  if (template === 'deathBurst') return 0.14;
   if (['heal', 'groupHeal', 'buff', 'shield', 'armorBreak', 'dodge', 'rebirth', 'clone', 'cooldown', 'silence', 'status'].includes(template)) return 0.3;
   return 0.42;
 }
 
 export function buildSkillTimeline(template: EffectTemplateId, context: EffectContext): Timeline {
+  // Keep the legacy entry point identical to armor break, including every phase.
+  if (template === 'dodgeGrant') return buildSkillTimeline('armorBreak', { ...context, tint: context.tint ?? new Color('#ffd77a') });
+  if (context.family === 'grantDodge' && !context.tint) {
+    return buildSkillTimeline(template, { ...context, tint: new Color('#ffd77a') });
+  }
   const { pool, from, to } = context;
   const motionScale = Math.max(0.01, context.durationScale);
   if (template === 'normalAttack') {
@@ -36,17 +47,54 @@ export function buildSkillTimeline(template: EffectTemplateId, context: EffectCo
       .add({ duration: 0.35 * motionScale, onUpdate: (t) => handle?.update('impact', t) })
       .add({ duration: 0.22 * motionScale, onUpdate: (t) => handle?.update('fade', t), onComplete: () => context.onHit?.() });
   }
-  const grouped = template.startsWith('group') || context.family?.startsWith('group');
+  if (usesSlash(template)) {
+    const points = template.startsWith('group') ? [to, ...context.extraTargets].slice(0, 8) : [to];
+    const handles = points.map((target) => context.visuals?.create({ template, family: context.family,
+      from, to: target, intensity: context.intensity, tint: context.tint,
+      countScale: context.countScale, durationScale: context.durationScale,
+    })).filter((handle): handle is SkillVisualHandle => handle !== undefined);
+    const timing = slashTiming(template);
+    return new Timeline(() => { for (const handle of handles) handle.dispose(); })
+      .wait(timing.charge * motionScale)
+      .add({ duration: timing.sweep * motionScale, onUpdate: (t) => {
+        for (const handle of handles) handle.update('impact', t);
+      } })
+      .add({ duration: timing.fade * motionScale, onStart: () => context.onHit?.(), onUpdate: (t) => {
+        for (const handle of handles) handle.update('fade', t);
+      } });
+  }
+  if (usesQuarks(template)) {
+    const grouped = template === 'groupBombard' || template === 'deathBombard' || context.family === 'groupBombard';
+    const targets = template === 'groupPiercing' ? Array.from({ length: 5 }, (_, index) =>
+      new Vector3((index - 2) * LAYOUT.battleSpacing, to.y, to.z))
+      : grouped ? [to, ...context.extraTargets].slice(0, 8) : [to];
+    const handles = targets.map((target, index) => context.visuals?.create({
+      template: template === 'groupPiercing' ? 'piercing' : template, family: context.family,
+      // Each lane starts over its own friendly slot and stays aligned with the opposing slot.
+      from: template === 'groupPiercing' ? new Vector3(target.x, from.y, from.z) : from,
+      to: target, intensity: context.intensity, tint: context.tint,
+      countScale: context.countScale, durationScale: context.durationScale,
+      sourceBurst: template !== 'deathBombard' || index === 0,
+    })).filter((handle): handle is SkillVisualHandle => handle !== undefined);
+    const timing = quarksTiming(template);
+    const update = (phase: VisualPhase, t: number): void => { for (const handle of handles) handle.update(phase, t); };
+    return new Timeline(() => { for (const handle of handles) handle.dispose(); })
+      .add({ duration: timing.charge * motionScale, onUpdate: (t) => update('charge', t) })
+      .add({ duration: timing.travel * motionScale, onUpdate: (t) => update('travel', t) })
+      .add({ duration: timing.impact * motionScale, onStart: () => context.onHit?.(), onUpdate: (t) => update('impact', t) })
+      .add({ duration: timing.fade * motionScale, onUpdate: (t) => update('fade', t) });
+  }
+  const grouped = template.startsWith('group') || context.family?.startsWith('group') || context.family === 'teleport';
   const points = grouped ? [to, ...context.extraTargets].slice(0, 8) : [to];
   const fire = ['fireball', 'groupFireball', 'bombard', 'deathBurst'].includes(template);
   const ice = template === 'iceSeal' || template === 'groupIceSeal';
   const bolt = template === 'lightning' || template === 'groupLightning';
   const healing = template === 'heal' || template === 'groupHeal';
   const blood = template === 'lifeDrain';
-  const snare = template === 'curse' || template === 'injury';
+  const snare = template === 'curse' || template === 'injury' || template === 'instantDeath';
   const injury = template === 'injury';
   const color = context.tint ?? (fire ? PALETTE.fire : ice ? PALETTE.ice : bolt ? PALETTE.bolt : healing ? PALETTE.heal :
-    blood || injury ? PALETTE.blood : template === 'buff' ? PALETTE.gold :
+    template === 'instantDeath' ? new Color('#120e18') : blood || injury ? PALETTE.blood : template === 'buff' ? PALETTE.gold :
     template === 'debuff' || template === 'curse' || template === 'silence' ? PALETTE.curse : PALETTE.flow);
   const scale = Math.max(0.05, context.durationScale);
   const countScale = Math.max(0, Math.min(4, context.countScale));

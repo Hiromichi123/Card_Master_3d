@@ -49,6 +49,7 @@ export interface MovingCardProps {
   readonly statLayout?: StatLayout | undefined;
   readonly showStats?: boolean | undefined;
   readonly holo?: boolean | undefined;
+  readonly unyielding?: boolean | undefined;
   readonly onClick?: ((card: CardDefinition) => void) | undefined;
   readonly onHoverChange?: ((card: CardDefinition, hovered: boolean) => void) | undefined;
 }
@@ -69,6 +70,7 @@ export function MovingCard({
   statLayout,
   showStats,
   holo,
+  unyielding,
   onClick,
   onHoverChange,
 }: MovingCardProps) {
@@ -128,6 +130,7 @@ export function MovingCard({
         statLayout={statLayout}
         showStats={showStats}
         holo={holo}
+        unyielding={unyielding}
         onClick={onClick}
         onHoverChange={onHoverChange}
       />

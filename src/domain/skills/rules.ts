@@ -30,6 +30,8 @@ export interface AttackState {
   dodged: boolean;
   /** 实际造成的伤害（含 0）。 */
   dealt: number;
+  /** Ordinary damage remaining after mitigation minus target HP before that hit. */
+  overflow?: number;
 }
 
 /** 技能执行上下文。 */
@@ -67,6 +69,15 @@ export interface SkillContext {
   ): void;
   /** 死亡触发时的对位槽位下标；仅 `ON_DEATH` 有值。 */
   readonly deathSlot: number | null;
+  /** New rules use engine-owned primitives so deaths/ordinary hit reactions stay atomic. */
+  readonly kill?: (target: CardInstance) => void;
+  readonly grantDodge?: (target: CardInstance, level: number) => void;
+  /** Transfer actual ally HP to self, without mitigation or free healing. */
+  readonly drainAlly?: (donor: CardInstance, amount: number) => number;
+  readonly physicalAttack?: (target: CardInstance, amount: number) => void;
+  readonly damagePlayer?: (side: SideId, amount: number, source: DamageSource) => number;
+  /** Reflected single-target spells return to their original caster. */
+  readonly reflectedTarget?: CardInstance | undefined;
 }
 
 // ---------------------------------------------------------------------------
@@ -94,7 +105,7 @@ export function battleInstances(
 
 /** 某方战斗区里的全部实例。 */
 export function battleCards(state: BattleState, side: SideId): CardInstance[] {
-  return battleInstances(state, side).map((entry) => entry.instance);
+  return battleInstances(state, side).map((entry) => entry.instance).filter((card) => isBattleActive(state, card));
 }
 
 /** 状态组。战斗中的可变数值都存在这里。 */
@@ -104,6 +115,12 @@ export function groupOf(state: BattleState, instance: CardInstance): CombatState
     throw new Error(`实例 ${instance.instanceId} 的状态组 ${instance.stateGroupId} 不存在`);
   }
   return group;
+}
+
+/** HP-zero unyielding units remain fully operational until their scheduled departure. */
+export function isBattleActive(state: BattleState, instance: CardInstance): boolean {
+  const group = groupOf(state, instance);
+  return instance.zone === 'battle' && (group.hp > 0 || group.unyielding?.active === true || instance.marks.deploymentCast === true);
 }
 
 /** 对手一方。 */
@@ -160,6 +177,7 @@ export interface SkillRule {
   /** 触发点。与 `SkillTrigger` 对应。 */
   readonly trigger:
     | 'ON_DEPLOY'
+    | 'OWN_TURN'
     | 'BEFORE_ATTACK'
     | 'ON_DAMAGED'
     | 'AFTER_DAMAGED'
@@ -184,7 +202,23 @@ function hitRandomEnemy(ctx: SkillContext): void {
   if (enemies.length === 0) {
     return;
   }
-  ctx.damage(ctx.rng.pick(enemies), ctx.param, 'skill');
+  ctx.damage(ctx.reflectedTarget ?? ctx.rng.pick(enemies), ctx.param, 'skill');
+}
+
+/** Authored slash hits the current aligned unit; an empty slot does not hit the base. */
+function hitAlignedWithSlash(ctx: SkillContext, trueDamage: boolean): void {
+  const slot = ctx.attack?.defenderSlot ?? ctx.self.slotIndex;
+  const targetId = ctx.state.zones[opponentOf(ctx.owner)].battle[slot];
+  const target = ctx.reflectedTarget ?? (targetId ? ctx.state.instances[targetId] : undefined);
+  if (target?.zone === 'battle' && isBattleActive(ctx.state, target)) {
+    ctx.damage(target, ctx.param, trueDamage ? 'trueDamage' : 'skill');
+  }
+}
+
+function hitAllWithSlash(ctx: SkillContext, trueDamage: boolean): void {
+  for (const target of enemiesInBattle(ctx).filter((card) => isBattleActive(ctx.state, card))) {
+    ctx.damage(target, ctx.param, trueDamage ? 'trueDamage' : 'skill');
+  }
 }
 
 /** 对全部敌人造成 n 点技能伤害。 */
@@ -207,7 +241,99 @@ function woundedAllies(ctx: SkillContext): CardInstance[] {
   });
 }
 
+/** Hostile spells are intercepted as one whole cast, including every target of group spells. */
+export const OFFENSIVE_SPELL_FAMILIES = new Set([
+  'fireball', 'iceSeal', 'lightning', 'groupFireball', 'groupIceSeal', 'groupLightning',
+  'bombard', 'groupBombard', 'explodeOnDeath', 'curse', 'delay', 'instantDeath', 'slash', 'groupSlash', 'teleport',
+  // Sword dance is direct HP loss across mechanisms, so it is not a reflectable spell.
+]);
+
 export const SKILL_RULES: Record<string, SkillRule> = {
+  groupPiercing: { trigger: 'BEFORE_ATTACK', apply: (ctx) => {
+    for (let i = 0; i < 5; i++) ctx.damagePlayer?.(opponentOf(ctx.owner), ctx.param, 'groupPiercing');
+  } },
+  criticalCollapse: { trigger: 'AFTER_ATTACK', apply: (ctx) => {
+    if ((ctx.attack?.overflow ?? 0) > 0) ctx.damage(ctx.self, ctx.attack!.overflow!, 'collapse');
+  } },
+  // The actual lethal-hit interception is engine-owned, including true damage and direct kills.
+  unyielding: { trigger: 'ON_DEPLOY', apply: () => undefined },
+  sacrifice: {
+    trigger: 'OWN_TURN',
+    apply(ctx) {
+      const selfGroup = groupOf(ctx.state, ctx.self);
+      let remaining = Math.min(ctx.param, Math.max(0, selfGroup.maxHp - selfGroup.hp));
+      if (remaining <= 0) return;
+      const seen = new Set<string>();
+      const donors = alliesInBattle(ctx).filter((card) => {
+        if (card.stateGroupId === ctx.self.stateGroupId || seen.has(card.stateGroupId) || groupOf(ctx.state, card).hp <= 0) return false;
+        seen.add(card.stateGroupId);
+        return true;
+      });
+      for (const donor of ctx.rng.shuffle(donors)) {
+        if (remaining <= 0 || selfGroup.hp >= selfGroup.maxHp) break;
+        remaining -= ctx.drainAlly?.(donor, remaining) ?? 0;
+      }
+    },
+  },
+  execute: {
+    trigger: 'BEFORE_ATTACK',
+    apply(ctx) {
+      if (ctx.state.currentSide !== ctx.owner) return;
+      const id = ctx.state.zones[opponentOf(ctx.owner)].battle[ctx.attack?.defenderSlot ?? ctx.self.slotIndex];
+      const target = id ? ctx.state.instances[id] : undefined;
+      if (target && isBattleActive(ctx.state, target) && groupOf(ctx.state, target).hp < groupOf(ctx.state, ctx.self).hp) {
+        ctx.kill?.(target);
+      }
+    },
+  },
+  teleport: {
+    trigger: 'OWN_TURN',
+    apply(ctx) {
+      const side = opponentOf(ctx.owner);
+      const row = ctx.state.zones[side].battle;
+      const entries = battleInstances(ctx.state, side).filter(({ instance }) => isBattleActive(ctx.state, instance));
+      if (entries.length < 2) return;
+      const original = entries.map(({ instance }) => instance.instanceId);
+      const shuffled = ctx.rng.shuffle([...original]);
+      // Avoid a visible no-op without unbounded random retries.
+      if (shuffled.every((id, index) => id === original[index])) {
+        const offset = ctx.rng.int(1, shuffled.length - 1);
+        shuffled.push(...shuffled.splice(0, offset));
+      }
+      entries.forEach(({ slot }, index) => {
+        const id = shuffled[index]!;
+        row[slot] = id;
+        ctx.state.instances[id]!.slotIndex = slot;
+      });
+      ctx.emit({ type: 'FormationShuffled', side, casterId: ctx.self.instanceId, order: [...row] });
+    },
+  },
+  slash: { trigger: 'BEFORE_ATTACK', apply: (ctx) => hitAlignedWithSlash(ctx, false) },
+  groupSlash: { trigger: 'BEFORE_ATTACK', apply: (ctx) => hitAllWithSlash(ctx, false) },
+  swordDance: { trigger: 'BEFORE_ATTACK', apply: (ctx) => hitAlignedWithSlash(ctx, true) },
+  groupSwordDance: { trigger: 'BEFORE_ATTACK', apply: (ctx) => hitAllWithSlash(ctx, true) },
+  instantDeath: { trigger: 'BEFORE_ATTACK', apply: (ctx) => {
+    const enemies = enemiesInBattle(ctx).filter((card) => isBattleActive(ctx.state, card));
+    if (enemies.length > 0) ctx.kill?.(ctx.reflectedTarget ?? ctx.rng.pick(enemies));
+  } },
+  spellReflect: { trigger: 'ON_DEPLOY', apply: () => undefined },
+  grantDodge: { trigger: 'BEFORE_ATTACK', apply: (ctx) => {
+    const allies = alliesInBattle(ctx).filter((card) => isBattleActive(ctx.state, card));
+    const others = allies.filter((card) => card.instanceId !== ctx.self.instanceId);
+    const choices = others.length > 0 ? others : allies;
+    if (choices.length > 0) ctx.grantDodge?.(ctx.rng.pick(choices), ctx.param);
+  } },
+  groupPhysicalDamage: { trigger: 'BEFORE_ATTACK', apply: (ctx) => {
+    for (const enemy of enemiesInBattle(ctx).filter((card) => isBattleActive(ctx.state, card))) {
+      ctx.physicalAttack?.(enemy, ctx.param);
+    }
+  } },
+  ranged: { trigger: 'BEFORE_ATTACK', apply: () => undefined },
+  piercing: { trigger: 'BEFORE_ATTACK', apply: (ctx) => { ctx.damagePlayer?.(opponentOf(ctx.owner), ctx.param, 'piercing'); } },
+  directDamage: { trigger: 'BEFORE_ATTACK', apply: (ctx) => {
+    const enemies = enemiesInBattle(ctx).filter((card) => isBattleActive(ctx.state, card));
+    if (enemies.length > 0) ctx.physicalAttack?.(ctx.rng.pick(enemies), ctx.param);
+  } },
   // ---- 元素（6）----------------------------------------------------------
   // 冰封与闪电的**规则**和火球完全相同，只造成伤害。
   // 旧版就是这样（docs/SKILL_COVERAGE.md 第 3 节），不额外发明冻结或麻痹机制。
@@ -224,23 +350,17 @@ export const SKILL_RULES: Record<string, SkillRule> = {
   explodeOnDeath: {
     trigger: 'ON_DEATH',
     apply(ctx) {
-      /**
-       * 死亡时对对位槽位造成**固定 2 点**伤害。
-       *
-       * 旧版把 2 写死在工厂里（`skill_effects.py:1149` 的 `damage=2`），
-       * 卡面 trait 不带数字。这里保留这个隐式默认值——不能默默改成别的数。
-       */
-      const slot = ctx.deathSlot;
-      if (slot === null) {
-        return;
+      const side = opponentOf(ctx.owner);
+      const enemies = enemiesInBattle(ctx).filter((card) => isBattleActive(ctx.state, card));
+      if (enemies.length > 0) {
+        for (const target of enemies) ctx.damage(target, ctx.param, 'skill');
       }
-      const targetId = ctx.state.zones[opponentOf(ctx.owner)].battle[slot];
-      if (!targetId) {
-        return;
-      }
-      const target = ctx.state.instances[targetId];
-      if (target) {
-        ctx.damage(target, 2, 'skill');
+      else {
+        const before = ctx.state.hp[side];
+        const amount = Math.max(0, Math.min(before, ctx.param));
+        ctx.state.hp[side] = before - amount;
+        ctx.emit({ type: 'PlayerHpChanged', side, amount, hpBefore: before,
+          hpAfter: ctx.state.hp[side], source: 'deathBlast' });
       }
     },
   },
@@ -333,10 +453,10 @@ export const SKILL_RULES: Record<string, SkillRule> = {
   },
 
   selfDestruct: {
-    trigger: 'BEFORE_ATTACK',
+    trigger: 'ON_DEPLOY',
     apply(ctx) {
-      // 自己置零并移出。旧版**不取消**同回合那次普通攻击，
-      // 攻击会在动画结束时命中守卫并干净中止（docs/rules.md 第 6 节）。
+      // The deployment pipeline defers this rule until the one-use action has
+      // completed, then processes death immediately to free the battle slot.
       const group = groupOf(ctx.state, ctx.self);
       ctx.emit({
         type: 'DamageApplied',
@@ -465,6 +585,30 @@ export const SKILL_RULES: Record<string, SkillRule> = {
     },
   },
 
+  /**
+   * 圣盾n（本项目新增的族，旧注册表里没有——见 `docs/rules.md` 第 13 节）。
+   *
+   * 与防御的区别就一条：**技能伤害一样挡**。防御只在「卡打卡」那条路上触发
+   * （引擎的 ON_DAMAGED 只由 `resolveAttack` 发），而圣盾还会被技能伤害路径
+   * 叫起来一次（`Resolver.damage` 里只挑这一个族，见那里的注释）。
+   * 减伤量固定 n，不参与破甲——破甲n 只在对位有防御时才会被记下来
+   * （见上面的 `armorBreak` 规则），所以它对圣盾本来就不生效。
+   *
+   * 触发点用 `ON_DAMAGED` 是有意的：那条路上引擎会发 `SkillTriggered`，
+   * 演出层据此播护盾特效——所以「普通攻击和法术攻击都触发动画」不是另写的，
+   * 是这条规则被两条路径各叫一次的自然结果。
+   */
+  holyShield: {
+    trigger: 'ON_DAMAGED',
+    apply(ctx) {
+      const attack = ctx.attack;
+      if (!attack) {
+        return;
+      }
+      attack.damage = Math.max(0, attack.damage - ctx.param);
+    },
+  },
+
   healAlly: {
     trigger: 'BEFORE_ATTACK',
     apply(ctx) {
@@ -540,7 +684,7 @@ export const SKILL_RULES: Record<string, SkillRule> = {
       }
       // 旧版公式（skill_effects.py:683-708）：0.9 − 0.6 · 0.5^(lvl−1)
       // 1 级 0.3、2 级 0.6、3 级 0.75，向上渐近 0.9
-      const probability = 0.9 - 0.6 * 0.5 ** (Math.max(1, ctx.param) - 1);
+      const probability = 0.9 - 0.6 * 0.5 ** (Math.max(1, ctx.param, ctx.self.marks.grantedDodge ?? 0) - 1);
       if (ctx.rng.chance(probability)) {
         attack.damage = 0;
         attack.dodged = true;

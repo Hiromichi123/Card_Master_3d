@@ -34,6 +34,8 @@ export interface StatBadgesProps {
   /** 变化中的项会换成亮色，用于「这一下改了什么」的即时反馈。 */
   readonly emphasised?: ReadonlySet<StatKind> | undefined;
   readonly layout?: StatLayout | undefined;
+  /** One-use spell cards show their wait counter, without HP/ATK badges. */
+  readonly showCombatStats?: boolean | undefined;
 }
 
 /** 卡牌本地坐标下的边长。1 是卡宽。 */
@@ -74,6 +76,7 @@ export function StatBadges({
   cd,
   emphasised,
   layout = 'battle',
+  showCombatStats = true,
 }: StatBadgesProps) {
   const hpMaterial = useRef<MeshBasicMaterial>(null);
   const hpFlash = useRef(HP_FLASH_SECONDS);
@@ -101,11 +104,11 @@ export function StatBadges({
   const bottomSize = battle ? BATTLE_BOTTOM_SIZE : BOTTOM_SIZE;
 
   const plates: { key: string; texture: typeof textures.atk; x: number; y: number; size: number }[] =
-    [
+    showCombatStats ? [
       // 攻在左半边、血在右半边，各自居中于自己那一半——不越过卡牌左右边界
       { key: 'atk', texture: textures.atk, x: -half, y: bottomY, size: bottomSize },
       { key: 'hp', texture: textures.hp, x: half, y: bottomY, size: bottomSize },
-    ];
+    ] : [];
 
   if (layout === 'hand') {
     plates.push({

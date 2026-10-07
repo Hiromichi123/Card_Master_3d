@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 
-import { SKILL_FAMILIES } from '../domain/skills/families';
+import { EXPECTED_FAMILY_COUNT, SKILL_FAMILIES } from '../domain/skills/families';
 import {
   cardById,
   cardDatabase,
@@ -52,14 +52,14 @@ export function DataProbe() {
       <h1>数据自检</h1>
       <p className="probe__lead">
         这些数字来自 <code>scripts/import-legacy-data.py</code> 生成的 JSON。
-        预期：256 张卡（247 完整 + 9 未完成）、35 个技能族、12 关。
+        预期：256 张卡（247 完整 + 9 未完成）、{EXPECTED_FAMILY_COUNT} 个技能族（旧注册表 35 + 本项目新增的）、12 关。
       </p>
 
       <section className="probe__grid">
         <Stat label="卡牌条目" value={stats.total} expect={256} />
         <Stat label="数据完整" value={stats.complete} expect={247} />
         <Stat label="数据不完整" value={stats.incomplete} expect={9} />
-        <Stat label="技能族" value={SKILL_FAMILIES.length} expect={35} />
+        <Stat label="技能族" value={SKILL_FAMILIES.length} expect={EXPECTED_FAMILY_COUNT} />
         <Stat label="关卡" value={stageCount} expect={12} />
         <Stat label="切片卡" value={slice.count} expect={23} />
         <Stat label="内容版本" value={cardDatabase.contentVersion} />

@@ -13,7 +13,8 @@
 import type { BattleEvent } from '../../domain/battle/types';
 import type { SideId } from '../../domain/cards/types';
 import type { EffectRequest } from '../effects/effectDirector';
-import { FAMILY_TO_EFFECT } from '../effects/familyMap';
+import { FAMILY_TINT, FAMILY_TO_EFFECT } from '../effects/familyMap';
+import { usesSlash } from '../effects/slashTiming';
 import type { SlotZone } from '../battle/layout';
 import {
   CAST_OFFSET,
@@ -31,6 +32,7 @@ export type Point = readonly [number, number, number];
 export interface EffectContext {
   /** 某个实例此刻在世界里的位置。按 beat 构建期的显示状态解析。 */
   readonly worldPointOf: (instanceId: string) => Point;
+  readonly cardFacePointOf?: ((instanceId: string) => Point) | undefined;
   /** 某个槽位中心的世界坐标。`slotIndex` 是**每侧**下标。 */
   readonly slotPointOf: (side: SideId, zone: SlotZone, slotIndex: number) => Point;
   /** 某一方本体的位置（打本体、本体掉血时的落点）。 */
@@ -42,6 +44,17 @@ export interface EffectContext {
 }
 
 export type EffectPlayRequest = Omit<EffectRequest, 'id'>;
+
+/** Match the authored death effect before its source is removed from the display. */
+export function deathBlastIndex(events: readonly BattleEvent[], index: number, instanceId: string): number {
+  for (let i = index + 1; i < events.length; i++) {
+    const event = events[i];
+    if (event?.type === 'CardDied' || event?.type === 'TurnEnded' || event?.type === 'BattleEnded') break;
+    if (event?.type === 'SkillTriggered' && event.instanceId === instanceId && event.family === 'explodeOnDeath') return i;
+    if (event?.type === 'CardMoved' && event.instanceId === instanceId) break;
+  }
+  return -1;
+}
 
 /**
  * 卡是平放在台面上的，卡牌组的原点就在台面高度，
@@ -85,7 +98,7 @@ export function targetsOf(context: EffectContext): TargetRef[] {
       break;
     }
     if (
-      next.type === 'SkillTriggered' ||
+      (next.type === 'SkillTriggered' && !['ON_DAMAGED', 'AFTER_DAMAGED'].includes(next.trigger)) ||
       next.type === 'AttackDeclared' ||
       next.type === 'TurnEnded' ||
       next.type === 'BattleEnded'
@@ -95,11 +108,13 @@ export function targetsOf(context: EffectContext): TargetRef[] {
     if (
       next.type === 'DamageApplied' ||
       next.type === 'Healed' ||
-      next.type === 'StatChanged'
+      next.type === 'StatChanged' || next.type === 'DodgeGranted'
     ) {
       targets.push({ instanceId: next.instanceId, side: next.side });
     } else if (next.type === 'PlayerHpChanged') {
       targets.push({ instanceId: PLAYER_SENTINEL, side: next.side });
+    } else if (next.type === 'FormationShuffled') {
+      for (const id of next.order) if (id) targets.push({ instanceId: id, side: next.side });
     }
   }
 
@@ -139,18 +154,25 @@ export function effectRequestFor(
 ): EffectPlayRequest | null {
   switch (event.type) {
     case 'SkillTriggered': {
+      if (['ranged', 'directDamage', 'groupPhysicalDamage', 'explodeOnDeath', 'selfDestruct', 'sacrifice', 'unyielding'].includes(event.family ?? '')) return null;
       const template = event.family ? FAMILY_TO_EFFECT[event.family] : undefined;
       if (!template) {
         return null;
       }
       const from = castPointOf(context.worldPointOf(event.instanceId), event.side);
       // Self-heals/buffs must retain their actual recipient, including group casts.
-      const targets = targetsOf(context);
-      const points = targets.map((target) => pointFor(target, context));
+      const next = context.events[context.index + 1];
+      const targets = next?.type === 'SpellReflected' && next.casterId === event.instanceId
+        ? [{ instanceId: next.reflectorId, side: next.side }] : targetsOf(context);
+      if (usesSlash(template) && targets.length === 0) return null;
+      const points = targets.map((target) => event.family === 'criticalCollapse'
+        ? context.cardFacePointOf?.(target.instanceId) ?? pointFor(target, context) : pointFor(target, context));
       const [first, ...rest] = points;
       return {
         template,
         family: event.family ?? undefined,
+        // 个别族换颜色（圣盾＝金色的护盾）；其余族交给模板自带的配色
+        color: event.family ? FAMILY_TINT[event.family] : undefined,
         sourceInstanceId: event.instanceId,
         from,
         // 没有可辨认的目标时落在自己身上：宁可原地起手，也不要朝世界原点乱飞
@@ -160,13 +182,32 @@ export function effectRequestFor(
       };
     }
 
+    case 'SpellReflected': {
+      const template = event.family === 'explodeOnDeath' ? 'groupBombard' : FAMILY_TO_EFFECT[event.family];
+      if (!template) return null;
+      const points = targetsOf(context).map((target) => pointFor(target, context));
+      return { template, family: event.family === 'explodeOnDeath' ? 'groupBombard' : event.family,
+        sourceInstanceId: event.reflectorId, from: castPointOf(context.worldPointOf(event.reflectorId), event.side),
+        to: points[0] ?? impactPointOf(context.worldPointOf(event.casterId)), extraTargets: points.slice(1),
+        intensity: event.param ?? 1, color: FAMILY_TINT[event.family] };
+    }
+    case 'UnyieldingChanged': return null; // Its persistent card-local overlay is display-state driven.
+    case 'LifeTransferred': return {
+      template: 'lifeDrain', family: 'sacrifice', sourceInstanceId: event.recipientId,
+      // lifeDrain's existing recipe travels in reverse: donor -> recipient.
+      from: castPointOf(context.worldPointOf(event.recipientId), event.side),
+      to: impactPointOf(context.worldPointOf(event.donorId)), intensity: event.amount,
+    };
+    case 'FormationShuffled': return null; // Card bodies move to the event's authoritative slots.
+    case 'DodgeGranted': return null; // The originating grantDodge skill owns the gold transfer.
+
     case 'AttackDeclared': {
       const from = castPointOf(context.worldPointOf(event.attackerId), event.side);
       return {
-        template: 'normalAttack',
+        template: event.attackKind ?? 'normalAttack',
         sourceInstanceId: event.attackerId,
         from,
-        to: event.targetInstanceId
+        to: !event.attackKind && event.targetInstanceId
           ? impactPointOf(context.worldPointOf(event.targetInstanceId))
           : context.playerAnchor(oppositeOf(event.side)),
         intensity: 1,
@@ -233,6 +274,23 @@ export function effectRequestFor(
 
     case 'CardDied': {
       const point = impactPointOf(context.worldPointOf(event.instanceId));
+      const index = deathBlastIndex(context.events, context.index, event.instanceId);
+      const skill = context.events[index];
+      if (skill?.type === 'SkillTriggered') {
+        const next = context.events[index + 1];
+        const refs = next?.type === 'SpellReflected' && next.casterId === event.instanceId
+          ? [{ instanceId: next.reflectorId, side: next.side }] : targetsOf({ ...context, index });
+        const points = refs.map((target) => pointFor(target, context));
+        return { template: 'deathBombard', family: 'explodeOnDeath', sourceInstanceId: event.instanceId,
+          from: point, to: points[0] ?? context.playerAnchor(oppositeOf(event.side)),
+          extraTargets: points.slice(1), intensity: skill.param ?? 2 };
+      }
+      // Self-consumption already dispatched its medium explosions immediately before death.
+      for (let i = context.index - 1; i >= 0; i--) {
+        const previous = context.events[i];
+        if (previous?.type === 'CardDied' && previous.instanceId === event.instanceId) break;
+        if (previous?.type === 'SkillTriggered' && previous.instanceId === event.instanceId && previous.family === 'selfDestruct') return { template: 'deathBurst', family: 'selfDestruct', from: point, to: point, intensity: 1 };
+      }
       return { template: 'status', from: point, to: point, intensity: 1 };
     }
 
@@ -255,6 +313,16 @@ export function logLineFor(event: BattleEvent, nameOf: (id: string) => string): 
       return `${nameOf(event.instanceId)} 上场`;
     case 'SkillTriggered':
       return `${nameOf(event.instanceId)} 触发 ${event.raw}`;
+    case 'SpellReflected':
+      return `${nameOf(event.reflectorId)} 将 ${event.raw} 反弹回施法方`;
+    case 'DodgeGranted':
+      return `${nameOf(event.instanceId)} 获得闪避${event.level}（持续至离场）`;
+    case 'UnyieldingChanged':
+      return event.active ? `${nameOf(event.instanceId)} 触发不屈，将继续行动至下个自身回合结束` : `${nameOf(event.instanceId)} 不屈结束`;
+    case 'LifeTransferred':
+      return `${nameOf(event.recipientId)} 从 ${nameOf(event.donorId)} 献祭吸取 ${event.amount} 点生命`;
+    case 'FormationShuffled':
+      return `${nameOf(event.casterId)} 打乱了${event.side === 'player' ? '我方' : '敌方'}战斗阵容`;
     case 'AttackDeclared':
       return `${nameOf(event.attackerId)} 发起攻击`;
     case 'DamageApplied':

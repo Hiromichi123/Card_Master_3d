@@ -457,3 +457,49 @@ elif enemy_hp <= 0 or not enemy_has_cards:   -> _end_battle("player1")
 7. **分身共享状态组的行动限制**：一份状态组每方每回合能行动几次，需要样例确认。
 
 以上每一条都必须在 `docs/validation/P2.md` 里给出结论与依据，不能默认沿用原版。
+
+## 13. 本项目新增的技能族（旧项目只有卡面、没有实现）
+
+旧注册表的 35 个族全部来自旧项目（`SKILL_COVERAGE.md` 逐族给了证据）。
+下面这几个**不在**旧注册表里：旧项目的数据里能读到这些 trait 字符串，
+但没有任何实现（连声明式的壳都没有）。它们由本项目定义，因此本节就是
+「旧版没有可对照的行为」的那种规则——差异记录（第 10 节）管的是「改了旧版的行为」，
+这一节管的是「旧版没有的行为」。
+
+`src/domain/skills/families.ts` 的 `EXTRA_FAMILY_IDS` 是这份名单的代码形式，
+两处必须一致。
+
+### 13.1 圣盾n（`holyShield`）
+
+数据来源：`S+_001`（S+，3/5/6，卡面只写着「圣盾1」）。旧项目的
+`assets/outputs/S+/cards.json:3` 有这张卡，`skill_registry.py` 里没有对应工厂。
+
+**机制**：这张卡**受到的伤害各减 n 点**，普通攻击与技能伤害都算。
+
+与 `防御n`（`docs/SKILL_COVERAGE.md` 第 3 节）的区别只有一条，但很关键：
+
+| | 普通攻击（卡打卡） | 技能伤害（火球/闪电/炮击/爆裂/反击…） |
+| --- | --- | --- |
+| `防御n` | 减 n，且会被破甲n 抵消 | **不减** |
+| `圣盾n` | 减 n | **减 n** |
+
+实现要点（`rules.ts` 的 `holyShield` + `engine.ts` 的两处）：
+
+- 规则挂在 `ON_DAMAGED` 上，与防御同一个触发点，减伤写法也一样
+  （`attack.damage = max(0, attack.damage - n)`），只是不减破甲。
+- **技能伤害路径要额外叫它一次**：`Resolver.damage` 里跑一遍
+  `triggerSkills(..., 'ON_DAMAGED', ..., onlyFamily: 'holyShield')`。
+  只挑这一个族是有意的——那条路上不该把防御/闪避也带进来。
+- **不能减两次**：卡打卡那条路先跑 `ON_DAMAGED`，再调 `Resolver.damage`
+  写血量；后者如果又跑一次圣盾，同一击就会减 2n。
+  所以 `Resolver.damage` 多了一个 `onDamagedRan` 参数，`resolveAttack` 传 `true`。
+- **演出就是这条副作用**：触发时引擎发 `SkillTriggered`（family `holyShield`），
+  演出层据此播护盾特效。所以「普通攻击和法术攻击都触发动画」不是另写的动画逻辑，
+  而是这条规则被两条路径各叫一次的结果——护盾特效与颜色（金色）见
+  `familyMap.ts` 的 `FAMILY_TO_EFFECT` / `FAMILY_TINT`。
+
+### 13.2 远射 / 贯穿 / 伤害n
+
+同属本项目新增（旧项目未实现），规则与表现在 `families.ts`、`rules.ts` 与
+`FAMILY_TO_EFFECT` 里；它们把普通攻击改成「越过对位卡直击本体」的几种变体。
+本节的表格只登记 13.1 的机制差异，这三族的行为以代码为准。

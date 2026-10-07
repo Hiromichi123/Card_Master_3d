@@ -6,7 +6,6 @@ import { activeDeckOf } from '../domain/progression/profile';
 import { planStageLaunch } from '../domain/progression/campaign';
 import type { StageLaunch } from '../domain/progression/campaign';
 import { pushToast } from '../state/toastStore';
-import { PlayerStatus } from '../ui/PlayerStatus';
 import { DesignStage } from '../ui/DesignStage';
 import { campaignChapters } from './campaignFlow';
 import type { ChapterInfo, StageInfo } from './campaignFlow';
@@ -14,15 +13,21 @@ import type { ProfileState } from '../domain/progression/types';
 import type { RouteId } from '../app/routes';
 
 /**
- * 单人战役。1:1 照旧版的两层地图：
+ * 单人战役。1:1 照旧版的两层地图（2026-10-07 逐项对了一遍几何）：
  *
- * - **世界地图**（`scenes/map/world_map_scene.py`）：标题「世界地图」@15%、
- *   副标题「点击章节进入关卡」；章节海报横排在 (15%~75%, 60%)，540×360；
- *   右侧 (70%, 18%, 26%×68%) 是所选章节的详情；左下「返回上一级」(4%, 86%)。
- * - **章节地图**（`chapter_map_scene.py`）：标题 @12%、副标题
- *   「选择关卡（ESC 返回世界地图）」@20%；关卡海报从左下往右上排
- *   （起点 (7%, 35%)，横向铺 62%、纵向间隔 30%）；右侧 (72%, 18%, 24%×68%)
- *   是所选关卡的详情；底部一行状态。
+ * - **世界地图**（`scenes/map/world_map_scene.py`）：标题「世界地图」100 号字 @15%、
+ *   副标题「点击章节进入关卡」40 号字 @（15% + 60 单位）；章节海报 540×360，
+ *   **中心**排在 y = 60%、x 从 15% 到 75% 等分（旧版
+ *   `center_x = 15% + 60% * i/(n-1)`）；右侧 (70%, 18%, 26%×68%) 是所选章节的详情；
+ *   左下「返回上一级」(4%, 86%, 240×72, 42 号字)。
+ * - **章节地图**（`chapter_map_scene.py`）：标题 72 号字 @12%、副标题
+ *   「选择关卡（ESC 返回世界地图）」32 号字 @20%；关卡海报 540×360 排成栅格——
+ *   `columns = min(4, ceil(关数/2))`、`rows = ceil(关数/columns)`，
+ *   中心 x = 7% + 62%·((col+0.5)/columns)、y = 35% + row·30%；
+ *   右侧 (72%, 18%, 24%×68%)；底部一行状态（90%，40 号字）。
+ *
+ * 海报内部也照旧版 `ui/map_poster.py`：**图铺满整块 540×360**，名字压在底部
+ * 18% 的黑色标签条里；常态就是金边，悬停转白，选中转亮金并加一层辉光。
  *
  * 旧版是**两个场景**，这里是一块屏里的两个层：路由只有一个 `campaign`，
  * ESC 从章节地图退回世界地图（旧版也是这个键位）。
@@ -34,6 +39,10 @@ import type { RouteId } from '../app/routes';
  * 章节与关卡**没有解锁门槛**——旧版 `game/chapter_config.py` 里就没有，
  * 全部可点；规则层 `planStageLaunch` 也不拦。通关记录（`clearedStages`）
  * 只用来在海报上盖一个「已通关」。
+ *
+ * **没有玩家状态面板**：旧版这两个地图场景从头到尾没有 `CurrencyLevelUI`
+ * （`grep currency_ui.draw` 只在 menu / battle_menu / activity / 商店 / 抽卡 / 工坊里，
+ * 地图两个场景一个都没有）。要对齐版面就得连这一块一起对齐。
  */
 export interface CampaignSceneProps {
   readonly profile: ProfileState;
@@ -117,11 +126,11 @@ export function CampaignScene({ profile, onNavigate, onLaunch }: CampaignScenePr
   const background = backgroundUrl(chapter ? `bg/${chapter.id}_map` : 'bg/world_map');
 
   return (
-    <DesignStage backgroundUrl={background}>
-      <div className="campaign__status">
-        <PlayerStatus level={profile.level} currencies={profile.currencies} />
-      </div>
-
+    <DesignStage
+      backgroundUrl={background}
+      /* 章节地图与世界地图的标题/副标题/详情栏位置都不同，靠这一个修饰类切换 */
+      className={chapter ? 'campaign--chapter' : undefined}
+    >
       <h1 className="campaign__title">{chapter ? chapter.name : '世界地图'}</h1>
       <p className="campaign__subtitle">
         {chapter ? '选择关卡（ESC 返回世界地图）' : '点击章节进入关卡'}
@@ -164,7 +173,13 @@ export function CampaignScene({ profile, onNavigate, onLaunch }: CampaignScenePr
         />
       )}
 
+      {/*
+        底部一行状态（旧版 `_draw_status`，y=90%、40 号字）。
+        世界地图旧版这一行是空的，这里留着通关计数；
+        章节地图按旧版先写「选择一个关卡开始作战」，后面接同一个计数。
+      */}
       <p className="campaign__foot">
+        {chapter ? '选择一个关卡开始作战 · ' : ''}
         已通关 {cleared.size} / {stages.chapters.reduce((sum, c) => sum + c.stages.length, 0)} 关
       </p>
     </DesignStage>
@@ -205,11 +220,11 @@ function WorldMap({
                 onFocus={() => onSelect(index)}
                 onClick={() => onEnter(index)}
               >
-                <PosterArt posterId={chapter.posterId} label={chapter.name} />
+                <PosterArt posterId={chapter.posterId} />
                 <span className="campaign__poster-name">{chapter.name}</span>
-                <span className="campaign__poster-note">
-                  {done} / {chapter.stages.length} 关
-                </span>
+                {chapter.stages.length > 0 && done === chapter.stages.length && (
+                  <span className="campaign__poster-done">已通关</span>
+                )}
               </button>
             </li>
           );
@@ -229,9 +244,15 @@ function WorldMap({
                 </li>
               ))}
             </ul>
+            {current.stages.length === 0 && (
+              <p className="campaign__detail-line">
+                这一章还没有关卡——旧版 `chapter_config.py` 里就是空的，海报与地图背景在旧项目里也不存在。
+              </p>
+            )}
             <button
               type="button"
               className="btn btn--primary"
+              disabled={current.stages.length === 0}
               onClick={() => onEnter(selected ?? 0)}
             >
               进入章节
@@ -245,7 +266,14 @@ function WorldMap({
   );
 }
 
-/** 章节地图：关卡海报从左下往右上排 + 右侧详情。 */
+/**
+ * 章节地图：关卡海报排成栅格 + 右侧详情。
+ *
+ * 排法逐字照旧版 `chapter_map_scene.py`：`columns = min(4, ceil(关数/2))`，
+ * 第 idx 张落在 `col = idx % columns`、`row = floor(idx / columns)`，
+ * 中心 x = 7% + 62%·((col + 0.5) / columns)、y = 35% + row·30%——
+ * 所以 4 关的章节是 2×2 两排（不是斜着一排）。
+ */
 function ChapterMap({
   chapter,
   cleared,
@@ -260,32 +288,43 @@ function ChapterMap({
   readonly onLaunch: (stage: StageInfo) => void;
 }) {
   const current = selected === null ? null : (chapter.stages[selected] ?? null);
+  const columns = Math.min(4, Math.max(1, Math.ceil(chapter.stages.length / 2)));
 
   return (
     <>
       <ul className="campaign__posters campaign__posters--stage" aria-label="关卡">
-        {chapter.stages.map((stage, index) => (
-          <li key={stage.id} style={{ ['--index' as string]: index }}>
-            <button
-              type="button"
-              className={
-                index === selected ? 'campaign__poster campaign__poster--on' : 'campaign__poster'
-              }
-              data-stage-id={stage.id}
-              /* 悬停就把右侧详情换成这一关（旧版也是悬停预览）；
-                 开打在详情栏的「出战」上——不做双击开打，那是藏起来的操作 */
-              onMouseEnter={() => onSelect(index)}
-              onFocus={() => onSelect(index)}
-              onClick={() => onLaunch(stage)}
+        {chapter.stages.map((stage, index) => {
+          const col = index % columns;
+          const row = Math.floor(index / columns);
+          return (
+            <li
+              key={stage.id}
+              style={{
+                left: `${7 + 62 * ((col + 0.5) / columns)}%`,
+                top: `${35 + row * 30}%`,
+              }}
             >
-              <PosterArt posterId={stage.posterId} label={stage.name} />
-              <span className="campaign__poster-name">
-                {stage.id} {stage.name}
-              </span>
-              {cleared.has(stage.id) && <span className="campaign__poster-done">已通关</span>}
-            </button>
-          </li>
-        ))}
+              <button
+                type="button"
+                className={
+                  index === selected ? 'campaign__poster campaign__poster--on' : 'campaign__poster'
+                }
+                data-stage-id={stage.id}
+                /* 悬停就把右侧详情换成这一关（旧版也是悬停预览）；
+                   开打在详情栏的「出战」上——不做双击开打，那是藏起来的操作 */
+                onMouseEnter={() => onSelect(index)}
+                onFocus={() => onSelect(index)}
+                onClick={() => onLaunch(stage)}
+              >
+                <PosterArt posterId={stage.posterId} />
+                <span className="campaign__poster-name">
+                  {stage.id} {stage.name}
+                </span>
+                {cleared.has(stage.id) && <span className="campaign__poster-done">已通关</span>}
+              </button>
+            </li>
+          );
+        })}
       </ul>
 
       <aside className="campaign__detail" aria-label="关卡详情">
@@ -323,15 +362,17 @@ function ChapterMap({
   );
 }
 
-/** 海报图；manifest 里没有就退回一块带名字的底板。 */
-function PosterArt({ posterId, label }: { readonly posterId: string | null; readonly label: string }) {
+/**
+ * 海报图；manifest 里没有就退回一块灰底板。
+ *
+ * 底板**不带字**——旧版 `MapPoster` 的占位就是一块灰底 + 描边，
+ * 名字照旧压在海报底部那条黑色标签里（所以没图也认得出是哪一章）。
+ * 目前只有第 4 章「月之都」走这条路：旧项目里同样没有它的海报。
+ */
+function PosterArt({ posterId }: { readonly posterId: string | null }) {
   const url = posterId ? posterUrl(posterId) : null;
   if (!url) {
-    return (
-      <span className="campaign__poster-plate" aria-hidden="true">
-        {label}
-      </span>
-    );
+    return <span className="campaign__poster-plate" aria-hidden="true" />;
   }
   return <img className="campaign__poster-art" src={url} alt="" draggable={false} />;
 }

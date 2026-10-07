@@ -217,8 +217,13 @@ export type BattleEvent = { readonly seq: number; readonly turn: number } & (
   | { readonly type: 'CooldownChanged'; readonly side: SideId; readonly instanceId: string; readonly from: number; readonly to: number; readonly cause: CooldownCause }
   | { readonly type: 'CardDeployed'; readonly side: SideId; readonly instanceId: string; readonly battleSlot: number }
   | { readonly type: 'SkillTriggered'; readonly side: SideId; readonly instanceId: string; readonly trigger: string; readonly family: string | null; readonly raw: string; readonly param: number | null }
-  | { readonly type: 'AttackDeclared'; readonly side: SideId; readonly attackerId: string; readonly targetInstanceId: string | null; readonly targetSlot: number }
+  | { readonly type: 'AttackDeclared'; readonly side: SideId; readonly attackerId: string; readonly targetInstanceId: string | null; readonly targetSlot: number; readonly attackKind?: 'ranged' | 'piercing' }
   | { readonly type: 'DamageApplied'; readonly side: SideId; readonly instanceId: string; readonly amount: number; readonly hpBefore: number; readonly hpAfter: number; readonly source: DamageSource }
+  | { readonly type: 'SpellReflected'; readonly side: SideId; readonly casterId: string; readonly reflectorId: string; readonly family: string; readonly raw: string; readonly param: number | null }
+  | { readonly type: 'UnyieldingChanged'; readonly side: SideId; readonly instanceId: string; readonly groupId: string; readonly active: boolean; readonly expiresAfterTurn: number }
+  | { readonly type: 'LifeTransferred'; readonly side: SideId; readonly recipientId: string; readonly donorId: string; readonly amount: number }
+  | { readonly type: 'FormationShuffled'; readonly side: SideId; readonly casterId: string; readonly order: readonly (string | null)[] }
+  | { readonly type: 'DodgeGranted'; readonly side: SideId; readonly instanceId: string; readonly sourceInstanceId: string; readonly level: number }
   | { readonly type: 'Healed'; readonly side: SideId; readonly instanceId: string; readonly amount: number; readonly hpBefore: number; readonly hpAfter: number }
   | { readonly type: 'StatChanged'; readonly side: SideId; readonly instanceId: string; readonly stat: 'atk'; readonly from: number; readonly to: number; readonly cause: string }
   | { readonly type: 'PlayerHpChanged'; readonly side: SideId; readonly amount: number; readonly hpBefore: number; readonly hpAfter: number; readonly source: DamageSource }
@@ -244,7 +249,17 @@ export type DamageSource =
   /** 打到空槽对应的本体。 */
   | 'emptySlot'
   /** 自伤，例如受伤n / 狂暴 / 自毁。 */
-  | 'selfInflicted';
+  | 'selfInflicted'
+  | 'ranged'
+  | 'piercing'
+  | 'deathBlast'
+  | 'instantDeath'
+  /** Direct HP loss, bypassing flying, mitigation, dodge, immunity and spell reflection. */
+  | 'trueDamage'
+  | 'sacrifice'
+  | 'groupPiercing'
+  | 'collapse'
+  | 'unyielding';
 
 /**
  * 演出用的显示补丁。规则层已经把最终状态算完，

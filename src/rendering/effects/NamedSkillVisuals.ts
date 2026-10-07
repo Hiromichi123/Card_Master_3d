@@ -19,7 +19,7 @@ import { frame } from './vendor/linear-native/core/FrameUniforms.js';
 import { SnarePass, createSnareCageMaterial, createSnareFieldMaterial } from './vendor/linear-native/materials/SnareMaterial.js';
 
 export function usesLinearAbility(template: string): boolean {
-  return ['fireball', 'groupFireball', 'iceSeal', 'groupIceSeal', 'lightning', 'groupLightning', 'curse', 'injury'].includes(template);
+  return ['fireball', 'groupFireball', 'iceSeal', 'groupIceSeal', 'lightning', 'groupLightning', 'curse', 'injury', 'instantDeath'].includes(template);
 }
 
 function phaseSeconds(phase: VisualPhase, bolt: boolean, ice: boolean, snare = false): number {
@@ -84,8 +84,9 @@ export class NamedSkillVisuals {
     const ice = spec.template === 'iceSeal' || spec.template === 'groupIceSeal';
     const bolt = spec.template === 'lightning' || spec.template === 'groupLightning';
     const injury = spec.template === 'injury';
-    const snare = spec.template === 'curse' || injury;
-    actor.name = snare ? (injury ? 'Voltaic Snare:Injury-Red-Ground' : 'Voltaic Snare:Curse') : ice ? 'Glacial Crown' : bolt ? 'Storm Lance' : 'Cinder Fall';
+    const instantDeath = spec.template === 'instantDeath';
+    const snare = spec.template === 'curse' || injury || instantDeath;
+    actor.name = instantDeath ? 'Instant Death:Black Voltaic Snare' : snare ? (injury ? 'Voltaic Snare:Injury-Red-Ground' : 'Voltaic Snare:Curse') : ice ? 'Glacial Crown' : bolt ? 'Storm Lance' : 'Cinder Fall';
     const scale = Math.max(0.2, worldScale);
     const from = spec.from.clone(); const to = spec.to.clone();
     const direction = to.clone().sub(from).setY(0);
@@ -347,7 +348,11 @@ export class NamedSkillVisuals {
       const field = new Mesh(this.plane, fieldMaterial);
       field.position.set(to.x, floor + 0.006 * scale, to.z);
       field.visible = false; actor.add(field);
-      for (const material of [core, halo, fieldMaterial]) material.uniforms['uGlobalGlow'] = { value: injury ? 0.72 : 0.85 };
+      for (const material of [core, halo, fieldMaterial]) {
+        material.uniforms['uGlobalGlow'] = { value: injury ? 0.72 : 0.85 };
+        // A black curse must subtract/occlude light; additive black would be invisible.
+        if (instantDeath) material.blending = NormalBlending;
+      }
       const centre = to.clone().setY(floor);
       const hand = from.clone(); const front = new Vector3();
       const radius = 0.64 * scale;
@@ -389,6 +394,11 @@ export class NamedSkillVisuals {
             u['uColorOuter']!.value.set('#e82d48'); u['uColorHalo']!.value.set('#8b102b');
             u['uGlow']!.value = 0.6;
           }
+          if (instantDeath) {
+            u['uColorCore']!.value.set('#1d1726'); u['uColorInner']!.value.set('#100c17');
+            u['uColorOuter']!.value.set('#050408'); u['uColorHalo']!.value.set('#08060c');
+            u['uGlow']!.value = 0.7; u['uOpacity']!.value = 0.95;
+          }
         }
         field.visible = impacting;
         field.scale.set((radius + 0.2 * scale) * 2, 1, (radius + 0.2 * scale) * 2);
@@ -401,6 +411,10 @@ export class NamedSkillVisuals {
         if (injury) {
           u['uColorField']!.value.set('#ba253d'); u['uColorEdge']!.value.set('#f57866');
           u['uPulse']!.value = 0.12;
+        }
+        if (instantDeath) {
+          u['uColorField']!.value.set('#09060e'); u['uColorEdge']!.value.set('#21172f');
+          u['uOpacity']!.value = 0.94;
         }
         glow.visible = false;
       };

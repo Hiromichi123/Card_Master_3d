@@ -40,21 +40,21 @@ export interface ChapterInfo {
 }
 
 /**
- * 三章十二关。
+ * 四章（三章十二关 + 空的第四章）。
  *
  * 章节海报用 `chapter_N_enter`（旧版 `chapter_config.py` 里就是这几张），
- * 关卡海报用 `N-M` ✓ 两张都在 manifest 的 `poster` 下。
+ * 关卡海报用 `N-M` ✓ 在 manifest 的 `poster` 下。
+ *
+ * **第 4 章「月之都」照样列在世界地图上**（2026-10-07 改）。旧版
+ * `WORLD_CHAPTERS` 就一直有这一条：它 `stages` 是空的，海报与背景资源在旧项目里
+ * **也不存在**（`assets/poster/` 只有 1–3 章、`assets/bg/` 同理），
+ * 所以旧版画的是 `MapPoster` 的灰色占位块——不是「藏起来」。
+ * 之前这里把它过滤掉了（清单当时的说法是「不构造新内容」），
+ * 但那让地图与旧版对不上：旧版世界地图是四张海报，我们是三张。
+ * 现在照旧版列出来，点进去是一张空章节地图（状态行仍然提示选关）。
  */
 export function campaignChapters(): readonly ChapterInfo[] {
-  /*
-    **空章节不上地图。** `stages.json` 的 `chapters` 里有第 4 章「月之都」，
-    但它一关都没有（`emptyChapters` 里另记着「第四章无关卡」）——
-    列出来只会让人点进一个空地图。清单对这条的要求是「不构造新内容」，
-    所以直接过滤掉；等真有内容了自然会出现在这里。
-  */
-  return stages.chapters
-    .filter((chapter) => chapter.stages.length > 0)
-    .map((chapter) => ({
+  return stages.chapters.map((chapter) => ({
     id: chapter.id,
     name: chapter.name,
     posterId: `chapter_${chapter.id.split('_')[1] ?? '1'}_enter`,
@@ -67,9 +67,9 @@ export function campaignChapters(): readonly ChapterInfo[] {
       posterId: stage.posterId,
       summary: stage.summary,
       reward: stage.reward,
-        enemyDeck: decks.enemy[stage.id]?.cardIds ?? [],
-      })),
-    }));
+      enemyDeck: decks.enemy[stage.id]?.cardIds ?? [],
+    })),
+  }));
 }
 
 /** 引擎要的定义表：只放这一局用得到的卡。 */

@@ -1,5 +1,5 @@
 {
-  "contentVersion": "0fd985b79852",
+  "contentVersion": "86c8a85e6fa8",
   "source": "assets/outputs/*/cards.json",
   "definitions": [
     {
@@ -150,7 +150,7 @@
       "name": "EX 轰 雷",
       "level": 0,
       "atk": 0,
-      "hp": 5,
+      "hp": 0,
       "cd": 6,
       "rawTraits": [
         "群体闪电1",
@@ -229,21 +229,20 @@
       "rarity": "SSS",
       "name": "EX 誓 约 胜 利 之 剑",
       "level": 0,
-      "atk": 20,
-      "hp": 5,
-      "cd": 0,
+      "atk": 0,
+      "hp": 0,
+      "cd": 7,
       "rawTraits": [
-        "即时",
+        "伤害20",
         "自毁"
       ],
       "skills": [
         {
-          "raw": "即时",
-          "resolution": "unimplemented",
+          "raw": "伤害20",
+          "resolution": "ambiguous",
           "family": null,
           "param": null,
-          "evidence": "全项目 .py 无该字符串",
-          "note": "无实现。"
+          "note": "未在 trait-overlay.json 中登记"
         },
         {
           "raw": "自毁",
@@ -269,17 +268,16 @@
       "hp": 6,
       "cd": 4,
       "rawTraits": [
-        "对空",
+        "飞行",
         "群体禁飞"
       ],
       "skills": [
         {
-          "raw": "对空",
-          "resolution": "unimplemented",
+          "raw": "飞行",
+          "resolution": "scene-rule",
           "family": null,
           "param": null,
-          "evidence": "battle_base_scene.py:1348 只出现在注释「地面单位无法对空：伤害转移到防御者玩家」里",
-          "note": "注意：飞行规则只检查 `飞行`（battle_base_scene.py:1344-1345），带 `对空` 但不带 `飞行` 的卡没有任何对空收益。PLAN 第 4.3 节明确要求不擅自加入未实现对空技能。"
+          "note": "战斗场景规则，非技能族"
         },
         {
           "raw": "群体禁飞",
@@ -307,7 +305,8 @@
       "cd": 19,
       "rawTraits": [
         "防御2",
-        "灭绝2"
+        "灭绝2",
+        "对空"
       ],
       "skills": [
         {
@@ -324,6 +323,14 @@
           "param": null,
           "evidence": "全项目 .py 无该字符串",
           "note": "无实现。"
+        },
+        {
+          "raw": "对空",
+          "resolution": "unimplemented",
+          "family": null,
+          "param": null,
+          "evidence": "battle_base_scene.py:1348 只出现在注释「地面单位无法对空：伤害转移到防御者玩家」里",
+          "note": "注意：飞行规则只检查 `飞行`（battle_base_scene.py:1344-1345），带 `对空` 但不带 `飞行` 的卡没有任何对空收益。PLAN 第 4.3 节明确要求不擅自加入未实现对空技能。"
         }
       ],
       "description": "至尊神龙哈拉多尔德刚伽罗的黑暗面化身，是众多面化身中最强大的一面，身长数万公里，可以在太空以及亚空间中游走，预言中只是落下鳞片都将毁灭世界。",
@@ -372,7 +379,8 @@
       "rawTraits": [
         "群体减速1",
         "溅射",
-        "破甲2"
+        "破甲2",
+        "对空"
       ],
       "skills": [
         {
@@ -397,6 +405,14 @@
           "family": "armorBreak",
           "param": 2,
           "matchKind": "full"
+        },
+        {
+          "raw": "对空",
+          "resolution": "unimplemented",
+          "family": null,
+          "param": null,
+          "evidence": "battle_base_scene.py:1348 只出现在注释「地面单位无法对空：伤害转移到防御者玩家」里",
+          "note": "注意：飞行规则只检查 `飞行`（battle_base_scene.py:1344-1345），带 `对空` 但不带 `飞行` 的卡没有任何对空收益。PLAN 第 4.3 节明确要求不擅自加入未实现对空技能。"
         }
       ],
       "description": "像花瓣形状大鳍的海龙，在溪流中绽放的鲜艳的白、紫、粉红色。体毛上摩擦特殊的分泌液，制造出能够封锁猎物动作的溅射泡沫。",
@@ -450,24 +466,24 @@
       "hp": 6,
       "cd": 5,
       "rawTraits": [
-        "传送1",
-        "反击2"
+        "反击2",
+        "传送"
       ],
       "skills": [
-        {
-          "raw": "传送1",
-          "resolution": "unimplemented",
-          "family": null,
-          "param": null,
-          "evidence": "全项目 .py 无该字符串",
-          "note": "同上，数值形式同样无实现。"
-        },
         {
           "raw": "反击2",
           "resolution": "implemented",
           "family": "counter",
           "param": 2,
           "matchKind": "full"
+        },
+        {
+          "raw": "传送",
+          "resolution": "unimplemented",
+          "family": null,
+          "param": null,
+          "evidence": "全项目 .py 无该字符串",
+          "note": "无位移/换位机制。"
         }
       ],
       "description": "魔域中心的远古遗迹，上一代文明的产物，作为魔法祭坛运行至今，突出特征是上方终年维持的暗星黑洞发生器，无人知晓其运行的逻辑。",
@@ -598,7 +614,7 @@
       "name": "月 下 花 间 酒",
       "level": 0.5,
       "atk": 0,
-      "hp": 5,
+      "hp": 0,
       "cd": 6,
       "rawTraits": [
         "祝福3",
@@ -998,7 +1014,8 @@
       "hp": 7,
       "cd": 5,
       "rawTraits": [
-        "沉默"
+        "沉默",
+        "对空"
       ],
       "skills": [
         {
@@ -1007,6 +1024,14 @@
           "family": "silence",
           "param": null,
           "matchKind": "exact"
+        },
+        {
+          "raw": "对空",
+          "resolution": "unimplemented",
+          "family": null,
+          "param": null,
+          "evidence": "battle_base_scene.py:1348 只出现在注释「地面单位无法对空：伤害转移到防御者玩家」里",
+          "note": "注意：飞行规则只检查 `飞行`（battle_base_scene.py:1344-1345），带 `对空` 但不带 `飞行` 的卡没有任何对空收益。PLAN 第 4.3 节明确要求不擅自加入未实现对空技能。"
         }
       ],
       "description": "传说中生长在彼岸世界花海中的神秘花朵，象征着生与死的轮回。",
@@ -1187,7 +1212,8 @@
       "cd": 10,
       "rawTraits": [
         "恢复2",
-        "治愈2"
+        "治愈2",
+        "对空"
       ],
       "skills": [
         {
@@ -1203,6 +1229,14 @@
           "family": "healAlly",
           "param": 2,
           "matchKind": "full"
+        },
+        {
+          "raw": "对空",
+          "resolution": "unimplemented",
+          "family": null,
+          "param": null,
+          "evidence": "battle_base_scene.py:1348 只出现在注释「地面单位无法对空：伤害转移到防御者玩家」里",
+          "note": "注意：飞行规则只检查 `飞行`（battle_base_scene.py:1344-1345），带 `对空` 但不带 `飞行` 的卡没有任何对空收益。PLAN 第 4.3 节明确要求不擅自加入未实现对空技能。"
         }
       ],
       "description": "守护树海之龙，强大的治愈能力，唤起人类对自然的敬畏。",
@@ -1262,22 +1296,11 @@
       "rarity": "SS",
       "name": "人 马 座 β",
       "level": 1,
-      "atk": 3,
+      "atk": 2,
       "hp": 5,
       "cd": 4,
-      "rawTraits": [
-        "斩杀3"
-      ],
-      "skills": [
-        {
-          "raw": "斩杀3",
-          "resolution": "unimplemented",
-          "family": null,
-          "param": null,
-          "evidence": "全项目 .py 无该字符串",
-          "note": "无实现。"
-        }
-      ],
+      "rawTraits": [],
+      "skills": [],
       "description": "地球联邦扩张时代，半人马座星系的机械造物，卓越的智识与强大的战斗能力使其成为联邦军队中的重要力量，虽然被称为傀儡，但它们拥有高度的自主意识。",
       "status": "complete",
       "art": {
@@ -1299,11 +1322,10 @@
       "skills": [
         {
           "raw": "圣盾1",
-          "resolution": "unimplemented",
-          "family": null,
-          "param": null,
-          "evidence": "全项目 .py 无该字符串",
-          "note": "与 `防御n` 同域但词干不同，不作为别名。无实现。"
+          "resolution": "implemented",
+          "family": "holyShield",
+          "param": 1,
+          "matchKind": "full"
         }
       ],
       "description": "西方王国守护王国的至高骑士，身披闪耀的蓝白铠甲，手持光辉圣剑，象征着绝对正义与无限荣耀。",
@@ -1376,24 +1398,23 @@
       "hp": 9,
       "cd": 5,
       "rawTraits": [
-        "献祭3",
-        "振奋2"
+        "振奋2",
+        "献祭2"
       ],
       "skills": [
-        {
-          "raw": "献祭3",
-          "resolution": "unimplemented",
-          "family": null,
-          "param": null,
-          "evidence": "全项目 .py 无该字符串",
-          "note": "无实现。"
-        },
         {
           "raw": "振奋2",
           "resolution": "implemented",
           "family": "inspire",
           "param": 2,
           "matchKind": "full"
+        },
+        {
+          "raw": "献祭2",
+          "resolution": "ambiguous",
+          "family": null,
+          "param": null,
+          "note": "未在 trait-overlay.json 中登记"
         }
       ],
       "description": "平行宇宙伸出的献祭之手，通过献祭灵魂来召唤强大的力量。参与者将自己的灵魂献给黑暗，以换取短暂但强大的力量，然而代价是什么呢？",
@@ -1413,7 +1434,8 @@
       "cd": 7,
       "rawTraits": [
         "重伤1",
-        "破甲2"
+        "破甲2",
+        "对空"
       ],
       "skills": [
         {
@@ -1430,6 +1452,14 @@
           "family": "armorBreak",
           "param": 2,
           "matchKind": "full"
+        },
+        {
+          "raw": "对空",
+          "resolution": "unimplemented",
+          "family": null,
+          "param": null,
+          "evidence": "battle_base_scene.py:1348 只出现在注释「地面单位无法对空：伤害转移到防御者玩家」里",
+          "note": "注意：飞行规则只检查 `飞行`（battle_base_scene.py:1344-1345），带 `对空` 但不带 `飞行` 的卡没有任何对空收益。PLAN 第 4.3 节明确要求不擅自加入未实现对空技能。"
         }
       ],
       "description": "前混沌时代的蒙多萨拉女神的复制体，掌控着大地与生命的力量。它的出现象征着自然的愤怒与复苏，带来丰饶的同时也带来毁灭。",
@@ -1558,7 +1588,7 @@
       "name": "天 灾 降 临",
       "level": 1.5,
       "atk": 0,
-      "hp": 5,
+      "hp": 0,
       "cd": 5,
       "rawTraits": [
         "群体爆破2",
@@ -1628,7 +1658,7 @@
       "name": "蒼 天 ノ 羽 衣",
       "level": 1.5,
       "atk": 0,
-      "hp": 5,
+      "hp": 0,
       "cd": 2,
       "rawTraits": [
         "闪避赋予3",
@@ -1695,19 +1725,11 @@
       "hp": 12,
       "cd": 2,
       "rawTraits": [
-        "献祭1",
         "恢复1",
-        "吸血1"
+        "吸血1",
+        "献祭1"
       ],
       "skills": [
-        {
-          "raw": "献祭1",
-          "resolution": "unimplemented",
-          "family": null,
-          "param": null,
-          "evidence": "全项目 .py 无该字符串",
-          "note": "无实现。"
-        },
         {
           "raw": "恢复1",
           "resolution": "implemented",
@@ -1721,6 +1743,14 @@
           "family": "vampire",
           "param": 1,
           "matchKind": "full"
+        },
+        {
+          "raw": "献祭1",
+          "resolution": "unimplemented",
+          "family": null,
+          "param": null,
+          "evidence": "全项目 .py 无该字符串",
+          "note": "无实现。"
         }
       ],
       "description": "原始恶魔信仰的崇拜者们，历史上每间隔特定的时间后，将自发聚集向地狱之门行进，完成献祭自身的朝圣。",
@@ -1802,7 +1832,8 @@
       "hp": 5,
       "cd": 5,
       "rawTraits": [
-        "群体闪电1"
+        "群体闪电1",
+        "对空"
       ],
       "skills": [
         {
@@ -1811,6 +1842,14 @@
           "family": "groupLightning",
           "param": 1,
           "matchKind": "full"
+        },
+        {
+          "raw": "对空",
+          "resolution": "unimplemented",
+          "family": null,
+          "param": null,
+          "evidence": "battle_base_scene.py:1348 只出现在注释「地面单位无法对空：伤害转移到防御者玩家」里",
+          "note": "注意：飞行规则只检查 `飞行`（battle_base_scene.py:1344-1345），带 `对空` 但不带 `飞行` 的卡没有任何对空收益。PLAN 第 4.3 节明确要求不擅自加入未实现对空技能。"
         }
       ],
       "description": "自称天降神子的少女，拥有治愈众生的神力。",
@@ -1969,7 +2008,7 @@
       "name": "SP 俏 佳 人",
       "level": 2,
       "atk": 0,
-      "hp": 5,
+      "hp": 0,
       "cd": 2,
       "rawTraits": [
         "还魂3",
@@ -2307,7 +2346,8 @@
       "cd": 4,
       "rawTraits": [
         "炮击3",
-        "远射"
+        "远射",
+        "对空"
       ],
       "skills": [
         {
@@ -2324,6 +2364,14 @@
           "param": null,
           "evidence": "全项目 .py 无该字符串",
           "note": "无实现。"
+        },
+        {
+          "raw": "对空",
+          "resolution": "unimplemented",
+          "family": null,
+          "param": null,
+          "evidence": "battle_base_scene.py:1348 只出现在注释「地面单位无法对空：伤害转移到防御者玩家」里",
+          "note": "注意：飞行规则只检查 `飞行`（battle_base_scene.py:1344-1345），带 `对空` 但不带 `飞行` 的卡没有任何对空收益。PLAN 第 4.3 节明确要求不擅自加入未实现对空技能。"
         }
       ],
       "description": "帝国特殊部队的强力支援特型武装，人形兵器，装备着强力火炮的战斗单位，能够进行远程打击。",
@@ -2409,11 +2457,12 @@
       "name": "无 限 锁 链",
       "level": 2.5,
       "atk": 0,
-      "hp": 5,
+      "hp": 0,
       "cd": 6,
       "rawTraits": [
         "群体治愈1",
-        "诅咒2"
+        "诅咒2",
+        "自毁"
       ],
       "skills": [
         {
@@ -2429,6 +2478,13 @@
           "family": "curse",
           "param": 2,
           "matchKind": "full"
+        },
+        {
+          "raw": "自毁",
+          "resolution": "implemented",
+          "family": "selfDestruct",
+          "param": null,
+          "matchKind": "exact"
         }
       ],
       "description": "古神罗斯凯米尔的天锁，传说中只有圣剑才能斩断。",
@@ -2614,11 +2670,11 @@
       "name": "荣 耀 于 此",
       "level": 2.5,
       "atk": 0,
-      "hp": 5,
+      "hp": 0,
       "cd": 10,
       "rawTraits": [
         "祝福1",
-        "恢复5",
+        "治愈5",
         "自毁"
       ],
       "skills": [
@@ -2630,9 +2686,9 @@
           "matchKind": "full"
         },
         {
-          "raw": "恢复5",
+          "raw": "治愈5",
           "resolution": "implemented",
-          "family": "selfHeal",
+          "family": "healAlly",
           "param": 5,
           "matchKind": "full"
         },
@@ -2657,25 +2713,24 @@
       "name": "时 刻 沙 漏",
       "level": 2.5,
       "atk": 0,
-      "hp": 8,
+      "hp": 5,
       "cd": 5,
       "rawTraits": [
-        "拒止",
-        "加速1"
+        "加速1",
+        "防御1"
       ],
       "skills": [
-        {
-          "raw": "拒止",
-          "resolution": "unimplemented",
-          "family": null,
-          "param": null,
-          "evidence": "全项目 .py 无该字符串",
-          "note": "无实现。"
-        },
         {
           "raw": "加速1",
           "resolution": "implemented",
           "family": "haste",
+          "param": 1,
+          "matchKind": "full"
+        },
+        {
+          "raw": "防御1",
+          "resolution": "implemented",
+          "family": "defense",
           "param": 1,
           "matchKind": "full"
         }
@@ -2814,7 +2869,8 @@
       "cd": 5,
       "rawTraits": [
         "恢复2",
-        "反击1"
+        "反击1",
+        "对空"
       ],
       "skills": [
         {
@@ -2830,6 +2886,14 @@
           "family": "counter",
           "param": 1,
           "matchKind": "full"
+        },
+        {
+          "raw": "对空",
+          "resolution": "unimplemented",
+          "family": null,
+          "param": null,
+          "evidence": "battle_base_scene.py:1348 只出现在注释「地面单位无法对空：伤害转移到防御者玩家」里",
+          "note": "注意：飞行规则只检查 `飞行`（battle_base_scene.py:1344-1345），带 `对空` 但不带 `飞行` 的卡没有任何对空收益。PLAN 第 4.3 节明确要求不擅自加入未实现对空技能。"
         }
       ],
       "description": "手持提灯的魔女，能引导迷失在黑暗中的人们找到心中的归路。",
@@ -2848,7 +2912,8 @@
       "hp": 11,
       "cd": 17,
       "rawTraits": [
-        "免疫"
+        "免疫",
+        "对空"
       ],
       "skills": [
         {
@@ -2857,6 +2922,14 @@
           "family": "immunity",
           "param": null,
           "matchKind": "exact"
+        },
+        {
+          "raw": "对空",
+          "resolution": "unimplemented",
+          "family": null,
+          "param": null,
+          "evidence": "battle_base_scene.py:1348 只出现在注释「地面单位无法对空：伤害转移到防御者玩家」里",
+          "note": "注意：飞行规则只检查 `飞行`（battle_base_scene.py:1344-1345），带 `对空` 但不带 `飞行` 的卡没有任何对空收益。PLAN 第 4.3 节明确要求不擅自加入未实现对空技能。"
         }
       ],
       "description": "海之守护者，2192年被联合大陆科考团在南极发现部分骸骨，其庞大的身躯堪比一艘战舰。",
@@ -3250,7 +3323,7 @@
       "name": "决 斗",
       "level": 3,
       "atk": 0,
-      "hp": 5,
+      "hp": 0,
       "cd": 8,
       "rawTraits": [
         "决斗",
@@ -3695,7 +3768,7 @@
       "name": "解 构 大 脑",
       "level": 3.5,
       "atk": 0,
-      "hp": 5,
+      "hp": 0,
       "cd": 5,
       "rawTraits": [
         "还魂2",
@@ -3765,7 +3838,7 @@
       "name": "深 夜 酒 吧",
       "level": 3.5,
       "atk": 0,
-      "hp": 5,
+      "hp": 0,
       "cd": 3,
       "rawTraits": [
         "治愈2",
@@ -4016,16 +4089,15 @@
       "hp": 7,
       "cd": 7,
       "rawTraits": [
-        "延时1"
+        "延迟1"
       ],
       "skills": [
         {
-          "raw": "延时1",
-          "resolution": "alias",
+          "raw": "延迟1",
+          "resolution": "implemented",
           "family": "delay",
-          "param": null,
-          "evidence": "skill_registry.py:134 注册 `延迟(\\d+)`；skill_effects.py:1259-1290 为对敌方最左占用准备槽 CD+n",
-          "note": "延时/延迟是同义异形词，不是解析缺口。置信度中：本轮不自动建立别名规则，需人工确认后再决定是否实现。"
+          "param": 1,
+          "matchKind": "full"
         }
       ],
       "description": "古老圣地的神祇喀斯玛，历史上一度作为人类支配者降临在福地喀斯玛。",
@@ -4160,17 +4232,16 @@
       "hp": 6,
       "cd": 6,
       "rawTraits": [
-        "延时1",
+        "延迟1",
         "加速1"
       ],
       "skills": [
         {
-          "raw": "延时1",
-          "resolution": "alias",
+          "raw": "延迟1",
+          "resolution": "implemented",
           "family": "delay",
-          "param": null,
-          "evidence": "skill_registry.py:134 注册 `延迟(\\d+)`；skill_effects.py:1259-1290 为对敌方最左占用准备槽 CD+n",
-          "note": "延时/延迟是同义异形词，不是解析缺口。置信度中：本轮不自动建立别名规则，需人工确认后再决定是否实现。"
+          "param": 1,
+          "matchKind": "full"
         },
         {
           "raw": "加速1",
@@ -4495,7 +4566,7 @@
       "name": "审 判",
       "level": 4,
       "atk": 0,
-      "hp": 5,
+      "hp": 0,
       "cd": 4,
       "rawTraits": [
         "群体闪电2",
@@ -4700,7 +4771,7 @@
       "name": "祥 瑞 之 兆",
       "level": 4,
       "atk": 0,
-      "hp": 5,
+      "hp": 0,
       "cd": 4,
       "rawTraits": [
         "抽卡2",
@@ -4814,7 +4885,7 @@
       "name": "并 肩 作 战",
       "level": 4.5,
       "atk": 0,
-      "hp": 5,
+      "hp": 0,
       "cd": 4,
       "rawTraits": [
         "加速2",
@@ -5191,7 +5262,7 @@
       "name": "云 海 天 际",
       "level": 4.5,
       "atk": 0,
-      "hp": 5,
+      "hp": 0,
       "cd": 4,
       "rawTraits": [
         "冰封2",
@@ -5536,7 +5607,7 @@
       "name": "四 瓶 の 世 界",
       "level": 5,
       "atk": 0,
-      "hp": 5,
+      "hp": 0,
       "cd": 6,
       "rawTraits": [
         "抽卡4",
@@ -5652,7 +5723,7 @@
       "name": "千 眼 诡 术",
       "level": 5,
       "atk": 0,
-      "hp": 5,
+      "hp": 0,
       "cd": 4,
       "rawTraits": [
         "火球6",
@@ -6104,7 +6175,7 @@
       "name": "星 辰 化 身",
       "level": 5,
       "atk": 0,
-      "hp": 5,
+      "hp": 0,
       "cd": 6,
       "rawTraits": [
         "闪电8",
@@ -6139,7 +6210,7 @@
       "name": "火 树 银 花",
       "level": 5,
       "atk": 0,
-      "hp": 5,
+      "hp": 0,
       "cd": 4,
       "rawTraits": [
         "治愈2",
@@ -7406,7 +7477,7 @@
       "name": "织 子 挽 歌",
       "level": 4,
       "atk": 0,
-      "hp": 5,
+      "hp": 0,
       "cd": 4,
       "rawTraits": [
         "还魂2",
@@ -7453,7 +7524,7 @@
       "cd": 7,
       "rawTraits": [
         "恢复2",
-        "治疗1"
+        "治愈1"
       ],
       "skills": [
         {
@@ -7464,12 +7535,11 @@
           "matchKind": "full"
         },
         {
-          "raw": "治疗1",
-          "resolution": "alias",
+          "raw": "治愈1",
+          "resolution": "implemented",
           "family": "healAlly",
-          "param": null,
-          "evidence": "skill_registry.py:202 注册 `治愈(\\d+)`；skill_effects.py:414-498 为治疗随机受伤友方（无友方时治疗自己）",
-          "note": "治疗/治愈是同义异形词。卡面描述「对自身和友方进行治疗」与治愈n 语义一致。置信度中。"
+          "param": 1,
+          "matchKind": "full"
         }
       ],
       "description": "年轻的大天使医官，拥有强力的治疗能力，对自身和友方进行治疗。仅限活动获取！",
@@ -7773,6 +7843,1077 @@
       "status": "incomplete",
       "art": {
         "artId": "card/yoroi/009",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "SSS_013",
+      "rarity": "SSS",
+      "name": "超 维 神",
+      "level": 0,
+      "atk": 8,
+      "hp": 5,
+      "cd": 6,
+      "rawTraits": [],
+      "skills": [],
+      "description": "祂的真身横跨无数维度，星河般的面容与明暗交织的神躯，仅是降临此世的一道投影。环绕其冠冕的每一颗光球，都代表一个世界的过去与未来。祂抬手之际，空间如薄镜碎裂，尚未发生的败亡便已成为不可更改的历史，陷入无休止的坍缩。",
+      "status": "complete",
+      "art": {
+        "artId": "card/sss/013",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "SSS_014",
+      "rarity": "SSS",
+      "name": "抚 摸 星 辰 的 指 尖",
+      "level": 0,
+      "atk": 0,
+      "hp": 0,
+      "cd": 10,
+      "rawTraits": [
+        "群体振奋1",
+        "群体治愈1",
+        "自毁"
+      ],
+      "skills": [
+        {
+          "raw": "群体振奋1",
+          "resolution": "implemented",
+          "family": "groupInspire",
+          "param": 1,
+          "matchKind": "full"
+        },
+        {
+          "raw": "群体治愈1",
+          "resolution": "implemented",
+          "family": "groupHeal",
+          "param": 1,
+          "matchKind": "full"
+        },
+        {
+          "raw": "自毁",
+          "resolution": "implemented",
+          "family": "selfDestruct",
+          "param": null,
+          "matchKind": "exact"
+        }
+      ],
+      "description": "当向寂静的星空伸出手，一缕星光轻轻落在指尖，回应了尚未说出口的祈愿。随之洒向并肩作战的每一位同伴。纵使长夜未尽，他们也已拥有迎接黎明的勇气。",
+      "status": "complete",
+      "art": {
+        "artId": "card/sss/014",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "SSS_015",
+      "rarity": "SSS",
+      "name": "星 涡 天 境",
+      "level": 0,
+      "atk": 0,
+      "hp": 10,
+      "cd": 9,
+      "rawTraits": [
+        "圣盾2",
+        "伤害2",
+        "破甲2",
+        "飞行"
+      ],
+      "skills": [
+        {
+          "raw": "圣盾2",
+          "resolution": "implemented",
+          "family": "holyShield",
+          "param": 2,
+          "matchKind": "full"
+        },
+        {
+          "raw": "伤害2",
+          "resolution": "ambiguous",
+          "family": null,
+          "param": null,
+          "note": "未在 trait-overlay.json 中登记"
+        },
+        {
+          "raw": "破甲2",
+          "resolution": "implemented",
+          "family": "armorBreak",
+          "param": 2,
+          "matchKind": "full"
+        },
+        {
+          "raw": "飞行",
+          "resolution": "scene-rule",
+          "family": null,
+          "param": null,
+          "note": "战斗场景规则，非技能族"
+        }
+      ],
+      "description": "“瀑布尚未落到大地，群山已走过千年。唯有峰顶的星光，仍记得归途。”\n\n悬浮的群山在云海中层层延伸，碧色溪流穿过林地，从岛屿边缘倾泻而下，化作消失于深空的瀑布。最高的山峰直指苍穹，而它上方，一道巨大的星光旋涡缓缓转动，仿佛整片天空都围绕这座山运转。",
+      "status": "complete",
+      "art": {
+        "artId": "card/sss/015",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "SS+_014",
+      "rarity": "SS+",
+      "name": "太 阳 神 DLXXXI581",
+      "level": 0.5,
+      "atk": 3,
+      "hp": 7,
+      "cd": 9,
+      "rawTraits": [
+        "防御1",
+        "反击1"
+      ],
+      "skills": [
+        {
+          "raw": "防御1",
+          "resolution": "implemented",
+          "family": "defense",
+          "param": 1,
+          "matchKind": "full"
+        },
+        {
+          "raw": "反击1",
+          "resolution": "implemented",
+          "family": "counter",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "太阳系帝国的旧时代英雄座驾，传奇而沧桑的机体在近地面轨道击杀过无数敌方机动战甲，之后经历了空间化改造，拥有3光年续航，引以为傲的中子涂料也已经不在代表人类的极限。",
+      "status": "complete",
+      "art": {
+        "artId": "card/ss-plus/014",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "SS+_015",
+      "rarity": "SS+",
+      "name": "范·克 拉 缇 奥 斯",
+      "level": 0.5,
+      "atk": 5,
+      "hp": 3,
+      "cd": 5,
+      "rawTraits": [
+        "闪避3",
+        "对空"
+      ],
+      "skills": [
+        {
+          "raw": "闪避3",
+          "resolution": "implemented",
+          "family": "dodge",
+          "param": 3,
+          "matchKind": "full"
+        },
+        {
+          "raw": "对空",
+          "resolution": "unimplemented",
+          "family": null,
+          "param": null,
+          "evidence": "battle_base_scene.py:1348 只出现在注释「地面单位无法对空：伤害转移到防御者玩家」里",
+          "note": "注意：飞行规则只检查 `飞行`（battle_base_scene.py:1344-1345），带 `对空` 但不带 `飞行` 的卡没有任何对空收益。PLAN 第 4.3 节明确要求不擅自加入未实现对空技能。"
+        }
+      ],
+      "description": "以窃取的神性编织冠冕，范·克拉缇奥斯在黑白羽翼的簇拥下接受世人的祈拜。祂赐予信徒的每一次奇迹，都将他们的一缕灵魂缝入自己的神躯。待最后一片羽翼染上圣光，这位伪神便将拥有足以向真神索取王座的力量。",
+      "status": "complete",
+      "art": {
+        "artId": "card/ss-plus/015",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "SS+_016",
+      "rarity": "SS+",
+      "name": "碎 星 击 辰",
+      "level": 0.5,
+      "atk": 0,
+      "hp": 0,
+      "cd": 4,
+      "rawTraits": [
+        "群体火球1",
+        "群体贯穿1",
+        "自毁"
+      ],
+      "skills": [
+        {
+          "raw": "群体火球1",
+          "resolution": "implemented",
+          "family": "groupFireball",
+          "param": 1,
+          "matchKind": "full"
+        },
+        {
+          "raw": "群体贯穿1",
+          "resolution": "ambiguous",
+          "family": null,
+          "param": null,
+          "note": "未在 trait-overlay.json 中登记"
+        },
+        {
+          "raw": "自毁",
+          "resolution": "implemented",
+          "family": "selfDestruct",
+          "param": null,
+          "matchKind": "exact"
+        }
+      ],
+      "description": "凝聚的星辉尽数注入法阵，数百道虹光随杖尖所指齐射，席卷敌军的整条战线。当最后一道光束贯穿尘烟，层叠的符文也燃烧殆尽，只留下群星破碎般的余辉。",
+      "status": "complete",
+      "art": {
+        "artId": "card/ss-plus/016",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "S+_016",
+      "rarity": "S+",
+      "name": "功 率 百 分 百",
+      "level": 1.5,
+      "atk": 0,
+      "hp": 8,
+      "cd": 5,
+      "rawTraits": [
+        "对空",
+        "聚能3"
+      ],
+      "skills": [
+        {
+          "raw": "对空",
+          "resolution": "unimplemented",
+          "family": null,
+          "param": null,
+          "evidence": "battle_base_scene.py:1348 只出现在注释「地面单位无法对空：伤害转移到防御者玩家」里",
+          "note": "注意：飞行规则只检查 `飞行`（battle_base_scene.py:1344-1345），带 `对空` 但不带 `飞行` 的卡没有任何对空收益。PLAN 第 4.3 节明确要求不擅自加入未实现对空技能。"
+        },
+        {
+          "raw": "聚能3",
+          "resolution": "ambiguous",
+          "family": null,
+          "param": null,
+          "note": "未在 trait-overlay.json 中登记"
+        }
+      ],
+      "description": "聚能环逐级亮起，蓝白电弧沿炮身奔涌，刺耳的充能声中稳稳锁定目标。功率百分百，积蓄的能量便化作一道炽烈光线，轰穿敌人的防线。炮口的余辉尚未散去，下一轮聚能已经开始。",
+      "status": "complete",
+      "art": {
+        "artId": "card/s-plus/016",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "S+_017",
+      "rarity": "S+",
+      "name": "拟 神 尖 兵",
+      "level": 1.5,
+      "atk": 4,
+      "hp": 3,
+      "cd": 1,
+      "rawTraits": [
+        "加速1",
+        "飞行"
+      ],
+      "skills": [
+        {
+          "raw": "加速1",
+          "resolution": "implemented",
+          "family": "haste",
+          "param": 1,
+          "matchKind": "full"
+        },
+        {
+          "raw": "飞行",
+          "resolution": "scene-rule",
+          "family": null,
+          "param": null,
+          "note": "战斗场景规则，非技能族"
+        }
+      ],
+      "description": "诞生于混沌星系的空间种生物，没有语言与意识，只循着高维波动穿行诸界。因其形貌近似超维神，又往往先于祂的投影出现，世人将这些低阶存在称作「神使」。",
+      "status": "complete",
+      "art": {
+        "artId": "card/s-plus/017",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "SS_014",
+      "rarity": "SS",
+      "name": "九龙之力",
+      "level": 1,
+      "atk": 3,
+      "hp": 8,
+      "cd": 10,
+      "rawTraits": [
+        "飞行",
+        "天崩",
+        "破甲2"
+      ],
+      "skills": [
+        {
+          "raw": "飞行",
+          "resolution": "scene-rule",
+          "family": null,
+          "param": null,
+          "note": "战斗场景规则，非技能族"
+        },
+        {
+          "raw": "天崩",
+          "resolution": "ambiguous",
+          "family": null,
+          "param": null,
+          "note": "未在 trait-overlay.json 中登记"
+        },
+        {
+          "raw": "破甲2",
+          "resolution": "implemented",
+          "family": "armorBreak",
+          "param": 2,
+          "matchKind": "full"
+        }
+      ],
+      "description": "蛮荒纪元末期，九龙之王——黄金龙神的传人，龙人种最高战力，往往以人类相貌示人，但其周遭的气息足以让草木枯萎，生灵惊恐。",
+      "status": "complete",
+      "art": {
+        "artId": "card/ss/014",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "SS_015",
+      "rarity": "SS",
+      "name": "沉 樱 幻 海",
+      "level": 1,
+      "atk": 0,
+      "hp": 6,
+      "cd": 4,
+      "rawTraits": [
+        "防御2",
+        "恢复1",
+        "治愈2",
+        "治愈1"
+      ],
+      "skills": [
+        {
+          "raw": "防御2",
+          "resolution": "implemented",
+          "family": "defense",
+          "param": 2,
+          "matchKind": "full"
+        },
+        {
+          "raw": "恢复1",
+          "resolution": "implemented",
+          "family": "selfHeal",
+          "param": 1,
+          "matchKind": "full"
+        },
+        {
+          "raw": "治愈2",
+          "resolution": "implemented",
+          "family": "healAlly",
+          "param": 2,
+          "matchKind": "full"
+        },
+        {
+          "raw": "治愈1",
+          "resolution": "implemented",
+          "family": "healAlly",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "沉入深海的古老庭园中，樱树仍在幽蓝水光里盛放，花瓣随鱼群游过寂静的残塔。传说这里保存着失落王国最后的春天，每当樱花飘落，沉睡的守护者便会听见故人的呼唤。",
+      "status": "complete",
+      "art": {
+        "artId": "card/ss/015",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "SS_016",
+      "rarity": "SS",
+      "name": "至 高 之 作",
+      "level": 1,
+      "atk": 1,
+      "hp": 14,
+      "cd": 8,
+      "rawTraits": [
+        "至高之作"
+      ],
+      "skills": [
+        {
+          "raw": "至高之作",
+          "resolution": "ambiguous",
+          "family": null,
+          "param": null,
+          "note": "未在 trait-overlay.json 中登记"
+        }
+      ],
+      "description": "人类蒸汽时代的女皇，端坐于齿轮王座之上，以赤红双瞳审视人类。第一次自行举起权杖，整座机械都市便跪伏于她的意志之下。百年之后，工匠们终于完成了至高之作，也迎来了自己永远的君主。",
+      "status": "complete",
+      "art": {
+        "artId": "card/ss/016",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "SS_017",
+      "rarity": "SS",
+      "name": "sp 闪 耀 歌 姬",
+      "level": 1,
+      "atk": 0,
+      "hp": 0,
+      "cd": 3,
+      "rawTraits": [
+        "祝福2",
+        "祝福1",
+        "自毁"
+      ],
+      "skills": [
+        {
+          "raw": "祝福2",
+          "resolution": "implemented",
+          "family": "blessing",
+          "param": 2,
+          "matchKind": "full"
+        },
+        {
+          "raw": "祝福1",
+          "resolution": "implemented",
+          "family": "blessing",
+          "param": 1,
+          "matchKind": "full"
+        },
+        {
+          "raw": "自毁",
+          "resolution": "implemented",
+          "family": "selfDestruct",
+          "param": null,
+          "matchKind": "exact"
+        }
+      ],
+      "description": "sp2026秋季特供，活动纪念。",
+      "status": "complete",
+      "art": {
+        "artId": "card/ss/017",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "S_016",
+      "rarity": "S",
+      "name": "千 桥 云 都",
+      "level": 2,
+      "atk": 0,
+      "hp": 6,
+      "cd": 6,
+      "rawTraits": [
+        "飞行",
+        "闪电2",
+        "闪电1"
+      ],
+      "skills": [
+        {
+          "raw": "飞行",
+          "resolution": "scene-rule",
+          "family": null,
+          "param": null,
+          "note": "战斗场景规则，非技能族"
+        },
+        {
+          "raw": "闪电2",
+          "resolution": "implemented",
+          "family": "lightning",
+          "param": 2,
+          "matchKind": "full"
+        },
+        {
+          "raw": "闪电1",
+          "resolution": "implemented",
+          "family": "lightning",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "“千桥连接城邦，云海掩藏古都。”\n高塔与赤色屋顶铺满断崖，巨桥跨越碧绿深谷，整座城市被浩瀚云海环抱。",
+      "status": "complete",
+      "art": {
+        "artId": "card/s/016",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "S_017",
+      "rarity": "S",
+      "name": "快 速 空 中 打 击",
+      "level": 2,
+      "atk": 0,
+      "hp": 0,
+      "cd": 1,
+      "rawTraits": [
+        "炮击1",
+        "炮击2",
+        "炮击3",
+        "自毁"
+      ],
+      "skills": [
+        {
+          "raw": "炮击1",
+          "resolution": "implemented",
+          "family": "bombard",
+          "param": 1,
+          "matchKind": "full"
+        },
+        {
+          "raw": "炮击2",
+          "resolution": "implemented",
+          "family": "bombard",
+          "param": 2,
+          "matchKind": "full"
+        },
+        {
+          "raw": "炮击3",
+          "resolution": "implemented",
+          "family": "bombard",
+          "param": 3,
+          "matchKind": "full"
+        },
+        {
+          "raw": "自毁",
+          "resolution": "implemented",
+          "family": "selfDestruct",
+          "param": null,
+          "matchKind": "exact"
+        }
+      ],
+      "description": "地球联邦近地轨道的最快速反应编队，20分钟即可完成全球覆盖，饱和式火力支援打击，令旧时代反政府武装闻风丧胆。",
+      "status": "complete",
+      "art": {
+        "artId": "card/s/017",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "S_018",
+      "rarity": "S",
+      "name": "繁 星 の 歌 声",
+      "level": 2,
+      "atk": 1,
+      "hp": 4,
+      "cd": 2,
+      "rawTraits": [
+        "振奋1"
+      ],
+      "skills": [
+        {
+          "raw": "振奋1",
+          "resolution": "implemented",
+          "family": "inspire",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "void",
+      "status": "complete",
+      "art": {
+        "artId": "card/s/018",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "S_020",
+      "rarity": "S",
+      "name": "恶 魔 契 约 者",
+      "level": 2,
+      "atk": 2,
+      "hp": 9,
+      "cd": 10,
+      "rawTraits": [
+        "治愈1",
+        "献祭1",
+        "受伤1"
+      ],
+      "skills": [
+        {
+          "raw": "治愈1",
+          "resolution": "implemented",
+          "family": "healAlly",
+          "param": 1,
+          "matchKind": "full"
+        },
+        {
+          "raw": "献祭1",
+          "resolution": "unimplemented",
+          "family": null,
+          "param": null,
+          "evidence": "全项目 .py 无该字符串",
+          "note": "无实现。"
+        },
+        {
+          "raw": "受伤1",
+          "resolution": "implemented",
+          "family": "injury",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "void",
+      "status": "complete",
+      "art": {
+        "artId": "card/s/020",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "A+_015",
+      "rarity": "A+",
+      "name": "无 量 虚",
+      "level": 2.5,
+      "atk": 1,
+      "hp": 4,
+      "cd": 1,
+      "rawTraits": [
+        "闪电2",
+        "对空"
+      ],
+      "skills": [
+        {
+          "raw": "闪电2",
+          "resolution": "implemented",
+          "family": "lightning",
+          "param": 2,
+          "matchKind": "full"
+        },
+        {
+          "raw": "对空",
+          "resolution": "unimplemented",
+          "family": null,
+          "param": null,
+          "evidence": "battle_base_scene.py:1348 只出现在注释「地面单位无法对空：伤害转移到防御者玩家」里",
+          "note": "注意：飞行规则只检查 `飞行`（battle_base_scene.py:1344-1345），带 `对空` 但不带 `飞行` 的卡没有任何对空收益。PLAN 第 4.3 节明确要求不擅自加入未实现对空技能。"
+        }
+      ],
+      "description": "void",
+      "status": "complete",
+      "art": {
+        "artId": "card/a-plus/015",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "A_025",
+      "rarity": "A",
+      "name": "黄 金 马",
+      "level": 3,
+      "atk": 3,
+      "hp": 3,
+      "cd": 3,
+      "rawTraits": [
+        "飞行",
+        "防御1"
+      ],
+      "skills": [
+        {
+          "raw": "飞行",
+          "resolution": "scene-rule",
+          "family": null,
+          "param": null,
+          "note": "战斗场景规则，非技能族"
+        },
+        {
+          "raw": "防御1",
+          "resolution": "implemented",
+          "family": "defense",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "",
+      "status": "complete",
+      "art": {
+        "artId": "card/a/025",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "A_026",
+      "rarity": "A",
+      "name": "宝石龙",
+      "level": 3,
+      "atk": 2,
+      "hp": 7,
+      "cd": 13,
+      "rawTraits": [
+        "飞行",
+        "冰封2",
+        "破甲3"
+      ],
+      "skills": [
+        {
+          "raw": "飞行",
+          "resolution": "scene-rule",
+          "family": null,
+          "param": null,
+          "note": "战斗场景规则，非技能族"
+        },
+        {
+          "raw": "冰封2",
+          "resolution": "implemented",
+          "family": "iceSeal",
+          "param": 2,
+          "matchKind": "full"
+        },
+        {
+          "raw": "破甲3",
+          "resolution": "implemented",
+          "family": "armorBreak",
+          "param": 3,
+          "matchKind": "full"
+        }
+      ],
+      "description": "",
+      "status": "complete",
+      "art": {
+        "artId": "card/a/026",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "A+_016",
+      "rarity": "A+",
+      "name": "摧 城 拔 寨",
+      "level": 2.5,
+      "atk": 0,
+      "hp": 5,
+      "cd": 7,
+      "rawTraits": [
+        "攻城3",
+        "防御2"
+      ],
+      "skills": [
+        {
+          "raw": "攻城3",
+          "resolution": "ambiguous",
+          "family": null,
+          "param": null,
+          "note": "未在 trait-overlay.json 中登记"
+        },
+        {
+          "raw": "防御2",
+          "resolution": "implemented",
+          "family": "defense",
+          "param": 2,
+          "matchKind": "full"
+        }
+      ],
+      "description": "",
+      "status": "complete",
+      "art": {
+        "artId": "card/a-plus/016",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "A+_017",
+      "rarity": "A+",
+      "name": "飞 雷 龙",
+      "level": 2.5,
+      "atk": 0,
+      "hp": 4,
+      "cd": 6,
+      "rawTraits": [
+        "闪电1",
+        "闪电1",
+        "闪避2",
+        "对空"
+      ],
+      "skills": [
+        {
+          "raw": "闪电1",
+          "resolution": "implemented",
+          "family": "lightning",
+          "param": 1,
+          "matchKind": "full"
+        },
+        {
+          "raw": "闪电1",
+          "resolution": "implemented",
+          "family": "lightning",
+          "param": 1,
+          "matchKind": "full"
+        },
+        {
+          "raw": "闪避2",
+          "resolution": "implemented",
+          "family": "dodge",
+          "param": 2,
+          "matchKind": "full"
+        },
+        {
+          "raw": "对空",
+          "resolution": "unimplemented",
+          "family": null,
+          "param": null,
+          "evidence": "battle_base_scene.py:1348 只出现在注释「地面单位无法对空：伤害转移到防御者玩家」里",
+          "note": "注意：飞行规则只检查 `飞行`（battle_base_scene.py:1344-1345），带 `对空` 但不带 `飞行` 的卡没有任何对空收益。PLAN 第 4.3 节明确要求不擅自加入未实现对空技能。"
+        }
+      ],
+      "description": "",
+      "status": "complete",
+      "art": {
+        "artId": "card/a-plus/017",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "A+_018",
+      "rarity": "A+",
+      "name": "幻 世 水 晶 花",
+      "level": 2.5,
+      "atk": 0,
+      "hp": 8,
+      "cd": 8,
+      "rawTraits": [
+        "还魂1",
+        "献祭3"
+      ],
+      "skills": [
+        {
+          "raw": "还魂1",
+          "resolution": "implemented",
+          "family": "soulReturn",
+          "param": 1,
+          "matchKind": "full"
+        },
+        {
+          "raw": "献祭3",
+          "resolution": "unimplemented",
+          "family": null,
+          "param": null,
+          "evidence": "全项目 .py 无该字符串",
+          "note": "无实现。"
+        }
+      ],
+      "description": "",
+      "status": "complete",
+      "art": {
+        "artId": "card/a-plus/018",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "A+_020",
+      "rarity": "A+",
+      "name": "远 古 神 庙",
+      "level": 2.5,
+      "atk": 0,
+      "hp": 10,
+      "cd": 10,
+      "rawTraits": [
+        "飞行",
+        "贯穿1",
+        "火球1"
+      ],
+      "skills": [
+        {
+          "raw": "飞行",
+          "resolution": "scene-rule",
+          "family": null,
+          "param": null,
+          "note": "战斗场景规则，非技能族"
+        },
+        {
+          "raw": "贯穿1",
+          "resolution": "ambiguous",
+          "family": null,
+          "param": null,
+          "note": "未在 trait-overlay.json 中登记"
+        },
+        {
+          "raw": "火球1",
+          "resolution": "implemented",
+          "family": "fireball",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "",
+      "status": "complete",
+      "art": {
+        "artId": "card/a-plus/020",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "A+_019",
+      "rarity": "A+",
+      "name": "宿 傩",
+      "level": 2.5,
+      "atk": 1,
+      "hp": 6,
+      "cd": 5,
+      "rawTraits": [
+        "狂暴",
+        "闪避2",
+        "对空"
+      ],
+      "skills": [
+        {
+          "raw": "狂暴",
+          "resolution": "implemented",
+          "family": "berserk",
+          "param": null,
+          "matchKind": "exact"
+        },
+        {
+          "raw": "闪避2",
+          "resolution": "implemented",
+          "family": "dodge",
+          "param": 2,
+          "matchKind": "full"
+        },
+        {
+          "raw": "对空",
+          "resolution": "unimplemented",
+          "family": null,
+          "param": null,
+          "evidence": "battle_base_scene.py:1348 只出现在注释「地面单位无法对空：伤害转移到防御者玩家」里",
+          "note": "注意：飞行规则只检查 `飞行`（battle_base_scene.py:1344-1345），带 `对空` 但不带 `飞行` 的卡没有任何对空收益。PLAN 第 4.3 节明确要求不擅自加入未实现对空技能。"
+        }
+      ],
+      "description": "",
+      "status": "complete",
+      "art": {
+        "artId": "card/a-plus/019",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "A+_021",
+      "rarity": "A+",
+      "name": "剑 心 阵",
+      "level": 2.5,
+      "atk": 0,
+      "hp": 8,
+      "cd": 4,
+      "rawTraits": [
+        "火球1",
+        "闪电2",
+        "恢复1"
+      ],
+      "skills": [
+        {
+          "raw": "火球1",
+          "resolution": "implemented",
+          "family": "fireball",
+          "param": 1,
+          "matchKind": "full"
+        },
+        {
+          "raw": "闪电2",
+          "resolution": "implemented",
+          "family": "lightning",
+          "param": 2,
+          "matchKind": "full"
+        },
+        {
+          "raw": "恢复1",
+          "resolution": "implemented",
+          "family": "selfHeal",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "",
+      "status": "complete",
+      "art": {
+        "artId": "card/a-plus/021",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "A_027",
+      "rarity": "A",
+      "name": "小 狐 仙",
+      "level": 3,
+      "atk": 0,
+      "hp": 6,
+      "cd": 2,
+      "rawTraits": [
+        "飞行",
+        "火球2"
+      ],
+      "skills": [
+        {
+          "raw": "飞行",
+          "resolution": "scene-rule",
+          "family": null,
+          "param": null,
+          "note": "战斗场景规则，非技能族"
+        },
+        {
+          "raw": "火球2",
+          "resolution": "implemented",
+          "family": "fireball",
+          "param": 2,
+          "matchKind": "full"
+        }
+      ],
+      "description": "",
+      "status": "complete",
+      "art": {
+        "artId": "card/a/027",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "S_019",
+      "rarity": "S",
+      "name": "雲 耀 の 華",
+      "level": 2,
+      "atk": 2,
+      "hp": 5,
+      "cd": 4,
+      "rawTraits": [
+        "闪电3",
+        "闪避2",
+        "对空"
+      ],
+      "skills": [
+        {
+          "raw": "闪电3",
+          "resolution": "implemented",
+          "family": "lightning",
+          "param": 3,
+          "matchKind": "full"
+        },
+        {
+          "raw": "闪避2",
+          "resolution": "implemented",
+          "family": "dodge",
+          "param": 2,
+          "matchKind": "full"
+        },
+        {
+          "raw": "对空",
+          "resolution": "unimplemented",
+          "family": null,
+          "param": null,
+          "evidence": "battle_base_scene.py:1348 只出现在注释「地面单位无法对空：伤害转移到防御者玩家」里",
+          "note": "注意：飞行规则只检查 `飞行`（battle_base_scene.py:1344-1345），带 `对空` 但不带 `飞行` 的卡没有任何对空收益。PLAN 第 4.3 节明确要求不擅自加入未实现对空技能。"
+        }
+      ],
+      "description": "",
+      "status": "complete",
+      "art": {
+        "artId": "card/s/019",
         "sourcePresent": true
       }
     }

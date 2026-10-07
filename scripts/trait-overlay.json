@@ -29,13 +29,13 @@
       "resolution": "alias",
       "family": "delay",
       "evidence": "skill_registry.py:134 注册 `延迟(\\d+)`；skill_effects.py:1259-1290 为对敌方最左占用准备槽 CD+n",
-      "note": "延时/延迟是同义异形词，不是解析缺口。置信度中：本轮不自动建立别名规则，需人工确认后再决定是否实现。"
+      "note": "2026-10-07 已由用户确认「就是同一个词」，并**直接改旧项目那两张卡的 cards.json**（`assets/outputs/B/cards.json` 的 延时1→延迟1、`assets/outputs/#elna/cards.json` 的 治疗1→治愈1），重跑导入后卡面文字与解析结果都走注册表正词，本条不再被命中——留着是为了保留当时的判断与证据。"
     },
     "治疗1": {
       "resolution": "alias",
       "family": "healAlly",
       "evidence": "skill_registry.py:202 注册 `治愈(\\d+)`；skill_effects.py:414-498 为治疗随机受伤友方（无友方时治疗自己）",
-      "note": "治疗/治愈是同义异形词。卡面描述「对自身和友方进行治疗」与治愈n 语义一致。置信度中。"
+      "note": "2026-10-07 已由用户确认「就是同一个词」，并**直接改旧项目那两张卡的 cards.json**（`assets/outputs/B/cards.json` 的 延时1→延迟1、`assets/outputs/#elna/cards.json` 的 治疗1→治愈1），重跑导入后卡面文字与解析结果都走注册表正词，本条不再被命中——留着是为了保留当时的判断与证据。"
     },
     "不屈": {
       "resolution": "flavor",

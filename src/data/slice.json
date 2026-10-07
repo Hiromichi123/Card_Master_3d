@@ -155,7 +155,7 @@
       "why": "抽卡2+祝福1+自毁，一张牌覆盖三种不同触发点的族",
       "rarity": "B",
       "atk": 0,
-      "hp": 5,
+      "hp": 0,
       "cd": 4,
       "rawTraits": [
         "抽卡2",
@@ -591,6 +591,7 @@
     "groupBlessing",
     "groupBombard",
     "groupHeal",
+    "holyShield",
     "immunity",
     "injury",
     "soulReturn",

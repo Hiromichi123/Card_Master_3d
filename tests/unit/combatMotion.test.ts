@@ -86,7 +86,8 @@ describe('card attack and HP feedback', () => {
     const circle = buildSkillTimeline('flyingDeploy', context);
     expect(visuals.activeCount).toBe(1);
     circle.update(0.1);
-    const actor = visuals.group.children[0]!;
+    const actor = visuals.group.children.find((child) => child.name === 'skill-flyingDeploy')!;
+    // Actor children are ring, sigil, core; a flying deployment never shows the casting core.
     expect(actor.children[2]!.visible).toBe(false);
     circle.skipToEnd(); circle.skipToEnd();
     expect(visuals.activeCount).toBe(0);

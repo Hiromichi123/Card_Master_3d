@@ -6,7 +6,10 @@ import {
   type Material, type Texture, type Camera, type WebGLRenderer, type Scene,
 } from 'three';
 import type { EffectTemplateId } from './familyMap';
+import { QuarksSkillVisuals, usesQuarks } from './QuarksSkillVisuals';
 import { NamedSkillVisuals, usesLinearAbility } from './NamedSkillVisuals';
+import { SlashSkillVisuals } from './SlashSkillVisuals';
+import { usesSlash } from './slashTiming';
 import { createCrystalGeometry } from './vendor/linearCrystal';
 import { LINEAR_BOLT_FRAGMENT, LINEAR_BOLT_VERTEX } from './vendor/linearShaders';
 
@@ -18,6 +21,9 @@ export interface SkillVisualSpec {
   readonly to: Vector3;
   readonly intensity: number;
   readonly tint?: Color | undefined;
+  readonly countScale?: number | undefined;
+  readonly durationScale?: number | undefined;
+  readonly sourceBurst?: boolean | undefined;
 }
 export interface SkillVisualHandle {
   update(phase: VisualPhase, progress: number): void;
@@ -113,10 +119,12 @@ export class SkillVisualPool implements SkillVisualFactory {
   };
   private readonly active = new Set<SkillVisualHandle>();
   private readonly named = new NamedSkillVisuals();
+  private readonly slash = new SlashSkillVisuals();
+  private readonly quarks: QuarksSkillVisuals;
   private readonly textures = new Map<string, Texture>();
 
-  constructor(readonly maxActors = 24) { this.group.name = 'battle-skill-geometry'; this.group.add(this.named.group); }
-  updateFrame(camera: Camera, renderer: WebGLRenderer, delta: number, scene?: Scene): void { this.named.updateFrame(camera, renderer, delta, scene); }
+  constructor(readonly maxActors = 24) { this.quarks = new QuarksSkillVisuals(maxActors <= 10 ? 0.45 : 1); this.group.name = 'battle-skill-geometry'; this.group.add(this.named.group, this.quarks.group, this.slash.group); }
+  updateFrame(camera: Camera, renderer: WebGLRenderer, delta: number, scene?: Scene): void { this.named.updateFrame(camera, renderer, delta, scene); this.quarks.update(delta); this.slash.updateFrame(renderer); }
   get activeCount(): number { return this.active.size; }
   get geometryCount(): number { return Object.keys(this.geometries).length; }
 
@@ -132,8 +140,9 @@ export class SkillVisualPool implements SkillVisualFactory {
 
   create(spec: SkillVisualSpec): SkillVisualHandle {
     while (this.active.size >= this.maxActors) this.active.values().next().value?.dispose();
-    if (usesLinearAbility(spec.template)) {
-      const original = this.named.create(spec, this.worldScale);
+    if (usesQuarks(spec.template) || usesLinearAbility(spec.template) || usesSlash(spec.template)) {
+      const original = usesSlash(spec.template) ? this.slash.create(spec, this.worldScale)
+        : usesQuarks(spec.template) ? this.quarks.create(spec, this.worldScale) : this.named.create(spec, this.worldScale);
       let released = false;
       const handle: SkillVisualHandle = {
         update: (phase, progress) => original.update(phase, progress),
@@ -148,13 +157,13 @@ export class SkillVisualPool implements SkillVisualFactory {
     const visualTime = { value: 0 };
     const intensity = Math.min(3, Math.max(0.6, 1 + spec.intensity * 0.12));
     const scale = this.worldScale;
-    const template = spec.template;
+    const template = spec.template === 'dodgeGrant' ? 'armorBreak' : spec.template;
     const fire = ['fireball', 'groupFireball', 'bombard', 'deathBurst'].includes(template);
     const ice = template === 'iceSeal' || template === 'groupIceSeal';
     const bolt = template === 'lightning' || template === 'groupLightning';
     const healing = template === 'heal' || template === 'groupHeal';
     const blood = template === 'lifeDrain';
-    const color = spec.tint?.clone() ?? new Color(fire ? COLORS.fire : ice ? COLORS.ice : bolt ? COLORS.bolt :
+    const color = spec.tint?.clone() ?? new Color(spec.template === 'dodgeGrant' ? COLORS.buff : fire ? COLORS.fire : ice ? COLORS.ice : bolt ? COLORS.bolt :
       healing ? COLORS.heal : blood ? COLORS.blood : template === 'buff' ? COLORS.buff :
       template === 'debuff' || template === 'silence' || spec.family === 'delay' ? COLORS.curse :
       template === 'shield' || template === 'armorBreak' ? COLORS.shield : COLORS.flow);
@@ -314,6 +323,8 @@ export class SkillVisualPool implements SkillVisualFactory {
   dispose(): void {
     this.clear();
     this.named.dispose();
+    this.slash.dispose();
+    this.quarks.dispose();
     for (const geometry of Object.values(this.geometries)) geometry.dispose();
     for (const texture of this.textures.values()) texture.dispose();
     this.textures.clear();

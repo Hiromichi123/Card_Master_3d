@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { Color, Vector3 } from 'three';
+import { Color, Vector3, type Object3D } from 'three';
 import { ParticlePool } from '../../src/rendering/effects/ParticlePool';
 import { SkillVisualPool } from '../../src/rendering/effects/SkillVisualPool';
 import { buildSkillTimeline } from '../../src/rendering/effects/skillRecipes';
@@ -19,7 +19,16 @@ describe('bounded skill geometry lifecycle', () => {
     timeline.skipToEnd();
     expect(onHit).toHaveBeenCalledTimes(1);
     expect(visuals.activeCount).toBe(0);
-    expect(visuals.group.children).toHaveLength(0);
+    // The pool permanently holds two subsystem groups — the linear-ability visuals and the
+    // three.quarks batched renderer — so actors have to be gone from inside them.
+    expect(visuals.group.children).toHaveLength(2);
+    const [linear, quarks] = visuals.group.children;
+    expect(linear!.name).toContain('LinearAbilityCasting');
+    expect(quarks!.name).toBe('three.quarks:card-artillery');
+    expect(linear!.children).toHaveLength(0);
+    const leftoverActors: string[] = [];
+    quarks!.traverse((node) => { if (node.name.startsWith('quarks-')) leftoverActors.push(node.name); });
+    expect(leftoverActors).toEqual([]);
     timeline.skipToEnd();
     expect(onHit).toHaveBeenCalledTimes(1);
     visuals.dispose();
@@ -27,13 +36,17 @@ describe('bounded skill geometry lifecycle', () => {
 
   it('caps rapid requests, isolates concurrent endpoints and supports equal origin/target', () => {
     const visuals = new SkillVisualPool(2);
-    const a = visuals.create({ template: 'fireball', from: new Vector3(0, 1, 3), to: new Vector3(-2, 0, -3), intensity: 1 });
-    const b = visuals.create({ template: 'fireball', from: new Vector3(0, 1, 3), to: new Vector3(2, 0, -3), intensity: 1 });
+    // 'heal' belongs to neither subsystem, so its actor stays a direct child of the pool group
+    // and its grounded ring keeps the endpoint of its own cast.
+    const a = visuals.create({ template: 'heal', from: new Vector3(0, 1, 3), to: new Vector3(-2, 0, -3), intensity: 1 });
+    const b = visuals.create({ template: 'heal', from: new Vector3(0, 1, 3), to: new Vector3(2, 0, -3), intensity: 1 });
     a.update('travel', 1); b.update('travel', 1);
-    const leftCore = visuals.group.children[0]!.children[2]!;
-    const rightCore = visuals.group.children[1]!.children[2]!;
-    expect(leftCore.position.x).toBe(-2);
-    expect(rightCore.position.x).toBe(2);
+    const actors = visuals.group.children.filter((child) => child.name === 'skill-heal');
+    const placedAt = (actor: Object3D, x: number): boolean =>
+      actor.children.some((child) => Math.abs(child.position.x - x) < 1e-6);
+    expect(actors).toHaveLength(2);
+    expect(placedAt(actors[0]!, -2)).toBe(true);
+    expect(placedAt(actors[1]!, 2)).toBe(true);
     const c = visuals.create({ template: 'lightning', from: new Vector3(), to: new Vector3(), intensity: 1 });
     expect(visuals.activeCount).toBe(2);
     a.update('impact', 0.5); // Evicted handles remain safe, including their later timeline updates.

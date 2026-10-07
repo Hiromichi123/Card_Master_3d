@@ -11,6 +11,10 @@
 
 export type EffectTemplateId =
   | 'normalAttack'
+  | 'slash'
+  | 'groupSlash'
+  | 'swordDance'
+  | 'groupSwordDance'
   | 'fireball'
   | 'iceSeal'
   | 'lightning'
@@ -22,10 +26,17 @@ export type EffectTemplateId =
   | 'buff'
   | 'debuff'
   | 'curse'
+  | 'instantDeath'
+  | 'dodgeGrant'
   | 'injury'
   | 'flow'
   | 'status'
   | 'bombard'
+  | 'groupBombard'
+  | 'deathBombard'
+  | 'ranged'
+  | 'piercing'
+  | 'groupPiercing'
   | 'deathBurst'
   | 'groupHeal'
   | 'armorBreak'
@@ -44,11 +55,23 @@ export type EffectTemplateId =
  * P4 覆盖全部 35 族时，只需在这里补齐映射，不需要新写效果。
  */
 export const FAMILY_TO_EFFECT: Record<string, EffectTemplateId> = {
+  sacrifice: 'lifeDrain',
+  execute: 'swordDance',
+  teleport: 'flow',
+  slash: 'slash',
+  groupSlash: 'groupSlash',
+  swordDance: 'swordDance',
+  groupSwordDance: 'groupSwordDance',
   fireball: 'fireball',
   bombard: 'bombard',
-  explodeOnDeath: 'deathBurst',
+  explodeOnDeath: 'deathBombard',
+  ranged: 'ranged',
+  piercing: 'piercing',
+  groupPiercing: 'groupPiercing',
+  criticalCollapse: 'slash',
+  unyielding: 'status',
   groupFireball: 'groupFireball',
-  groupBombard: 'groupFireball',
+  groupBombard: 'groupBombard',
   iceSeal: 'iceSeal',
   groupIceSeal: 'groupIceSeal',
   lightning: 'lightning',
@@ -65,6 +88,11 @@ export const FAMILY_TO_EFFECT: Record<string, EffectTemplateId> = {
   inspire: 'buff',
   groupInspire: 'buff',
   curse: 'curse',
+  instantDeath: 'instantDeath',
+  grantDodge: 'armorBreak',
+  spellReflect: 'shield',
+  directDamage: 'normalAttack',
+  groupPhysicalDamage: 'normalAttack',
   injury: 'injury',
   vampire: 'lifeDrain',
   berserk: 'debuff',
@@ -79,4 +107,25 @@ export const FAMILY_TO_EFFECT: Record<string, EffectTemplateId> = {
   rebirth: 'rebirth',
   silence: 'silence',
   counter: 'normalAttack',
+  /** 圣盾：演出与护盾/防御**同一段**，只把颜色换成金色（见 `FAMILY_TINT`）。 */
+  holyShield: 'shield',
+};
+
+/**
+ * 个别族换颜色用的覆盖表。
+ *
+ * 模板自带的颜色是按**效果**定的（护盾是蓝的、火球是橙的），可一个模板会被几个族共用，
+ * 它们未必该同色——圣盾正是这种情况：动画照旧，颜色换金。
+ * 值直接进 `EffectRequest.color`（十六进制字符串）。
+ *
+ * 放在这个文件里而不是各调用点：演出层（战斗）与实验台都要用同一份，
+ * 两处各写一遍迟早会漂。这里不 import three，所以纯逻辑的演出层可以照常引用。
+ */
+export const FAMILY_TINT: Record<string, string> = {
+  holyShield: '#ffd77a',
+  grantDodge: '#ffd77a',
+  spellReflect: '#c5ecff',
+  instantDeath: '#120e18',
+  execute: '#9e1235',
+  criticalCollapse: '#ff1646',
 };
