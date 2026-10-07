@@ -7,6 +7,7 @@ import { EffectLabScene } from '../scenes/EffectLabScene';
 import { ActivityScene } from '../scenes/ActivityScene';
 import { CampaignScene } from '../scenes/CampaignScene';
 import { BattleMenuScene } from '../scenes/BattleMenuScene';
+import { LocalBattleScene } from '../scenes/LocalBattleScene';
 import { GachaScene } from '../scenes/GachaScene';
 import { FusionScene } from '../scenes/FusionScene';
 import { MazeScene } from '../scenes/MazeScene';
@@ -17,7 +18,7 @@ import type { ProfileStore } from '../state/createProfileStore';
 import { pushToast } from '../state/toastStore';
 import { SceneBackgroundProvider } from '../ui/SceneBackground';
 import { useProfileStore } from '../state/useProfileStore';
-import { QualityControl } from '../ui/QualityControl';
+import { PerfToggle } from '../ui/BattleSettings';
 import { ScreenPlaceholder } from '../ui/ScreenPlaceholder';
 import { configFor, definitionsFor, settlementFor } from '../scenes/campaignFlow';
 import type { SettlementView, StageLaunch } from '../domain/progression/campaign';
@@ -45,6 +46,8 @@ import { ROUTES, type RouteId } from './routes';
 export function App() {
   const [route, setRoute] = useState<RouteId>('hub');
   const [store, setStore] = useState<ProfileStore | null>(null);
+  /** 抬头是否收起。只活在这一会话里（与其余设置一样，不进存档）。 */
+  const [navCollapsed, setNavCollapsed] = useState(false);
   /*
     这一局的战役启动参数与它的结算。
 
@@ -117,24 +120,40 @@ export function App() {
   return (
     <SceneBackgroundProvider>
     <div className="app-shell">
-      <nav className="app-nav">
+      {/*
+        抬头可手动收起（2026-10-07）：3D 屏（战桌、实验台、抽卡）最想要的是纵向空间，
+        而抬头在那些屏上只是「我现在不想切屏」。收起来只剩品牌与一个展开按钮，
+        再点就回来——状态不进存档，刷新即恢复展开。
+      */}
+      <nav className={navCollapsed ? 'app-nav app-nav--collapsed' : 'app-nav'}>
         <span className="app-nav__brand">Card Master 3D</span>
-        {ROUTES.filter((item) => !['maze', 'draft'].includes(item.id)).map((item) => (
-          <button
-            key={item.id}
-            type="button"
-            className={
-              item.id === route ? 'app-nav__tab app-nav__tab--active' : 'app-nav__tab'
-            }
-            onClick={() => navigate(item.id)}
-            title={item.hint}
-          >
-            {item.label}
-            {item.dev && <span className="app-nav__dev">开发</span>}
-          </button>
-        ))}
+        {!navCollapsed &&
+          ROUTES.filter((item) => !['maze', 'draft'].includes(item.id)).map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              className={
+                item.id === route ? 'app-nav__tab app-nav__tab--active' : 'app-nav__tab'
+              }
+              onClick={() => navigate(item.id)}
+              title={item.hint}
+            >
+              {item.label}
+              {item.dev && <span className="app-nav__dev">开发</span>}
+            </button>
+          ))}
         <span className="app-nav__spacer" />
-        <QualityControl />
+        {!navCollapsed && <PerfToggle />}
+        <button
+          type="button"
+          className="app-nav__toggle"
+          onClick={() => setNavCollapsed((current) => !current)}
+          aria-label={navCollapsed ? '展开导航' : '收起导航'}
+          aria-expanded={!navCollapsed}
+          title={navCollapsed ? '展开导航' : '收起导航（多为 3D 画面腾出纵向空间）'}
+        >
+          {navCollapsed ? '▾ 展开导航' : '▴'}
+        </button>
       </nav>
 
       <main className="app-main">
@@ -310,6 +329,8 @@ function Screen({
           onNavigate={onNavigate}
         />
       );
+    case 'localBattle':
+      return <LocalBattleScene onReturn={() => onNavigate('battlemenu')} />;
     case 'battlemenu':
       return <BattleMenuScene profile={profile} onNavigate={onNavigate} />;
     case 'activity':

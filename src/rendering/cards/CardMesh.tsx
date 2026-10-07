@@ -347,7 +347,7 @@ export function CardMesh({
       </mesh>
 
       {/* 正面：成品卡面 */}
-      <mesh geometry={faceGeometry} position={[0, 0, CARD_FACE_OFFSET]}>
+      <mesh geometry={faceGeometry} position={[0, 0, CARD_FACE_OFFSET]} userData={{ cardFaceSurface: true }}>
         <meshStandardMaterial
           ref={faceMaterialRef}
           map={faceTexture}

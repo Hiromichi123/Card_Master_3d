@@ -1,5 +1,6 @@
 import type { SideId } from '../domain/cards/types';
 import type { BattleSnapshot } from '../rendering/presentation/session';
+import { BattleSettings } from './BattleSettings';
 
 /**
  * 战斗 HUD。
@@ -12,11 +13,14 @@ export interface BattleHudProps {
   readonly snapshot: BattleSnapshot;
   readonly onEndTurn: () => void;
   readonly onSkipPerformance: () => void;
+  readonly onAutoEnemyChange?: ((on: boolean) => void) | undefined;
+  readonly onExit?: (() => void) | undefined;
+  readonly onLeave?: (() => void) | undefined;
 }
 
 const SIDE_LABEL: Record<SideId, string> = { player: '我方', enemy: '敌方' };
 
-export function BattleHud({ snapshot, onEndTurn, onSkipPerformance }: BattleHudProps) {
+export function BattleHud({ snapshot, onEndTurn, onSkipPerformance, onAutoEnemyChange, onExit, onLeave }: BattleHudProps) {
   return (
     <div className="hud">
       <div className="hud__top">
@@ -38,6 +42,14 @@ export function BattleHud({ snapshot, onEndTurn, onSkipPerformance }: BattleHudP
         </ol>
 
         <div className="hud__actions">
+          {/* 战斗中默认收成一行：战桌是主角，一排控件挡着反而看不清局面 */}
+          <BattleSettings />
+          {snapshot.localMultiplayer && <button type="button" className="btn"
+            aria-pressed={snapshot.autoEnemy} onClick={() => onAutoEnemyChange?.(!snapshot.autoEnemy)}>
+            上方 AI：{snapshot.autoEnemy ? '开' : '关'}
+          </button>}
+          {onExit && <button type="button" className="btn" onClick={onExit}>重新选卡</button>}
+          {onLeave && <button type="button" className="btn" onClick={onLeave}>返回对战菜单</button>}
           <p
             className={alerting(snapshot) ? 'hud__hint hud__hint--alert' : 'hud__hint'}
           >
@@ -72,7 +84,7 @@ function SidePanel({ side, snapshot }: { side: SideId; snapshot: BattleSnapshot 
 
   return (
     <section className={`hud__side hud__side--${side}`}>
-      <header className="hud__side-name">{SIDE_LABEL[side]}</header>
+      <header className="hud__side-name">{snapshot.localMultiplayer ? (side === 'player' ? '下方' : '上方') : SIDE_LABEL[side]}</header>
       <div className="hud__hp">
         <span className="hud__hp-value">
           {hp} / {snapshot.baseHp}
@@ -94,6 +106,7 @@ function turnLabel(snapshot: BattleSnapshot): string {
   if (!snapshot.inputOpen) {
     return '演出中…';
   }
+  if (snapshot.localMultiplayer) return snapshot.currentSide === 'player' ? '下方回合' : '上方回合';
   return snapshot.currentSide === 'player' ? '你的回合' : '敌方回合';
 }
 
@@ -107,8 +120,7 @@ function turnLabel(snapshot: BattleSnapshot): string {
 function mustPlayCard(snapshot: BattleSnapshot): boolean {
   return (
     snapshot.inputOpen &&
-    snapshot.currentSide === 'player' &&
-    snapshot.playerHasLegalPlay &&
+    snapshot.currentHasLegalPlay &&
     snapshot.cardsPlayedThisTurn < snapshot.cardLimit
   );
 }
@@ -116,7 +128,6 @@ function mustPlayCard(snapshot: BattleSnapshot): boolean {
 function canEndTurn(snapshot: BattleSnapshot): boolean {
   return (
     snapshot.inputOpen &&
-    snapshot.currentSide === 'player' &&
     !mustPlayCard(snapshot)
   );
 }
@@ -131,26 +142,27 @@ function hintText(snapshot: BattleSnapshot): string {
   if (!snapshot.inputOpen) {
     return '演出中…';
   }
-  if (snapshot.currentSide !== 'player') {
+  if (snapshot.currentSide !== 'player' && !snapshot.localMultiplayer) {
     return '敌方行动中…';
   }
   if (snapshot.selectedInstanceId !== null) {
     return '点击高亮的准备区槽位放置';
   }
-  if (!snapshot.playerHasLegalPlay) {
+  if (!snapshot.currentHasLegalPlay) {
     return '无牌可出，只能结束回合';
   }
   if (snapshot.cardsPlayedThisTurn >= snapshot.cardLimit) {
     return '本回合已出牌，可结束回合';
   }
-  return '本回合必须先出一张牌：点击手牌，再点准备区槽位';
+  return snapshot.localMultiplayer
+    ? `${snapshot.currentSide === 'player' ? '下方' : '上方'}：点击自己的手牌，再点高亮准备区`
+    : '本回合必须先出一张牌：点击手牌，再点准备区槽位';
 }
 
 /** 无牌可出时把提示加重——那是玩家唯一能做的操作，值得被看见。 */
 function alerting(snapshot: BattleSnapshot): boolean {
   return (
     snapshot.inputOpen &&
-    snapshot.currentSide === 'player' &&
-    !snapshot.playerHasLegalPlay
+    !snapshot.currentHasLegalPlay
   );
 }

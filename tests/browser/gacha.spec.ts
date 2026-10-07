@@ -313,25 +313,24 @@ test('3D 舞台：卡面真的画出来了，而且演出过程中画面在动',
   expect(problems, `场景出现问题：\n${problems.join('\n')}`).toEqual([]);
 });
 
-test('演出速度设为「跳过」时不挂 3D 舞台，结果立刻出来且只扣一次费', async ({ page }) => {
+test('「跳过演出」立刻出结果且只扣一次费', async ({ page }) => {
   const problems = collectProblems(page);
   await openGacha(page);
 
-  /*
-    走真实控件，不直接改 store。**要 `exact`**：演出速度那组按钮的外层容器
-    的可访问名是「演出 快速 跳过」，子串匹配会同时命中容器与按钮本身。
-  */
-  await page.locator('.quality').getByRole('button', { name: '跳过', exact: true }).click();
-
   await page.getByTestId('pull-10').click();
-  await waitForResult(page);
 
   /*
-    「跳过」是**不进演出**的那条路：挂一个 WebGL 上下文只为了立刻跳到最后是白花的。
-    这条断言同时守着「降级出口只有一个」这个设计——两条路都不演，都不重复扣费。
+    跳过是**这块屏自己的按钮**（2026-10-07：演出速度那组设置搬去了战斗界面，
+    其它屏不再共用一个全局档位，谁需要跳过谁给按钮）。
+    按下它等价于「立刻播完」：驱动器的 `skipToEnd()` 会补发终态，
+    卡片位姿与结果一个都不缺，缺的只是那几秒动画。
   */
-  await expect(page.locator('.gacha__stage')).toHaveCount(0);
-  await expect(page.locator('.gacha-result__item')).toHaveCount(10);
+  const skip = page.getByRole('button', { name: '跳过演出' });
+  await expect(skip).toBeVisible({ timeout: 30_000 });
+  await skip.click();
+
+  await expect(page.getByRole('region', { name: '抽卡完成' })).toBeVisible({ timeout: 30_000 });
+  // 跳过的是演出，不是结算：钱只扣一次
   expect((await readProfile(page))?.currencies.gold).toBe(START_GOLD - NORMAL_TEN);
 
   expect(problems, `场景出现问题：\n${problems.join('\n')}`).toEqual([]);

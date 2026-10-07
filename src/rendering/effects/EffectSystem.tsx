@@ -66,6 +66,8 @@ export function EffectSystem({
   useEffect(() => { visuals.worldScale = worldScale; }, [visuals, worldScale]);
   useEffect(() => () => visuals.dispose(), [visuals]);
   const gl = useThree((state) => state.gl);
+  const globalsCamera = useThree((state) => state.camera);
+  const globalsScene = useThree((state) => state.scene);
 
   /** 直接复用池子的数组作为顶点属性，避免每帧拷贝 */
   const geometry = useMemo(() => {
@@ -158,6 +160,7 @@ export function EffectSystem({
 
     // delta 上限保护：切标签页回来时 delta 会很大，不夹住会让粒子瞬移
     const step = Math.min(delta, 0.05);
+    visuals.updateFrame(globalsCamera, gl, step / ANIMATION_DURATION_SCALE, globalsScene);
 
     // 帧率归一化：模板里的「每帧发射 n 颗」乘上这个系数后，
     // 单位时间的粒子密度不随帧率变化，低帧率机器上特效不会变稀。

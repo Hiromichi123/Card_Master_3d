@@ -1,10 +1,11 @@
 import { OrbitControls } from '@react-three/drei';
-import { Canvas } from '@react-three/fiber';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { PCFShadowMap, Vector3 } from 'three';
+import { Canvas, useFrame } from '@react-three/fiber';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
+import { PCFShadowMap, type Group } from 'three';
 
 import { cardById, slice } from '../data';
 import type { CardDefinition } from '../domain/cards/types';
+import { FLYING_CARD_LIFT } from '../rendering/anim/combatMotion';
 import { CardMesh } from '../rendering/cards/CardMesh';
 import { holoIntensityForRarity } from '../rendering/cards/HoloLayer';
 import { effectDirector } from '../rendering/effects/effectDirector';
@@ -13,6 +14,7 @@ import { EffectSystem } from '../rendering/effects/EffectSystem';
 import { FAMILY_TO_EFFECT, type EffectTemplateId } from '../rendering/effects/templates';
 import { PerfSampler } from '../rendering/PerfSampler';
 import { PostEffects } from '../rendering/postprocessing/PostEffects';
+import { CAST_OFFSET, CAST_Y, IMPACT_Y } from '../rendering/presentation/constants';
 import { sceneFogArgs } from '../rendering/table/themes';
 import { SPEED_SCALE, useSettingsStore } from '../state/settingsStore';
 import { PerfOverlay } from '../ui/PerfOverlay';
@@ -26,10 +28,31 @@ import { WebGLGuard } from './WebGLGuard';
  * 「有没有轨迹与命中」。把它们放到能慢慢看、能反复触发的地方，
  * `V-HOLO-*` / `V-FX-*` / `V-REF-*` 才可验证。
  *
- * 面板可以手动触发两类东西：
- * - **攻击与特效模板**：普通攻击、火球、冰封、闪电（含群体版）、护盾、治疗、祝福等；
- * - **当前卡自己的 trait**：经 `FAMILY_TO_EFFECT` 映射到模板，并用该 trait 的参数
- *   `n` 作为强度。「这张卡打出来是什么样」因此是直接可看的。
+ * ## 阵型：第二行一张施法卡，上排三张目标
+ *
+ * 上一版的阵型是「三张一排、选中的那张在正中」，问题有两个：
+ * 对面是谁**不由你决定**（两侧只是切片里的相邻卡），而且特效的目标点
+ * 与「对位」这个规则概念对不上——实验台想验的恰恰是「这张牌打到那个身上会怎样」。
+ *
+ * 现在改成两排：
+ * - **第二行（近相机）一张施法卡**，四个槽都可以在下拉框里任选，点 3D 里的卡
+ *   也与施法卡**对调**（四个位置永远是四张不同的卡）；
+ * - **上排三张目标**，中槽正好在施法卡正上方，就是规则里的**对位**；
+ * - 面板触发的特效**从这张施法卡出发、落到上排**，打几张**完全由技能族决定**：
+ *   对群族（`group*`）打满三张，对单只打正前方那张（对位）。实验台不提供
+ *   「强制群体」这类覆盖开关——要试群攻，选一个群攻模板或群攻族即可，
+ *   留着开关只会让画面上的目标数与真实规则对不上。
+ *
+ * 上排左侧默认一张**飞行**卡：飞行卡的抬升用的是战斗里同一个 `FLYING_CARD_LIFT`，
+ * 所以在实验台上「地对空打不到飞行卡」是**看得见的**，而不是只在结算数字里。
+ * 它放在**左**槽而不是对位，是为了让默认的单体技能打在台面上的普通卡上，
+ * 想试地对空时再把它换到对位（或直接对着它放群攻）。
+ *
+ * **与战斗唯一一处有意不同**：打在飞行卡上的命中点抬到了卡面上
+ * （`FLYING_CARD_LIFT + IMPACT_Y`）。战斗里 `impactPointOf` 一律贴地面坐标
+ * （见 `docs/COMBAT_MOTION_UPDATE.md`：技能命中坐标继续用地面位置），
+ * 照搬过来的话弹体会从悬浮的卡**下面**穿过去，看不出打的是哪一张。
+ * 这条只动表现，不动任何规则判定。
  */
 
 const TEMPLATE_LABELS: { id: EffectTemplateId; label: string }[] = [
@@ -43,7 +66,9 @@ const TEMPLATE_LABELS: { id: EffectTemplateId; label: string }[] = [
   { id: 'shield', label: '护盾 / 防御' },
   { id: 'heal', label: '治愈 / 恢复' },
   { id: 'buff', label: '祝福 / 振奋' },
-  { id: 'debuff', label: '诅咒 / 受伤' },
+  { id: 'curse', label: '诅咒 · Voltaic Snare' },
+  { id: 'injury', label: '受伤 · 红色地面电弧' },
+  { id: 'debuff', label: '其它减益' },
   { id: 'flow', label: '抽卡 / 转移' },
   { id: 'bombard', label: '炮击' },
   { id: 'deathBurst', label: '死亡爆裂 / 自毁' },
@@ -57,14 +82,6 @@ const TEMPLATE_LABELS: { id: EffectTemplateId; label: string }[] = [
   { id: 'silence', label: '沉默封印' },
 ];
 
-const GROUP_TEMPLATES = new Set<EffectTemplateId>([
-  'groupFireball',
-  'groupIceSeal',
-  'groupLightning',
-  'groupHeal',
-  'buff',
-]);
-
 /** 预设主题色：颜色是给「看效果」用的，不需要任意取色器。 */
 const COLOR_PRESETS: { label: string; value: string }[] = [
   { label: '原色', value: '' },
@@ -77,31 +94,163 @@ const COLOR_PRESETS: { label: string; value: string }[] = [
   { label: '血', value: '#ff5a6e' },
 ];
 
-const CARD_ROW_X = [-1.25, 0, 1.25];
+const FLYING_TRAIT = '飞行';
 
-/** 施法者起点：在牌列前方偏上，让轨迹有明显的高度差。 */
-const CASTER_ORIGIN: readonly [number, number, number] = [0, 1.5, 2.8];
+/** 上排三个目标槽的 x；中槽（下标 1）在施法卡正上方，即规则里的「对位」。 */
+const TARGET_XS = [-1.35, 0, 1.35] as const;
+const TARGET_SLOTS = [0, 1, 2] as const;
+const TARGET_LABELS = ['左', '对位', '右'] as const;
+/**
+ * 主目标所在的槽。
+ *
+ * 单体模板（`EffectRequest.to`）打**对位**那张——也就是施法卡正上方那张。
+ * 这不是随便挑的：战斗里 `targetsOf` 取到的第一个目标就是技能结算的第一个目标，
+ * 而实验台里能站得住脚的那一个只能是「对位」。要让单体技能打旁边那张，
+ * 把上排的卡换过去即可（换位比多一个「打谁」的下拉框更接近真实盘面）。
+ */
+const ALIGNED_SLOT = 1;
+/** 上排离桌心的距离：负 = 远的（画面里靠上）那一侧。 */
+const TARGET_Z = -1.05;
+/** 第二行（施法卡）离桌心的距离：正 = 近相机的一侧。两排相距 2 个世界单位。 */
+const SOURCE_Z = 0.95;
+/** 施法卡的 x：与上排中槽同一列，特效的起点与主落点才在同一条线上。 */
+const SOURCE_X = 0;
 
-type LayoutMode = 'single' | 'row';
+/**
+ * 默认上排：左＝飞行、对位＝受击基准、右＝死亡基准。
+ *
+ * 这三张不是随便挑的——技能族里最需要「换对手」才能看出差别的就是这三类：
+ * 飞行（地对空规则）、防御（受击减伤）、不死（死亡后回手牌）。
+ * 飞行那张放在**左**槽：对位留给地面卡，单体技能的默认落点才是普通盘面。
+ */
+const DEFAULT_TARGET_IDS: readonly [string, string, string] = ['A+_006', 'SSS_001', 'C_026'];
+
+/** 飞行卡在空中的浮动幅度与周期。抬升的基准值是战斗里的 `FLYING_CARD_LIFT`。 */
+const FLY_BOB_AMPLITUDE = 0.07;
+const FLY_BOB_PERIOD = 2.6;
+
+type Vec3 = readonly [number, number, number];
+type LayoutMode = 'formation' | 'single';
+/** 槽位：`'source'` 是第二行那张，0/1/2 是上排的左/对位/右。 */
+type SlotId = 'source' | 0 | 1 | 2;
+
+interface LabSetup {
+  readonly source: string;
+  readonly targets: readonly [string, string, string];
+}
+
+function slotValue(setup: LabSetup, slot: SlotId): string {
+  return slot === 'source' ? setup.source : setup.targets[slot];
+}
+
+function withSlot(setup: LabSetup, slot: SlotId, cardId: string): LabSetup {
+  if (slot === 'source') {
+    return { ...setup, source: cardId };
+  }
+  const targets: [string, string, string] = [setup.targets[0], setup.targets[1], setup.targets[2]];
+  targets[slot] = cardId;
+  return { ...setup, targets };
+}
+
+function findSlot(setup: LabSetup, cardId: string): SlotId | null {
+  const slots: readonly SlotId[] = ['source', 0, 1, 2];
+  return slots.find((slot) => slotValue(setup, slot) === cardId) ?? null;
+}
+
+/**
+ * 把某张卡放进某个槽。它原本占着别的槽时**两槽对调**，
+ * 于是「施法卡与三张目标」永远是四张不同的卡——这正是「三张**其它**卡牌」的字面要求。
+ */
+function placeCard(setup: LabSetup, slot: SlotId, cardId: string): LabSetup {
+  const from = findSlot(setup, cardId);
+  if (from === null) {
+    return withSlot(setup, slot, cardId);
+  }
+  if (from === slot) {
+    return setup;
+  }
+  return withSlot(withSlot(setup, slot, cardId), from, slotValue(setup, slot));
+}
+
+/** 这张卡浮在桌上方吗。实验台与战斗共用同一份判据：原始 trait 里有「飞行」。 */
+function isFlying(card: CardDefinition | undefined): boolean {
+  return card !== undefined && card.rawTraits.includes(FLYING_TRAIT);
+}
+
+function liftOf(card: CardDefinition | undefined): number {
+  return isFlying(card) ? FLYING_CARD_LIFT : 0;
+}
+
+/** 施法起点：卡面上方一点、朝施法者自己那侧偏出。与演出层的 `castPointOf` 同一套数值。 */
+function castAt(position: Vec3, lift: number): Vec3 {
+  return [position[0], lift + CAST_Y, position[2] + CAST_OFFSET];
+}
+
+/** 命中点：贴在这个槽的卡面上（飞行卡就落在空中那 0.475 上）。 */
+function impactAt(position: Vec3, lift: number): Vec3 {
+  return [position[0], lift + IMPACT_Y, position[2]];
+}
+
+/** 上排第 index 个槽的台面坐标。 */
+function targetPosition(index: number): Vec3 {
+  return [TARGET_XS[index] ?? SOURCE_X, 0, TARGET_Z];
+}
 
 export function EffectLabScene() {
-  const [index, setIndex] = useState(0);
-  const [layout, setLayout] = useState<LayoutMode>('row');
   const [holoEnabled, setHoloEnabled] = useState(true);
   const [holoScale, setHoloScale] = useState(1);
   const [faceDown, setFaceDown] = useState(false);
+  const [layout, setLayout] = useState<LayoutMode>('formation');
 
   const [intensity, setIntensity] = useState(1);
   const [countScale, setCountScale] = useState(1);
   const [durationScale, setDurationScale] = useState(1);
   const [color, setColor] = useState<string>('');
+  const [paused, setPaused] = useState(false);
+  const [lastEffect, setLastEffect] = useState('（尚未触发）');
+  const [particles, setParticles] = useState({ alive: 0, capacity: 0, peak: 0 });
+
   const profile = useSettingsStore((state) => state.profile);
   const theme = useSettingsStore((state) => state.tableTheme);
   const presentationSpeed = useSettingsStore((state) => state.presentationSpeed);
   const showPerf = useSettingsStore((state) => state.showPerf);
-  const [paused, setPaused] = useState(false);
-  const [lastEffect, setLastEffect] = useState('（尚未触发）');
-  const [particles, setParticles] = useState({ alive: 0, capacity: 0, peak: 0 });
+
+  const cards = useMemo(
+    () =>
+      slice.cards
+        .map((entry) => cardById.get(entry.cardId))
+        .filter((card): card is CardDefinition => card !== undefined),
+    [],
+  );
+
+  /** 四个槽的牌。默认施法卡是切片第一张（数据自检与浏览器用例都按这张断言）。 */
+  const [setup, setSetup] = useState<LabSetup>(() => ({
+    source: cards[0]?.cardId ?? '',
+    targets: DEFAULT_TARGET_IDS,
+  }));
+
+  const source = cardById.get(setup.source) ?? cards[0];
+  const targets = useMemo(
+    () =>
+      setup.targets
+        .map((id) => cardById.get(id))
+        .filter((card): card is CardDefinition => card !== undefined),
+    [setup.targets],
+  );
+
+  const sourcePosition = useMemo<Vec3>(
+    () => (layout === 'formation' ? [SOURCE_X, 0, SOURCE_Z] : [0, 0, 0]),
+    [layout],
+  );
+
+  /** 上排三个落点。单张大图模式下三张不渲染，特效就落在施法卡自己身上。 */
+  const targetPoints = useMemo<readonly Vec3[]>(
+    () =>
+      layout === 'formation'
+        ? targets.map((card, index) => impactAt(targetPosition(index), liftOf(card)))
+        : [],
+    [layout, targets],
+  );
 
   // 粒子计数用低频采样读取：它是每帧被写的可变对象，直接接到状态会每帧重渲染
   useEffect(() => {
@@ -115,60 +264,39 @@ export function EffectLabScene() {
     return () => window.clearInterval(timer);
   }, []);
 
-  const cards = useMemo(
-    () =>
-      slice.cards
-        .map((entry) => cardById.get(entry.cardId))
-        .filter((card): card is CardDefinition => card !== undefined),
+  const place = useCallback((slot: SlotId, cardId: string) => {
+    setSetup((current) => placeCard(current, slot, cardId));
+  }, []);
+
+  /** 点 3D 里的卡＝把它换到施法位（与它原来占的槽对调）。 */
+  const handleCardClick = useCallback(
+    (clicked: CardDefinition) => {
+      setSetup((current) => placeCard(current, 'source', clicked.cardId));
+    },
     [],
   );
 
-  const card = cards[index];
-
-  const step = (delta: number): void => {
-    setIndex((current) => {
-      const next = current + delta;
-      if (next < 0) {
-        return cards.length - 1;
-      }
-      if (next >= cards.length) {
-        return 0;
-      }
-      return next;
-    });
-  };
-
-  const handleCardClick = useCallback(
-    (clicked: CardDefinition) => {
-      const position = cards.findIndex((item) => item.cardId === clicked.cardId);
-      if (position >= 0) {
-        setIndex(position);
-      }
-    },
-    [cards],
-  );
-
   const playTemplate = useCallback(
-    (template: EffectTemplateId, label: string, overrideIntensity?: number) => {
-      /**
-       * 目标点恒为原点。
-       *
-       * 两种布局里**当前选中的卡都摆在 x=0**：单卡模式只有一张；三张一排时
-       * `LabStage` 把选中的那张放在正中。所以这里不能用 `CARD_ROW_X[index]`——
-       * `index` 是切片列表里的下标，不是牌列里的槽位，
-       * 那样会把特效打到旁边那张卡上（并让轨迹看起来方向不对）。
-       */
-      const extras =
-        layout === 'row' && GROUP_TEMPLATES.has(template)
-          ? CARD_ROW_X.filter((x) => x !== 0).map((x) => [x, 0, 0] as [number, number, number])
-          : [];
+    (template: EffectTemplateId, label: string, overrideIntensity?: number, family?: string | null) => {
+      const from = castAt(sourcePosition, liftOf(source));
+      // 上排存在时：主目标是正上方那张（对位），另外两张走 `extraTargets`。
+      // 打一张还是打三张**由配方按族名判定**（`group*` 才铺开），这里只给目标点——
+      // 与战斗里 `eventEffects.ts` 的 `targetsOf` 给的是同一份东西：第一个是主目标，
+      // 其余是额外目标。所以「对群打三张、对单只打对位」在实验台上看到的就是真实规则。
+      const self = impactAt(sourcePosition, liftOf(source));
+      const primary = template === 'injury' ? self : (targetPoints[ALIGNED_SLOT] ?? targetPoints[0] ?? self);
+      const extra = targetPoints.filter((_, slot) => slot !== ALIGNED_SLOT);
+      const spreads = template.startsWith('group') || family?.startsWith('group') === true;
+      const aimed =
+        template === 'injury' ? '作用于自身' : targetPoints.length === 0 ? '单张大图：落在自己身上' : spreads ? '三张' : '只打对位';
 
       effectDirector.play({
         template,
-        sourceInstanceId: card?.cardId,
-        from: CASTER_ORIGIN,
-        to: [0, 0, 0],
-        extraTargets: extras,
+        family: family ?? undefined,
+        sourceInstanceId: source?.cardId,
+        from,
+        to: primary,
+        extraTargets: extra,
         color: color || undefined,
         intensity: overrideIntensity ?? intensity,
         countScale,
@@ -176,9 +304,19 @@ export function EffectLabScene() {
         durationScale: durationScale * SPEED_SCALE[presentationSpeed],
         onHit: () => setLastEffect(`${label} · 命中`),
       });
-      setLastEffect(`${label} · 播放中`);
+      setLastEffect(`${label} · 播放中（${aimed}）`);
     },
-    [layout, card?.cardId, color, intensity, countScale, durationScale, presentationSpeed],
+    [
+      sourcePosition,
+      source?.cardId,
+      targetPoints,
+      color,
+      intensity,
+      countScale,
+      durationScale,
+      presentationSpeed,
+      source,
+    ],
   );
 
   const playTrait = useCallback(
@@ -188,17 +326,37 @@ export function EffectLabScene() {
         setLastEffect(`${raw} · 没有对应的特效模板`);
         return;
       }
-      playTemplate(template, raw, param ?? 1);
+      // 族名要一路带下去：`群体振奋` 这类族的模板是 `buff`，靠族名才认得出是群体
+      playTemplate(template, raw, param ?? 1, family);
     },
     [playTemplate],
   );
 
-  if (!card) {
+  if (!source) {
     return <div className="app-loading">切片数据为空，请先运行导入脚本。</div>;
   }
 
-  const effectiveHolo = holoIntensityForRarity(card.rarity) * holoScale;
-  const traits = card.skills.filter((skill) => skill.family);
+  const effectiveHolo = holoIntensityForRarity(source.rarity) * holoScale;
+  const traits = source.skills.filter((skill) => skill.family);
+
+  const staged: StagedCard[] =
+    layout === 'formation'
+      ? [
+          { key: 'source', card: source, position: sourcePosition, flying: isFlying(source) },
+          ...targets.map((card, index) => ({
+            key: `target-${index}`,
+            card,
+            position: targetPosition(index),
+            flying: isFlying(card),
+          })),
+        ]
+      : [{ key: 'source', card: source, position: [0, 0, 0], flying: isFlying(source) }];
+
+  const cardOption = (card: CardDefinition): ReactElement => (
+    <option key={card.cardId} value={card.cardId}>
+      {card.name.replace(/ /g, '')}（{card.cardId}）
+    </option>
+  );
 
   return (
     <WebGLGuard>
@@ -212,7 +370,8 @@ export function EffectLabScene() {
           flat
           shadows={profile.shadows ? { type: PCFShadowMap } : false}
           dpr={[1, profile.dprCap]}
-          camera={{ position: [0, 3.2, 4.6], fov: 42, near: 0.1, far: 80 }}
+          // 两排比原来一排深了 2 个世界单位：同一俯角、退远一点，前排才不会贴到画面下沿
+          camera={{ position: [0, 3.5, 5.2], fov: 42, near: 0.1, far: 80 }}
           gl={{ antialias: true, powerPreference: 'high-performance' }}
         >
           <ambientLight intensity={0.85} />
@@ -239,8 +398,7 @@ export function EffectLabScene() {
           </mesh>
 
           <LabStage
-            card={card}
-            layout={layout}
+            staged={staged}
             faceDown={faceDown}
             holoEnabled={holoEnabled}
             holoScale={holoScale}
@@ -275,29 +433,106 @@ export function EffectLabScene() {
           <h2 className="lab__title">实验台</h2>
 
           <section className="lab__section">
+            <h3>第二行 · 施法卡（可任选）</h3>
             <div className="lab__row">
-              <button type="button" onClick={() => step(-1)} title="上一张">
+              <button
+                type="button"
+                onClick={() => {
+                  const index = cards.findIndex((item) => item.cardId === source.cardId);
+                  const next = cards[(index - 1 + cards.length) % cards.length];
+                  if (next) {
+                    place('source', next.cardId);
+                  }
+                }}
+                title="上一张"
+              >
                 ←
               </button>
-              <span className="lab__name">{card.name.replace(/ /g, '')}</span>
-              <button type="button" onClick={() => step(1)} title="下一张">
+              <span className="lab__name">{source.name.replace(/ /g, '')}</span>
+              <button
+                type="button"
+                onClick={() => {
+                  const index = cards.findIndex((item) => item.cardId === source.cardId);
+                  const next = cards[(index + 1) % cards.length];
+                  if (next) {
+                    place('source', next.cardId);
+                  }
+                }}
+                title="下一张"
+              >
                 →
               </button>
             </div>
+            <label className="lab__pick">
+              <span>施法卡</span>
+              <select value={source.cardId} onChange={(event) => place('source', event.target.value)}>
+                {cards.map(cardOption)}
+              </select>
+            </label>
             <dl className="lab__meta">
               <dt>cardId</dt>
               <dd>
-                <code>{card.cardId}</code>
+                <code>{source.cardId}</code>
               </dd>
               <dt>稀有度</dt>
-              <dd>{card.rarity}</dd>
+              <dd>{source.rarity}</dd>
               <dt>ATK/HP/CD</dt>
               <dd>
-                {card.atk}/{card.hp}/{card.cd}
+                {source.atk}/{source.hp}/{source.cd}
               </dd>
               <dt>traits</dt>
-              <dd>{card.rawTraits.join('、') || '—'}</dd>
+              <dd>{source.rawTraits.join('、') || '—'}</dd>
             </dl>
+          </section>
+
+          <section className="lab__section">
+            <h3>上排 · 三张目标（可任选）</h3>
+            <ul className="lab__targets">
+              {TARGET_SLOTS.map((slot) => {
+                const id = setup.targets[slot];
+                const target = cardById.get(id);
+                return (
+                  <li key={`target-${slot}`} className="lab__target">
+                    <span className="lab__slot">{TARGET_LABELS[slot]}</span>
+                    <select value={id} onChange={(event) => place(slot, event.target.value)}>
+                      {cards.map(cardOption)}
+                    </select>
+                    {isFlying(target) ? <span className="lab__badge">飞行</span> : null}
+                  </li>
+                );
+              })}
+            </ul>
+            <p className="lab__hint">
+              特效从第二行的施法卡出发、落到这三张上：「对群」的技能打满三张，「对单」的只打
+              「对位」那张（正前方）。打几张由技能族决定，这里没有覆盖开关。
+              点 3D 里的任意一张 = 把它换到施法位（两槽对调）。
+            </p>
+          </section>
+
+          <section className="lab__section">
+            <h3>施法卡的 trait</h3>
+            {traits.length === 0 ? (
+              <p className="lab__hint">这张卡没有已注册的技能族 trait。</p>
+            ) : (
+              <div className="lab__buttons">
+                {source.skills.map((skill, order) =>
+                  skill.family ? (
+                    <button
+                      key={`${skill.raw}-${order}`}
+                      type="button"
+                      onClick={() => playTrait(skill.raw, skill.family, skill.param)}
+                      title={`特效模板：${FAMILY_TO_EFFECT[skill.family] ?? '（无）'}`}
+                    >
+                      {skill.raw}
+                    </button>
+                  ) : null,
+                )}
+              </div>
+            )}
+            <p className="lab__hint">
+              按 trait 的原始参数 n 当强度。目标那三张自己的 trait（防御、飞行、不死）不会在这里触发，
+              它们影响的是「打上去之后怎样」——换掉上排的卡就能对着不同的规则试同一个技能。
+            </p>
           </section>
 
           <section className="lab__section">
@@ -313,28 +548,6 @@ export function EffectLabScene() {
                 </button>
               ))}
             </div>
-          </section>
-
-          <section className="lab__section">
-            <h3>当前卡的 trait</h3>
-            {traits.length === 0 ? (
-              <p className="lab__hint">这张卡没有已注册的技能族 trait。</p>
-            ) : (
-              <div className="lab__buttons">
-                {card.skills.map((skill, order) =>
-                  skill.family ? (
-                    <button
-                      key={`${skill.raw}-${order}`}
-                      type="button"
-                      onClick={() => playTrait(skill.raw, skill.family, skill.param)}
-                      title={`特效模板：${FAMILY_TO_EFFECT[skill.family] ?? '（无）'}`}
-                    >
-                      {skill.raw}
-                    </button>
-                  ) : null,
-                )}
-              </div>
-            )}
           </section>
 
           <section className="lab__section">
@@ -408,7 +621,8 @@ export function EffectLabScene() {
               <dt>帧内峰值</dt>
               <dd>{particles.peak}</dd>
             </dl>
-            <p className="lab__hint">最近：{lastEffect}</p>
+            {/* 浏览器用例按这个类断言「这次打了几张」——它是路由结果里唯一在 DOM 上可见的部分 */}
+            <p className="lab__hint lab__last">最近：{lastEffect}</p>
           </section>
 
           <section className="lab__section">
@@ -416,10 +630,10 @@ export function EffectLabScene() {
             <label className="lab__toggle">
               <input
                 type="checkbox"
-                checked={layout === 'row'}
-                onChange={(event) => setLayout(event.target.checked ? 'row' : 'single')}
+                checked={layout === 'formation'}
+                onChange={(event) => setLayout(event.target.checked ? 'formation' : 'single')}
               />
-              三张一排（关闭则单张大图）
+              阵型（第二行 1 张 + 上排 3 张；关闭则只留施法卡的大图）
             </label>
             <label className="lab__toggle">
               <input
@@ -449,6 +663,7 @@ export function EffectLabScene() {
 
           <p className="lab__hint">
             拖动可环绕旋转：全息色带应随视角移动，特效的轨迹与命中点也应随视角保持正确。
+            飞行卡在桌面上方 0.475 处缓慢起伏，对着它放单体技能就能看到「地对空」的落点差异。
           </p>
         </aside>
 
@@ -458,9 +673,15 @@ export function EffectLabScene() {
   );
 }
 
-interface LabStageProps {
+interface StagedCard {
+  readonly key: string;
   readonly card: CardDefinition;
-  readonly layout: LayoutMode;
+  readonly position: Vec3;
+  readonly flying: boolean;
+}
+
+interface LabStageProps {
+  readonly staged: readonly StagedCard[];
   readonly faceDown: boolean;
   readonly holoEnabled: boolean;
   readonly holoScale: number;
@@ -471,8 +692,7 @@ interface LabStageProps {
 
 /** 卡牌陈列 + 粒子系统。 */
 function LabStage({
-  card,
-  layout,
+  staged,
   faceDown,
   holoEnabled,
   holoScale,
@@ -480,38 +700,84 @@ function LabStage({
   capacity,
   onCardClick,
 }: LabStageProps) {
-  const staged = useMemo(() => {
-    const list = slice.cards
-      .map((entry) => cardById.get(entry.cardId))
-      .filter((item): item is CardDefinition => item !== undefined);
-    const index = list.findIndex((item) => item.cardId === card.cardId);
-
-    if (layout === 'single') {
-      return [{ card, x: 0 }];
-    }
-    // 三张一排：中间是当前选中的卡，两侧取相邻切片卡，
-    // 这样群体特效有真实的落点，而不是打向空气
-    return CARD_ROW_X.map((x, offset) => {
-      const candidate = list[(index + offset - 1 + list.length) % list.length];
-      return { card: candidate ?? card, x };
-    });
-  }, [card, layout]);
-
   return (
     <>
       {staged.map((entry) => (
-        <CardMesh
-          key={`${entry.card.cardId}-${entry.x}`}
+        <LabCard
+          key={entry.key}
           card={entry.card}
-          position={[entry.x, 0, 0]}
+          position={entry.position}
+          flying={entry.flying}
           faceDown={faceDown}
           holo={holoEnabled}
           holoScale={holoScale}
-          onClick={onCardClick}
+          paused={paused}
+          onCardClick={onCardClick}
         />
       ))}
       <EffectSystem capacity={capacity} paused={paused} />
     </>
+  );
+}
+
+interface LabCardProps {
+  readonly card: CardDefinition;
+  /** 槽位在台面上的坐标；卡的**抬升**（飞行）由本组件自己叠上去。 */
+  readonly position: Vec3;
+  readonly flying: boolean;
+  readonly faceDown: boolean;
+  readonly holo: boolean;
+  readonly holoScale: number;
+  readonly paused: boolean;
+  readonly onCardClick: (card: CardDefinition) => void;
+}
+
+/**
+ * 一个槽位上的卡。
+ *
+ * `CardMesh` 内部每帧会覆写自己那一层的 **y 与 z**（悬停抬升、攻击前冲），
+ * 但**不写 x**，所以槽位坐标必须由外面这层 group 给：x/z 定位、
+ * y 承载「飞行卡浮在桌上方」这件事，两者互不打架。
+ *
+ * 飞行用战斗里的 `FLYING_CARD_LIFT`——同一条「卡是平放的，抬升就是离开台面」
+ * 的约定，实验台上看到的落点差异才对得上战斗里的规则差异。
+ */
+function LabCard({
+  card,
+  position,
+  flying,
+  faceDown,
+  holo,
+  holoScale,
+  paused,
+  onCardClick,
+}: LabCardProps) {
+  const groupRef = useRef<Group>(null);
+  const base = flying ? FLYING_CARD_LIFT : 0;
+
+  useFrame(({ clock }) => {
+    const group = groupRef.current;
+    if (!group || paused) {
+      // 暂停＝连浮动一起冻住，与粒子、时间轴同一条约定
+      return;
+    }
+    const bob = flying
+      ? Math.sin((clock.elapsedTime / FLY_BOB_PERIOD) * Math.PI * 2) * FLY_BOB_AMPLITUDE
+      : 0;
+    group.position.y = base + bob;
+  });
+
+  return (
+    <group ref={groupRef} position={[position[0], base, position[2]]}>
+      <CardMesh
+        card={card}
+        position={[0, 0, 0]}
+        faceDown={faceDown}
+        holo={holo}
+        holoScale={holoScale}
+        onClick={onCardClick}
+      />
+    </group>
   );
 }
 
@@ -543,9 +809,4 @@ function Slider({
       />
     </label>
   );
-}
-
-/** 施法者起点的世界坐标。 */
-export function labCasterOrigin(): Vector3 {
-  return new Vector3(CASTER_ORIGIN[0], CASTER_ORIGIN[1], CASTER_ORIGIN[2]);
 }

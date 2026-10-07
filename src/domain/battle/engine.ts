@@ -511,22 +511,38 @@ function resolveAttack(
   });
 
   const attackerIsFlying = traitsOf(state, attacker).includes('飞行');
+  /**
+   * 这次普通攻击是否**真的打在卡上**。
+   *
+   * 反击（`AFTER_DAMAGED`）的判据不能只看 `attack.dealt > 0`：地对空那条路会把伤害
+   * 改道到本体，`dealt` 因此也是正数，但飞行卡自己一点没挨打，不该触发反击。
+   */
+  let hitCard = false;
 
   if (defender && traitsOf(state, defender).includes('飞行') && !attackerIsFlying) {
-    // 地对空：**不能伤害飞行卡**，改为把攻击者的原始 atk 打到飞行卡所属方的本体上。
+    // 地对空：**不能伤害飞行卡**，改为把攻击者的原始 atk 打到**飞行卡所属方**的本体上。
     // 这条路径绕过防御/闪避/免疫（旧版 `BBS:1347-1368` 就是这样，docs/rules.md 第 4.3 节）
-    const targetOwner = opponentOf(defender.owner);
+    //
+    // `defender.owner` 就是「飞行卡那一方」——2026-10-07 修：这里原先写成
+    // `opponentOf(defender.owner)`，方向反了，于是攻击者打的是**自己家**的本体，
+    // 而飞行卡那一方的本体一滴血不掉。
+    const targetOwner = defender.owner;
     const before = state.hp[targetOwner];
     state.hp[targetOwner] = Math.max(0, before - group.atk);
+    const dealt = before - state.hp[targetOwner];
+    // 改道的伤害也要计入「造成伤害」，否则吸血判不出来——与下面空槽打本体同一条约定
+    // （旧版在这条路上同样记了 `attack_result`，`BBS:1363-1368`）
+    attack.dealt = dealt;
     resolver.emit({
       type: 'PlayerHpChanged',
       side: targetOwner,
-      amount: before - state.hp[targetOwner],
+      amount: dealt,
       hpBefore: before,
       hpAfter: state.hp[targetOwner],
       source: 'flyingRedirect',
     });
   } else if (defender) {
+    hitCard = true;
     // 正常卡对卡：防御者先跑 ON_DAMAGED（防御/闪避）
     const defenderSilenced = isSilenced(state, other, attackerSlot);
     if (!defenderSilenced) {
@@ -554,8 +570,8 @@ function resolveAttack(
     });
   }
 
-  // 受击后：反击只在**确实造成伤害**时触发
-  if (defender && attack.dealt > 0 && !isSilenced(state, other, attackerSlot)) {
+  // 受击后：反击只在**确实打在这张卡上**、且造成了伤害时触发
+  if (defender && hitCard && attack.dealt > 0 && !isSilenced(state, other, attackerSlot)) {
     const swapped: AttackState = { ...attack, attacker: defender };
     triggerSkills(resolver, state, defender, 'AFTER_DAMAGED', swapped, null);
     attack.dealt = swapped.dealt;

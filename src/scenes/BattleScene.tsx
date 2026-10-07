@@ -65,6 +65,10 @@ export interface BattleSceneProps {
    * 它也需要 `onExit`，但回去的是地图屏而不是战役。
    */
   readonly exitLabel?: string | undefined;
+  readonly localMultiplayer?: boolean | undefined;
+  readonly autoEnemy?: boolean | undefined;
+  readonly autoStart?: boolean | undefined;
+  readonly onLeave?: (() => void) | undefined;
 }
 
 export function BattleScene({
@@ -74,6 +78,10 @@ export function BattleScene({
   onFinished,
   onExit,
   exitLabel,
+  localMultiplayer = false,
+  autoEnemy = true,
+  autoStart = false,
+  onLeave,
 }: BattleSceneProps = {}) {
   const profile = useSettingsStore((state) => state.profile);
   const theme = useSettingsStore((state) => state.tableTheme);
@@ -88,9 +96,12 @@ export function BattleScene({
         skipAll: () => {
           effectDirector.skipAll();
         },
-      }),
+      }, { localMultiplayer, autoEnemy }),
   );
   const snapshot = useBattleSession(session);
+  useEffect(() => {
+    if (autoStart && session.getSnapshot().runId === 0) session.start();
+  }, [autoStart, session]);
 
   /*
     战果上报：**进入结果态的那一刻报一次**，由 `App` 去提交结算事务。
@@ -125,16 +136,18 @@ export function BattleScene({
   const [hovered, setHovered] = useState<CardDefinition | null>(null);
   const [pinned, setPinned] = useState(false);
 
-  const canPlay = snapshot.inputOpen && snapshot.currentSide === 'player';
+  const canPlay = snapshot.inputOpen;
 
   const view = useMemo(
     () =>
       buildBoard(snapshot.display, {
         selectedInstanceId: snapshot.selectedInstanceId,
         playerCanPlay: canPlay,
+        inputSide: snapshot.currentSide,
+        localHands: localMultiplayer,
         placeablePrepSlots: snapshot.playablePrepSlots,
       }),
-    [snapshot.display, snapshot.selectedInstanceId, canPlay, snapshot.playablePrepSlots],
+    [snapshot.display, snapshot.selectedInstanceId, canPlay, snapshot.playablePrepSlots, snapshot.currentSide, localMultiplayer],
   );
 
   const handleCardClick = useCallback(
@@ -159,8 +172,8 @@ export function BattleScene({
   }, []);
 
   const handleSlotClick = useCallback(
-    (_side: SideId, zone: SlotZone, index: number) => {
-      if (zone === 'prep') {
+    (side: SideId, zone: SlotZone, index: number) => {
+      if (zone === 'prep' && side === session.getSnapshot().currentSide) {
         session.playSelectedAt(index);
       }
     },
@@ -254,6 +267,9 @@ export function BattleScene({
             snapshot={snapshot}
             onEndTurn={() => session.endTurn()}
             onSkipPerformance={() => session.skipPerformance()}
+            onAutoEnemyChange={(on) => session.setAutoEnemy(on)}
+            {...(localMultiplayer && onExit ? { onExit } : {})}
+            {...(localMultiplayer && onLeave ? { onLeave } : {})}
           />
         )}
 
@@ -278,7 +294,7 @@ export function BattleScene({
           />
         )}
 
-        {snapshot.mode === 'menu' && (
+        {snapshot.mode === 'menu' && !autoStart && (
           <BattleMenu
             label={config.label ?? '对战'}
             playerDeck={config.playerDeck}
@@ -294,6 +310,7 @@ export function BattleScene({
             playerHp={snapshot.display.playerHp.player}
             enemyHp={snapshot.display.playerHp.enemy}
             settlement={settlement}
+            localMultiplayer={localMultiplayer}
             backLabel={exitLabel ?? (onExit ? '返回战役' : '返回菜单')}
             onRematch={() => session.start()}
             onBackToMenu={() => {

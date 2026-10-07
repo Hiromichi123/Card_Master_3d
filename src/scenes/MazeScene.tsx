@@ -23,9 +23,8 @@ import { activeDeckOf } from '../domain/progression/profile';
 import type { MazeRunState, ProfileState } from '../domain/progression/types';
 import type { ProfileStore } from '../state/createProfileStore';
 import { pushToast } from '../state/toastStore';
-import { CurrencyBar } from '../ui/CurrencyBar';
+import { PlayerStatus } from '../ui/PlayerStatus';
 import { DesignStage } from '../ui/DesignStage';
-import { LevelBar } from '../ui/LevelBar';
 import {
   LEGEND_ORDER,
   MAZE_FOCUS,
@@ -284,8 +283,7 @@ export function MazeScene({ profile, store, onNavigate, onLaunch }: MazeScenePro
   return (
     <DesignStage backgroundUrl={backgroundUrl('bg/activity')}>
       <div className="maze__status">
-        <LevelBar level={profile.level} />
-        <CurrencyBar currencies={profile.currencies} />
+        <PlayerStatus level={profile.level} currencies={profile.currencies} />
       </div>
 
       <h1 className="maze__title">迷宫挑战·第一层</h1>

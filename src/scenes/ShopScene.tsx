@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 
-import { backgroundUrl, cardFaceUrl } from '../data/assets';
+import { CARD_BACK_URL, backgroundUrl, cardFaceUrl } from '../data/assets';
 import { cardById, cardDatabase, shopSpecs } from '../data';
 import { createRng, seedFrom } from '../domain/battle/rng';
 import { buildShelf, planPurchase } from '../domain/progression/shop';
@@ -8,10 +8,9 @@ import type { ShelfEntry } from '../domain/progression/shop';
 import type { ProfileState } from '../domain/progression/types';
 import type { ProfileStore } from '../state/createProfileStore';
 import { useRarityIndex } from '../state/useRarityIndex';
-import { CurrencyBar } from '../ui/CurrencyBar';
 import { DesignStage } from '../ui/DesignStage';
-import { LevelBar } from '../ui/LevelBar';
 import { LineChart } from '../ui/LineChart';
+import { PlayerStatus } from '../ui/PlayerStatus';
 import { SHELF_METRICS, SHOP_TEXT, WEEK_LABELS, marketSeries, seriesColor } from './shopLayout';
 import type { RouteId } from '../app/routes';
 
@@ -129,8 +128,7 @@ export function ShopScene({ profile, store, busy, kind, onNavigate }: ShopSceneP
   return (
     <DesignStage backgroundUrl={backgroundUrl(kind === 'normal' ? 'bg/shop' : 'bg/activity')}>
       <div className="shop__currency">
-        <LevelBar level={profile.level} />
-        <CurrencyBar currencies={profile.currencies} />
+        <PlayerStatus level={profile.level} currencies={profile.currencies} />
       </div>
 
       <h1 className="shop__title">{text.title}</h1>
@@ -212,8 +210,19 @@ export function ShopScene({ profile, store, busy, kind, onNavigate }: ShopSceneP
                       width: 'calc(150 * var(--ui))',
                       height: 'calc(210 * var(--ui))',
                     }}
-                    aria-hidden="true"
-                  />
+                  >
+                    {/*
+                      卡包装的就是一叠卡，所以画的是**卡背**——旧版
+                      `_draw_pack_offer` 也是把 `assets/ui/card_back.png` 缩到这块牌位上，
+                      稀有度的椭圆光晕垫在它后面。前一版只画了那层光晕、忘了图，
+                      于是右侧三个卡位是三个空框。
+                    */}
+                    {CARD_BACK_URL ? (
+                      <img className="shop__pack-back" src={CARD_BACK_URL} alt="" draggable={false} />
+                    ) : (
+                      <span className="shop__empty">缺卡背</span>
+                    )}
+                  </div>
                   <button
                     type="button"
                     className="shop__price-btn"

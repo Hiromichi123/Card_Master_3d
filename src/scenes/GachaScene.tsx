@@ -261,6 +261,22 @@ export function GachaScene({ profile, store, busy, onReturn }: GachaSceneProps) 
           {error && <p className="gacha__error gacha-complete__error" role="status">{error}</p>}
         </section>
       )}
+      {/*
+        「跳过演出」是这块屏自己的开关（2026-10-07：演出速度那组设置搬去战斗界面，
+        其它屏不再共享它）。要做到「跳过＝播完」不需要另写一套快进：
+        把 `animated` 置 false 就是 `GachaStage` 的 `instant`，驱动器的 `skipToEnd()`
+        会补发 `onUpdate(1)` 并清干净粒子，然后照常走 `onFinished` → 结果态。
+      */}
+      {phase === 'reveal' && (
+        <button
+          type="button"
+          className="gacha__skip"
+          onClick={() => setAnimated(false)}
+          disabled={run === null}
+        >
+          跳过演出
+        </button>
+      )}
       {previewId && <CardShowcase cardId={previewId} cardIds={[...new Set(runCards.map((card) => card.cardId))]}
         onSelect={setPreviewId} onClose={() => setPreviewId(null)} />}
     </div>

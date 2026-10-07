@@ -243,7 +243,7 @@ card_master_3d/
   docs/
     LEGACY_AUDIT.md
     rules.md                  # P0/P2 规则基线与差异
-    validation/               # 每阶段截图、录像与验证记录
+    validation/               # 每阶段的验证记录：环境、逐项结论与实测数字
   scripts/
     import-legacy-data.*      # 构建期导入与校验
     prepare-assets.*          # 派生纹理，不覆盖原素材

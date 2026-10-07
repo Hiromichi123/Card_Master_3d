@@ -183,6 +183,7 @@ export function effectRequestFor(
     }
 
     case 'StatChanged': {
+      if (event.cause === 'curse') return null;
       const point = impactPointOf(context.worldPointOf(event.instanceId));
       return {
         template: event.to >= event.from ? 'buff' : 'debuff',

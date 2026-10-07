@@ -183,6 +183,27 @@ test.describe('战斗台面主题', () => {
   });
 });
 
+test.describe('战斗设置', () => {
+  /**
+   * 台面/视角/画质/演出/震动/静止 在**战斗界面里**，不在全局抬头（2026-10-07）。
+   * 开局菜单里默认展开（先配好再打），战局中默认收成一行（别挡战桌）。
+   */
+  test('对局中默认收起，展开后能改台面与视角', async ({ page }) => {
+    await openDemoBattle(page);
+    await page.getByRole('button', { name: '开始对局' }).click();
+
+    const toggle = page.getByRole('button', { name: '战斗设置' });
+    await expect(toggle).toBeVisible({ timeout: 30_000 });
+    await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    await expect(page.getByLabel('战斗台面')).toBeHidden();
+
+    await toggle.click();
+    await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    await expect(page.getByLabel('战斗台面')).toBeVisible();
+    await expect(page.getByLabel('相机视角')).toBeVisible();
+  });
+});
+
 test.describe('相机', () => {
   test('四个视角预设都能切换，取景确实改变且内容不被裁掉', async ({ page }) => {
     const problems: string[] = [];

@@ -77,11 +77,11 @@
 - 全部 119 项单元测试通过，其中 5 项新增验证覆盖：
   群体回调一次、跳过/完成回收、容量上限、并发端点隔离、自疗/群体治疗目标。
 - 生产构建通过。现有应用大 bundle 的 Vite 提示仍存在，本轮不改全局打包策略。
-- 实际浏览器使用 Intel Arc / ANGLE D3D11，记录于
-  [browser-results.json](validation/skill-vfx/browser-results.json)。
-- 截图逐项验证火球、冰封、闪电、群体治愈、破甲、吸血与还魂/复活；图片位于
-  `docs/validation/skill-vfx/`。
-- 低/高档全部 23 模板通过；快速与跳过完整对局都以我方 7:0 胜利、本体生命归零结束，结果一致。跳过后活跃粒子为 0。完整记录见同目录 browser-results.json。
+- 实际浏览器使用 Intel Arc / ANGLE D3D11（当时把 GPU 型号与逐项结果写进了
+  `docs/validation/skill-vfx/browser-results.json`，该目录的截图与 JSON 已在
+  2026-10-07 清理；结论保留在本节）。
+- 逐项验证过火球、冰封、闪电、群体治愈、破甲、吸血与还魂/复活。
+- 低/高档全部 23 模板通过；快速与跳过完整对局都以我方 7:0 胜利、本体生命归零结束，结果一致。跳过后活跃粒子为 0。
 
 ## 协作说明
 

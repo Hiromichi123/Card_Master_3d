@@ -3,6 +3,7 @@ import { Timeline } from '../anim/Timeline';
 import { ATTACK_OUT_SECONDS, ATTACK_RETURN_SECONDS } from '../anim/combatMotion';
 import type { EffectContext } from './templates';
 import type { EffectTemplateId } from './familyMap';
+import { usesLinearAbility } from './NamedSkillVisuals';
 import type { SkillVisualHandle, VisualPhase } from './SkillVisualPool';
 
 const UP = new Vector3(0, 1, 0);
@@ -42,9 +43,11 @@ export function buildSkillTimeline(template: EffectTemplateId, context: EffectCo
   const bolt = template === 'lightning' || template === 'groupLightning';
   const healing = template === 'heal' || template === 'groupHeal';
   const blood = template === 'lifeDrain';
+  const snare = template === 'curse' || template === 'injury';
+  const injury = template === 'injury';
   const color = context.tint ?? (fire ? PALETTE.fire : ice ? PALETTE.ice : bolt ? PALETTE.bolt : healing ? PALETTE.heal :
-    blood ? PALETTE.blood : template === 'buff' ? PALETTE.gold :
-    template === 'debuff' || template === 'silence' ? PALETTE.curse : PALETTE.flow);
+    blood || injury ? PALETTE.blood : template === 'buff' ? PALETTE.gold :
+    template === 'debuff' || template === 'curse' || template === 'silence' ? PALETTE.curse : PALETTE.flow);
   const scale = Math.max(0.05, context.durationScale);
   const countScale = Math.max(0, Math.min(4, context.countScale));
   const strength = Math.min(3, Math.max(0.6, 1 + context.intensity * 0.12));
@@ -57,15 +60,16 @@ export function buildSkillTimeline(template: EffectTemplateId, context: EffectCo
   const emit = (origin: Vector3, n: number, continuous: boolean, upward = false): void => {
     if (n <= 0) return;
     pool.emit({ origin, count: n, perFrame: continuous, color,
-      speed: upward ? [0.3, 0.8] : [0.1, continuous ? 0.4 : 2.5],
+      speed: injury ? [0.05, 0.3] : upward ? [0.3, 0.8] : [0.1, continuous ? 0.4 : 2.5],
       ...(upward ? { direction: UP, spread: 0.3 } : {}),
-      size: [0.045, fire ? 0.18 : 0.11], life: [0.18, continuous ? 0.4 : 0.75],
+      size: [0.045, injury ? 0.065 : fire ? 0.18 : 0.11], life: injury ? [0.14, 0.32] : [0.18, continuous ? 0.4 : 0.75],
       gravity: upward ? 0.4 : -0.65, drag: 2, spawnRadius: continuous ? 0.06 : 0.18,
     });
   };
   // There is one shared Timeline; geometry is driven by its normalized steps, not by another RAF.
   const timeline = new Timeline(() => { for (const handle of handles) handle.dispose(); });
   const impact = skillImpactSeconds(template);
+  const named = usesLinearAbility(template);
   const charge = Math.min(0.1, impact * 0.35);
   timeline.add({ duration: charge * scale, onUpdate: (t) => {
     animate('charge', t); emit(from, count(2), true);
@@ -74,13 +78,13 @@ export function buildSkillTimeline(template: EffectTemplateId, context: EffectCo
     animate('travel', t);
     for (const target of points) {
       point.lerpVectors(blood ? target : from, blood ? from : target, t);
-      if (!bolt) point.y += Math.sin(t * Math.PI) * (fire ? 0.8 : 0.35);
-      emit(point, count(bolt ? 1 : 2), true);
+      if (!bolt && !snare && !(named && ice)) point.y += Math.sin(t * Math.PI) * (fire ? 0.8 : 0.35);
+      emit(point, count(bolt || (named && ice) ? 1 : 2), true);
     }
   } });
-  timeline.add({ duration: 0.16 * scale,
+  timeline.add({ duration: (named ? (snare ? 0.38 : ice ? 0.35 : bolt ? 0.22 : 0.28) : 0.16) * scale,
     onStart: () => {
-      for (const target of points) emit(target, count(fire ? 28 : ice ? 20 : healing ? 10 : 14), false, healing);
+      for (const target of points) emit(target, count(fire ? 28 : ice ? (named ? 6 : 20) : injury ? 6 : healing ? 10 : 14), false, healing);
       // A group cast has one presentation callback, not one per target.
       context.onHit?.();
     },
@@ -89,7 +93,7 @@ export function buildSkillTimeline(template: EffectTemplateId, context: EffectCo
       if (healing || template === 'buff' || template === 'rebirth') for (const target of points) emit(target, count(2), true, true);
     },
   });
-  timeline.add({ duration: (ice ? 0.55 : healing ? 0.5 : 0.3) * scale,
+  timeline.add({ duration: (named ? (snare ? 0.60 : ice ? 0.68 : bolt ? 0.35 : 0.48) : ice ? 0.55 : healing ? 0.5 : 0.3) * scale,
     onUpdate: (t) => animate('fade', t),
   });
   return timeline;

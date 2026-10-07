@@ -3,9 +3,10 @@ import {
   Group, IcosahedronGeometry, InstancedBufferAttribute, InstancedBufferGeometry,
   Mesh, MeshBasicMaterial, MeshStandardMaterial, PlaneGeometry,
   RingGeometry, ShaderMaterial, SphereGeometry, TextureLoader, Vector3,
-  type Material, type Texture,
+  type Material, type Texture, type Camera, type WebGLRenderer, type Scene,
 } from 'three';
 import type { EffectTemplateId } from './familyMap';
+import { NamedSkillVisuals, usesLinearAbility } from './NamedSkillVisuals';
 import { createCrystalGeometry } from './vendor/linearCrystal';
 import { LINEAR_BOLT_FRAGMENT, LINEAR_BOLT_VERTEX } from './vendor/linearShaders';
 
@@ -111,9 +112,11 @@ export class SkillVisualPool implements SkillVisualFactory {
     crystal: createCrystalGeometry({ sides: 5, bend: 0.12, roughness: 0.25 }), bolt: boltGeometry(),
   };
   private readonly active = new Set<SkillVisualHandle>();
+  private readonly named = new NamedSkillVisuals();
   private readonly textures = new Map<string, Texture>();
 
-  constructor(readonly maxActors = 24) { this.group.name = 'battle-skill-geometry'; }
+  constructor(readonly maxActors = 24) { this.group.name = 'battle-skill-geometry'; this.group.add(this.named.group); }
+  updateFrame(camera: Camera, renderer: WebGLRenderer, delta: number, scene?: Scene): void { this.named.updateFrame(camera, renderer, delta, scene); }
   get activeCount(): number { return this.active.size; }
   get geometryCount(): number { return Object.keys(this.geometries).length; }
 
@@ -129,6 +132,16 @@ export class SkillVisualPool implements SkillVisualFactory {
 
   create(spec: SkillVisualSpec): SkillVisualHandle {
     while (this.active.size >= this.maxActors) this.active.values().next().value?.dispose();
+    if (usesLinearAbility(spec.template)) {
+      const original = this.named.create(spec, this.worldScale);
+      let released = false;
+      const handle: SkillVisualHandle = {
+        update: (phase, progress) => original.update(phase, progress),
+        dispose: () => { if (released) return; released = true; original.dispose(); this.active.delete(handle); },
+      };
+      this.active.add(handle);
+      return handle;
+    }
     const actor = new Group();
     actor.name = `skill-${spec.template}`;
     const materials: Material[] = [];
@@ -300,6 +313,7 @@ export class SkillVisualPool implements SkillVisualFactory {
   clear(): void { for (const actor of [...this.active]) actor.dispose(); }
   dispose(): void {
     this.clear();
+    this.named.dispose();
     for (const geometry of Object.values(this.geometries)) geometry.dispose();
     for (const texture of this.textures.values()) texture.dispose();
     this.textures.clear();

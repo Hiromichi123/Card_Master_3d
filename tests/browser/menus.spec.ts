@@ -135,3 +135,51 @@ test('融合入口打开工坊，Draft 与迷宫入口已移除', async ({ page 
   await expect(page.getByRole('button', { name: '消耗 5 张并融合' })).toBeDisabled();
   await expect(page.getByRole('region', { name: '收藏材料' })).toBeVisible();
 });
+
+test('抬头可以手动收起，收起的这一下真的把高度让给画面', async ({ page }) => {
+  await openHub(page);
+
+  const nav = page.locator('.app-nav');
+  const main = page.locator('.app-main');
+  const expandedHeight = (await main.boundingBox())?.height ?? 0;
+
+  await page.getByRole('button', { name: '收起导航' }).click();
+  await expect(nav).toHaveClass(/app-nav--collapsed/);
+  // 页签整排在 DOM 里消失，而不是只是被盖住
+  await expect(page.locator('.app-nav__tab')).toHaveCount(0);
+  // 高度是**量出来的**：从 46 收到 28，让出 18
+  const collapsedHeight = (await main.boundingBox())?.height ?? 0;
+  expect(collapsedHeight - expandedHeight).toBe(18);
+
+  await page.getByRole('button', { name: '展开导航' }).click();
+  await expect(nav).not.toHaveClass(/app-nav--collapsed/);
+  await expect(page.locator('.app-nav__tab').first()).toBeVisible();
+  expect((await main.boundingBox())?.height ?? 0).toBe(expandedHeight);
+});
+
+test('主菜单的玩家状态是一块面板：头像 + 等级 + 经验 + 资源', async ({ page }) => {
+  await openHub(page);
+
+  const player = page.locator('.player');
+  await expect(player).toBeVisible();
+
+  // 默认头像真的解码出来了（原项目 `assets/ui/avatar.jpg`，不是占位方块）
+  const avatar = player.locator('.player__avatar img');
+  await expect(avatar).toBeVisible();
+  expect(
+    await avatar.evaluate((node) => (node as HTMLImageElement).naturalWidth),
+    '默认头像没有加载出来',
+  ).toBeGreaterThan(0);
+
+  // 等级压在头像上，经验数值写在条内
+  await expect(player.locator('.player__level')).toContainText('Lv ');
+  await expect(player.locator('.player__xp-value')).toContainText('/');
+
+  // 三样资源都在同一块面板里（等级与资源不再各画各的）
+  await expect(player.locator('.currency__item')).toHaveCount(3);
+
+  // 旧的「当前出战：…」那行已经拿掉了
+  await expect(page.locator('.menu__deck')).toHaveCount(0);
+  // 旧的那条独立 XP 细条也不该再出现（它在主菜单里显示成 12px，与面板不搭）
+  await expect(page.locator('.level')).toHaveCount(0);
+});

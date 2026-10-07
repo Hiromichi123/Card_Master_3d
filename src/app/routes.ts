@@ -20,6 +20,8 @@ export type RouteId =
   | 'shop'
   /** 选择对战模式。旧版 `battle_menu.py`，从主菜单的「进入战斗」进。 */
   | 'battlemenu'
+  /** 28 张候选交替选卡 → 同机双人战桌。 */
+  | 'localBattle'
   /** 限时活动模式（活动大厅）。旧版 `activity/activity_scene.py`。 */
   | 'activity'
   /** 迷宫第一层。旧版 `activity/maze_scene.py`，从活动大厅的第一张卡进。 */

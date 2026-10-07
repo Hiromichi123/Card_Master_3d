@@ -1,0 +1,30 @@
+
+/* Same design coordinates as legacy draft_scene.py; DesignStage handles viewport fit. */
+.local-draft .menu__scrim { background: rgba(12, 17, 32, 0.42); }
+.local-draft__heading { position: absolute; top: calc(35 * var(--ui)); left: 10%; width: 80%; text-align: center; }
+.local-draft__heading h1 { margin: 0; color: #ffe49a; font-size: calc(48 * var(--ui)); text-shadow: 0 calc(3 * var(--ui)) calc(8 * var(--ui)) #17111d; }
+.local-draft__turn { margin: calc(95 * var(--ui)) 0 0; font-size: calc(32 * var(--ui)); font-weight: 600; }
+.local-draft__turn--player { color: #91f0b6; }
+.local-draft__turn--enemy { color: #9ecaff; }
+.local-draft__deck { position: absolute; left: 5%; width: calc(340 * var(--ui)); padding: calc(20 * var(--ui)) calc(24 * var(--ui));
+  background: rgba(18, 25, 42, .8); border: calc(1 * var(--ui)) solid #8593b966; border-radius: calc(16 * var(--ui));
+  font-size: calc(28 * var(--ui)); display: grid; grid-template-columns: 1fr auto; gap: calc(14 * var(--ui)); z-index: 2; }
+.local-draft__deck--enemy { top: calc(110 * var(--ui)); color: #9ecaff; }
+.local-draft__deck--player { top: 85%; color: #91f0b6; }
+.local-draft__deck progress { grid-column: 1 / -1; width: 100%; height: calc(22 * var(--ui)); accent-color: currentColor; }
+.local-draft__ai { position: absolute; right: 5%; top: calc(110 * var(--ui)); font-size: calc(28 * var(--ui)); padding: calc(14 * var(--ui)) calc(26 * var(--ui)); }
+.local-draft__canvas { position: absolute; left: 0; width: calc(2880 * var(--ui)); }
+.local-draft__canvas > div, .local-draft__canvas canvas { width: 100%; height: 100%; }
+.local-draft__picked { position: absolute; transform: translate(-50%, -50%); pointer-events: none;
+  padding: calc(12 * var(--ui)) calc(18 * var(--ui)); background: #111726dd; border: calc(1 * var(--ui)) solid currentColor; border-radius: calc(10 * var(--ui));
+  font-size: calc(27 * var(--ui)); font-weight: 700; text-shadow: 0 calc(2 * var(--ui)) calc(5 * var(--ui)) #000; }
+.local-draft__picked--player { color: #91f0b6; }
+.local-draft__picked--enemy { color: #9ecaff; }
+.local-draft__footer { position: absolute; top: 85%; left: 25%; width: 55%; text-align: center; color: #e2e7f3; font-size: calc(27 * var(--ui)); }
+.local-draft__footer p { margin: 0 0 calc(15 * var(--ui)); }
+.local-draft__footer p + p { color: #b6c1d6; font-size: calc(23 * var(--ui)); }
+.local-draft__actions { position: absolute; bottom: 5%; right: 5%; display: flex; gap: calc(24 * var(--ui)); }
+.local-draft__actions .btn { font-size: calc(28 * var(--ui)); padding: calc(16 * var(--ui)) calc(28 * var(--ui)); }
+.local-draft__accessible { position: absolute; width: calc(1 * var(--ui)); height: calc(1 * var(--ui)); overflow: hidden; clip-path: inset(50%); }
+.local-draft__accessible:focus-within { width: auto; height: auto; clip-path: none;
+  bottom: calc(8 * var(--ui)); left: 10%; right: 10%; display: flex; gap: calc(8 * var(--ui)); flex-wrap: wrap; background: #111726; padding: calc(12 * var(--ui)); }

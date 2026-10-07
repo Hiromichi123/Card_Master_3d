@@ -18,7 +18,7 @@ function entryLabel(props: MenuNodeProps): string | null {
  * 活动大厅的第一张卡就是它的入口。别把它加回来——加了就等于把做完的模式藏起来，
  * `tests/browser/maze.spec.ts` 会立刻红。
  *
- * 仍在开发中的是：本地 Draft，以及同机双人的「本地 任选对战」。
+ * 本地任选对战已经接入；独立 Draft 入口仍隐藏，从战斗菜单进入本地模式。
  */
 export function visibleMenuContent(content: ReactNode): ReactNode {
   return Children.toArray(content).map((node) => {

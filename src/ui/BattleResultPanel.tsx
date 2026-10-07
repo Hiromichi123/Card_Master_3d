@@ -15,6 +15,7 @@ export interface BattleResultPanelProps {
   readonly settlement?: SettlementView | null;
   /** 「返回」按钮上的字（战役里是「返回战役」）。 */
   readonly backLabel?: string;
+  readonly localMultiplayer?: boolean | undefined;
   readonly onRematch: () => void;
   readonly onBackToMenu: () => void;
 }
@@ -33,11 +34,14 @@ export function BattleResultPanel({
   enemyHp,
   settlement,
   backLabel = '返回菜单',
+  localMultiplayer = false,
   onRematch,
   onBackToMenu,
 }: BattleResultPanelProps) {
   const verdict =
-    outcome.kind === 'draw' ? '平局' : outcome.winner === 'player' ? '胜利' : '失败';
+    outcome.kind === 'draw' ? '平局' : localMultiplayer
+      ? (outcome.winner === 'player' ? '下方胜利' : '上方胜利')
+      : outcome.winner === 'player' ? '胜利' : '失败';
 
   return (
     <div className="overlay">
@@ -55,7 +59,7 @@ export function BattleResultPanel({
         </h1>
         <p className="overlay__reason">{REASON_LABEL[outcome.reason] ?? outcome.reason}</p>
         <p className="overlay__score">
-          最终生命 我方 {playerHp} : {enemyHp} 敌方
+          最终生命 {localMultiplayer ? '下方' : '我方'} {playerHp} : {enemyHp} {localMultiplayer ? '上方' : '敌方'}
         </p>
         {settlement ? (
           /*
@@ -73,7 +77,7 @@ export function BattleResultPanel({
           </ul>
         ) : (
           /* 演示战斗与存档无关，明说没有奖励，不伪造一个存档接口 */
-          <p className="overlay__note">（演示）本局奖励：无</p>
+          <p className="overlay__note">{localMultiplayer ? '本地对战结束' : '（演示）本局奖励：无'}</p>
         )}
 
         <div className="overlay__actions">

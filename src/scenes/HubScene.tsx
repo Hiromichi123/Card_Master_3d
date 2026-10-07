@@ -1,7 +1,6 @@
 import { assetManifest } from '../data/assets';
-import { CurrencyBar } from '../ui/CurrencyBar';
-import { LevelBar } from '../ui/LevelBar';
 import { MenuChrome, MenuEntryButton } from '../ui/MenuChrome';
+import { PlayerStatus } from '../ui/PlayerStatus';
 import { PosterCarousel } from '../ui/PosterCarousel';
 import { pushToast } from '../state/toastStore';
 import { useSettingsStore } from '../state/settingsStore';
@@ -69,7 +68,6 @@ export function HubScene({ profile, onNavigate, onReset }: HubSceneProps) {
   const reduceMotion = useSettingsStore((state) => state.reduceMotion);
   const background = assetManifest.shared.menu['menu_bg']?.url ?? null;
   const posters = menuPosters();
-  const activeDeck = profile.decks.find((deck) => deck.id === profile.activeDeckId) ?? null;
 
   const entry = (item: Entry, row: number) => (
     <MenuEntryButton
@@ -95,20 +93,7 @@ export function HubScene({ profile, onNavigate, onReset }: HubSceneProps) {
       className="menu--hub"
       backgroundUrl={background}
       title="Card Master 3D"
-      note={
-        <p className="menu__deck">
-          当前出战：
-          {activeDeck
-            ? activeDeck.name + '（' + activeDeck.cardIds.length + ' 张）'
-            : '未选择卡组'}
-        </p>
-      }
-      status={
-        <>
-          <LevelBar level={profile.level} />
-          <CurrencyBar currencies={profile.currencies} />
-        </>
-      }
+      status={<PlayerStatus level={profile.level} currencies={profile.currencies} />}
     >
       <nav className="menu__columns" aria-label="主菜单">
         <div className="menu__column">{PRIMARY.map((item, row) => entry(item, row))}</div>

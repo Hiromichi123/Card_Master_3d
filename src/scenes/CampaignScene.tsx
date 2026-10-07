@@ -6,9 +6,8 @@ import { activeDeckOf } from '../domain/progression/profile';
 import { planStageLaunch } from '../domain/progression/campaign';
 import type { StageLaunch } from '../domain/progression/campaign';
 import { pushToast } from '../state/toastStore';
-import { CurrencyBar } from '../ui/CurrencyBar';
+import { PlayerStatus } from '../ui/PlayerStatus';
 import { DesignStage } from '../ui/DesignStage';
-import { LevelBar } from '../ui/LevelBar';
 import { campaignChapters } from './campaignFlow';
 import type { ChapterInfo, StageInfo } from './campaignFlow';
 import type { ProfileState } from '../domain/progression/types';
@@ -120,8 +119,7 @@ export function CampaignScene({ profile, onNavigate, onLaunch }: CampaignScenePr
   return (
     <DesignStage backgroundUrl={background}>
       <div className="campaign__status">
-        <LevelBar level={profile.level} />
-        <CurrencyBar currencies={profile.currencies} />
+        <PlayerStatus level={profile.level} currencies={profile.currencies} />
       </div>
 
       <h1 className="campaign__title">{chapter ? chapter.name : '世界地图'}</h1>

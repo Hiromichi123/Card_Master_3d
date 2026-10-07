@@ -21,6 +21,8 @@ export type EffectTemplateId =
   | 'heal'
   | 'buff'
   | 'debuff'
+  | 'curse'
+  | 'injury'
   | 'flow'
   | 'status'
   | 'bombard'
@@ -62,8 +64,8 @@ export const FAMILY_TO_EFFECT: Record<string, EffectTemplateId> = {
   groupBlessing: 'buff',
   inspire: 'buff',
   groupInspire: 'buff',
-  curse: 'debuff',
-  injury: 'debuff',
+  curse: 'curse',
+  injury: 'injury',
   vampire: 'lifeDrain',
   berserk: 'debuff',
   selfDestruct: 'deathBurst',

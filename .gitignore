@@ -57,5 +57,6 @@ assets-library/
 #                         原素材在 D:\Github\card_maker，不在本仓库内；
 #                         不提交派生结果的话，新克隆的仓库无法独立启动。
 #                         来源与许可见 assets-sources.json。
-# docs/validation/video/  试玩录像，交付物的一部分。
+# docs/validation/        验证记录（环境、逐项结论、实测数字）。截图与录像不作为交付物，
+#                         2026-10-07 起不再入库，见 CONSTRUCTION_CHECKLIST.md 开头的记录约定。
 # scripts/*.json          切片定义等构建期输入，导入脚本要用。

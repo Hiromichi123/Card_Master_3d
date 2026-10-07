@@ -48,7 +48,8 @@ async function pickFirstStage(page: Page): Promise<void> {
 async function fightToTheEnd(page: Page): Promise<void> {
   await page.locator('.campaign__detail .btn').click();
   await expect(page.locator('.overlay__title')).toBeVisible({ timeout: 20_000 });
-  await page.locator('.quality').getByRole('button', { name: '跳过', exact: true }).click();
+  // 演出档在开局菜单的「战斗设置」里（2026-10-07 起不再挂在全局抬头）
+  await page.locator('.battle-settings').getByRole('button', { name: '跳过', exact: true }).click();
   await page.locator('.overlay__toggle input[type=checkbox]').check();
   await page.locator('.overlay').getByRole('button', { name: '开始对局' }).click();
   await expect(page.getByTestId('settlement')).toBeVisible({ timeout: 90_000 });

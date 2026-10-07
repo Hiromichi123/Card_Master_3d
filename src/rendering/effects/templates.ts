@@ -33,7 +33,7 @@ export interface EffectRecipe {
 
 export const EFFECT_TEMPLATE_IDS = [
   'normalAttack', 'fireball', 'iceSeal', 'lightning', 'groupFireball',
-  'groupIceSeal', 'groupLightning', 'shield', 'heal', 'buff', 'debuff',
+  'groupIceSeal', 'groupLightning', 'shield', 'heal', 'buff', 'debuff', 'curse', 'injury',
   'flow', 'status', 'bombard', 'deathBurst', 'groupHeal', 'armorBreak',
   'dodge', 'lifeDrain', 'rebirth', 'clone', 'cooldown', 'silence', 'flyingDeploy',
 ] as const satisfies readonly EffectTemplateId[];

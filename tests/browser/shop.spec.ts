@@ -228,3 +228,59 @@ test('活动商店用徽章计价，新号买不起（徽章来自活动，还�
 
   expect(problems, `场景出现问题：\n${problems.join('\n')}`).toEqual([]);
 });
+
+test('货架卡位居中、间隔平均，右侧卡包显示卡背', async ({ page }) => {
+  const problems = collectProblems(page);
+  await openShop(page);
+
+  /*
+    旧版 `_draw_card_offer` 的排法：`space = max(16, (rect.width - 总宽) / (张数 + 1))`，
+    首尾也各留一个 space —— 也就是 CSS 的 `space-evenly`。
+    这里量的是**真几何**：左边距、右边距、卡与卡的间隔，三者必须一致（居中 + 平均）。
+  */
+  const measured = await page.locator('.shop__shelf-row').first().evaluate((el) => {
+    const row = el.getBoundingClientRect();
+    const style = getComputedStyle(el);
+    const items = [...el.querySelectorAll('.shop__item')]
+      .map((node) => node.getBoundingClientRect())
+      .sort((a, b) => a.left - b.left);
+    if (items.length < 2) {
+      return null;
+    }
+    const first = items[0]!;
+    const last = items[items.length - 1]!;
+    const inner: number[] = [];
+    for (let i = 1; i < items.length; i += 1) {
+      inner.push(items[i]!.left - items[i - 1]!.right);
+    }
+    return {
+      count: items.length,
+      left: first.left - (row.left + parseFloat(style.paddingLeft)),
+      right: row.right - parseFloat(style.paddingRight) - last.right,
+      inner,
+    };
+  });
+
+  expect(measured, '第一排货架上不足两张卡，量不出间隔').not.toBeNull();
+  if (measured) {
+    expect(measured.count).toBeGreaterThan(1);
+    // 居中：左、右两个边距相等
+    expect(Math.abs(measured.left - measured.right), '卡位不居中').toBeLessThanOrEqual(2);
+    // 平均：每个卡间间隔都等于那个边距
+    for (const gap of measured.inner) {
+      expect(Math.abs(gap - measured.left), `卡间间隔与边距不一致：${JSON.stringify(measured)}`).toBeLessThanOrEqual(2);
+    }
+  }
+
+  // 卡包装的就是一叠卡：牌位上必须有卡背图，而且真的解码出来了（不是 404 的占位框）
+  const packs = page.locator('.shop__pack-body');
+  await expect(packs.first()).toBeVisible();
+  const backCount = await packs.locator('.shop__pack-back').count();
+  expect(backCount).toBe(await packs.count());
+  const decoded = await packs.first().locator('.shop__pack-back').evaluate(
+    (node) => (node as HTMLImageElement).naturalWidth,
+  );
+  expect(decoded, '卡背图没有加载出来').toBeGreaterThan(0);
+
+  expect(problems, `场景出现问题：\n${problems.join('\n')}`).toEqual([]);
+});

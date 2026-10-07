@@ -102,6 +102,9 @@ export interface BuildBoardOptions {
   readonly selectedInstanceId?: string | null | undefined;
   /** 现在能不能出牌：决定手牌是否可点。 */
   readonly playerCanPlay?: boolean | undefined;
+  /** Current human input side; defaults to lower player for existing single-player callers. */
+  readonly inputSide?: SideId | undefined;
+  readonly localHands?: boolean | undefined;
   /** 选中手牌后，可放置的准备槽。 */
   readonly placeablePrepSlots?: readonly number[] | undefined;
 }
@@ -110,6 +113,7 @@ const SIDES: readonly SideId[] = ['player', 'enemy'];
 
 export function buildBoard(display: DisplayState, options: BuildBoardOptions = {}): BoardView {
   const entries: CardPlacement[] = [];
+  const inputSide = options.inputSide ?? 'player';
 
   for (const side of SIDES) {
     const zones = display.zones[side];
@@ -147,10 +151,10 @@ export function buildBoard(display: DisplayState, options: BuildBoardOptions = {
       const placement = makePlacement(display, instanceId, {
         position: hand.position,
         rotationY: hand.rotationY,
-        rotationX: hand.rotationX,
+        rotationX: options.localHands && side === 'enemy' ? -Math.PI / 2 + 0.42 : hand.rotationX,
         scale: HAND_CARD_SCALE,
         statLayout: 'hand',
-        interactive: side === 'player' && options.playerCanPlay === true,
+        interactive: side === inputSide && options.playerCanPlay === true,
         /*
           敌方手牌**不翻面**：翻面之后牌背朝着相机、牌面朝下趴在桌上，
           而镜像过来的倾角本该让牌面朝天。去掉翻面，牌就是「面朝上、
@@ -159,8 +163,8 @@ export function buildBoard(display: DisplayState, options: BuildBoardOptions = {
           代价是让对手的手牌内容露了出来——这是实机确认过的取舍。
           数值与全息显式关掉：至少不把攻防一并亮给玩家。
         */
-        showStats: side === 'player',
-        holo: side === 'player',
+        showStats: side === 'player' || options.localHands === true,
+        holo: side === 'player' || options.localHands === true,
       });
       if (placement) {
         entries.push(placement);
@@ -170,7 +174,7 @@ export function buildBoard(display: DisplayState, options: BuildBoardOptions = {
 
   const placeable = new Set<string>();
   for (const index of options.placeablePrepSlots ?? []) {
-    placeable.add(slotKeyFor('player', 'prep', index));
+    placeable.add(slotKeyFor(inputSide, 'prep', index));
   }
 
   return {

@@ -1,7 +1,6 @@
 import { backgroundUrl } from '../data/assets';
 import { MenuChrome, MenuEntryButton } from '../ui/MenuChrome';
-import { CurrencyBar } from '../ui/CurrencyBar';
-import { LevelBar } from '../ui/LevelBar';
+import { PlayerStatus } from '../ui/PlayerStatus';
 import { pushToast } from '../state/toastStore';
 import type { ProfileState } from '../domain/progression/types';
 import type { RouteId } from '../app/routes';
@@ -97,8 +96,7 @@ export function ActivityScene({ profile, onNavigate }: ActivitySceneProps) {
       subtitle="限时玩法与合作挑战在此汇集，完成目标可兑换限定卡牌奖励。"
       status={
         <>
-          <LevelBar level={profile.level} />
-          <CurrencyBar currencies={profile.currencies} />
+          <PlayerStatus level={profile.level} currencies={profile.currencies} />
         </>
       }
     >

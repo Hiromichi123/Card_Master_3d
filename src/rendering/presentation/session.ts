@@ -82,6 +82,14 @@ export interface BattleSnapshot {
   readonly autoPlayer: boolean;
   /** 第几局。开新局会 +1，用来重播开场的发牌动画。 */
   readonly runId: number;
+  readonly localMultiplayer: boolean;
+  readonly autoEnemy: boolean;
+  readonly currentHasLegalPlay: boolean;
+}
+
+export interface SessionControl {
+  readonly localMultiplayer?: boolean | undefined;
+  readonly autoEnemy?: boolean | undefined;
 }
 
 const LOG_LIMIT = 6;
@@ -95,6 +103,8 @@ export class BattleSession {
   private inputOpen = false;
   private selectedInstanceId: string | null = null;
   private autoPlayer = false;
+  private autoEnemy = true;
+  private readonly localMultiplayer: boolean;
   private runId = 0;
   private readonly log: string[] = [];
   private readonly listeners = new Set<() => void>();
@@ -118,7 +128,10 @@ export class BattleSession {
     private readonly definitions: DefinitionTable,
     private readonly speed: () => PresentationSpeed,
     private readonly effects: SessionEffects,
+    control: SessionControl = {},
   ) {
+    this.localMultiplayer = control.localMultiplayer ?? false;
+    this.autoEnemy = control.autoEnemy ?? true;
     this.state = createBattle(config, definitions);
     this.display = displayFromState(this.state);
     this.aiRng = createRng(this.config.seed ^ AI_SEED_MIX);
@@ -192,6 +205,9 @@ export class BattleSession {
       playablePrepSlots: this.playablePrepSlots(),
       log: this.log,
       autoPlayer: this.autoPlayer,
+      localMultiplayer: this.localMultiplayer,
+      autoEnemy: this.autoEnemy,
+      currentHasLegalPlay: hasLegalPlay(this.state, this.state.currentSide),
       runId: this.runId,
     };
   }
@@ -238,7 +254,7 @@ export class BattleSession {
     this.pendingAiAction = false;
     this.log.length = 0;
 
-    if (this.state.currentSide === 'player' && !this.autoPlayer) {
+    if (this.isHumanTurn()) {
       this.inputOpen = true;
       this.publish();
     } else {
@@ -255,11 +271,31 @@ export class BattleSession {
 
   setAutoPlayer(on: boolean): void {
     this.autoPlayer = on;
-    if (on && this.mode === 'battle' && !this.director.isPerforming) {
-      this.inputOpen = false;
+    if (this.mode === 'battle' && !this.director.isPerforming) {
+      this.selectedInstanceId = null;
+      this.pendingAiAction = false;
       this.advance();
     }
     this.publish();
+  }
+
+  setAutoEnemy(on: boolean): void {
+    if (!this.localMultiplayer) return;
+    this.autoEnemy = on;
+    if (this.state.currentSide === 'enemy') {
+      this.selectedInstanceId = null;
+      if (this.mode === 'battle' && !this.director.isPerforming) {
+        this.pendingAiAction = false;
+        this.advance();
+      }
+    }
+    this.publish();
+  }
+
+  private isHumanTurn(): boolean {
+    return this.state.currentSide === 'player'
+      ? !this.autoPlayer
+      : this.localMultiplayer && !this.autoEnemy;
   }
 
   // --- 输入 ---------------------------------------------------------------
@@ -272,7 +308,7 @@ export class BattleSession {
    */
   select(instanceId: string | null): void {
     const selectable =
-      instanceId !== null && this.display.zones.player.hand.includes(instanceId)
+      instanceId !== null && this.canAct() && this.state.cardsPlayedThisTurn < this.state.rules.cardsPerTurn && this.display.zones[this.state.currentSide].hand.includes(instanceId)
         ? instanceId
         : null;
     if (this.selectedInstanceId === selectable) {
@@ -289,7 +325,7 @@ export class BattleSession {
     }
     const instanceId = this.selectedInstanceId;
     this.selectedInstanceId = null;
-    this.submit({ kind: 'playCard', side: 'player', instanceId, prepSlot });
+    this.submit({ kind: 'playCard', side: this.state.currentSide, instanceId, prepSlot });
   }
 
   endTurn(): void {
@@ -297,7 +333,7 @@ export class BattleSession {
       return;
     }
     this.selectedInstanceId = null;
-    this.submit({ kind: 'endTurn', side: 'player' });
+    this.submit({ kind: 'endTurn', side: this.state.currentSide });
   }
 
   /** 手动跳过当前演出。 */
@@ -306,7 +342,7 @@ export class BattleSession {
   }
 
   private canAct(): boolean {
-    return this.mode === 'battle' && this.inputOpen && this.state.currentSide === 'player';
+    return this.mode === 'battle' && this.inputOpen && this.isHumanTurn();
   }
 
   // --- 推进 ---------------------------------------------------------------
@@ -336,7 +372,7 @@ export class BattleSession {
       return;
     }
 
-    if (this.state.currentSide === 'enemy' || this.autoPlayer) {
+    if (!this.isHumanTurn()) {
       this.inputOpen = false;
       this.publish();
       /*
@@ -367,7 +403,9 @@ export class BattleSession {
     // 时间轴已经整个更新完，现在再开新演出才是安全的
     if (this.pendingAiAction) {
       this.pendingAiAction = false;
-      this.submit(chooseCommand(this.state, this.aiRng));
+      // The upper AI can be disabled during its wait without submitting a stale action.
+      if (this.isHumanTurn()) this.advance();
+      else this.submit(chooseCommand(this.state, this.aiRng));
     }
   }
 
@@ -416,11 +454,11 @@ export class BattleSession {
   }
 
   private playablePrepSlots(): readonly number[] {
-    if (!this.canAct() || this.selectedInstanceId === null) {
+    if (!this.canAct() || this.selectedInstanceId === null || this.state.cardsPlayedThisTurn >= this.state.rules.cardsPerTurn || !hasLegalPlay(this.state, this.state.currentSide)) {
       return [];
     }
     const slots: number[] = [];
-    this.display.zones.player.prep.forEach((occupant, index) => {
+    this.display.zones[this.state.currentSide].prep.forEach((occupant, index) => {
       if (occupant === null) {
         slots.push(index);
       }

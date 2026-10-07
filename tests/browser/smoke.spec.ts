@@ -76,4 +76,39 @@ test.describe('应用骨架', () => {
       }, { timeout: 5000 })
       .toBeGreaterThan(20);
   });
+
+  test('实验台是「第二行一张施法卡 + 上排三张目标」的可换阵型', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: '实验台' }).click();
+    await expect(page.getByRole('heading', { name: '实验台' })).toBeVisible();
+
+    // 上排三个槽都在；默认那张飞行卡（A+_006）在**左**槽，对位留给地面卡
+    const targets = page.locator('.lab__target select');
+    await expect(targets).toHaveCount(3);
+    await expect(page.locator('.lab__badge')).toHaveCount(1);
+    await expect(page.locator('.lab__target').nth(0).locator('.lab__badge')).toHaveText('飞行');
+
+    // 标记跟着**卡上的 trait** 走，不是写死的三个槽里固定有一个
+    await targets.nth(0).selectOption('S+_014');
+    await expect(page.locator('.lab__badge')).toHaveCount(0);
+    await targets.nth(0).selectOption('D_001');
+    await expect(page.locator('.lab__badge')).toHaveCount(1);
+
+    // 施法卡可任选；选中一个已经在目标位上的卡时**两槽对调**，
+    // 于是「施法卡 + 三张其它卡」永远是四张不同的卡
+    const source = page.locator('.lab__pick select');
+    await expect(page.locator('.lab__meta').first()).toContainText('A_011');
+    await source.selectOption('D_001');
+    await expect(page.locator('.lab__meta').first()).toContainText('D_001');
+    await expect(targets.nth(0)).toHaveValue('A_011');
+
+    // 打几张**由技能族决定**：对单只打对位那张，对群打满三张。没有覆盖开关可切
+    const last = page.locator('.lab__last');
+    await expect(last).toContainText('（尚未触发）');
+    await page.getByRole('button', { name: '冰封', exact: true }).click();
+    await expect(last).toContainText('只打对位');
+    await page.getByRole('button', { name: '群体冰封', exact: true }).click();
+    await expect(last).toContainText('三张');
+    await expect(page.getByLabel(/群体化/)).toHaveCount(0);
+  });
 });

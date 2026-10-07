@@ -808,6 +808,124 @@ code {
 
 
 
+/* 施法卡的下拉选择：「标签 + 下拉框」一行 */
+
+.lab__pick {
+
+  display: flex;
+
+  gap: 8px;
+
+  align-items: center;
+
+  margin: 0 0 10px;
+
+  font-size: 12.5px;
+
+}
+
+
+
+.lab__pick > span {
+
+  flex: 0 0 auto;
+
+  color: var(--text-dim);
+
+}
+
+
+
+.lab__pick select,
+
+.lab__target select {
+
+  flex: 1 1 auto;
+
+  min-width: 0;
+
+  appearance: none;
+
+  padding: 5px 6px;
+
+  border: 1px solid var(--border-strong);
+
+  border-radius: 6px;
+
+  background: var(--bg-raised-hover);
+
+  color: var(--text);
+
+  font: inherit;
+
+  font-size: 12.5px;
+
+}
+
+
+
+/* 上排三个目标槽：槽位标签 + 下拉框 + 飞行标记 */
+
+.lab__targets {
+
+  display: grid;
+
+  gap: 6px;
+
+  margin: 0 0 8px;
+
+  padding: 0;
+
+  list-style: none;
+
+}
+
+
+
+.lab__target {
+
+  display: flex;
+
+  gap: 6px;
+
+  align-items: center;
+
+}
+
+
+
+.lab__slot {
+
+  flex: 0 0 30px;
+
+  color: var(--text-dim);
+
+  font-size: 12px;
+
+  text-align: right;
+
+}
+
+
+
+.lab__badge {
+
+  flex: 0 0 auto;
+
+  padding: 1px 7px;
+
+  border: 1px solid var(--accent);
+
+  border-radius: 999px;
+
+  color: var(--accent);
+
+  font-size: 11px;
+
+}
+
+
+
 /* 触发按钮：等宽网格，按钮多了也不会挤成一条 */
 
 .lab__buttons {
@@ -1352,247 +1470,268 @@ code {
 
 
 
-/* ---------- 全局画质与演出控制 ---------- */
+/* ---------- 玩家状态：头像 + 等级 + 经验 + 资源 ----------
+ * 一处定义、各屏共用（主菜单 / 对战菜单 / 活动大厅 / 战役 / 迷宫 / 商店）。
+ * 画法照旧版 `ui/system_ui.py` 的 `CurrencyLevelUI`：**一块深色面板**，
+ * 左边默认头像（等级压在它右下角），右边上排经验条（`xp/need` 写在条内）、
+ * 下排资源行（图标 + 彩色数字）。尺寸全部走设计单位。
+ *
+ * 2026-10-07 之前这一块在七个屏里有三种画法：主菜单类是「一层板子里套一条 12px
+ * 的 XP 细条 + 三颗药丸」，商店/战役/迷宫同一套但字号各写各的，融合与抽卡
+ * 只有药丸、没有等级——而且那几处字号是写死的 12/13px，在 2880 设计空间里特别小。
+ */
 
+.player {
+  display: flex;
+  align-items: center;
+  gap: calc(18 * var(--ui));
+  padding: calc(14 * var(--ui)) calc(20 * var(--ui));
+  border: 1px solid rgba(120, 150, 210, 0.22);
+  border-radius: calc(14 * var(--ui));
+  background: rgba(8, 11, 18, 0.55);
+  backdrop-filter: blur(4px);
+}
 
+/* 头像：默认头像来自原项目 `assets/ui/avatar.jpg`；等级压在右下角（旧版同位置） */
+.player__avatar {
+  position: relative;
+  flex: 0 0 auto;
+  width: calc(128 * var(--ui));
+  height: calc(128 * var(--ui));
+}
+
+.player__avatar img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: calc(2 * var(--ui)) solid rgba(255, 215, 0, 0.55);
+  border-radius: calc(10 * var(--ui));
+  object-fit: cover;
+}
+
+.player__avatar-fallback {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: calc(10 * var(--ui));
+  background: linear-gradient(160deg, #3a445c, #1b2130);
+}
+
+.player__level {
+  position: absolute;
+  right: calc(4 * var(--ui));
+  bottom: calc(4 * var(--ui));
+  padding: 0 calc(6 * var(--ui));
+  border-radius: calc(6 * var(--ui));
+  background: rgba(0, 0, 0, 0.66);
+  color: #ffe9b0;
+  font-size: calc(26 * var(--ui));
+  font-weight: 700;
+}
+
+.player__body {
+  display: flex;
+  flex-direction: column;
+  gap: calc(10 * var(--ui));
+  min-width: 0;
+}
+
+.player__xp {
+  display: flex;
+  align-items: center;
+  gap: calc(10 * var(--ui));
+}
+
+.player__xp-label {
+  color: #c8c8c8;
+  font-size: calc(24 * var(--ui));
+}
+
+.player__xp-track {
+  position: relative;
+  width: calc(360 * var(--ui));
+  height: calc(32 * var(--ui));
+  border-radius: calc(8 * var(--ui));
+  background: rgba(80, 80, 80, 0.85);
+  overflow: hidden;
+}
+
+.player__xp-fill {
+  display: block;
+  height: 100%;
+  background: linear-gradient(180deg, #6fd88a, #4aa863);
+  transition: width 160ms ease-out;
+}
+
+/* 数值画在条内居中——旧版就是这样，条不用为了塞下数字而拉长 */
+.player__xp-value {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #eaeaea;
+  font-size: calc(22 * var(--ui));
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+/* ---------- 抬头（导航）----------
+ * 2026-10-07：台面 / 视角 / 画质 / 演出 / 震动 / 静止 搬进了战斗界面（见 `.battle-settings`）。
+ * 抬头只留「去哪一屏」、一个开发用的性能读数开关，以及一个收起按钮。
+ */
 
 .app-nav__spacer {
-
   flex: 1;
-
 }
 
-
-
-.quality {
-
+.app-nav__perf {
   display: flex;
-
   align-items: center;
-
-  gap: 14px;
-
-}
-
-
-
-.quality__group {
-
-  display: flex;
-
-  align-items: center;
-
   gap: 6px;
-
   font-size: 12px;
-
   color: var(--text-dim);
-
-}
-
-
-
-.quality__group--check {
-
   cursor: pointer;
-
 }
 
-
-
-.quality__label {
-
-  white-space: nowrap;
-
-}
-
-
-
-.quality__segmented {
-
-  display: inline-flex;
-
-  border: 1px solid var(--border-strong);
-
-  border-radius: 6px;
-
-  overflow: hidden;
-
-}
-
-
-
-.quality__seg {
-
+.app-nav__toggle {
   appearance: none;
-
-  border: none;
-
-  border-right: 1px solid var(--border-strong);
-
+  border: 1px solid transparent;
   background: transparent;
-
   color: var(--text-dim);
-
-  padding: 3px 9px;
-
-  font: inherit;
-
-  font-size: 12px;
-
-  cursor: pointer;
-
-}
-
-
-
-.quality__seg:last-child {
-
-  border-right: none;
-
-}
-
-
-
-.quality__seg:hover {
-
-  background: var(--bg-raised-hover);
-
-  color: var(--text);
-
-}
-
-
-
-.quality__seg--on {
-
-  background: var(--bg-raised-hover);
-
-  color: var(--accent);
-
-}
-
-
-
-/* ---------- 性能读数条 ---------- */
-
-
-
-.perf {
-
-  position: absolute;
-
-  left: 12px;
-
-  bottom: 12px;
-
-  display: flex;
-
-  flex-wrap: wrap;
-
-  gap: 4px 12px;
-
-  max-width: calc(100% - 24px);
-
-  padding: 7px 11px;
-
-  background: rgba(12, 15, 22, 0.88);
-
-  border: 1px solid var(--border-strong);
-
-  border-left-width: 3px;
-
-  border-radius: 7px;
-
-  font-size: 11.5px;
-
-  font-variant-numeric: tabular-nums;
-
-  color: var(--text-dim);
-
-  pointer-events: none;
-
-}
-
-
-
-.perf--ok {
-
-  border-left-color: var(--ok);
-
-}
-
-
-
-.perf--warn {
-
-  border-left-color: #ffb457;
-
-}
-
-
-
-.perf--bad {
-
-  border-left-color: var(--danger);
-
-}
-
-
-
-.perf__item b {
-
-  color: var(--text);
-
-  font-weight: 600;
-
-}
-
-
-
-.quality__select {
-
-  appearance: none;
-
-  border: 1px solid var(--border-strong);
-
-  background: var(--bg-raised-hover);
-
-  color: var(--text);
-
-  padding: 3px 8px;
-
+  padding: 4px 10px;
   border-radius: 6px;
-
   font: inherit;
-
   font-size: 12px;
-
   cursor: pointer;
-
-  max-width: 130px;
-
+  white-space: nowrap;
 }
 
-
-
-.quality__select:hover {
-
-  border-color: var(--accent);
-
-}
-
-
-
-.quality__select option {
-
-  background: var(--bg-raised);
-
+.app-nav__toggle:hover {
+  background: var(--bg-raised-hover);
   color: var(--text);
-
 }
 
+/* 收起：只剩品牌与展开按钮。抬头从 46px 收到 28px，多出来的高度让给 3D 画面 */
+.app-nav--collapsed {
+  height: 28px;
+  opacity: 0.7;
+}
 
+.app-nav--collapsed:hover,
+.app-nav--collapsed:focus-within {
+  opacity: 1;
+}
+
+/* ---------- 战斗设置（台面 / 视角 / 画质 / 演出 / 震动 / 静止）----------
+ * 一处定义、两处调用：对局菜单里默认展开、战斗 HUD 里默认收起（见 `BattleSettings`）。
+ * 在 HUD 里必须显式开 `pointer-events`——`.hud` 整层是 none，否则这些控件点不动。
+ */
+
+.battle-settings {
+  pointer-events: auto;
+  width: max-content;
+  max-width: 100%;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  background: rgba(22, 27, 38, 0.86);
+  overflow: hidden;
+}
+
+.battle-settings__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  padding: 6px 10px;
+  font: inherit;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+
+.battle-settings__head:hover {
+  background: var(--bg-raised-hover);
+}
+
+.battle-settings__chevron {
+  color: var(--text-dim);
+}
+
+.battle-settings__body {
+  display: grid;
+  gap: 6px 14px;
+  padding: 4px 10px 10px;
+  border-top: 1px solid var(--border);
+}
+
+.battle-settings__body--cols-1 { grid-template-columns: minmax(0, 1fr); }
+.battle-settings__body--cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+.battle-settings__group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.battle-settings__group--check {
+  cursor: pointer;
+}
+
+.battle-settings__label {
+  white-space: nowrap;
+}
+
+.battle-settings__select {
+  appearance: none;
+  border: 1px solid var(--border-strong);
+  background: var(--bg-raised-hover);
+  color: var(--text);
+  padding: 3px 8px;
+  border-radius: 6px;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  max-width: 130px;
+}
+
+.battle-settings__select:hover {
+  border-color: var(--accent);
+}
+
+.battle-settings__select option {
+  background: var(--bg-raised);
+  color: var(--text);
+}
+
+.battle-settings__segmented {
+  display: inline-flex;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.battle-settings__seg {
+  appearance: none;
+  border: none;
+  border-right: 1px solid var(--border-strong);
+  background: transparent;
+  color: var(--text-dim);
+  padding: 3px 9px;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.battle-settings__seg:last-child { border-right: none; }
+.battle-settings__seg:hover { background: var(--bg-raised-hover); color: var(--text); }
+.battle-settings__seg--on { background: var(--bg-raised-hover); color: var(--accent); }
 
 /* ---------------------------------------------------------------------------
 
@@ -2330,6 +2469,10 @@ code {
 
   inset: -5%;
 
+  /* 2026-10-07：插画本身偏暗，这里只提亮**图**；压暗那层（`.menu__scrim`）没动 */
+
+  filter: brightness(1.2) saturate(1.05);
+
   background-position: center;
 
   background-size: cover;
@@ -2407,37 +2550,11 @@ code {
 
 
 .menu__status {
-
   position: absolute;
-
   left: calc(40 * var(--ui));
-
   /* 顶部要给导航栏让位，再往下留一段空隙 */
-
   top: calc(118 * var(--ui));
-
-  display: flex;
-
-  flex-direction: column;
-
-  gap: calc(10 * var(--ui));
-
-  align-items: flex-start;
-
-  padding: calc(14 * var(--ui)) calc(18 * var(--ui));
-
-  border-radius: calc(12 * var(--ui));
-
-  background: rgba(8, 11, 18, 0.5);
-
-  backdrop-filter: blur(4px);
-
-  font-size: calc(28 * var(--ui));
-
 }
-
-
-
 /* 标题：居中、12% 高，金色 + 硬阴影（旧版就是这么画的） */
 
 .menu__title {
@@ -3452,10 +3569,16 @@ code {
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
 }
 
+/* 卡位居中、间隔平均：旧版 `space = max(16, (rect.width - 总宽) / (张数 + 1))` 就是
+   「首尾也各留一个 space」，即 CSS 的 `space-evenly`（这里 `gap` 是最小间隔）。 */
 .shop__shelf-row {
   display: flex;
   align-items: flex-start;
-  gap: calc(16 * var(--ui));
+  justify-content: space-evenly;
+  /* 这里**不能**再留 gap：gap 只加在卡与卡之间，首尾边距就只有 space-evenly
+     分到的那一份，两者会差一个 gap（实测 1280×720 差 6.4px）。余量交给 space-evenly
+     三等分，首尾与卡间就完全相等——旧版 `space = max(16, 余量/(张数+1))` 就是这个意思。
+     最密的一排 5 张 × 200 单位 = 1000 单位，排面约 1753 单位，余量充足，不会挤到贴住。 */
   min-height: 0;
   padding: calc(8 * var(--ui)) calc(16 * var(--ui));
   background: rgba(25, 35, 70, 0.43);
@@ -3559,7 +3682,6 @@ code {
   display: flex;
   align-items: flex-start;
   justify-content: space-evenly;
-  gap: calc(12 * var(--ui));
   flex: 1;
   min-height: 0;
   padding: calc(14 * var(--ui)) calc(12 * var(--ui));
@@ -3569,9 +3691,17 @@ code {
 }
 
 /*
-  礼包没有卡面：一块按稀有度发光的空位（旧版是给卡包图后面垫一层会呼吸的
-  稀有度色椭圆，`_draw_pack_offer`）。
+  卡包：一层会呼吸的稀有度色椭圆垫在**卡背图**后面（旧版 `_draw_pack_offer`：
+  先画椭圆光晕，再把 `assets/ui/card_back.png` 缩到这块牌位上）。
 */
+/* 卡背铺满卡位，圆角与描边跟着外框走 */
+.shop__pack-back {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: calc(9 * var(--ui));
+  object-fit: cover;
+}
 .shop__pack-body {
   position: relative;
   border: calc(3 * var(--ui)) solid var(--rarity, #888);
@@ -3695,157 +3825,49 @@ code {
 
 
 .currency {
-
   display: flex;
-
-  gap: 14px;
-
   align-items: center;
-
+  gap: calc(30 * var(--ui));
+  list-style: none;
+  margin: 0;
+  padding: 0;
 }
-
-
-
 .currency__item {
-
   display: flex;
-
   align-items: center;
-
-  gap: 5px;
-
-  padding: 3px 10px;
-
-  background: var(--bg-raised);
-
-  border: 1px solid var(--border);
-
-  border-radius: 999px;
-
-  font-size: 13px;
-
+  gap: calc(8 * var(--ui));
 }
-
-
-
 .currency__icon {
-
-  width: 16px;
-
-  height: 16px;
-
+  width: calc(44 * var(--ui));
+  height: calc(44 * var(--ui));
 }
-
-
-
 .currency__dot {
-
-  width: 9px;
-
-  height: 9px;
-
+  width: calc(28 * var(--ui));
+  height: calc(28 * var(--ui));
   border-radius: 50%;
-
   background: var(--text-dim);
-
 }
-
-
-
 .currency__item--gold .currency__dot { background: #ffd700; }
+.currency__item--gold .currency__value { color: #ffdc78; }
 
 .currency__item--crystal .currency__dot { background: #6ec8ff; }
+.currency__item--crystal .currency__value { color: #aac8ff; }
 
 .currency__item--badge .currency__dot { background: #ff9f6e; }
+.currency__item--badge .currency__value { color: #ffbea0; }
 
 
 
 .currency__value {
-
-  font-variant-numeric: tabular-nums;
-
-  color: var(--text);
-
-}
-
-
-
-.currency__label {
-
-  font-size: 11px;
-
-  color: var(--text-dim);
-
-}
-
-
-
-.level {
-
-  display: flex;
-
-  align-items: center;
-
-  gap: 8px;
-
-  font-size: 12px;
-
-}
-
-
-
-.level__tag {
-
-  color: var(--accent);
-
+  font-size: calc(28 * var(--ui));
   font-weight: 600;
-
-}
-
-
-
-.level__track {
-
-  display: block;
-
-  width: 120px;
-
-  height: 6px;
-
-  border-radius: 3px;
-
-  background: #2a3346;
-
-  overflow: hidden;
-
-}
-
-
-
-.level__fill {
-
-  display: block;
-
-  height: 100%;
-
-  background: var(--accent);
-
-  transition: width 160ms ease-out;
-
-}
-
-
-
-.level__value {
-
-  color: var(--text-dim);
-
   font-variant-numeric: tabular-nums;
-
+  color: var(--text);
 }
-
-
-
+.currency__label {
+  font-size: calc(22 * var(--ui));
+  color: var(--text-dim);
+}
 .coming-soon {
 
   padding: 1px 7px;
@@ -6876,6 +6898,10 @@ code {
 .gacha-probability .gacha__rare { flex-shrink: 0; margin: 0; color: #f8e7bc; font-size: inherit; }
 .gacha-probability__rows { display: flex; flex: 1; justify-content: space-between; gap: 12px; list-style: none; margin: 0; padding: 0; }
 .gacha-probability__rows .gacha__prob-value { color: inherit; }
+
+/* 「跳过演出」：这块屏自己的开关。位置避开底部的概率条，也避开结果面板的居中按钮。 */
+.gacha__skip { position: absolute; right: 22px; bottom: 42px; z-index: 5; appearance: none; padding: 8px 18px; border: 1px solid #b99456; border-radius: 8px; background: linear-gradient(145deg, #573d27, #2c2017); color: #f9eacc; font: inherit; font-size: 14px; cursor: pointer; box-shadow: 0 6px 20px #34210e55; }
+.gacha__skip:hover { border-color: #fff0c2; color: #fff5d9; }
 
 /* Selection and reveal share one board and one Canvas; only surrounding UI leaves. */
 .gacha .gacha__stage { z-index: 0; background: #fff8e8; }
