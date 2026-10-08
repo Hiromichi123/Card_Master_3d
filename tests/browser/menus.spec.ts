@@ -68,13 +68,16 @@ test('「活动模式」进的是活动大厅，活动商店在它里面', async
   await expect(page.locator('.menu__title')).toHaveText('选择对战模式');
   await menuEntry(page, '活动模式').click();
 
-  // 旧版 `activity_scene.py`：标题「限时活动模式」+ 一行副标题 + 左侧三张特性卡
+  // 标题「限时活动模式」+ 一行副标题 + 左侧滚轮（2026-10-08 取代原来的三张特性卡）
   await expect(page.locator('.menu__title')).toHaveText('限时活动模式');
   await expect(page.locator('.menu__subtitle')).toContainText('限时玩法与合作挑战');
-  const features = await page
-    .locator('.feature__title')
-    .evaluateAll((nodes) => nodes.map((node) => node.textContent ?? ''));
-  expect(features).toEqual(['迷宫挑战', '深渊挑战（未开放）', '协力突袭（未开放）']);
+  const modes = await page
+    .locator('.activity-wheel__option .wheel__name')
+    .evaluateAll((nodes) => nodes.map((node) => node.textContent?.trim() ?? ''));
+  expect(modes).toEqual(['迷宫挑战', '深渊挑战', '协力突袭', '天梯赛', '极难挑战']);
+  // 只有迷宫做完了：它的轮盘项不带「未开放」标记
+  await expect(page.locator('.activity-wheel__option').first().locator('.activity-wheel__soon')).toHaveCount(0);
+  await expect(page.locator('.activity-detail__title')).toContainText('迷宫挑战');
 
   // 右侧三项按钮
   const entries = await page

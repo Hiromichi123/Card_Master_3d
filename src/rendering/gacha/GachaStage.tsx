@@ -10,6 +10,7 @@ import { useRarityIndex } from '../../state/useRarityIndex';
 import { SPEED_SCALE, useSettingsStore } from '../../state/settingsStore';
 import { WebGLGuard } from '../../scenes/WebGLGuard';
 import { effectDirector } from '../effects/effectDirector';
+import { audioEngine } from '../../services/audio/AudioEngine';
 import { EffectSystem } from '../effects/EffectSystem';
 import { PerfSampler } from '../PerfSampler';
 import { PostEffects } from '../postprocessing/PostEffects';
@@ -198,6 +199,8 @@ function StageContent({ cards, backdropUrl, profile, theme, shake, onFinished, o
   const handleBurst = useMemo(
     () => (_index: number, shot: CardShot) => {
       const color = rarityIndex.colorOf(shot.rarity);
+      // 翻卡音与爆点同一时刻；跳过演出时驱动层提前 return，天然不会响
+      audioEngine.play('gacha', { bright: shot.high });
       effectDirector.play({
         template: 'flow',
         from: DECK_POINT,

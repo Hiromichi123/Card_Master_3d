@@ -1,4 +1,4 @@
-import type { CardDefinition, SideId } from '../../domain/cards/types';
+import type { AttackStatusKind, CardDefinition, SideId } from '../../domain/cards/types';
 import type { StatKind } from '../cards/statBadge';
 import type { StatLayout } from '../cards/StatBadges';
 import { MovingCard } from './MovingCard';
@@ -46,6 +46,8 @@ export interface CardPlacement {
   readonly showStats?: boolean | undefined;
   /** 是否叠全息层。对手的手牌不叠。 */
   readonly holo?: boolean | undefined;
+  readonly attackStatuses?: readonly AttackStatusKind[] | undefined;
+  readonly flying?: boolean | undefined;
   readonly unyielding?: boolean | undefined;
   /**
    * 这张牌上一次是从哪里来的（抽牌、还魂）。
@@ -100,6 +102,7 @@ export function BattleBoard({
   const theme = useSettingsStore((state) => state.tableTheme);
   const quality = useSettingsStore((state) => state.quality);
   const shadows = useSettingsStore((state) => state.profile.shadows);
+  const shadowMapSize = useSettingsStore((state) => state.profile.shadowMapSize);
   const reduceMotion = useSettingsStore((state) => state.reduceMotion);
 
   return (
@@ -112,7 +115,7 @@ export function BattleBoard({
         没有环境贴图时 clearcoat 与 envMapIntensity 基本不起作用，
         木头和大理石会长得一样平。
       */}
-      <SceneEnvironment theme={theme} shadows={shadows} />
+      <SceneEnvironment theme={theme} shadows={shadows} shadowMapSize={shadowMapSize} />
 
       {/* 棋盘之外的大圆桌：远端的边缘由雾化成背景色 */}
       <SceneGround theme={theme} />
@@ -145,6 +148,8 @@ export function BattleBoard({
           showStats={placement.showStats}
           holo={placement.holo}
           unyielding={placement.unyielding}
+          flying={placement.flying}
+          attackStatuses={placement.attackStatuses}
           selected={placement.instanceId === selectedInstanceId}
           // CardMesh 只认得卡牌定义，实例身份由这里补上——
           // 直接透传 onCardClick 的话第二个参数会永远缺省。

@@ -108,7 +108,7 @@ export function targetsOf(context: EffectContext): TargetRef[] {
     if (
       next.type === 'DamageApplied' ||
       next.type === 'Healed' ||
-      next.type === 'StatChanged' || next.type === 'DodgeGranted'
+      next.type === 'StatChanged' || next.type === 'DodgeGranted' || next.type === 'AttackStatusApplied' || next.type === 'CooldownChanged'
     ) {
       targets.push({ instanceId: next.instanceId, side: next.side });
     } else if (next.type === 'PlayerHpChanged') {
@@ -154,7 +154,7 @@ export function effectRequestFor(
 ): EffectPlayRequest | null {
   switch (event.type) {
     case 'SkillTriggered': {
-      if (['ranged', 'directDamage', 'groupPhysicalDamage', 'explodeOnDeath', 'selfDestruct', 'sacrifice', 'unyielding'].includes(event.family ?? '')) return null;
+      if (['concealment', 'firstStrike', 'vanguard', 'devour', 'masterpiece', 'antiAir', 'groupGround', 'siege', 'berserk', 'severeFrost', 'burning', 'venom', 'bleeding', 'grievousWound', 'splash', 'groupDelay', 'ranged', 'directDamage', 'groupPhysicalDamage', 'explodeOnDeath', 'selfDestruct', 'sacrifice', 'unyielding'].includes(event.family ?? '')) return null;
       const template = event.family ? FAMILY_TO_EFFECT[event.family] : undefined;
       if (!template) {
         return null;
@@ -165,7 +165,7 @@ export function effectRequestFor(
       const targets = next?.type === 'SpellReflected' && next.casterId === event.instanceId
         ? [{ instanceId: next.reflectorId, side: next.side }] : targetsOf(context);
       if (usesSlash(template) && targets.length === 0) return null;
-      const points = targets.map((target) => event.family === 'criticalCollapse'
+      const points = targets.map((target) => (event.family === 'criticalCollapse' || event.family === 'poisonCloud')
         ? context.cardFacePointOf?.(target.instanceId) ?? pointFor(target, context) : pointFor(target, context));
       const [first, ...rest] = points;
       return {
@@ -183,14 +183,37 @@ export function effectRequestFor(
     }
 
     case 'SpellReflected': {
+      if (['severeFrost', 'burning', 'venom', 'bleeding', 'grievousWound', 'groupDelay'].includes(event.family)) return null;
       const template = event.family === 'explodeOnDeath' ? 'groupBombard' : FAMILY_TO_EFFECT[event.family];
       if (!template) return null;
-      const points = targetsOf(context).map((target) => pointFor(target, context));
+      const points = targetsOf(context).map((target) => event.family === 'poisonCloud'
+        ? context.cardFacePointOf?.(target.instanceId) ?? pointFor(target, context) : pointFor(target, context));
       return { template, family: event.family === 'explodeOnDeath' ? 'groupBombard' : event.family,
         sourceInstanceId: event.reflectorId, from: castPointOf(context.worldPointOf(event.reflectorId), event.side),
         to: points[0] ?? impactPointOf(context.worldPointOf(event.casterId)), extraTargets: points.slice(1),
         intensity: event.param ?? 1, color: FAMILY_TINT[event.family] };
     }
+    case 'AttackStatusApplied': {
+      if (event.animate === false) return null;
+      const templates = { frost: 'frostRetaliation', burn: 'burnMark', poison: 'poisonLance', bleed: 'bleedMark', grievous: 'grievousMark' } as const;
+      const to = context.cardFacePointOf?.(event.instanceId) ?? impactPointOf(context.worldPointOf(event.instanceId));
+      const from = event.kind === 'burn' ? to : castPointOf(context.worldPointOf(event.sourceInstanceId), oppositeOf(event.side));
+      return { template: templates[event.kind], from, to, intensity: event.level };
+    }
+    case 'AttackStatusTriggered': {
+      const templates = { frost: 'frostShatter', burn: 'burnBurst', poison: 'poisonBurst', bleed: 'bloodBurst', grievous: 'grievousPulse' } as const;
+      const point = context.cardFacePointOf?.(event.instanceId) ?? impactPointOf(context.worldPointOf(event.instanceId));
+      return { template: templates[event.kind], from: point, to: point, intensity: event.level };
+    }
+    case 'ConcealmentUsed':
+    case 'VanguardIntercepted':
+    case 'DiscardDevoured': return null;
+    case 'CardSummoned': return {
+      template: 'flow', from: impactPointOf(context.worldPointOf(event.sourceInstanceId)),
+      to: impactPointOf(context.slotPointOf(event.side, 'battle', event.battleSlot)), intensity: 1,
+    };
+    case 'FlightChanged': return null;
+    case 'AttackStatusExpired': return null;
     case 'UnyieldingChanged': return null; // Its persistent card-local overlay is display-state driven.
     case 'LifeTransferred': return {
       template: 'lifeDrain', family: 'sacrifice', sourceInstanceId: event.recipientId,
@@ -204,7 +227,7 @@ export function effectRequestFor(
     case 'AttackDeclared': {
       const from = castPointOf(context.worldPointOf(event.attackerId), event.side);
       return {
-        template: event.attackKind ?? 'normalAttack',
+        template: event.attackKind === 'siege' ? 'normalAttack' : event.attackKind ?? 'normalAttack',
         sourceInstanceId: event.attackerId,
         from,
         to: !event.attackKind && event.targetInstanceId
@@ -224,7 +247,7 @@ export function effectRequestFor(
     }
 
     case 'StatChanged': {
-      if (event.cause === 'curse') return null;
+      if (['curse', 'grievous', 'grievousRestore', 'berserk'].includes(event.cause)) return null;
       const point = impactPointOf(context.worldPointOf(event.instanceId));
       return {
         template: event.to >= event.from ? 'buff' : 'debuff',
@@ -315,6 +338,16 @@ export function logLineFor(event: BattleEvent, nameOf: (id: string) => string): 
       return `${nameOf(event.instanceId)} 触发 ${event.raw}`;
     case 'SpellReflected':
       return `${nameOf(event.reflectorId)} 将 ${event.raw} 反弹回施法方`;
+    case 'AttackStatusApplied':
+      return `${nameOf(event.instanceId)} 获得 ${{ frost: '严霜', burn: '燃烧', poison: '剧毒', bleed: '流血', grievous: '重伤' }[event.kind]}${event.level}（一回合）`;
+    case 'AttackStatusTriggered':
+      return `${nameOf(event.instanceId)} 普攻后触发 ${{ frost: '严霜', burn: '燃烧', poison: '剧毒', bleed: '流血', grievous: '重伤' }[event.kind]}`;
+    case 'AttackStatusExpired': return null;
+    case 'CardSummoned': return `${nameOf(event.sourceInstanceId)} 召唤了 ${nameOf(event.instanceId)}`;
+    case 'DiscardDevoured': return `${nameOf(event.casterId)} 吞噬了敌方 ${event.instanceIds.length} 张弃牌`;
+    case 'ConcealmentUsed': return `${nameOf(event.instanceId)} 用隐匿规避首次普通攻击`;
+    case 'VanguardIntercepted': return `${nameOf(event.guardId)} 为 ${nameOf(event.protectedId)} 承受普攻`;
+    case 'FlightChanged': return null;
     case 'DodgeGranted':
       return `${nameOf(event.instanceId)} 获得闪避${event.level}（持续至离场）`;
     case 'UnyieldingChanged':

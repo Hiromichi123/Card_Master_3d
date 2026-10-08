@@ -10,6 +10,7 @@ import { PresentationDriver } from '../rendering/battle/PresentationDriver';
 import { buildBoard } from '../rendering/battle/placements';
 import { BATTLE_CARD_SCALE, type SlotZone } from '../rendering/battle/layout';
 import { effectDirector } from '../rendering/effects/effectDirector';
+import { audioEngine } from '../services/audio/AudioEngine';
 import { EffectSystem } from '../rendering/effects/EffectSystem';
 import { PerfSampler } from '../rendering/PerfSampler';
 import { PostEffects } from '../rendering/postprocessing/PostEffects';
@@ -96,6 +97,8 @@ export function BattleScene({
         skipAll: () => {
           effectDirector.skipAll();
         },
+        // 命中/死亡的音效由导演在演出节点回调；这里只把出口接上
+        sound: (cue) => audioEngine.play(cue),
       }, { localMultiplayer, autoEnemy }),
   );
   const snapshot = useBattleSession(session);
@@ -126,6 +129,8 @@ export function BattleScene({
   useEffect(() => {
     if (snapshot.runId > 0 && snapshot.mode === 'battle') {
       setDealing(true);
+      // 发牌音与发牌动画同一时刻：丢了对规则毫无影响（发牌动画本就纯装饰）
+      audioEngine.play('deal');
     }
   }, [snapshot.runId, snapshot.mode]);
 

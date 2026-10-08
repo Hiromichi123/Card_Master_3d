@@ -8,6 +8,7 @@ import { useRarityIndex } from '../state/useRarityIndex';
 import { CardShowcase } from './CardShowcase';
 import { CurrencyBar } from './CurrencyBar';
 import { GachaWheel } from './GachaWheel';
+import { usePageWheel } from './usePageWheel';
 
 interface Props {
   readonly pools: readonly GachaPool[];
@@ -48,6 +49,24 @@ export function GachaMenu({ pools, pool, poolIndex, onSelectPool, currencies,
     return () => observer.disconnect();
   }, []);
   useEffect(() => { setDetail(null); onHoverCard(null); onCardPointer([0, 0]); }, [pool, onHoverCard, onCardPointer]);
+
+  /*
+    全页滚轮：指针在页面**任何位置**滚动都切卡池。
+    轮盘本身带 `onWheel`（`GachaWheel`），事件会冒泡到这里，所以用
+    `ignoreSelector` 把落在轮盘内的滚动让给它——否则在轮盘上滚一次走两格。
+    演出进行中与卡牌详情打开时不响应。
+  */
+  usePageWheel({
+    ref,
+    enabled: !running && detail === null,
+    ignoreSelector: '.wheel__stage',
+    onStep: (delta) => {
+      const next = Math.max(0, Math.min(pools.length - 1, poolIndex + delta));
+      if (next !== poolIndex) {
+        onSelectPool(next);
+      }
+    },
+  });
 
   return (
     <div ref={ref} className={`gacha-menu${still ? ' gacha-menu--still' : ''}${leaving ? ' gacha-menu--leaving' : ''}`} style={{ ['--gacha-exit-duration' as string]: `${exitSeconds}s` }}>

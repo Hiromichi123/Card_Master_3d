@@ -3,6 +3,8 @@ import { Timeline } from '../anim/Timeline';
 import { ATTACK_OUT_SECONDS, ATTACK_RETURN_SECONDS } from '../anim/combatMotion';
 import type { EffectContext } from './templates';
 import type { EffectTemplateId } from './familyMap';
+import { attackStatusTiming } from './attackStatusTiming';
+import { usesAttackStatusVisual } from './AttackStatusSkillVisuals';
 import { usesLinearAbility } from './NamedSkillVisuals';
 import { usesQuarks } from './QuarksSkillVisuals';
 import { quarksTiming } from './artilleryTiming';
@@ -19,6 +21,8 @@ const PALETTE = {
 
 /** These durations are shared with the event adapter; no damage is calculated here. */
 export function skillImpactSeconds(template: EffectTemplateId): number {
+  if (template === 'bloodBurst') return slashTiming('slash').hit;
+  if (usesAttackStatusVisual(template) || ['bleedMark', 'grievousMark'].includes(template)) return attackStatusTiming(template).hit;
   if (template === 'dodgeGrant') return skillImpactSeconds('armorBreak');
   if (template === 'normalAttack') return ATTACK_OUT_SECONDS;
   if (usesSlash(template)) return slashTiming(template).hit;
@@ -29,6 +33,8 @@ export function skillImpactSeconds(template: EffectTemplateId): number {
 }
 
 export function buildSkillTimeline(template: EffectTemplateId, context: EffectContext): Timeline {
+  // Bleeding's attack-after effect is the same authored two-arc slash, in deep red.
+  if (template === 'bloodBurst') return buildSkillTimeline('slash', { ...context, tint: context.tint ?? new Color('#a71935') });
   // Keep the legacy entry point identical to armor break, including every phase.
   if (template === 'dodgeGrant') return buildSkillTimeline('armorBreak', { ...context, tint: context.tint ?? new Color('#ffd77a') });
   if (context.family === 'grantDodge' && !context.tint) {
@@ -36,6 +42,29 @@ export function buildSkillTimeline(template: EffectTemplateId, context: EffectCo
   }
   const { pool, from, to } = context;
   const motionScale = Math.max(0.01, context.durationScale);
+  if (template === 'burnMark') {
+    // Applying the status starts ONE reveal on the actual card. Never overlay a second transient crack actor.
+    return new Timeline().add({ duration: attackStatusTiming(template).hit * motionScale,
+      onComplete: () => context.onHit?.() });
+  }
+  if (usesAttackStatusVisual(template) || ['bleedMark', 'grievousMark'].includes(template)) {
+    const handle = context.visuals?.create({ template, family: context.family, from, to, intensity: context.intensity,
+      tint: context.tint, countScale: context.countScale, durationScale: context.durationScale });
+    const timing = attackStatusTiming(template);
+    const hit = timing.hit;
+    return new Timeline(() => handle?.dispose())
+      .add({ duration: hit * motionScale, onUpdate: (t) => handle?.update('travel', t) })
+      .add({ duration: timing.impact * motionScale, onStart: () => {
+        if (template === 'burnBurst') {
+          const count = Math.ceil(42 * Math.max(0, Math.min(2, context.countScale)));
+          for (const color of ['#ff3610', '#ffd057']) pool.emit({ origin: to, count, direction: UP, spread: .95,
+            color: new Color(color), colorJitter: .10, speed: [.65, 2.15], size: [.012, .030],
+            life: [.28, .80], gravity: -1.2, drag: 1.1, spawnRadius: .10 });
+        }
+        context.onHit?.();
+      }, onUpdate: (t) => handle?.update('impact', t) })
+      .add({ duration: timing.fade * motionScale, onUpdate: (t) => handle?.update('fade', t) });
+  }
   if (template === 'normalAttack') {
     // The actual card moves in CardMesh. No particles, sphere, impact ring or target shake.
     return new Timeline().add({ duration: ATTACK_OUT_SECONDS * motionScale, onComplete: () => context.onHit?.() })

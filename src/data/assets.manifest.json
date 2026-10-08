@@ -1,21 +1,21 @@
 {
   "generatedBy": "scripts/prepare-assets.py",
   "legacyRoot": "D:\\Github\\card_maker",
-  "contentVersion": "b3db109a8b47",
+  "contentVersion": "19f3f4132644",
   "tiers": {
     "thumbnail": 384,
     "battle": 768,
     "detail": 1536
   },
   "tierBytes": {
-    "thumbnail": 10668314,
-    "battle": 31624314,
-    "detail": 52271982
+    "thumbnail": 11732362,
+    "battle": 34807066,
+    "detail": 57670124
   },
   "tierMiB": {
-    "thumbnail": 10.17,
-    "battle": 30.16,
-    "detail": 49.85
+    "thumbnail": 11.19,
+    "battle": 33.19,
+    "detail": 55
   },
   "cards": {
     "SSS_001": {
@@ -15853,6 +15853,1630 @@
         ],
         "bytes": 241728
       }
+    },
+    "A_028": {
+      "artId": "card/a/028",
+      "rarity": "A",
+      "sourceName": "028.png",
+      "face": {
+        "thumbnail": {
+          "url": "/assets/card/thumbnail/a/028.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            256,
+            384
+          ],
+          "bytes": 42932
+        },
+        "battle": {
+          "url": "/assets/card/battle/a/028.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            512,
+            768
+          ],
+          "bytes": 122294
+        },
+        "detail": {
+          "url": "/assets/card/detail/a/028.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            720,
+            1080
+          ],
+          "bytes": 200846
+        }
+      },
+      "art": {
+        "url": "/assets/art/a/028.webp",
+        "sourceName": "028.jpg",
+        "sourceSize": [
+          768,
+          1280
+        ],
+        "size": [
+          768,
+          1280
+        ],
+        "bytes": 209766
+      }
+    },
+    "A_030": {
+      "artId": "card/a/030",
+      "rarity": "A",
+      "sourceName": "030.png",
+      "face": {
+        "thumbnail": {
+          "url": "/assets/card/thumbnail/a/030.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            256,
+            384
+          ],
+          "bytes": 35370
+        },
+        "battle": {
+          "url": "/assets/card/battle/a/030.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            512,
+            768
+          ],
+          "bytes": 108546
+        },
+        "detail": {
+          "url": "/assets/card/detail/a/030.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            720,
+            1080
+          ],
+          "bytes": 178050
+        }
+      },
+      "art": {
+        "url": "/assets/art/a/030.webp",
+        "sourceName": "远古头骨.png",
+        "sourceSize": [
+          1680,
+          1003
+        ],
+        "size": [
+          1536,
+          917
+        ],
+        "bytes": 194162
+      }
+    },
+    "A_029": {
+      "artId": "card/a/029",
+      "rarity": "A",
+      "sourceName": "029.png",
+      "face": {
+        "thumbnail": {
+          "url": "/assets/card/thumbnail/a/029.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            256,
+            384
+          ],
+          "bytes": 39996
+        },
+        "battle": {
+          "url": "/assets/card/battle/a/029.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            512,
+            768
+          ],
+          "bytes": 117864
+        },
+        "detail": {
+          "url": "/assets/card/detail/a/029.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            720,
+            1080
+          ],
+          "bytes": 193596
+        }
+      },
+      "art": {
+        "url": "/assets/art/a/029.webp",
+        "sourceName": "苍龙狂怒.jpg",
+        "sourceSize": [
+          1856,
+          2432
+        ],
+        "size": [
+          1172,
+          1536
+        ],
+        "bytes": 278448
+      }
+    },
+    "B+_015": {
+      "artId": "card/b-plus/015",
+      "rarity": "B+",
+      "sourceName": "015.png",
+      "face": {
+        "thumbnail": {
+          "url": "/assets/card/thumbnail/b-plus/015.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            256,
+            384
+          ],
+          "bytes": 34246
+        },
+        "battle": {
+          "url": "/assets/card/battle/b-plus/015.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            512,
+            768
+          ],
+          "bytes": 98454
+        },
+        "detail": {
+          "url": "/assets/card/detail/b-plus/015.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            720,
+            1080
+          ],
+          "bytes": 157220
+        }
+      },
+      "art": {
+        "url": "/assets/art/b-plus/015.webp",
+        "sourceName": "阿尔托莉雅Alter.jpg",
+        "sourceSize": [
+          1800,
+          4096
+        ],
+        "size": [
+          675,
+          1536
+        ],
+        "bytes": 140010
+      }
+    },
+    "B+_016": {
+      "artId": "card/b-plus/016",
+      "rarity": "B+",
+      "sourceName": "016.png",
+      "face": {
+        "thumbnail": {
+          "url": "/assets/card/thumbnail/b-plus/016.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            256,
+            384
+          ],
+          "bytes": 36884
+        },
+        "battle": {
+          "url": "/assets/card/battle/b-plus/016.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            512,
+            768
+          ],
+          "bytes": 109856
+        },
+        "detail": {
+          "url": "/assets/card/detail/b-plus/016.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            720,
+            1080
+          ],
+          "bytes": 189424
+        }
+      },
+      "art": {
+        "url": "/assets/art/b-plus/016.webp",
+        "sourceName": "红剑士.jpg",
+        "sourceSize": [
+          1578,
+          2304
+        ],
+        "size": [
+          1052,
+          1536
+        ],
+        "bytes": 256654
+      }
+    },
+    "B+_017": {
+      "artId": "card/b-plus/017",
+      "rarity": "B+",
+      "sourceName": "017.png",
+      "face": {
+        "thumbnail": {
+          "url": "/assets/card/thumbnail/b-plus/017.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            256,
+            384
+          ],
+          "bytes": 41834
+        },
+        "battle": {
+          "url": "/assets/card/battle/b-plus/017.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            512,
+            768
+          ],
+          "bytes": 128918
+        },
+        "detail": {
+          "url": "/assets/card/detail/b-plus/017.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            720,
+            1080
+          ],
+          "bytes": 218782
+        }
+      },
+      "art": {
+        "url": "/assets/art/b-plus/017.webp",
+        "sourceName": "竜骑士.jpg",
+        "sourceSize": [
+          928,
+          1232
+        ],
+        "size": [
+          928,
+          1232
+        ],
+        "bytes": 272840
+      }
+    },
+    "B+_019": {
+      "artId": "card/b-plus/019",
+      "rarity": "B+",
+      "sourceName": "019.png",
+      "face": {
+        "thumbnail": {
+          "url": "/assets/card/thumbnail/b-plus/019.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            256,
+            384
+          ],
+          "bytes": 40752
+        },
+        "battle": {
+          "url": "/assets/card/battle/b-plus/019.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            512,
+            768
+          ],
+          "bytes": 115520
+        },
+        "detail": {
+          "url": "/assets/card/detail/b-plus/019.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            720,
+            1080
+          ],
+          "bytes": 202792
+        }
+      },
+      "art": {
+        "url": "/assets/art/b-plus/019.webp",
+        "sourceName": "梦蝶.jpg",
+        "sourceSize": [
+          2688,
+          4032
+        ],
+        "size": [
+          1024,
+          1536
+        ],
+        "bytes": 265692
+      }
+    },
+    "B+_020": {
+      "artId": "card/b-plus/020",
+      "rarity": "B+",
+      "sourceName": "020.png",
+      "face": {
+        "thumbnail": {
+          "url": "/assets/card/thumbnail/b-plus/020.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            256,
+            384
+          ],
+          "bytes": 29930
+        },
+        "battle": {
+          "url": "/assets/card/battle/b-plus/020.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            512,
+            768
+          ],
+          "bytes": 85702
+        },
+        "detail": {
+          "url": "/assets/card/detail/b-plus/020.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            720,
+            1080
+          ],
+          "bytes": 141116
+        }
+      },
+      "art": {
+        "url": "/assets/art/b-plus/020.webp",
+        "sourceName": "祈祷.png",
+        "sourceSize": [
+          710,
+          1005
+        ],
+        "size": [
+          710,
+          1005
+        ],
+        "bytes": 97950
+      }
+    },
+    "B+_018": {
+      "artId": "card/b-plus/018",
+      "rarity": "B+",
+      "sourceName": "018.png",
+      "face": {
+        "thumbnail": {
+          "url": "/assets/card/thumbnail/b-plus/018.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            256,
+            384
+          ],
+          "bytes": 34820
+        },
+        "battle": {
+          "url": "/assets/card/battle/b-plus/018.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            512,
+            768
+          ],
+          "bytes": 101300
+        },
+        "detail": {
+          "url": "/assets/card/detail/b-plus/018.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            720,
+            1080
+          ],
+          "bytes": 170380
+        }
+      },
+      "art": {
+        "url": "/assets/art/b-plus/018.webp",
+        "sourceName": "018.jpg",
+        "sourceSize": [
+          1428,
+          2048
+        ],
+        "size": [
+          1071,
+          1536
+        ],
+        "bytes": 210798
+      }
+    },
+    "B+_021": {
+      "artId": "card/b-plus/021",
+      "rarity": "B+",
+      "sourceName": "021.png",
+      "face": {
+        "thumbnail": {
+          "url": "/assets/card/thumbnail/b-plus/021.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            256,
+            384
+          ],
+          "bytes": 32284
+        },
+        "battle": {
+          "url": "/assets/card/battle/b-plus/021.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            512,
+            768
+          ],
+          "bytes": 93846
+        },
+        "detail": {
+          "url": "/assets/card/detail/b-plus/021.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            720,
+            1080
+          ],
+          "bytes": 159458
+        }
+      },
+      "art": {
+        "url": "/assets/art/b-plus/021.webp",
+        "sourceName": "铁马骑士.jpg",
+        "sourceSize": [
+          816,
+          1488
+        ],
+        "size": [
+          816,
+          1488
+        ],
+        "bytes": 196014
+      }
+    },
+    "B+_022": {
+      "artId": "card/b-plus/022",
+      "rarity": "B+",
+      "sourceName": "022.png",
+      "face": {
+        "thumbnail": {
+          "url": "/assets/card/thumbnail/b-plus/022.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            256,
+            384
+          ],
+          "bytes": 48856
+        },
+        "battle": {
+          "url": "/assets/card/battle/b-plus/022.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            512,
+            768
+          ],
+          "bytes": 153896
+        },
+        "detail": {
+          "url": "/assets/card/detail/b-plus/022.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            720,
+            1080
+          ],
+          "bytes": 262994
+        }
+      },
+      "art": {
+        "url": "/assets/art/b-plus/022.webp",
+        "sourceName": "亡灵の剑舞.jpg",
+        "sourceSize": [
+          1543,
+          2048
+        ],
+        "size": [
+          1157,
+          1536
+        ],
+        "bytes": 456028
+      }
+    },
+    "B+_023": {
+      "artId": "card/b-plus/023",
+      "rarity": "B+",
+      "sourceName": "023.png",
+      "face": {
+        "thumbnail": {
+          "url": "/assets/card/thumbnail/b-plus/023.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            256,
+            384
+          ],
+          "bytes": 40956
+        },
+        "battle": {
+          "url": "/assets/card/battle/b-plus/023.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            512,
+            768
+          ],
+          "bytes": 112696
+        },
+        "detail": {
+          "url": "/assets/card/detail/b-plus/023.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            720,
+            1080
+          ],
+          "bytes": 180858
+        }
+      },
+      "art": {
+        "url": "/assets/art/b-plus/023.webp",
+        "sourceName": "血咒术.jpg",
+        "sourceSize": [
+          928,
+          1232
+        ],
+        "size": [
+          928,
+          1232
+        ],
+        "bytes": 198620
+      }
+    },
+    "B+_024": {
+      "artId": "card/b-plus/024",
+      "rarity": "B+",
+      "sourceName": "024.png",
+      "face": {
+        "thumbnail": {
+          "url": "/assets/card/thumbnail/b-plus/024.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            256,
+            384
+          ],
+          "bytes": 36626
+        },
+        "battle": {
+          "url": "/assets/card/battle/b-plus/024.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            512,
+            768
+          ],
+          "bytes": 105912
+        },
+        "detail": {
+          "url": "/assets/card/detail/b-plus/024.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            720,
+            1080
+          ],
+          "bytes": 170438
+        }
+      },
+      "art": {
+        "url": "/assets/art/b-plus/024.webp",
+        "sourceName": "伊芙利特.jpg",
+        "sourceSize": [
+          1221,
+          2048
+        ],
+        "size": [
+          916,
+          1536
+        ],
+        "bytes": 153672
+      }
+    },
+    "B+_025": {
+      "artId": "card/b-plus/025",
+      "rarity": "B+",
+      "sourceName": "025.png",
+      "face": {
+        "thumbnail": {
+          "url": "/assets/card/thumbnail/b-plus/025.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            256,
+            384
+          ],
+          "bytes": 31724
+        },
+        "battle": {
+          "url": "/assets/card/battle/b-plus/025.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            512,
+            768
+          ],
+          "bytes": 96188
+        },
+        "detail": {
+          "url": "/assets/card/detail/b-plus/025.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            720,
+            1080
+          ],
+          "bytes": 156084
+        }
+      },
+      "art": {
+        "url": "/assets/art/b-plus/025.webp",
+        "sourceName": "影骑士.jpg",
+        "sourceSize": [
+          1542,
+          2048
+        ],
+        "size": [
+          1157,
+          1536
+        ],
+        "bytes": 166194
+      }
+    },
+    "B+_026": {
+      "artId": "card/b-plus/026",
+      "rarity": "B+",
+      "sourceName": "026.png",
+      "face": {
+        "thumbnail": {
+          "url": "/assets/card/thumbnail/b-plus/026.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            256,
+            384
+          ],
+          "bytes": 31676
+        },
+        "battle": {
+          "url": "/assets/card/battle/b-plus/026.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            512,
+            768
+          ],
+          "bytes": 90036
+        },
+        "detail": {
+          "url": "/assets/card/detail/b-plus/026.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            720,
+            1080
+          ],
+          "bytes": 146760
+        }
+      },
+      "art": {
+        "url": "/assets/art/b-plus/026.webp",
+        "sourceName": "026.png",
+        "sourceSize": [
+          700,
+          1010
+        ],
+        "size": [
+          700,
+          1010
+        ],
+        "bytes": 104504
+      }
+    },
+    "B+_027": {
+      "artId": "card/b-plus/027",
+      "rarity": "B+",
+      "sourceName": "027.png",
+      "face": {
+        "thumbnail": {
+          "url": "/assets/card/thumbnail/b-plus/027.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            256,
+            384
+          ],
+          "bytes": 43878
+        },
+        "battle": {
+          "url": "/assets/card/battle/b-plus/027.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            512,
+            768
+          ],
+          "bytes": 133090
+        },
+        "detail": {
+          "url": "/assets/card/detail/b-plus/027.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            720,
+            1080
+          ],
+          "bytes": 231510
+        }
+      },
+      "art": {
+        "url": "/assets/art/b-plus/027.webp",
+        "sourceName": "027.jpg",
+        "sourceSize": [
+          1344,
+          2016
+        ],
+        "size": [
+          1024,
+          1536
+        ],
+        "bytes": 318040
+      }
+    },
+    "B+_028": {
+      "artId": "card/b-plus/028",
+      "rarity": "B+",
+      "sourceName": "028.png",
+      "face": {
+        "thumbnail": {
+          "url": "/assets/card/thumbnail/b-plus/028.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            256,
+            384
+          ],
+          "bytes": 33100
+        },
+        "battle": {
+          "url": "/assets/card/battle/b-plus/028.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            512,
+            768
+          ],
+          "bytes": 94576
+        },
+        "detail": {
+          "url": "/assets/card/detail/b-plus/028.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            720,
+            1080
+          ],
+          "bytes": 154952
+        }
+      },
+      "art": {
+        "url": "/assets/art/b-plus/028.webp",
+        "sourceName": "028.jpg",
+        "sourceSize": [
+          928,
+          1232
+        ],
+        "size": [
+          928,
+          1232
+        ],
+        "bytes": 163740
+      }
+    },
+    "B+_029": {
+      "artId": "card/b-plus/029",
+      "rarity": "B+",
+      "sourceName": "029.png",
+      "face": {
+        "thumbnail": {
+          "url": "/assets/card/thumbnail/b-plus/029.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            256,
+            384
+          ],
+          "bytes": 31560
+        },
+        "battle": {
+          "url": "/assets/card/battle/b-plus/029.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            512,
+            768
+          ],
+          "bytes": 94972
+        },
+        "detail": {
+          "url": "/assets/card/detail/b-plus/029.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            720,
+            1080
+          ],
+          "bytes": 157740
+        }
+      },
+      "art": {
+        "url": "/assets/art/b-plus/029.webp",
+        "sourceName": "029.jpg",
+        "sourceSize": [
+          896,
+          1344
+        ],
+        "size": [
+          896,
+          1344
+        ],
+        "bytes": 189382
+      }
+    },
+    "B_028": {
+      "artId": "card/b/028",
+      "rarity": "B",
+      "sourceName": "028.png",
+      "face": {
+        "thumbnail": {
+          "url": "/assets/card/thumbnail/b/028.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            256,
+            384
+          ],
+          "bytes": 31080
+        },
+        "battle": {
+          "url": "/assets/card/battle/b/028.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            512,
+            768
+          ],
+          "bytes": 95932
+        },
+        "detail": {
+          "url": "/assets/card/detail/b/028.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            720,
+            1080
+          ],
+          "bytes": 175820
+        }
+      },
+      "art": {
+        "url": "/assets/art/b/028.webp",
+        "sourceName": "028.jpg",
+        "sourceSize": [
+          1433,
+          2710
+        ],
+        "size": [
+          812,
+          1536
+        ],
+        "bytes": 171206
+      }
+    },
+    "B_029": {
+      "artId": "card/b/029",
+      "rarity": "B",
+      "sourceName": "029.png",
+      "face": {
+        "thumbnail": {
+          "url": "/assets/card/thumbnail/b/029.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            256,
+            384
+          ],
+          "bytes": 35108
+        },
+        "battle": {
+          "url": "/assets/card/battle/b/029.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            512,
+            768
+          ],
+          "bytes": 111284
+        },
+        "detail": {
+          "url": "/assets/card/detail/b/029.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            720,
+            1080
+          ],
+          "bytes": 193772
+        }
+      },
+      "art": {
+        "url": "/assets/art/b/029.webp",
+        "sourceName": "029.jpg",
+        "sourceSize": [
+          900,
+          1200
+        ],
+        "size": [
+          900,
+          1200
+        ],
+        "bytes": 216196
+      }
+    },
+    "B_030": {
+      "artId": "card/b/030",
+      "rarity": "B",
+      "sourceName": "030.png",
+      "face": {
+        "thumbnail": {
+          "url": "/assets/card/thumbnail/b/030.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            256,
+            384
+          ],
+          "bytes": 33834
+        },
+        "battle": {
+          "url": "/assets/card/battle/b/030.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            512,
+            768
+          ],
+          "bytes": 96812
+        },
+        "detail": {
+          "url": "/assets/card/detail/b/030.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            720,
+            1080
+          ],
+          "bytes": 163962
+        }
+      },
+      "art": {
+        "url": "/assets/art/b/030.webp",
+        "sourceName": "飞霄.jpg",
+        "sourceSize": [
+          1720,
+          3072
+        ],
+        "size": [
+          860,
+          1536
+        ],
+        "bytes": 199844
+      }
+    },
+    "B_031": {
+      "artId": "card/b/031",
+      "rarity": "B",
+      "sourceName": "031.png",
+      "face": {
+        "thumbnail": {
+          "url": "/assets/card/thumbnail/b/031.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            256,
+            384
+          ],
+          "bytes": 43984
+        },
+        "battle": {
+          "url": "/assets/card/battle/b/031.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            512,
+            768
+          ],
+          "bytes": 148086
+        },
+        "detail": {
+          "url": "/assets/card/detail/b/031.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            720,
+            1080
+          ],
+          "bytes": 274908
+        }
+      },
+      "art": {
+        "url": "/assets/art/b/031.webp",
+        "sourceName": "031.jpg",
+        "sourceSize": [
+          2120,
+          3784
+        ],
+        "size": [
+          861,
+          1536
+        ],
+        "bytes": 380744
+      }
+    },
+    "B_032": {
+      "artId": "card/b/032",
+      "rarity": "B",
+      "sourceName": "032.png",
+      "face": {
+        "thumbnail": {
+          "url": "/assets/card/thumbnail/b/032.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            256,
+            384
+          ],
+          "bytes": 39610
+        },
+        "battle": {
+          "url": "/assets/card/battle/b/032.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            512,
+            768
+          ],
+          "bytes": 134660
+        },
+        "detail": {
+          "url": "/assets/card/detail/b/032.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            720,
+            1080
+          ],
+          "bytes": 254562
+        }
+      },
+      "art": {
+        "url": "/assets/art/b/032.webp",
+        "sourceName": "032.jpg",
+        "sourceSize": [
+          2120,
+          3784
+        ],
+        "size": [
+          861,
+          1536
+        ],
+        "bytes": 324296
+      }
+    },
+    "B_033": {
+      "artId": "card/b/033",
+      "rarity": "B",
+      "sourceName": "033.png",
+      "face": {
+        "thumbnail": {
+          "url": "/assets/card/thumbnail/b/033.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            256,
+            384
+          ],
+          "bytes": 39300
+        },
+        "battle": {
+          "url": "/assets/card/battle/b/033.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            512,
+            768
+          ],
+          "bytes": 113444
+        },
+        "detail": {
+          "url": "/assets/card/detail/b/033.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            720,
+            1080
+          ],
+          "bytes": 188056
+        }
+      },
+      "art": {
+        "url": "/assets/art/b/033.webp",
+        "sourceName": "033.jpg",
+        "sourceSize": [
+          1536,
+          2304
+        ],
+        "size": [
+          1024,
+          1536
+        ],
+        "bytes": 219746
+      }
+    },
+    "B_034": {
+      "artId": "card/b/034",
+      "rarity": "B",
+      "sourceName": "034.png",
+      "face": {
+        "thumbnail": {
+          "url": "/assets/card/thumbnail/b/034.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            256,
+            384
+          ],
+          "bytes": 29890
+        },
+        "battle": {
+          "url": "/assets/card/battle/b/034.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            512,
+            768
+          ],
+          "bytes": 89670
+        },
+        "detail": {
+          "url": "/assets/card/detail/b/034.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            720,
+            1080
+          ],
+          "bytes": 149666
+        }
+      },
+      "art": {
+        "url": "/assets/art/b/034.webp",
+        "sourceName": "034.jpg",
+        "sourceSize": [
+          736,
+          1308
+        ],
+        "size": [
+          736,
+          1308
+        ],
+        "bytes": 116026
+      }
+    },
+    "S+_018": {
+      "artId": "card/s-plus/018",
+      "rarity": "S+",
+      "sourceName": "018.png",
+      "face": {
+        "thumbnail": {
+          "url": "/assets/card/thumbnail/s-plus/018.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            256,
+            384
+          ],
+          "bytes": 35296
+        },
+        "battle": {
+          "url": "/assets/card/battle/s-plus/018.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            512,
+            768
+          ],
+          "bytes": 109788
+        },
+        "detail": {
+          "url": "/assets/card/detail/s-plus/018.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            720,
+            1080
+          ],
+          "bytes": 190826
+        }
+      },
+      "art": {
+        "url": "/assets/art/s-plus/018.webp",
+        "sourceName": "018.jpg",
+        "sourceSize": [
+          904,
+          1200
+        ],
+        "size": [
+          904,
+          1200
+        ],
+        "bytes": 200570
+      }
+    },
+    "A+_022": {
+      "artId": "card/a-plus/022",
+      "rarity": "A+",
+      "sourceName": "022.png",
+      "face": {
+        "thumbnail": {
+          "url": "/assets/card/thumbnail/a-plus/022.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            256,
+            384
+          ],
+          "bytes": 35648
+        },
+        "battle": {
+          "url": "/assets/card/battle/a-plus/022.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            512,
+            768
+          ],
+          "bytes": 106290
+        },
+        "detail": {
+          "url": "/assets/card/detail/a-plus/022.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            720,
+            1080
+          ],
+          "bytes": 179188
+        }
+      },
+      "art": {
+        "url": "/assets/art/a-plus/022.webp",
+        "sourceName": "022.png",
+        "sourceSize": [
+          1024,
+          1536
+        ],
+        "size": [
+          1024,
+          1536
+        ],
+        "bytes": 250492
+      }
+    },
+    "A_031": {
+      "artId": "card/a/031",
+      "rarity": "A",
+      "sourceName": "031.png",
+      "face": {
+        "thumbnail": {
+          "url": "/assets/card/thumbnail/a/031.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            256,
+            384
+          ],
+          "bytes": 34474
+        },
+        "battle": {
+          "url": "/assets/card/battle/a/031.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            512,
+            768
+          ],
+          "bytes": 99982
+        },
+        "detail": {
+          "url": "/assets/card/detail/a/031.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            720,
+            1080
+          ],
+          "bytes": 166638
+        }
+      },
+      "art": {
+        "url": "/assets/art/a/031.webp",
+        "sourceName": "元素师 暗纹.png",
+        "sourceSize": [
+          1024,
+          1536
+        ],
+        "size": [
+          1024,
+          1536
+        ],
+        "bytes": 203740
+      }
+    },
+    "S+_019": {
+      "artId": "card/s-plus/019",
+      "rarity": "S+",
+      "sourceName": "019.png",
+      "face": {
+        "thumbnail": {
+          "url": "/assets/card/thumbnail/s-plus/019.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            256,
+            384
+          ],
+          "bytes": 38400
+        },
+        "battle": {
+          "url": "/assets/card/battle/s-plus/019.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            512,
+            768
+          ],
+          "bytes": 113138
+        },
+        "detail": {
+          "url": "/assets/card/detail/s-plus/019.webp",
+          "sourceSize": [
+            720,
+            1080
+          ],
+          "size": [
+            720,
+            1080
+          ],
+          "bytes": 187744
+        }
+      },
+      "art": {
+        "url": "/assets/art/s-plus/019.webp",
+        "sourceName": "019.png",
+        "sourceSize": [
+          1024,
+          1536
+        ],
+        "size": [
+          1024,
+          1536
+        ],
+        "bytes": 252822
+      }
     }
   },
   "shared": {
@@ -16264,6 +17888,71 @@
           864
         ],
         "bytes": 228726
+      },
+      "activity_abyss_bg": {
+        "url": "/assets/bg/activity_abyss_bg.webp",
+        "sourceName": "G_yrOI5bYAAwqvS.webp",
+        "sourceSize": [
+          1456,
+          816
+        ],
+        "size": [
+          1456,
+          816
+        ],
+        "bytes": 165028
+      },
+      "activity_coop_bg": {
+        "url": "/assets/bg/activity_coop_bg.webp",
+        "sourceName": "world_map_bg.webp",
+        "sourceSize": [
+          1536,
+          915
+        ],
+        "size": [
+          1536,
+          915
+        ],
+        "bytes": 408184
+      },
+      "activity_extreme_bg": {
+        "url": "/assets/bg/activity_extreme_bg.webp",
+        "sourceName": "battle_menu_bg.webp",
+        "sourceSize": [
+          1528,
+          1003
+        ],
+        "size": [
+          1528,
+          1003
+        ],
+        "bytes": 85568
+      },
+      "activity_ladder_bg": {
+        "url": "/assets/bg/activity_ladder_bg.webp",
+        "sourceName": "iron.png",
+        "sourceSize": [
+          1680,
+          1005
+        ],
+        "size": [
+          1536,
+          919
+        ],
+        "bytes": 141850
+      },
+      "activity_maze_bg": {
+        "url": "/assets/bg/activity_maze_bg.webp",
+        "sourceName": "activity_bg.webp",
+        "sourceSize": [
+          1536,
+          864
+        ],
+        "size": [
+          1536,
+          864
+        ],
+        "bytes": 153922
       },
       "chapter_1_map_bg": {
         "url": "/assets/bg/chapter_1_map_bg.webp",

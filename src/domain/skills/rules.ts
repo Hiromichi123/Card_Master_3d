@@ -1,4 +1,4 @@
-import type { CardInstance, CombatStateGroup, SideId } from '../cards/types';
+import type { AttackStatusKind, CardInstance, CombatStateGroup, SideId } from '../cards/types';
 import type { BattleEventPayload, BattleState, DamageSource } from '../battle/types';
 import type { Rng } from '../battle/rng';
 
@@ -32,6 +32,8 @@ export interface AttackState {
   dealt: number;
   /** Ordinary damage remaining after mitigation minus target HP before that hit. */
   overflow?: number;
+  rawAtk?: number;
+  hitCard?: boolean;
 }
 
 /** 技能执行上下文。 */
@@ -70,7 +72,9 @@ export interface SkillContext {
   /** 死亡触发时的对位槽位下标；仅 `ON_DEATH` 有值。 */
   readonly deathSlot: number | null;
   /** New rules use engine-owned primitives so deaths/ordinary hit reactions stay atomic. */
+  readonly summonCard?: (definitionId: string) => void;
   readonly kill?: (target: CardInstance) => void;
+  readonly grantAttackStatus?: (target: CardInstance, kind: AttackStatusKind, level: number) => void;
   readonly grantDodge?: (target: CardInstance, level: number) => void;
   /** Transfer actual ally HP to self, without mitigation or free healing. */
   readonly drainAlly?: (donor: CardInstance, amount: number) => number;
@@ -181,6 +185,7 @@ export interface SkillRule {
     | 'BEFORE_ATTACK'
     | 'ON_DAMAGED'
     | 'AFTER_DAMAGED'
+  | 'AFTER_TARGETED_ATTACK'
     | 'AFTER_ATTACK'
     | 'ON_DEATH';
   apply(ctx: SkillContext): void;
@@ -244,11 +249,62 @@ function woundedAllies(ctx: SkillContext): CardInstance[] {
 /** Hostile spells are intercepted as one whole cast, including every target of group spells. */
 export const OFFENSIVE_SPELL_FAMILIES = new Set([
   'fireball', 'iceSeal', 'lightning', 'groupFireball', 'groupIceSeal', 'groupLightning',
-  'bombard', 'groupBombard', 'explodeOnDeath', 'curse', 'delay', 'instantDeath', 'slash', 'groupSlash', 'teleport',
+  'bombard', 'groupBombard', 'explodeOnDeath', 'curse', 'delay', 'instantDeath', 'slash', 'groupSlash', 'teleport', 'groupDelay', 'severeFrost', 'burning', 'venom', 'bleeding', 'grievousWound', 'poisonCloud',
   // Sword dance is direct HP loss across mechanisms, so it is not a reflectable spell.
 ]);
 
+function retaliatoryStatus(kind: AttackStatusKind): SkillRule {
+  return { trigger: 'AFTER_TARGETED_ATTACK', apply: (ctx) => {
+    const target = ctx.reflectedTarget ?? ctx.attack?.attacker;
+    if (target && isBattleActive(ctx.state, target)) ctx.grantAttackStatus?.(target, kind, ctx.param);
+  } };
+}
+
 export const SKILL_RULES: Record<string, SkillRule> = {
+  concealment: { trigger: 'ON_DEPLOY', apply: () => undefined },
+  firstStrike: { trigger: 'ON_DEPLOY', apply: () => undefined },
+  vanguard: { trigger: 'ON_DEPLOY', apply: () => undefined },
+  devour: { trigger: 'BEFORE_ATTACK', apply(ctx) {
+    const side=opponentOf(ctx.owner);
+    const ids=ctx.state.zones[side].discard.splice(0);
+    for(const id of ids){const card=ctx.state.instances[id];if(card)card.marks.devoured=true;}
+    if(ids.length>0)ctx.emit({type:'DiscardDevoured',side,casterId:ctx.self.instanceId,instanceIds:ids});
+  } },
+  masterpiece: { trigger: 'ON_DEPLOY', apply: (ctx) => ctx.summonCard?.('A+_006') },
+  // The engine rolls once before emitting SkillTriggered, so failed rolls have no kill animation.
+  lethalStrike: { trigger: 'BEFORE_ATTACK', apply(ctx) {
+    const id=ctx.state.zones[opponentOf(ctx.owner)].battle[ctx.attack?.defenderSlot??ctx.self.slotIndex];
+    const target=id?ctx.state.instances[id]:undefined;
+    if(target&&isBattleActive(ctx.state,target)&&groupOf(ctx.state,target).hp>0)ctx.kill?.(target);
+  } },
+  severeFrost: retaliatoryStatus('frost'),
+  burning: retaliatoryStatus('burn'),
+  venom: retaliatoryStatus('poison'),
+  bleeding: retaliatoryStatus('bleed'),
+  grievousWound: retaliatoryStatus('grievous'),
+  poisonCloud: { trigger: 'BEFORE_ATTACK', apply: (ctx) => {
+    const enemies = enemiesInBattle(ctx);
+    if (enemies.length === 0 || ctx.param < 1) return;
+    const target = ctx.reflectedTarget ?? ctx.rng.pick(enemies);
+    ctx.damage(target, ctx.rng.int(1, ctx.param), 'skill');
+    ctx.grantAttackStatus?.(target, 'poison', ctx.param);
+  } },
+  splash: { trigger: 'AFTER_ATTACK', apply: (ctx) => {
+    if (!ctx.attack?.hitCard || ctx.attack.defenderSlot === null) return;
+    const amount = Math.floor((ctx.attack.rawAtk ?? groupOf(ctx.state, ctx.self).atk) / 2);
+    if (amount <= 0) return;
+    const row = ctx.state.zones[opponentOf(ctx.owner)].battle;
+    for (const slot of [ctx.attack.defenderSlot - 1, ctx.attack.defenderSlot + 1]) {
+      const id = row[slot]; const target = id ? ctx.state.instances[id] : undefined;
+      if (target && isBattleActive(ctx.state, target)) ctx.physicalAttack?.(target, amount);
+    }
+  } },
+  groupDelay: { trigger: 'BEFORE_ATTACK', apply: (ctx) => {
+    const side = opponentOf(ctx.owner);
+    ctx.state.zones[side].prep.forEach((id, slot) => {
+      if (id) adjustPrepCooldown(ctx, side, slot, ctx.param, 'skill');
+    });
+  } },
   groupPiercing: { trigger: 'BEFORE_ATTACK', apply: (ctx) => {
     for (let i = 0; i < 5; i++) ctx.damagePlayer?.(opponentOf(ctx.owner), ctx.param, 'groupPiercing');
   } },
@@ -458,16 +514,17 @@ export const SKILL_RULES: Record<string, SkillRule> = {
       // The deployment pipeline defers this rule until the one-use action has
       // completed, then processes death immediately to free the battle slot.
       const group = groupOf(ctx.state, ctx.self);
+      const before = group.hp;
+      group.hp = 0;
       ctx.emit({
         type: 'DamageApplied',
         side: ctx.owner,
         instanceId: ctx.self.instanceId,
-        amount: group.hp,
-        hpBefore: group.hp,
+        amount: before,
+        hpBefore: before,
         hpAfter: 0,
         source: 'selfInflicted',
       });
-      group.hp = 0;
     },
   },
 
@@ -692,30 +749,11 @@ export const SKILL_RULES: Record<string, SkillRule> = {
     },
   },
 
-  berserk: {
-    trigger: 'AFTER_ATTACK',
-    apply(ctx) {
-      const group = groupOf(ctx.state, ctx.self);
-      // 损失等于自身 ATK 的 HP，但不会超过现有生命；
-      // 把**实际损失**加到 ATK 上（永久，滚雪球）
-      const loss = Math.min(group.hp, group.atk);
-      if (loss <= 0) {
-        return;
-      }
-      ctx.damage(ctx.self, loss, 'selfInflicted');
-      const next = group.atk + loss;
-      ctx.emit({
-        type: 'StatChanged',
-        side: group.owner,
-        instanceId: ctx.self.instanceId,
-        stat: 'atk',
-        from: group.atk,
-        to: next,
-        cause: 'berserk',
-      });
-      group.atk = next;
-    },
-  },
+  // These properties are maintained by the engine; no active skill dispatch or animation.
+  berserk: { trigger: 'ON_DEPLOY', apply: () => undefined },
+  antiAir: { trigger: 'ON_DEPLOY', apply: () => undefined },
+  groupGround: { trigger: 'ON_DEPLOY', apply: () => undefined },
+  siege: { trigger: 'ON_DEPLOY', apply: () => undefined },
 
   // ---- 单位复制（2）------------------------------------------------------
   clone: {

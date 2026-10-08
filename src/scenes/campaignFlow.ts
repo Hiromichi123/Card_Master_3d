@@ -1,3 +1,4 @@
+import { summonDefinitionIds } from '../domain/skills/tacticalTraits';
 import { cardById, cardDatabase, decks, stages } from '../data';
 import type { StageRewardSpec } from '../data';
 import { buildCardPool } from '../domain/progression/gacha';
@@ -75,7 +76,7 @@ export function campaignChapters(): readonly ChapterInfo[] {
 /** 引擎要的定义表：只放这一局用得到的卡。 */
 export function definitionsFor(cardIds: readonly string[]): DefinitionTable {
   const table: Record<string, CardDefinition> = {};
-  for (const cardId of cardIds) {
+  for (const cardId of summonDefinitionIds(cardIds, (id) => cardById.get(id))) {
     const definition = cardById.get(cardId);
     if (definition) {
       table[cardId] = definition;

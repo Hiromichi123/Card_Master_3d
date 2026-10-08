@@ -40,6 +40,7 @@ import {
   type DisplayState,
 } from './displayState';
 import { impactPointOf, playerAnchorPoint, type EffectPlayRequest, type Point } from './eventEffects';
+import type { SoundCue } from '../../services/audio/cues';
 import { AI_SEED_MIX, type DefinitionTable } from './demoBattle';
 
 export type SessionMode = 'menu' | 'battle' | 'result';
@@ -53,6 +54,8 @@ export type SessionMode = 'menu' | 'battle' | 'result';
 export interface SessionEffects {
   readonly play: (request: EffectPlayRequest) => void;
   readonly skipAll: () => void;
+  /** 表现层音效出口。缺省静音——node 测试不必提供（见 `AudioEngine`）。 */
+  readonly sound?: ((cue: SoundCue) => void) | undefined;
 }
 
 /** 界面读的东西。**必须整体缓存**——`useSyncExternalStore` 用 `Object.is` 比较。 */
@@ -144,13 +147,14 @@ export class BattleSession {
       publish: () => this.publish(),
       play: (request) => this.effects.play(request),
       skipEffects: () => this.effects.skipAll(),
+      sound: this.effects.sound,
       log: (line) => this.pushLog(line),
       worldPointOf: (instanceId) => this.worldPointOf(instanceId),
       cardFacePointOf: (instanceId) => {
         const point = this.worldPointOf(instanceId);
         const identity = this.display.instances[instanceId];
         const definition = identity ? cardById.get(identity.definitionId) : undefined;
-        const lift = definition?.rawTraits.includes('飞行') ? FLYING_CARD_LIFT : 0;
+        const lift = (identity?.flying ?? definition?.rawTraits.includes('飞行')) ? FLYING_CARD_LIFT : 0;
         return [point[0], point[1] + lift + CARD_SIZE.thickness * BATTLE_CARD_SCALE + 0.025, point[2]];
       },
       slotPointOf: (side, zone, slotIndex) => this.slotPointOf(side, zone, slotIndex),

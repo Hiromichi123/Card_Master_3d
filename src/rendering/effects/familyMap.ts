@@ -10,6 +10,17 @@
  */
 
 export type EffectTemplateId =
+  | 'frostRetaliation'
+  | 'burnMark'
+  | 'poisonLance'
+  | 'bleedMark'
+  | 'grievousMark'
+  | 'poisonCloud'
+  | 'frostShatter'
+  | 'burnBurst'
+  | 'poisonBurst'
+  | 'bloodBurst'
+  | 'grievousPulse'
   | 'normalAttack'
   | 'slash'
   | 'groupSlash'
@@ -55,6 +66,9 @@ export type EffectTemplateId =
  * P4 覆盖全部 35 族时，只需在这里补齐映射，不需要新写效果。
  */
 export const FAMILY_TO_EFFECT: Record<string, EffectTemplateId> = {
+  lethalStrike: 'instantDeath', masterpiece: 'flow',
+  splash: 'normalAttack', groupDelay: 'cooldown', severeFrost: 'frostRetaliation',
+  burning: 'burnMark', venom: 'poisonLance', bleeding: 'bleedMark', grievousWound: 'grievousMark', poisonCloud: 'poisonCloud',
   sacrifice: 'lifeDrain',
   execute: 'swordDance',
   teleport: 'flow',
@@ -95,7 +109,6 @@ export const FAMILY_TO_EFFECT: Record<string, EffectTemplateId> = {
   groupPhysicalDamage: 'normalAttack',
   injury: 'injury',
   vampire: 'lifeDrain',
-  berserk: 'debuff',
   selfDestruct: 'deathBurst',
   drawCard: 'flow',
   soulReturn: 'rebirth',
@@ -122,10 +135,12 @@ export const FAMILY_TO_EFFECT: Record<string, EffectTemplateId> = {
  * 两处各写一遍迟早会漂。这里不 import three，所以纯逻辑的演出层可以照常引用。
  */
 export const FAMILY_TINT: Record<string, string> = {
+  venom: '#49a82b', poisonCloud: '#49a82b', bleeding: '#a51b34', grievousWound: '#480919',
   holyShield: '#ffd77a',
   grantDodge: '#ffd77a',
   spellReflect: '#c5ecff',
   instantDeath: '#120e18',
+  lethalStrike: '#120e18',
   execute: '#9e1235',
   criticalCollapse: '#ff1646',
 };

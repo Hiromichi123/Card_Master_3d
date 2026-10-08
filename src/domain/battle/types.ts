@@ -11,6 +11,7 @@
  */
 
 import type {
+  AttackStatusKind,
   CardDefinition,
   CardInstance,
   CombatStateGroup,
@@ -217,12 +218,20 @@ export type BattleEvent = { readonly seq: number; readonly turn: number } & (
   | { readonly type: 'CooldownChanged'; readonly side: SideId; readonly instanceId: string; readonly from: number; readonly to: number; readonly cause: CooldownCause }
   | { readonly type: 'CardDeployed'; readonly side: SideId; readonly instanceId: string; readonly battleSlot: number }
   | { readonly type: 'SkillTriggered'; readonly side: SideId; readonly instanceId: string; readonly trigger: string; readonly family: string | null; readonly raw: string; readonly param: number | null }
-  | { readonly type: 'AttackDeclared'; readonly side: SideId; readonly attackerId: string; readonly targetInstanceId: string | null; readonly targetSlot: number; readonly attackKind?: 'ranged' | 'piercing' }
+  | { readonly type: 'AttackDeclared'; readonly side: SideId; readonly attackerId: string; readonly targetInstanceId: string | null; readonly targetSlot: number; readonly attackKind?: 'ranged' | 'piercing' | 'siege' }
   | { readonly type: 'DamageApplied'; readonly side: SideId; readonly instanceId: string; readonly amount: number; readonly hpBefore: number; readonly hpAfter: number; readonly source: DamageSource }
   | { readonly type: 'SpellReflected'; readonly side: SideId; readonly casterId: string; readonly reflectorId: string; readonly family: string; readonly raw: string; readonly param: number | null }
+  | { readonly type: 'AttackStatusApplied'; readonly side: SideId; readonly instanceId: string; readonly sourceInstanceId: string; readonly kind: AttackStatusKind; readonly level: number; readonly animate?: boolean }
+  | { readonly type: 'AttackStatusTriggered'; readonly side: SideId; readonly instanceId: string; readonly kind: AttackStatusKind; readonly level: number }
+  | { readonly type: 'AttackStatusExpired'; readonly side: SideId; readonly instanceId: string; readonly kind: AttackStatusKind }
   | { readonly type: 'UnyieldingChanged'; readonly side: SideId; readonly instanceId: string; readonly groupId: string; readonly active: boolean; readonly expiresAfterTurn: number }
   | { readonly type: 'LifeTransferred'; readonly side: SideId; readonly recipientId: string; readonly donorId: string; readonly amount: number }
   | { readonly type: 'FormationShuffled'; readonly side: SideId; readonly casterId: string; readonly order: readonly (string | null)[] }
+  | { readonly type: 'ConcealmentUsed'; readonly side: SideId; readonly instanceId: string; readonly attackerId: string }
+  | { readonly type: 'VanguardIntercepted'; readonly side: SideId; readonly guardId: string; readonly protectedId: string; readonly attackerId: string }
+  | { readonly type: 'DiscardDevoured'; readonly side: SideId; readonly casterId: string; readonly instanceIds: readonly string[] }
+  | { readonly type: 'CardSummoned'; readonly side: SideId; readonly instanceId: string; readonly sourceInstanceId: string; readonly definitionId: string; readonly groupId: string; readonly battleSlot: number; readonly atk: number; readonly hp: number; readonly maxHp: number; readonly cd: number; readonly flying: boolean }
+  | { readonly type: 'FlightChanged'; readonly side: SideId; readonly instanceId: string; readonly flying: boolean }
   | { readonly type: 'DodgeGranted'; readonly side: SideId; readonly instanceId: string; readonly sourceInstanceId: string; readonly level: number }
   | { readonly type: 'Healed'; readonly side: SideId; readonly instanceId: string; readonly amount: number; readonly hpBefore: number; readonly hpAfter: number }
   | { readonly type: 'StatChanged'; readonly side: SideId; readonly instanceId: string; readonly stat: 'atk'; readonly from: number; readonly to: number; readonly cause: string }
@@ -251,6 +260,7 @@ export type DamageSource =
   /** 自伤，例如受伤n / 狂暴 / 自毁。 */
   | 'selfInflicted'
   | 'ranged'
+  | 'siege'
   | 'piercing'
   | 'deathBlast'
   | 'instantDeath'

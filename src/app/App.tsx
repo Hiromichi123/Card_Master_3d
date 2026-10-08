@@ -12,14 +12,17 @@ import { GachaScene } from '../scenes/GachaScene';
 import { FusionScene } from '../scenes/FusionScene';
 import { MazeScene } from '../scenes/MazeScene';
 import { ShopScene } from '../scenes/ShopScene';
+import { SettingsScene } from '../scenes/SettingsScene';
 import { HubScene } from '../scenes/HubScene';
 import { getProfileStore } from '../state/profileStore';
 import type { ProfileStore } from '../state/createProfileStore';
 import { pushToast } from '../state/toastStore';
+import { attachSettingsPersistence, hydrateSettings } from '../state/settingsPersistence';
+import { useSettingsStore } from '../state/settingsStore';
+import { audioEngine, unlockAudioOnFirstGesture } from '../services/audio/AudioEngine';
 import { SceneBackgroundProvider } from '../ui/SceneBackground';
 import { useProfileStore } from '../state/useProfileStore';
 import { PerfToggle } from '../ui/BattleSettings';
-import { ScreenPlaceholder } from '../ui/ScreenPlaceholder';
 import { configFor, definitionsFor, settlementFor } from '../scenes/campaignFlow';
 import type { SettlementView, StageLaunch } from '../domain/progression/campaign';
 import { planSettlement } from '../domain/progression/campaign';
@@ -95,20 +98,52 @@ export function App() {
 
   useEffect(() => {
     let alive = true;
-    void getProfileStore().then((opened) => {
+    let detachSettings: (() => void) | null = null;
+    void getProfileStore().then(async (opened) => {
       if (!alive) {
         return;
       }
       setStore(opened);
       // `load()` 是幂等的：StrictMode 会让这个 effect 跑两次
-      void opened.load();
+      await opened.load();
+      if (!alive) {
+        return;
+      }
+      /*
+        设置的两条线在这里接上（见 state/settingsPersistence）：
+
+        先「存档 → store」，再「store → 存档」。顺序不能反——后者记下的
+        「上一帧值」是水合之后的值，于是水合本身不会触发一次多余的写盘。
+        这一步早于任何屏幕渲染（App 只在 `ready` 之后才挂屏幕）。
+      */
+      const loaded = opened.getSnapshot().profile;
+      if (loaded) {
+        hydrateSettings(loaded);
+      }
+      detachSettings = attachSettingsPersistence(opened);
     });
     return () => {
       alive = false;
+      detachSettings?.();
     };
   }, []);
 
   const snapshot = useProfileStore(store);
+
+  /*
+    音频（2026-10-08）。
+
+    解锁挂在 App 而不是某个屏幕：屏幕是挂载/卸载式的，而玩家的第一次点击
+    很可能落在主菜单的导航上——如果监听挂在战斗屏或设置屏里，那第一次点击
+    就已经花掉了、音频还没解锁。App 是唯一从启动到退出都挂着的组件。
+
+    音量读 zustand（设置的运行期唯一真相），存档镜像由 settingsPersistence 负责。
+  */
+  const masterVolume = useSettingsStore((state) => state.masterVolume);
+  useEffect(() => unlockAudioOnFirstGesture(), []);
+  useEffect(() => {
+    audioEngine.setMasterVolume(masterVolume);
+  }, [masterVolume]);
 
   // 打不开 IndexedDB 时，降级必须**看得见**——静默不落盘是最坏的失败
   useEffect(() => {
@@ -336,7 +371,7 @@ function Screen({
     case 'activity':
       return <ActivityScene profile={profile} onNavigate={onNavigate} />;
     case 'settings':
-      return <ScreenPlaceholder title="设置" note="设置页正在施工（P5-M7）。" />;
+      return <SettingsScene profile={profile} store={store} onNavigate={onNavigate} />;
     default:
       return <HubScene profile={profile} onNavigate={onNavigate} onReset={onReset} />;
   }

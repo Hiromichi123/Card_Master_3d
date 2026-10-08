@@ -29,6 +29,44 @@ import type {
   SettingsState,
 } from '../domain/progression/types';
 import type { SaveRepository, StorageKind } from '../services/save/SaveRepository';
+import {
+  detectSaveFormat,
+  looksLikeProfile,
+  normalizeProfile,
+  parseSaveJson,
+  planLegacyImport,
+  type ImportFailureReason,
+  type ImportFile,
+  type ImportPreview,
+  type ImportResult,
+  type LegacyPlan,
+  type NormalizeContext,
+  type SaveFormat,
+} from '../domain/progression/saveTransfer';
+
+/**
+ * 一次导入的解析结果。
+ *
+ * 分成「已成形的新版候选」与「旧版增量计划」两支：前者整份替换，
+ * 后者经 `applyEconomyTransaction` 合并。**解析在队列内部完成**，
+ * 读到的「当前存档」才是最新那一份。
+ */
+type ImportPlan =
+  | { readonly ok: false; readonly preview: ImportPreview }
+  | {
+      readonly ok: true;
+      readonly kind: 'profile';
+      readonly preview: ImportPreview;
+      readonly profile: ProfileState;
+      readonly detected: SaveFormat;
+    }
+  | {
+      readonly ok: true;
+      readonly kind: 'legacy';
+      readonly preview: ImportPreview;
+      readonly legacy: LegacyPlan;
+      readonly detected: SaveFormat;
+    };
 
 export type SaveStatus = 'loading' | 'ready' | 'error';
 
@@ -60,6 +98,11 @@ export interface ProfileStoreDeps {
   readonly starterCardIds: readonly string[];
   /** 开号时一并放进库存的卡。不给就只拥有起始卡组那几张。 */
   readonly ownedCardIds?: readonly string[] | undefined;
+  /**
+   * 当前卡库认识的 cardId。导入时用来判断库存/卡组里的项是否真的存在。
+   * 可选：不给就跳过「认不认识」这层校验（测试构造时不必准备一份卡库）。
+   */
+  readonly knownCardIds?: ReadonlySet<string> | undefined;
   readonly fallbackReason?: string | null;
   /** 失败/拒绝时的提示出口。 */
   readonly onNotice?: (message: string, tone: 'info' | 'error') => void;
@@ -385,6 +428,245 @@ export class ProfileStore {
 
   getActiveDeck(): Deck | null {
     return this.profile ? activeDeckOf(this.profile) : null;
+  }
+
+  // --- 导入导出 -----------------------------------------------------------
+
+  /**
+   * 导出当前存档为 JSON 文本（带缩进，两份存档可以直接 diff）。
+   *
+   * **不用 `repository.load()`**：那是磁盘读，会落后于防抖通道里还没落盘的
+   * 设置/卡组补丁（刚把音量调了就导出，盘上还是旧的），而且可能 reject。
+   * 先 `flush()` 把队列推平，再读内存里那一份——它永远不旧于磁盘
+   * （`commitEconomic` 与 `persist` 都只在 commit 成功后才赋值）。
+   *
+   * 不加外层包装：导出的就是 IndexedDB 里那一条记录本身，`schemaVersion`
+   * 已在其中，于是「导出 → 导入 → 再导出」逐字节幂等。
+   */
+  async exportProfile(): Promise<string | null> {
+    await this.flush();
+    const profile = this.profile;
+    return profile ? JSON.stringify(profile, null, 2) : null;
+  }
+
+  /** 只解析、只校验，不写盘、不碰快照。给导入预览用。 */
+  previewImport(files: readonly ImportFile[]): ImportPreview {
+    return this.importPlan(files).preview;
+  }
+
+  /**
+   * 解析 + 校验 + 悲观提交。**任何失败都不改动原存档**（内存与磁盘都保持原样）。
+   *
+   * 走 `repository.commit`（整份一次 `put`，本身原子），**不开新事务通道**：
+   * 新增一条写入路径只会多一处可能与 `persist` / `commitEconomic` 交错的地方。
+   * 必须排在**同一条队列**上，否则一次在飞的事务可能被导入覆盖。
+   */
+  async importProfile(files: readonly ImportFile[]): Promise<ImportResult> {
+    if (this.snapshot.busy) {
+      return { ok: false, reason: 'busy', message: '上一个操作还在处理中' };
+    }
+    if (!this.profile) {
+      return { ok: false, reason: 'invalidShape', message: '存档还没加载完' };
+    }
+    // 待写的设置/卡组先出去，别被导入覆盖，也别一直压在它后面
+    this.flushDebounced();
+    this.publish({ busy: true });
+
+    try {
+      const result = await this.enqueue(async (): Promise<ImportResult> => {
+        const current = this.profile;
+        if (!current) {
+          return { ok: false, reason: 'invalidShape', message: '存档还没加载完' };
+        }
+        const plan = this.importPlan(files);
+        if (!plan.ok) {
+          return {
+            ok: false,
+            reason: plan.preview.reason ?? 'invalidShape',
+            message: plan.preview.message,
+          };
+        }
+
+        if (plan.kind === 'profile') {
+          const committed = await this.replaceProfile(plan.profile);
+          if (!committed) {
+            return { ok: false, reason: 'saveFailed', message: '写盘失败，原存档未改动。' };
+          }
+          return { ok: true, format: 'profile', revision: plan.profile.revision };
+        }
+
+        // 旧版：货币 + 卡牌是**一次原子写**（形状正好是经济事务）
+        const outcome = applyEconomyTransaction(current, {
+          operationId: this.nextOperationId(),
+          ...plan.legacy.transaction,
+        });
+        if (!outcome.applied) {
+          return {
+            ok: false,
+            reason: 'invalidShape',
+            message: REJECT_TEXT[outcome.reason ?? 'insufficientFunds'] ?? '这一步无法完成',
+          };
+        }
+        const committed = await this.replaceProfile(outcome.profile);
+        if (!committed) {
+          return { ok: false, reason: 'saveFailed', message: '写盘失败，原存档未改动。' };
+        }
+        // 卡组单独一笔（防抖通道）：不扩 EconomyTransaction，界面已注明
+        if (plan.legacy.deck) {
+          this.saveDeck(plan.legacy.deck);
+        }
+        return { ok: true, format: plan.detected, revision: outcome.profile.revision };
+      });
+
+      if (!result.ok) {
+        this.deps.onNotice?.(result.message, 'error');
+      }
+      return result;
+    } finally {
+      this.publish({ busy: false });
+    }
+  }
+
+  /** 整份替换。**成功才赋值** `this.profile`——与 `persist` 同一纪律，但把成败交出去。 */
+  private async replaceProfile(next: ProfileState): Promise<boolean> {
+    try {
+      await this.deps.repository.commit(next);
+    } catch (error) {
+      this.deps.onNotice?.(
+        `导入失败：${error instanceof Error ? error.message : String(error)}`,
+        'error',
+      );
+      return false;
+    }
+    this.profile = next;
+    // 换了一份存档，会话级的幂等账本必须清掉
+    this.appliedOperationIds.length = 0;
+    this.publish({ profile: next, lastResult: null });
+    return true;
+  }
+
+  private normalizeContext(): NormalizeContext {
+    return {
+      knownCardIds: this.deps.knownCardIds ?? new Set<string>(),
+      contentVersion: this.deps.contentVersion,
+      dayKey: dayKeyOf(this.deps.clock()),
+      now: this.deps.clock(),
+    };
+  }
+
+  private importPlan(files: readonly ImportFile[]): ImportPlan {
+    const fail = (reason: ImportFailureReason, message: string): ImportPlan => ({
+      ok: false,
+      preview: {
+        ok: false,
+        format: 'unknown',
+        message,
+        reason,
+        profile: null,
+        legacy: [],
+        issues: [],
+        warnings: [],
+        summary: [],
+      },
+    });
+
+    if (files.length === 0) {
+      return fail('unknownFormat', '没有选择文件。');
+    }
+
+    // 1) 逐份解析 + 判形
+    const parsed: { readonly format: SaveFormat; readonly raw: unknown }[] = [];
+    const warnings: string[] = [];
+    for (const file of files) {
+      const result = parseSaveJson(file.text);
+      if (!result.ok) {
+        return fail('invalidJson', `${file.name}：${result.message}`);
+      }
+      const format = detectSaveFormat(result.raw);
+      if (format === 'unknown') {
+        if (looksLikeProfile(result.raw)) {
+          return fail(
+            'invalidShape',
+            `${file.name}：有 inventory / currencies，但没有合法的 schemaVersion，读不了。`,
+          );
+        }
+        return fail(
+          'unknownFormat',
+          `${file.name}：认不出这是什么（既不是新版存档，也不是旧版的 inventory / profile / deck）。`,
+        );
+      }
+      parsed.push({ format, raw: result.raw });
+    }
+
+    // 2) 一次只认一种格式：新版是整份替换、旧版是增量合并，混在一起没有原子语义
+    const formats = new Set(parsed.map((entry) => entry.format));
+    if (formats.size > 1) {
+      return fail(
+        'mixedFormats',
+        '一次只能导入一种格式：新版存档是整份替换、旧版是增量合并，混在一次里没有原子语义。请分开导入。',
+      );
+    }
+    const format = parsed[0]!.format;
+
+    if (format === 'profile') {
+      if (parsed.length > 1) {
+        warnings.push(`选择了 ${parsed.length} 份新版存档，只用了第一份，其余忽略。`);
+      }
+      const normalized = normalizeProfile(parsed[0]!.raw, this.normalizeContext());
+      if (!normalized.ok) {
+        return fail(normalized.reason, normalized.message);
+      }
+      const totals = Object.values(normalized.profile.inventory).reduce((sum, n) => sum + n, 0);
+      const summary = [
+        `整份替换：${Object.keys(normalized.profile.inventory).length} 种 / ${totals} 张卡`,
+        `${normalized.profile.currencies.gold} 金币、${normalized.profile.currencies.crystal} 水晶`,
+        `${normalized.profile.decks.length} 套卡组`,
+      ];
+      return {
+        ok: true,
+        kind: 'profile',
+        profile: normalized.profile,
+        detected: 'profile',
+        preview: {
+          ok: true,
+          format: 'profile',
+          message: '这是一份新版存档。导入会整份替换当前存档（货币、库存、卡组、设置全部覆盖）。',
+          profile: normalized.profile,
+          legacy: [],
+          issues: normalized.issues,
+          warnings: [...warnings, ...normalized.warnings],
+          summary,
+        },
+      };
+    }
+
+    // 3) 旧版：三份预览 + 一笔增量事务
+    const legacy = planLegacyImport(
+      parsed.map((entry) => ({ format: entry.format, raw: entry.raw })),
+      { knownCardIds: this.deps.knownCardIds ?? new Set<string>() },
+    );
+    const issues: string[] = [];
+    for (const preview of legacy.previews) {
+      if (preview.unknown.length > 0) {
+        issues.push(`${preview.sourcePath}：有 ${preview.unknown.length} 项认不出来（见下方明细）。`);
+      }
+    }
+    return {
+      ok: true,
+      kind: 'legacy',
+      detected: format,
+      legacy,
+      preview: {
+        ok: true,
+        format,
+        message: '这是旧版存档。导入会把认出来的卡与货币**并进**当前存档，不覆盖已有的东西。',
+        profile: null,
+        legacy: legacy.previews,
+        issues,
+        warnings,
+        summary: legacy.summary.length > 0 ? legacy.summary : ['没有可导入的内容。'],
+      },
+    };
   }
 
   /** 测试与「重置存档」用。 */

@@ -37,9 +37,17 @@ function getRoomEnvironment(gl: WebGLRenderer): Texture {
 export interface SceneEnvironmentProps {
   readonly theme: TableTheme;
   readonly shadows: boolean;
+  /**
+   * 阴影贴图边长，来自画质档的 `profile.shadowMapSize`。
+   *
+   * 以前这里写死 `shadows ? 1024 : 512`——于是画质档里的 `shadowMapSize`
+   * （低 512 / 中 1024 / 高 2048）在**战斗场景**这一处完全落空，
+   * 只有抽卡与实验台读到了它。现在由调用方透传。
+   */
+  readonly shadowMapSize: number;
 }
 
-export function SceneEnvironment({ theme, shadows }: SceneEnvironmentProps) {
+export function SceneEnvironment({ theme, shadows, shadowMapSize }: SceneEnvironmentProps) {
   const gl = useThree((state) => state.gl);
   const scene = useThree((state) => state.scene);
 
@@ -64,8 +72,8 @@ export function SceneEnvironment({ theme, shadows }: SceneEnvironmentProps) {
         intensity={1.35}
         position={[-11, 20, 9]}
         castShadow={shadows}
-        shadow-mapSize-width={shadows ? 1024 : 512}
-        shadow-mapSize-height={shadows ? 1024 : 512}
+        shadow-mapSize-width={shadowMapSize}
+        shadow-mapSize-height={shadowMapSize}
         shadow-camera-near={1}
         shadow-camera-far={60}
         shadow-camera-left={-13}

@@ -10,7 +10,7 @@ export const SWORD_DANCE_STEP_SECONDS = 0.11;
 export const SWORD_DANCE_ARCS = 6;
 
 export function usesSlash(template: EffectTemplateId): boolean {
-  return ['slash', 'groupSlash', 'swordDance', 'groupSwordDance'].includes(template);
+  return ['slash', 'groupSlash', 'swordDance', 'groupSwordDance', 'bloodBurst'].includes(template);
 }
 
 export function slashTiming(template: EffectTemplateId): { charge: number; sweep: number; fade: number; hit: number } {

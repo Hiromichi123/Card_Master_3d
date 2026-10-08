@@ -32,7 +32,7 @@ export function DepartingCard({ proxy }: { proxy: ProxyCard }) {
   const progress = useRef(0);
 
   const card = cardById.get(proxy.definitionId);
-  const flyingLift = card?.rawTraits.includes('飞行') ? FLYING_CARD_LIFT : 0;
+  const flyingLift = (proxy.flying ?? card?.rawTraits.includes('飞行')) ? FLYING_CARD_LIFT : 0;
   const base = useMemo(
     () => slotPosition(proxy.side, 'battle', proxy.slotIndex),
     [proxy.side, proxy.slotIndex],

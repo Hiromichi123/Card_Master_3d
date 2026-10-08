@@ -93,6 +93,8 @@ async function build(): Promise<ProfileStore> {
     contentVersion: cardDatabase.contentVersion,
     starterCardIds: starterCardIds(),
     ownedCardIds: ownedCardIds(),
+    // 导入时用来自查「这份存档里的 cardId 在当前卡库里还在不在」
+    knownCardIds: new Set(cardDatabase.definitions.map((card) => card.cardId)),
     fallbackReason: opened.fallbackReason,
     onNotice: pushToast,
   });

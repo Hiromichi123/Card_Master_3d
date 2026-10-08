@@ -1,5 +1,5 @@
 {
-  "contentVersion": "86c8a85e6fa8",
+  "contentVersion": "b44039dc45e1",
   "source": "assets/outputs/*/cards.json",
   "definitions": [
     {
@@ -34,12 +34,12 @@
       "rarity": "SSS",
       "name": "二 重 露 光",
       "level": 0,
-      "atk": 1,
-      "hp": 9,
+      "atk": 0,
+      "hp": 0,
       "cd": 5,
       "rawTraits": [
         "魅惑",
-        "防御1"
+        "自毁"
       ],
       "skills": [
         {
@@ -51,11 +51,11 @@
           "note": "无实现。"
         },
         {
-          "raw": "防御1",
+          "raw": "自毁",
           "resolution": "implemented",
-          "family": "defense",
-          "param": 1,
-          "matchKind": "full"
+          "family": "selfDestruct",
+          "param": null,
+          "matchKind": "exact"
         }
       ],
       "description": "在光与影的交织中，感受彼岸的曼陀罗梦华，意识变得迷离。",
@@ -377,19 +377,17 @@
       "hp": 6,
       "cd": 4,
       "rawTraits": [
-        "群体减速1",
+        "群体延迟1",
         "溅射",
-        "破甲2",
-        "对空"
+        "破甲2"
       ],
       "skills": [
         {
-          "raw": "群体减速1",
-          "resolution": "unimplemented",
+          "raw": "群体延迟1",
+          "resolution": "ambiguous",
           "family": null,
           "param": null,
-          "evidence": "全项目 .py 无该字符串",
-          "note": "`延迟n` 针对单个最左占用准备槽，不是群体减速，不作为别名。"
+          "note": "未在 trait-overlay.json 中登记"
         },
         {
           "raw": "溅射",
@@ -405,14 +403,6 @@
           "family": "armorBreak",
           "param": 2,
           "matchKind": "full"
-        },
-        {
-          "raw": "对空",
-          "resolution": "unimplemented",
-          "family": null,
-          "param": null,
-          "evidence": "battle_base_scene.py:1348 只出现在注释「地面单位无法对空：伤害转移到防御者玩家」里",
-          "note": "注意：飞行规则只检查 `飞行`（battle_base_scene.py:1344-1345），带 `对空` 但不带 `飞行` 的卡没有任何对空收益。PLAN 第 4.3 节明确要求不擅自加入未实现对空技能。"
         }
       ],
       "description": "像花瓣形状大鳍的海龙，在溪流中绽放的鲜艳的白、紫、粉红色。体毛上摩擦特殊的分泌液，制造出能够封锁猎物动作的溅射泡沫。",
@@ -818,7 +808,7 @@
       "cd": 7,
       "rawTraits": [
         "闪电3",
-        "爆裂1"
+        "爆裂"
       ],
       "skills": [
         {
@@ -829,12 +819,11 @@
           "matchKind": "full"
         },
         {
-          "raw": "爆裂1",
-          "resolution": "alias",
+          "raw": "爆裂",
+          "resolution": "implemented",
           "family": "explodeOnDeath",
           "param": null,
-          "evidence": "skill_registry.py:268 用精确匹配注册 `爆裂`，没有 `爆裂(\\d+)` 正则；skill_effects.py:1013-1046 的机制与词干一致",
-          "note": "纯解析缺口：数值形式落空。置信度高。"
+          "matchKind": "exact"
         }
       ],
       "description": "",
@@ -3495,7 +3484,7 @@
       "cd": 3,
       "rawTraits": [
         "恢复1",
-        "狂暴1"
+        "狂暴"
       ],
       "skills": [
         {
@@ -3506,12 +3495,11 @@
           "matchKind": "full"
         },
         {
-          "raw": "狂暴1",
-          "resolution": "alias",
+          "raw": "狂暴",
+          "resolution": "implemented",
           "family": "berserk",
           "param": null,
-          "evidence": "skill_registry.py:244 用 `trait == \"狂暴\"` 精确匹配；skill_effects.py:769-815 的机制与词干一致",
-          "note": "纯解析缺口：数值形式落空。置信度高。"
+          "matchKind": "exact"
         }
       ],
       "description": "隐海修会的教士，以亲近神使的祝福而闻名。可若是受到恶魔觊觎？",
@@ -4062,13 +4050,21 @@
       "hp": 5,
       "cd": 6,
       "rawTraits": [
-        "防御1"
+        "防御1",
+        "破甲1"
       ],
       "skills": [
         {
           "raw": "防御1",
           "resolution": "implemented",
           "family": "defense",
+          "param": 1,
+          "matchKind": "full"
+        },
+        {
+          "raw": "破甲1",
+          "resolution": "implemented",
+          "family": "armorBreak",
           "param": 1,
           "matchKind": "full"
         }
@@ -7698,13 +7694,23 @@
       "rarity": "#yoroi",
       "name": "EX 阿 斯 特 蕾 亚·裁 决",
       "level": 0,
-      "atk": 0,
-      "hp": 0,
-      "cd": 0,
-      "rawTraits": [],
-      "skills": [],
+      "atk": 3,
+      "hp": 10,
+      "cd": 7,
+      "rawTraits": [
+        "圣盾2"
+      ],
+      "skills": [
+        {
+          "raw": "圣盾2",
+          "resolution": "implemented",
+          "family": "holyShield",
+          "param": 2,
+          "matchKind": "full"
+        }
+      ],
       "description": "",
-      "status": "incomplete",
+      "status": "complete",
       "art": {
         "artId": "card/yoroi/001",
         "sourcePresent": true
@@ -8914,6 +8920,1063 @@
       "status": "complete",
       "art": {
         "artId": "card/s/019",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "A_028",
+      "rarity": "A",
+      "name": "金 桂 骑 士",
+      "level": 3,
+      "atk": 2,
+      "hp": 6,
+      "cd": 9,
+      "rawTraits": [
+        "防御1",
+        "斩击1"
+      ],
+      "skills": [
+        {
+          "raw": "防御1",
+          "resolution": "implemented",
+          "family": "defense",
+          "param": 1,
+          "matchKind": "full"
+        },
+        {
+          "raw": "斩击1",
+          "resolution": "unimplemented",
+          "family": null,
+          "param": null,
+          "evidence": "全项目 .py 无该字符串",
+          "note": "无实现。"
+        }
+      ],
+      "description": "",
+      "status": "complete",
+      "art": {
+        "artId": "card/a/028",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "A_030",
+      "rarity": "A",
+      "name": "远 古 头 骨",
+      "level": 3,
+      "atk": 0,
+      "hp": 0,
+      "cd": 7,
+      "rawTraits": [
+        "还魂4",
+        "加速4",
+        "自毁"
+      ],
+      "skills": [
+        {
+          "raw": "还魂4",
+          "resolution": "implemented",
+          "family": "soulReturn",
+          "param": 4,
+          "matchKind": "full"
+        },
+        {
+          "raw": "加速4",
+          "resolution": "implemented",
+          "family": "haste",
+          "param": 4,
+          "matchKind": "full"
+        },
+        {
+          "raw": "自毁",
+          "resolution": "implemented",
+          "family": "selfDestruct",
+          "param": null,
+          "matchKind": "exact"
+        }
+      ],
+      "description": "",
+      "status": "complete",
+      "art": {
+        "artId": "card/a/030",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "A_029",
+      "rarity": "A",
+      "name": "苍 龙 剑 士·狂 怒",
+      "level": 3,
+      "atk": 0,
+      "hp": 11,
+      "cd": 22,
+      "rawTraits": [
+        "狂暴",
+        "闪电1"
+      ],
+      "skills": [
+        {
+          "raw": "狂暴",
+          "resolution": "implemented",
+          "family": "berserk",
+          "param": null,
+          "matchKind": "exact"
+        },
+        {
+          "raw": "闪电1",
+          "resolution": "implemented",
+          "family": "lightning",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "",
+      "status": "complete",
+      "art": {
+        "artId": "card/a/029",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "B+_015",
+      "rarity": "B+",
+      "name": "阿 尔 托 莉 雅 Alter",
+      "level": 3.5,
+      "atk": 4,
+      "hp": 2,
+      "cd": 4,
+      "rawTraits": [
+        "对空"
+      ],
+      "skills": [
+        {
+          "raw": "对空",
+          "resolution": "unimplemented",
+          "family": null,
+          "param": null,
+          "evidence": "battle_base_scene.py:1348 只出现在注释「地面单位无法对空：伤害转移到防御者玩家」里",
+          "note": "注意：飞行规则只检查 `飞行`（battle_base_scene.py:1344-1345），带 `对空` 但不带 `飞行` 的卡没有任何对空收益。PLAN 第 4.3 节明确要求不擅自加入未实现对空技能。"
+        }
+      ],
+      "description": "",
+      "status": "complete",
+      "art": {
+        "artId": "card/b-plus/015",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "B+_016",
+      "rarity": "B+",
+      "name": "红 剑 士",
+      "level": 3.5,
+      "atk": 1,
+      "hp": 9,
+      "cd": 5,
+      "rawTraits": [
+        "防御1",
+        "破甲2"
+      ],
+      "skills": [
+        {
+          "raw": "防御1",
+          "resolution": "implemented",
+          "family": "defense",
+          "param": 1,
+          "matchKind": "full"
+        },
+        {
+          "raw": "破甲2",
+          "resolution": "implemented",
+          "family": "armorBreak",
+          "param": 2,
+          "matchKind": "full"
+        }
+      ],
+      "description": "",
+      "status": "complete",
+      "art": {
+        "artId": "card/b-plus/016",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "B+_017",
+      "rarity": "B+",
+      "name": "竜 骑 士",
+      "level": 3.5,
+      "atk": 2,
+      "hp": 4,
+      "cd": 8,
+      "rawTraits": [
+        "飞行",
+        "冰封1"
+      ],
+      "skills": [
+        {
+          "raw": "飞行",
+          "resolution": "scene-rule",
+          "family": null,
+          "param": null,
+          "note": "战斗场景规则，非技能族"
+        },
+        {
+          "raw": "冰封1",
+          "resolution": "implemented",
+          "family": "iceSeal",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "",
+      "status": "complete",
+      "art": {
+        "artId": "card/b-plus/017",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "B+_019",
+      "rarity": "B+",
+      "name": "梦 蝶",
+      "level": 3.5,
+      "atk": 1,
+      "hp": 3,
+      "cd": 3,
+      "rawTraits": [
+        "防御3",
+        "飞行"
+      ],
+      "skills": [
+        {
+          "raw": "防御3",
+          "resolution": "implemented",
+          "family": "defense",
+          "param": 3,
+          "matchKind": "full"
+        },
+        {
+          "raw": "飞行",
+          "resolution": "scene-rule",
+          "family": null,
+          "param": null,
+          "note": "战斗场景规则，非技能族"
+        }
+      ],
+      "description": "",
+      "status": "complete",
+      "art": {
+        "artId": "card/b-plus/019",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "B+_020",
+      "rarity": "B+",
+      "name": "祈 祷",
+      "level": 3.5,
+      "atk": 0,
+      "hp": 0,
+      "cd": 1,
+      "rawTraits": [
+        "祝福1",
+        "恢复1",
+        "自毁"
+      ],
+      "skills": [
+        {
+          "raw": "祝福1",
+          "resolution": "implemented",
+          "family": "blessing",
+          "param": 1,
+          "matchKind": "full"
+        },
+        {
+          "raw": "恢复1",
+          "resolution": "implemented",
+          "family": "selfHeal",
+          "param": 1,
+          "matchKind": "full"
+        },
+        {
+          "raw": "自毁",
+          "resolution": "implemented",
+          "family": "selfDestruct",
+          "param": null,
+          "matchKind": "exact"
+        }
+      ],
+      "description": "",
+      "status": "complete",
+      "art": {
+        "artId": "card/b-plus/020",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "B+_018",
+      "rarity": "B+",
+      "name": "玛 修·隐 匿",
+      "level": 3.5,
+      "atk": 5,
+      "hp": 1,
+      "cd": 5,
+      "rawTraits": [
+        "隐匿",
+        "闪避3",
+        "破甲3"
+      ],
+      "skills": [
+        {
+          "raw": "隐匿",
+          "resolution": "unimplemented",
+          "family": null,
+          "param": null,
+          "evidence": "全项目 .py 无该字符串；不存在目标选择/潜行机制",
+          "note": "无实现。"
+        },
+        {
+          "raw": "闪避3",
+          "resolution": "implemented",
+          "family": "dodge",
+          "param": 3,
+          "matchKind": "full"
+        },
+        {
+          "raw": "破甲3",
+          "resolution": "implemented",
+          "family": "armorBreak",
+          "param": 3,
+          "matchKind": "full"
+        }
+      ],
+      "description": "",
+      "status": "complete",
+      "art": {
+        "artId": "card/b-plus/018",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "B+_021",
+      "rarity": "B+",
+      "name": "铁 马 战 士",
+      "level": 3.5,
+      "atk": 2,
+      "hp": 18,
+      "cd": 8,
+      "rawTraits": [
+        "受伤2"
+      ],
+      "skills": [
+        {
+          "raw": "受伤2",
+          "resolution": "implemented",
+          "family": "injury",
+          "param": 2,
+          "matchKind": "full"
+        }
+      ],
+      "description": "",
+      "status": "complete",
+      "art": {
+        "artId": "card/b-plus/021",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "B+_022",
+      "rarity": "B+",
+      "name": "亡 灵の剑 舞",
+      "level": 3.5,
+      "atk": 0,
+      "hp": 12,
+      "cd": 18,
+      "rawTraits": [
+        "剑舞2",
+        "防御1",
+        "对空"
+      ],
+      "skills": [
+        {
+          "raw": "剑舞2",
+          "resolution": "unimplemented",
+          "family": null,
+          "param": null,
+          "evidence": "全项目 .py 无该字符串",
+          "note": "无实现。"
+        },
+        {
+          "raw": "防御1",
+          "resolution": "implemented",
+          "family": "defense",
+          "param": 1,
+          "matchKind": "full"
+        },
+        {
+          "raw": "对空",
+          "resolution": "unimplemented",
+          "family": null,
+          "param": null,
+          "evidence": "battle_base_scene.py:1348 只出现在注释「地面单位无法对空：伤害转移到防御者玩家」里",
+          "note": "注意：飞行规则只检查 `飞行`（battle_base_scene.py:1344-1345），带 `对空` 但不带 `飞行` 的卡没有任何对空收益。PLAN 第 4.3 节明确要求不擅自加入未实现对空技能。"
+        }
+      ],
+      "description": "",
+      "status": "complete",
+      "art": {
+        "artId": "card/b-plus/022",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "B+_023",
+      "rarity": "B+",
+      "name": "血 咒 术",
+      "level": 3.5,
+      "atk": 0,
+      "hp": 0,
+      "cd": 8,
+      "rawTraits": [
+        "献祭3",
+        "伤害5",
+        "重伤4",
+        "自毁"
+      ],
+      "skills": [
+        {
+          "raw": "献祭3",
+          "resolution": "unimplemented",
+          "family": null,
+          "param": null,
+          "evidence": "全项目 .py 无该字符串",
+          "note": "无实现。"
+        },
+        {
+          "raw": "伤害5",
+          "resolution": "unimplemented",
+          "family": null,
+          "param": null,
+          "evidence": "全项目 .py 无该字符串",
+          "note": "数值被编码进 trait 字符串，但无读取方。"
+        },
+        {
+          "raw": "重伤4",
+          "resolution": "ambiguous",
+          "family": null,
+          "param": null,
+          "note": "未在 trait-overlay.json 中登记"
+        },
+        {
+          "raw": "自毁",
+          "resolution": "implemented",
+          "family": "selfDestruct",
+          "param": null,
+          "matchKind": "exact"
+        }
+      ],
+      "description": "",
+      "status": "complete",
+      "art": {
+        "artId": "card/b-plus/023",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "B+_024",
+      "rarity": "B+",
+      "name": "伊 芙 利 特",
+      "level": 3.5,
+      "atk": 2,
+      "hp": 4,
+      "cd": 4,
+      "rawTraits": [
+        "闪避1",
+        "加速3"
+      ],
+      "skills": [
+        {
+          "raw": "闪避1",
+          "resolution": "implemented",
+          "family": "dodge",
+          "param": 1,
+          "matchKind": "full"
+        },
+        {
+          "raw": "加速3",
+          "resolution": "implemented",
+          "family": "haste",
+          "param": 3,
+          "matchKind": "full"
+        }
+      ],
+      "description": "",
+      "status": "complete",
+      "art": {
+        "artId": "card/b-plus/024",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "B+_025",
+      "rarity": "B+",
+      "name": "影 骑 士·飞 行",
+      "level": 3.5,
+      "atk": 2,
+      "hp": 7,
+      "cd": 4,
+      "rawTraits": [
+        "飞行"
+      ],
+      "skills": [
+        {
+          "raw": "飞行",
+          "resolution": "scene-rule",
+          "family": null,
+          "param": null,
+          "note": "战斗场景规则，非技能族"
+        }
+      ],
+      "description": "",
+      "status": "complete",
+      "art": {
+        "artId": "card/b-plus/025",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "B+_026",
+      "rarity": "B+",
+      "name": "幽 冥 战 舰",
+      "level": 3.5,
+      "atk": 0,
+      "hp": 6,
+      "cd": 6,
+      "rawTraits": [
+        "飞行",
+        "炮击1",
+        "炮击1"
+      ],
+      "skills": [
+        {
+          "raw": "飞行",
+          "resolution": "scene-rule",
+          "family": null,
+          "param": null,
+          "note": "战斗场景规则，非技能族"
+        },
+        {
+          "raw": "炮击1",
+          "resolution": "implemented",
+          "family": "bombard",
+          "param": 1,
+          "matchKind": "full"
+        },
+        {
+          "raw": "炮击1",
+          "resolution": "implemented",
+          "family": "bombard",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "",
+      "status": "complete",
+      "art": {
+        "artId": "card/b-plus/026",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "B+_027",
+      "rarity": "B+",
+      "name": "玉 藻 前",
+      "level": 3.5,
+      "atk": 0,
+      "hp": 5,
+      "cd": 12,
+      "rawTraits": [
+        "闪电4"
+      ],
+      "skills": [
+        {
+          "raw": "闪电4",
+          "resolution": "implemented",
+          "family": "lightning",
+          "param": 4,
+          "matchKind": "full"
+        }
+      ],
+      "description": "",
+      "status": "complete",
+      "art": {
+        "artId": "card/b-plus/027",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "B+_028",
+      "rarity": "B+",
+      "name": "月 耀 日 的 讨 伐",
+      "level": 3.5,
+      "atk": 1,
+      "hp": 9,
+      "cd": 8,
+      "rawTraits": [
+        "防御2"
+      ],
+      "skills": [
+        {
+          "raw": "防御2",
+          "resolution": "implemented",
+          "family": "defense",
+          "param": 2,
+          "matchKind": "full"
+        }
+      ],
+      "description": "",
+      "status": "complete",
+      "art": {
+        "artId": "card/b-plus/028",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "B+_029",
+      "rarity": "B+",
+      "name": "战 场 修 女",
+      "level": 3.5,
+      "atk": 2,
+      "hp": 5,
+      "cd": 5,
+      "rawTraits": [
+        "流血1",
+        "破甲2",
+        "对空"
+      ],
+      "skills": [
+        {
+          "raw": "流血1",
+          "resolution": "ambiguous",
+          "family": null,
+          "param": null,
+          "note": "未在 trait-overlay.json 中登记"
+        },
+        {
+          "raw": "破甲2",
+          "resolution": "implemented",
+          "family": "armorBreak",
+          "param": 2,
+          "matchKind": "full"
+        },
+        {
+          "raw": "对空",
+          "resolution": "unimplemented",
+          "family": null,
+          "param": null,
+          "evidence": "battle_base_scene.py:1348 只出现在注释「地面单位无法对空：伤害转移到防御者玩家」里",
+          "note": "注意：飞行规则只检查 `飞行`（battle_base_scene.py:1344-1345），带 `对空` 但不带 `飞行` 的卡没有任何对空收益。PLAN 第 4.3 节明确要求不擅自加入未实现对空技能。"
+        }
+      ],
+      "description": "",
+      "status": "complete",
+      "art": {
+        "artId": "card/b-plus/029",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "B_028",
+      "rarity": "B",
+      "name": "白 夜 天 使",
+      "level": 4,
+      "atk": 1,
+      "hp": 5,
+      "cd": 6,
+      "rawTraits": [
+        "吸血2"
+      ],
+      "skills": [
+        {
+          "raw": "吸血2",
+          "resolution": "implemented",
+          "family": "vampire",
+          "param": 2,
+          "matchKind": "full"
+        }
+      ],
+      "description": "",
+      "status": "complete",
+      "art": {
+        "artId": "card/b/028",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "B_029",
+      "rarity": "B",
+      "name": "对 魔 兵 器",
+      "level": 4,
+      "atk": 2,
+      "hp": 4,
+      "cd": 3,
+      "rawTraits": [
+        "飞行"
+      ],
+      "skills": [
+        {
+          "raw": "飞行",
+          "resolution": "scene-rule",
+          "family": null,
+          "param": null,
+          "note": "战斗场景规则，非技能族"
+        }
+      ],
+      "description": "",
+      "status": "complete",
+      "art": {
+        "artId": "card/b/029",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "B_030",
+      "rarity": "B",
+      "name": "飞 霄",
+      "level": 4,
+      "atk": 2,
+      "hp": 6,
+      "cd": 5,
+      "rawTraits": [
+        "防御1"
+      ],
+      "skills": [
+        {
+          "raw": "防御1",
+          "resolution": "implemented",
+          "family": "defense",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "",
+      "status": "complete",
+      "art": {
+        "artId": "card/b/030",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "B_031",
+      "rarity": "B",
+      "name": "风暴眼",
+      "level": 4,
+      "atk": 0,
+      "hp": 0,
+      "cd": 3,
+      "rawTraits": [
+        "群体禁飞",
+        "自毁"
+      ],
+      "skills": [
+        {
+          "raw": "群体禁飞",
+          "resolution": "unimplemented",
+          "family": null,
+          "param": null,
+          "evidence": "全项目 .py 无该字符串；飞行规则只读 `飞行`",
+          "note": "概念上是飞行规则的反制，但代码没有任何读取点。"
+        },
+        {
+          "raw": "自毁",
+          "resolution": "implemented",
+          "family": "selfDestruct",
+          "param": null,
+          "matchKind": "exact"
+        }
+      ],
+      "description": "",
+      "status": "complete",
+      "art": {
+        "artId": "card/b/031",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "B_032",
+      "rarity": "B",
+      "name": "盖 亚 古 文 明",
+      "level": 4,
+      "atk": 0,
+      "hp": 4,
+      "cd": 5,
+      "rawTraits": [
+        "防御5",
+        "闪避3"
+      ],
+      "skills": [
+        {
+          "raw": "防御5",
+          "resolution": "implemented",
+          "family": "defense",
+          "param": 5,
+          "matchKind": "full"
+        },
+        {
+          "raw": "闪避3",
+          "resolution": "implemented",
+          "family": "dodge",
+          "param": 3,
+          "matchKind": "full"
+        }
+      ],
+      "description": "",
+      "status": "complete",
+      "art": {
+        "artId": "card/b/032",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "B_033",
+      "rarity": "B",
+      "name": "花 娘",
+      "level": 4,
+      "atk": 2,
+      "hp": 4,
+      "cd": 4,
+      "rawTraits": [
+        "剧毒1"
+      ],
+      "skills": [
+        {
+          "raw": "剧毒1",
+          "resolution": "ambiguous",
+          "family": null,
+          "param": null,
+          "note": "未在 trait-overlay.json 中登记"
+        }
+      ],
+      "description": "",
+      "status": "complete",
+      "art": {
+        "artId": "card/b/033",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "B_034",
+      "rarity": "B",
+      "name": "剑 山 明 月",
+      "level": 4,
+      "atk": 0,
+      "hp": 7,
+      "cd": 9,
+      "rawTraits": [
+        "火球1",
+        "斩击1",
+        "防御1"
+      ],
+      "skills": [
+        {
+          "raw": "火球1",
+          "resolution": "implemented",
+          "family": "fireball",
+          "param": 1,
+          "matchKind": "full"
+        },
+        {
+          "raw": "斩击1",
+          "resolution": "unimplemented",
+          "family": null,
+          "param": null,
+          "evidence": "全项目 .py 无该字符串",
+          "note": "无实现。"
+        },
+        {
+          "raw": "防御1",
+          "resolution": "implemented",
+          "family": "defense",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "",
+      "status": "complete",
+      "art": {
+        "artId": "card/b/034",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "S+_018",
+      "rarity": "S+",
+      "name": "天 文 钟",
+      "level": 1.5,
+      "atk": 0,
+      "hp": 8,
+      "cd": 7,
+      "rawTraits": [
+        "加速2",
+        "加速1",
+        "延迟2",
+        "延迟1"
+      ],
+      "skills": [
+        {
+          "raw": "加速2",
+          "resolution": "implemented",
+          "family": "haste",
+          "param": 2,
+          "matchKind": "full"
+        },
+        {
+          "raw": "加速1",
+          "resolution": "implemented",
+          "family": "haste",
+          "param": 1,
+          "matchKind": "full"
+        },
+        {
+          "raw": "延迟2",
+          "resolution": "implemented",
+          "family": "delay",
+          "param": 2,
+          "matchKind": "full"
+        },
+        {
+          "raw": "延迟1",
+          "resolution": "implemented",
+          "family": "delay",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "",
+      "status": "complete",
+      "art": {
+        "artId": "card/s-plus/018",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "A+_022",
+      "rarity": "A+",
+      "name": "元 素 师·勇 气",
+      "level": 2.5,
+      "atk": 2,
+      "hp": 6,
+      "cd": 7,
+      "rawTraits": [
+        "加速2",
+        "防御1"
+      ],
+      "skills": [
+        {
+          "raw": "加速2",
+          "resolution": "implemented",
+          "family": "haste",
+          "param": 2,
+          "matchKind": "full"
+        },
+        {
+          "raw": "防御1",
+          "resolution": "implemented",
+          "family": "defense",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "",
+      "status": "complete",
+      "art": {
+        "artId": "card/a-plus/022",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "A_031",
+      "rarity": "A",
+      "name": "元 素 师·暗 纹",
+      "level": 3,
+      "atk": 0,
+      "hp": 0,
+      "cd": 5,
+      "rawTraits": [
+        "火球2",
+        "冰封2",
+        "闪电2",
+        "自毁"
+      ],
+      "skills": [
+        {
+          "raw": "火球2",
+          "resolution": "implemented",
+          "family": "fireball",
+          "param": 2,
+          "matchKind": "full"
+        },
+        {
+          "raw": "冰封2",
+          "resolution": "implemented",
+          "family": "iceSeal",
+          "param": 2,
+          "matchKind": "full"
+        },
+        {
+          "raw": "闪电2",
+          "resolution": "implemented",
+          "family": "lightning",
+          "param": 2,
+          "matchKind": "full"
+        },
+        {
+          "raw": "自毁",
+          "resolution": "implemented",
+          "family": "selfDestruct",
+          "param": null,
+          "matchKind": "exact"
+        }
+      ],
+      "description": "",
+      "status": "complete",
+      "art": {
+        "artId": "card/a/031",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "S+_019",
+      "rarity": "S+",
+      "name": "元 素 师·双 元 素",
+      "level": 1.5,
+      "atk": 0,
+      "hp": 6,
+      "cd": 7,
+      "rawTraits": [
+        "冰封2",
+        "闪电2"
+      ],
+      "skills": [
+        {
+          "raw": "冰封2",
+          "resolution": "implemented",
+          "family": "iceSeal",
+          "param": 2,
+          "matchKind": "full"
+        },
+        {
+          "raw": "闪电2",
+          "resolution": "implemented",
+          "family": "lightning",
+          "param": 2,
+          "matchKind": "full"
+        }
+      ],
+      "description": "",
+      "status": "complete",
+      "art": {
+        "artId": "card/s-plus/019",
         "sourcePresent": true
       }
     }

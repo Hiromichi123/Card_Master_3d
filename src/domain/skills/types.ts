@@ -60,6 +60,7 @@ export type SkillTrigger =
   | 'BEFORE_ATTACK'
   | 'ON_DAMAGED'
   | 'AFTER_DAMAGED'
+  | 'AFTER_TARGETED_ATTACK'
   | 'AFTER_ATTACK'
   | 'ON_DEATH';
 

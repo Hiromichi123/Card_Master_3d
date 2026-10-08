@@ -8,6 +8,7 @@ import {
 import type { EffectTemplateId } from './familyMap';
 import { QuarksSkillVisuals, usesQuarks } from './QuarksSkillVisuals';
 import { NamedSkillVisuals, usesLinearAbility } from './NamedSkillVisuals';
+import { AttackStatusSkillVisuals, usesAttackStatusVisual } from './AttackStatusSkillVisuals';
 import { SlashSkillVisuals } from './SlashSkillVisuals';
 import { usesSlash } from './slashTiming';
 import { createCrystalGeometry } from './vendor/linearCrystal';
@@ -118,13 +119,14 @@ export class SkillVisualPool implements SkillVisualFactory {
     crystal: createCrystalGeometry({ sides: 5, bend: 0.12, roughness: 0.25 }), bolt: boltGeometry(),
   };
   private readonly active = new Set<SkillVisualHandle>();
+  private readonly attackStatus = new AttackStatusSkillVisuals();
   private readonly named = new NamedSkillVisuals();
   private readonly slash = new SlashSkillVisuals();
   private readonly quarks: QuarksSkillVisuals;
   private readonly textures = new Map<string, Texture>();
 
-  constructor(readonly maxActors = 24) { this.quarks = new QuarksSkillVisuals(maxActors <= 10 ? 0.45 : 1); this.group.name = 'battle-skill-geometry'; this.group.add(this.named.group, this.quarks.group, this.slash.group); }
-  updateFrame(camera: Camera, renderer: WebGLRenderer, delta: number, scene?: Scene): void { this.named.updateFrame(camera, renderer, delta, scene); this.quarks.update(delta); this.slash.updateFrame(renderer); }
+  constructor(readonly maxActors = 24) { this.quarks = new QuarksSkillVisuals(maxActors <= 10 ? 0.45 : 1); this.group.name = 'battle-skill-geometry'; this.group.add(this.named.group, this.quarks.group, this.slash.group, this.attackStatus.group); }
+  updateFrame(camera: Camera, renderer: WebGLRenderer, delta: number, scene?: Scene): void { this.attackStatus.updateCamera(camera); this.named.updateFrame(camera, renderer, delta, scene); this.quarks.update(delta); this.slash.updateFrame(renderer); }
   get activeCount(): number { return this.active.size; }
   get geometryCount(): number { return Object.keys(this.geometries).length; }
 
@@ -140,8 +142,11 @@ export class SkillVisualPool implements SkillVisualFactory {
 
   create(spec: SkillVisualSpec): SkillVisualHandle {
     while (this.active.size >= this.maxActors) this.active.values().next().value?.dispose();
-    if (usesQuarks(spec.template) || usesLinearAbility(spec.template) || usesSlash(spec.template)) {
-      const original = usesSlash(spec.template) ? this.slash.create(spec, this.worldScale)
+    if (usesAttackStatusVisual(spec.template) || ['bleedMark', 'grievousMark'].includes(spec.template) || usesQuarks(spec.template) || usesLinearAbility(spec.template) || usesSlash(spec.template)) {
+      const original = usesAttackStatusVisual(spec.template) ? this.attackStatus.create(spec, this.worldScale)
+        : ['bleedMark', 'grievousMark'].includes(spec.template) ? this.named.create({ ...spec, template: 'injury', family: spec.template === 'grievousMark' ? 'grievousWound' : spec.family,
+          tint: new Color(spec.template === 'grievousMark' ? '#821930' : '#a51b34') }, this.worldScale)
+        : usesSlash(spec.template) ? this.slash.create(spec, this.worldScale)
         : usesQuarks(spec.template) ? this.quarks.create(spec, this.worldScale) : this.named.create(spec, this.worldScale);
       let released = false;
       const handle: SkillVisualHandle = {
@@ -322,7 +327,7 @@ export class SkillVisualPool implements SkillVisualFactory {
   clear(): void { for (const actor of [...this.active]) actor.dispose(); }
   dispose(): void {
     this.clear();
-    this.named.dispose();
+    this.attackStatus.dispose(); this.named.dispose();
     this.slash.dispose();
     this.quarks.dispose();
     for (const geometry of Object.values(this.geometries)) geometry.dispose();

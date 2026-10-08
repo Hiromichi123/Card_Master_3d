@@ -121,7 +121,7 @@ export function HubScene({ profile, onNavigate, onReset }: HubSceneProps) {
         重置存档
       </button>
 
-      <span className="menu__version">v0.1.0</span>
+      <span className="menu__version">v1.3</span>
     </MenuChrome>
   );
 }

@@ -17,6 +17,7 @@ export const EVENT_BEAT: Partial<Record<BattleEvent['type'], number>> = {
   CardDrawn: 0.22,
   CardPlayed: 0.3,
   CardDeployed: 0.3,
+  CardSummoned: 0.3,
   CloneCreated: 0.3,
   CardMoved: 0.28,
   SkillTriggered: 0.42,

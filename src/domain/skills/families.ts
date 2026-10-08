@@ -103,8 +103,8 @@ export const SKILL_FAMILIES = [
     summary: '受普通攻击伤害 > 0 后对攻击者造成 n' },
   { id: 'dodge', sourceName: '闪避n', category: 'afterAttack', hasParam: true, purity: 'pure',
     summary: '闪避概率 0.9 − 0.6·0.5^(n−1)，成功则伤害置 0' },
-  { id: 'berserk', sourceName: '狂暴', category: 'afterAttack', hasParam: false, purity: 'pure',
-    summary: '攻击后损失等于自身 ATK 的 HP，并把实际损失永久加到 ATK' },
+  { id: 'berserk', sourceName: '狂暴', category: 'special', hasParam: false, purity: 'declarative',
+    summary: '当前缺失 HP 等量转换为动态 ATK，受伤增加、回血回落，不主动自伤' },
   { id: 'explodeOnDeath', sourceName: '爆裂', category: 'blast', hasParam: false, purity: 'scene',
     summary: '离场时原地爆裂并向敌方全体发炮；默认 2 伤害，带数字时使用该值' },
 
@@ -173,6 +173,25 @@ export const SKILL_FAMILIES = [
     summary: '普攻实际命中对位时，减伤后超过对位剩余 HP 的伤害返还自身，红色斩击' },
   { id: 'unyielding', sourceName: '不屈', category: 'special', hasParam: false, purity: 'declarative',
     summary: '首次 HP 归零后继续在场行动，到下一个自身回合结束离场，鲜红边缘暗中心遮罩' },
+  { id: 'splash', sourceName: '溅射', category: 'afterAttack', hasParam: false, purity: 'scene',
+    summary: '普攻命中对位，两侧各受到 floor(原始 ATK/2) 普攻伤害' },
+  { id: 'groupDelay', sourceName: '群体延迟n', category: 'deckPrep', hasParam: true, purity: 'pure',
+    summary: '敌方全部等待区卡牌 CD+n' },
+  { id: 'severeFrost', sourceName: '严霜n', category: 'afterAttack', hasParam: true, purity: 'scene', summary: '受敌方普攻后给攻击者严霜，下次主动普攻后碎冰并受 n 技能伤害，一回合' },
+  { id: 'burning', sourceName: '燃烧n', category: 'afterAttack', hasParam: true, purity: 'scene', summary: '受敌方普攻后给攻击者燃烧，下次主动普攻后火球爆发并受 n 技能伤害，一回合' },
+  { id: 'venom', sourceName: '剧毒n', category: 'afterAttack', hasParam: true, purity: 'scene', summary: '受敌方普攻后给攻击者剧毒，下次主动普攻后毒雾爆发并受 n 技能伤害，一回合' },
+  { id: 'bleeding', sourceName: '流血n', category: 'afterAttack', hasParam: true, purity: 'scene', summary: '受敌方普攻后给攻击者流血，下次主动普攻后大量流血并受 n 技能伤害，一回合' },
+  { id: 'grievousWound', sourceName: '重伤n', category: 'afterAttack', hasParam: true, purity: 'scene', summary: '受敵方普攻后给攻击者重伤，下次主动普攻后 ATK-n，一回合到期恢复实际扣除量' },
+  { id: 'poisonCloud', sourceName: '毒雾n', category: 'element', hasParam: true, purity: 'pure', summary: '随机敌方受随机 1-n 技能伤害，并获得剧毒n；绿色无实体气团抛射爆发' },
+  { id: 'antiAir', sourceName: '对空', category: 'special', hasParam: false, purity: 'declarative', summary: '普通攻击能够命中在场飞行单位，仍遵循普通减伤与闪避，无额外动画' },
+  { id: 'groupGround', sourceName: '群体禁飞', category: 'special', hasParam: false, purity: 'declarative', summary: '在场光环压制敌方全部飞行，包含后续入场单位；光环消失恢复飞行，无施法动画' },
+  { id: 'siege', sourceName: '攻城', category: 'special', hasParam: false, purity: 'declarative', summary: '普攻直接命中敌方本体，保留普通卡牌前冲，无炮弹或额外特效' },
+  { id: 'concealment', sourceName: '隐匿', category: 'special', hasParam: false, purity: 'declarative', summary: '规避本次入场后真正作用于自身的第一次普通攻击；不消耗于技能或打本体' },
+  { id: 'firstStrike', sourceName: '先攻', category: 'special', hasParam: false, purity: 'declarative', summary: '己方攻击顺序优先于普通单位，多个先攻仍按原槽位顺序；不改变位置和对位' },
+  { id: 'devour', sourceName: '吞噬', category: 'deckPrep', hasParam: false, purity: 'pure', summary: '攻击前清空敌方全部弃牌，吞噬的牌不能再被还魂取回' },
+  { id: 'masterpiece', sourceName: '至高之作', category: 'copy', hasParam: false, purity: 'scene', summary: '上场时在己方第一个空战斗槽召唤独立的 A+_006 蒸汽艺术，满场跳过' },
+  { id: 'vanguard', sourceName: '先锋', category: 'special', hasParam: false, purity: 'declarative', summary: '在场且 HP>0 时优先替友方承受可命中的普通攻击，多先锋按槽位择一，不递归转移' },
+  { id: 'lethalStrike', sourceName: '必杀n', category: 'special', hasParam: true, purity: 'scene', summary: '攻击前以 20%−10%×0.5^(n−1) 概率直接击杀对位，成功时播放即死动画' },
 ] as const satisfies readonly SkillFamily[];
 
 export type SkillFamilyId = (typeof SKILL_FAMILIES)[number]['id'];
@@ -195,7 +214,7 @@ export const LEGACY_FAMILY_COUNT = 35;
  * 所以它不再是 35——两个数不一样是**预期**，不是漂移。
  * 新加族时把它加进这个数组，`EXPECTED_FAMILY_COUNT` 会跟着走。
  */
-export const EXTRA_FAMILY_IDS = ['holyShield', 'ranged', 'piercing', 'directDamage', 'instantDeath', 'spellReflect', 'grantDodge', 'groupPhysicalDamage', 'slash', 'groupSlash', 'swordDance', 'groupSwordDance', 'sacrifice', 'execute', 'teleport', 'groupPiercing', 'criticalCollapse', 'unyielding'] as const;
+export const EXTRA_FAMILY_IDS = ['holyShield', 'ranged', 'piercing', 'directDamage', 'instantDeath', 'spellReflect', 'grantDodge', 'groupPhysicalDamage', 'slash', 'groupSlash', 'swordDance', 'groupSwordDance', 'sacrifice', 'execute', 'teleport', 'groupPiercing', 'criticalCollapse', 'unyielding', 'splash', 'groupDelay', 'severeFrost', 'burning', 'venom', 'bleeding', 'grievousWound', 'poisonCloud', 'antiAir', 'groupGround', 'siege', 'concealment', 'firstStrike', 'devour', 'masterpiece', 'vanguard', 'lethalStrike'] as const;
 
 /** 表里应有的族数。 */
 export const EXPECTED_FAMILY_COUNT = LEGACY_FAMILY_COUNT + EXTRA_FAMILY_IDS.length;

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement } 
 import { PCFShadowMap, type Group } from 'three';
 
 import { cardById, cardDatabase, slice } from '../data';
-import type { CardDefinition } from '../domain/cards/types';
+import type { AttackStatusKind, CardDefinition } from '../domain/cards/types';
 import { FLYING_CARD_LIFT } from '../rendering/anim/combatMotion';
 import { CardMesh } from '../rendering/cards/CardMesh';
 import { holoIntensityForRarity } from '../rendering/cards/HoloLayer';
@@ -59,6 +59,19 @@ import { WebGLGuard } from './WebGLGuard';
  */
 const TEMPLATE_LABELS: { id: EffectTemplateId; label: string; family?: string }[] = [
   { id: 'normalAttack', label: '普通攻击' },
+  { id: 'normalAttack', label: '溅射', family: 'splash' },
+  { id: 'cooldown', label: '群体延迟', family: 'groupDelay' },
+  { id: 'frostRetaliation', label: '严霜赋予', family: 'severeFrost' },
+  { id: 'burnMark', label: '燃烧赋予', family: 'burning' },
+  { id: 'poisonLance', label: '剧毒赋予', family: 'venom' },
+  { id: 'bleedMark', label: '流血赋予', family: 'bleeding' },
+  { id: 'grievousMark', label: '重伤赋予', family: 'grievousWound' },
+  { id: 'poisonCloud', label: '毒雾', family: 'poisonCloud' },
+  { id: 'frostShatter', label: '冰层碎裂（攻击后）' },
+  { id: 'burnBurst', label: '火球爆发（攻击后）' },
+  { id: 'poisonBurst', label: '毒雾爆发（攻击后）' },
+  { id: 'bloodBurst', label: '流血斩击（攻击后）' },
+  { id: 'grievousPulse', label: '重伤掩膜碎裂（攻击后）' },
   { id: 'slash', label: '斩击', family: 'slash' },
   { id: 'groupSlash', label: '群体斩击', family: 'groupSlash' },
   { id: 'swordDance', label: '剑舞', family: 'swordDance' },
@@ -78,6 +91,8 @@ const TEMPLATE_LABELS: { id: EffectTemplateId; label: string; family?: string }[
   { id: 'buff', label: '祝福 / 振奋' },
   { id: 'curse', label: '诅咒' },
   { id: 'instantDeath', label: '即死', family: 'instantDeath' },
+  { id: 'instantDeath', label: '必杀（成功演出）', family: 'lethalStrike' },
+  { id: 'flow', label: '至高之作 · 召唤流光', family: 'masterpiece' },
   { id: 'armorBreak', label: '闪避赋予', family: 'grantDodge' },
   { id: 'shield', label: '法术反弹', family: 'spellReflect' },
   { id: 'normalAttack', label: '伤害n', family: 'directDamage' },
@@ -229,6 +244,7 @@ export function EffectLabScene() {
   const [durationScale, setDurationScale] = useState(1);
   const [color, setColor] = useState<string>('');
   const [paused, setPaused] = useState(false);
+  const [statusPreview, setStatusPreview] = useState<Partial<Record<SlotId, readonly AttackStatusKind[]>>>({});
   const [unyieldingPreview, setUnyieldingPreview] = useState(false);
   const [lastEffect, setLastEffect] = useState('（尚未触发）');
   const [particles, setParticles] = useState({ alive: 0, capacity: 0, peak: 0 });
@@ -242,7 +258,7 @@ export function EffectLabScene() {
     () =>
       [...new Set([...slice.cards.map((entry) => entry.cardId),
         ...cardDatabase.definitions.filter((card) => card.skills.some((skill) =>
-          ['ranged', 'piercing', 'bombard', 'groupBombard', 'explodeOnDeath', 'instantDeath', 'spellReflect', 'grantDodge', 'directDamage', 'groupPhysicalDamage', 'slash', 'groupSlash', 'swordDance', 'groupSwordDance', 'sacrifice', 'execute', 'teleport', 'groupPiercing', 'criticalCollapse', 'unyielding'].includes(skill.family ?? ''))).map((card) => card.cardId)])]
+          ['ranged', 'piercing', 'bombard', 'groupBombard', 'explodeOnDeath', 'instantDeath', 'spellReflect', 'grantDodge', 'directDamage', 'groupPhysicalDamage', 'slash', 'groupSlash', 'swordDance', 'groupSwordDance', 'sacrifice', 'execute', 'teleport', 'groupPiercing', 'criticalCollapse', 'unyielding', 'concealment', 'firstStrike', 'devour', 'masterpiece', 'vanguard', 'lethalStrike', 'antiAir', 'groupGround', 'siege', 'berserk', 'splash', 'groupDelay', 'severeFrost', 'burning', 'venom', 'bleeding', 'grievousWound', 'poisonCloud'].includes(skill.family ?? ''))).map((card) => card.cardId)])]
         .map((id) => cardById.get(id))
         .filter((card): card is CardDefinition => card !== undefined),
     [],
@@ -323,6 +339,8 @@ export function EffectLabScene() {
       const aimed =
         selfBurst ? '作用于自身' : template === 'groupPiercing' ? '战场五路平行贯穿，独立命中本体' : direct ? '越过对位命中本体' : targetPoints.length === 0 ? '单张大图：落在自己身上' : spreads ? '三张' : '只打对位';
 
+      const statusKind = ({ severeFrost: 'frost', burning: 'burn', venom: 'poison', bleeding: 'bleed', grievousWound: 'grievous', poisonCloud: 'poison' } as Record<string, AttackStatusKind>)[family ?? ''];
+      const statusSlot: SlotId = layout === 'formation' ? ALIGNED_SLOT : 'source';
       effectDirector.play({
         template,
         family: family ?? undefined,
@@ -336,11 +354,16 @@ export function EffectLabScene() {
         countScale,
         // 演出速度只压缩播放时长，不影响任何规则结果（V-FX-5）
         durationScale: durationScale * SPEED_SCALE[presentationSpeed],
-        onHit: () => setLastEffect(`${label} · 命中`),
+        onHit: () => {
+          if (statusKind) setStatusPreview((current) => ({ ...current,
+            [statusSlot]: [...new Set([...(current[statusSlot] ?? []), statusKind])] }));
+          setLastEffect(`${label} · 命中`);
+        },
       });
       setLastEffect(`${label} · 播放中（${aimed}）`);
     },
     [
+      layout,
       sourcePosition,
       source?.cardId,
       targetPoints,
@@ -355,6 +378,10 @@ export function EffectLabScene() {
 
   const playTrait = useCallback(
     (raw: string, family: string | null, param: number | null) => {
+      if (['concealment', 'firstStrike', 'devour', 'vanguard', 'antiAir', 'groupGround', 'siege', 'berserk'].includes(family ?? '')) {
+        setLastEffect(`${raw} · 被动特性，无额外技能动画`);
+        return;
+      }
       const template = family ? FAMILY_TO_EFFECT[family] : undefined;
       if (!template) {
         setLastEffect(`${raw} · 没有对应的特效模板`);
@@ -376,15 +403,32 @@ export function EffectLabScene() {
   const staged: StagedCard[] =
     layout === 'formation'
       ? [
-          { key: 'source', card: source, position: sourcePosition, flying: isFlying(source), unyielding: unyieldingPreview },
+          { key: 'source', card: source, position: sourcePosition, flying: isFlying(source), unyielding: unyieldingPreview, attackStatuses: statusPreview.source },
           ...targets.map((card, index) => ({
             key: `target-${index}`,
             card,
             position: targetPosition(index),
             flying: isFlying(card),
+            attackStatuses: statusPreview[index as 0 | 1 | 2],
           })),
         ]
-      : [{ key: 'source', card: source, position: [0, 0, 0], flying: isFlying(source), unyielding: unyieldingPreview }];
+      : [{ key: 'source', card: source, position: [0, 0, 0], flying: isFlying(source), unyielding: unyieldingPreview, attackStatuses: statusPreview.source }];
+
+  const triggerPreviewStatuses = () => {
+    const slot: SlotId = layout === 'formation' ? ALIGNED_SLOT : 'source';
+    const card = slot === 'source' ? source : targets[ALIGNED_SLOT];
+    const statuses = statusPreview[slot] ?? [];
+    if (!card || statuses.length === 0) { setLastEffect('请先赋予一个状态'); return; }
+    const point = slot === 'source' ? impactAt(sourcePosition, liftOf(card)) : targetPoints[ALIGNED_SLOT]!;
+    const burst = { frost: 'frostShatter', burn: 'burnBurst', poison: 'poisonBurst', bleed: 'bloodBurst', grievous: 'grievousPulse' } as const;
+    effectDirector.play({ template: 'normalAttack', sourceInstanceId: card.cardId,
+      from: point, to: slot === 'source' ? [point[0], point[1], point[2] - 2] : impactAt(sourcePosition, liftOf(source)),
+      durationScale: durationScale * SPEED_SCALE[presentationSpeed], onHit: () => {
+        for (const kind of statuses) effectDirector.play({ template: burst[kind], from: point, to: point,
+          intensity, countScale, durationScale: durationScale * SPEED_SCALE[presentationSpeed] });
+        setLastEffect('状态卡主动普攻后触发全部已赋予状态（演出预览）');
+      } });
+  };
 
   const cardOption = (card: CardDefinition): ReactElement => (
     <option key={card.cardId} value={card.cardId}>
@@ -572,6 +616,11 @@ export function EffectLabScene() {
           <section className="lab__section">
             <h3>攻击与特效</h3>
             <div className="lab__buttons">
+              <button type="button" onClick={triggerPreviewStatuses}>状态卡主动普攻（触发状态）</button>
+              <button type="button" onClick={() => setStatusPreview({})}>清除卡面状态</button>
+            </div>
+            <p className="lab__hint">赋予状态后会留在对位卡面，可预览普攻后的碎冰或爆发；实验台手动清除，实际战斗按一回合到期。</p>
+            <div className="lab__buttons">
               {TEMPLATE_LABELS.map((item) => (
                 <button
                   /* 圣盾与护盾是同一个模板 id，key 得把族名带上，否则 React 会报重复 key */
@@ -709,6 +758,7 @@ export function EffectLabScene() {
 }
 
 interface StagedCard {
+  readonly attackStatuses?: readonly AttackStatusKind[] | undefined;
   readonly unyielding?: boolean;
   readonly key: string;
   readonly card: CardDefinition;
@@ -745,6 +795,7 @@ function LabStage({
           position={entry.position}
           flying={entry.flying}
           unyielding={entry.unyielding}
+          attackStatuses={entry.attackStatuses}
           faceDown={faceDown}
           holo={holoEnabled}
           holoScale={holoScale}
@@ -758,6 +809,7 @@ function LabStage({
 }
 
 interface LabCardProps {
+  readonly attackStatuses?: readonly AttackStatusKind[] | undefined;
   readonly unyielding?: boolean | undefined;
   readonly card: CardDefinition;
   /** 槽位在台面上的坐标；卡的**抬升**（飞行）由本组件自己叠上去。 */
@@ -783,6 +835,7 @@ interface LabCardProps {
 function LabCard({
   card,
   unyielding,
+  attackStatuses,
   position,
   flying,
   faceDown,
@@ -815,6 +868,8 @@ function LabCard({
         holo={holo}
         holoScale={holoScale}
         unyielding={unyielding}
+        attackStatuses={attackStatuses}
+        statLayout="battle"
         onClick={onCardClick}
       />
     </group>

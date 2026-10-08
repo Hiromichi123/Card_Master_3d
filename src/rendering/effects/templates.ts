@@ -32,6 +32,7 @@ export interface EffectRecipe {
 }
 
 export const EFFECT_TEMPLATE_IDS = [
+  'frostRetaliation', 'burnMark', 'poisonLance', 'bleedMark', 'grievousMark', 'poisonCloud', 'frostShatter', 'burnBurst', 'poisonBurst', 'bloodBurst', 'grievousPulse',
   'normalAttack', 'slash', 'groupSlash', 'swordDance', 'groupSwordDance', 'fireball', 'iceSeal', 'lightning', 'groupFireball',
   'groupIceSeal', 'groupLightning', 'shield', 'heal', 'buff', 'debuff', 'curse', 'instantDeath', 'dodgeGrant', 'injury',
   'flow', 'status', 'bombard', 'groupBombard', 'deathBombard', 'ranged', 'piercing', 'groupPiercing', 'deathBurst', 'groupHeal', 'armorBreak',

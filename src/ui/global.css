@@ -2910,61 +2910,174 @@ code {
 
 /* --- 活动大厅的特性卡（旧版 `activity_scene.py` 的 feature_cards）---------- */
 
-/* 三张卡各自绝对定位在设计框里（top 由行内 style 给），这层只是语义容器 */
-.feature-list {
+/*
+  活动大厅的滚轮（2026-10-08 取代原三张静态特性卡）。
+
+  皮肤照抽卡的倾斜立牌（`.gacha-menu .gacha-dashboard*`，见本文件后半段），
+  但**单位改写成 `calc(N * var(--ui))`**：抽卡页整帧被 `transform: scale()`
+  缩放，写死的 px 会跟着缩；活动大厅的 `.menu__stage` 不缩放，是靠 `--ui`
+  换算的，写死 px 就不会随窗口变化。组件那边对应传 `lengthUnit="var(--ui)"`。
+
+  几何（2026-10-08 按「不遮挡、不裁切」重算过，不是照抄 gacha 的 620×1620）：
+
+  - **top 300**：左上角的 `.menu__status` 从 (40, 118) 起，原来从 90 起会把它压住。
+  - **height 1300 = `ActivityScene.ACTIVITY_WHEEL_HEIGHT`**，两者必须一致：
+    组件按「舞台高 / 2」算选中行的中线。五个模式总高 4×140+120 = 680，
+    所以选中任意一项时整列都落在 1300 之内，**任何时候都不会被上下裁掉**。
+  - **width 740、选项左缩进 120**：这是 `skewX(10deg)` 的几何要求。斜切把内容
+    越往下推得越靠右（偏移 = y·tan10°）；把原点从左上改到**正中**后偏移是对称的，
+    最大 ±(1300/2)·tan10° ≈ ±115。选项左边缘 120 > 115，右边缘
+    120+500+115 = 735 < 740 —— 两侧都不越界，**横向完全不裁切**。
+
+  **选择器必须带 `.menu ` 前缀**：通用的 `.wheel__card` / `.wheel__stage` 基础样式
+  定义在本文件更靠后的位置（~5300 行），同优先级下**后来者赢**——
+  只写单类名的话宽度/高度/外边距全被基础规则盖掉，卡片会重叠、点不中。
+  抽卡那边是靠 `.gacha-menu .gacha-dashboard__option` 这类双类选择器取胜的，同理。
+*/
+.menu .activity-wheel {
   position: absolute;
-  inset: 0;
+  left: calc(150 * var(--ui));
+  top: calc(300 * var(--ui));
+  width: calc(740 * var(--ui));
+  height: calc(1300 * var(--ui));
+  min-height: 0;
+  z-index: 3;
+  border: 0;
+  border-radius: 0;
+  background: none;
+}
+
+.menu .activity-wheel__stage {
+  height: 100%;
+  overflow: hidden;
+  transform: skewX(10deg);
+  /* 原点放正中：斜切偏移左右对称，两侧才不会各自越界（见上面第 3 条） */
+  transform-origin: center;
+  perspective: none;
+  background: linear-gradient(90deg, #111b3075, #26365230);
+  border: 1px solid #adc3f033;
+  border-radius: calc(16 * var(--ui));
+  touch-action: none;
+}
+
+/* 选中行指示条：中线 = baseTop（1300/2 - 60 = 590）+ 选项高的一半（60） */
+.menu .activity-wheel__selection {
+  position: absolute;
+  top: calc(605 * var(--ui));
+  height: calc(90 * var(--ui));
+  left: 0;
+  right: 0;
+  background: linear-gradient(90deg, #e59a4544, #f9d4a820, #e59a4544);
+  border: calc(3 * var(--ui)) solid #ffd59977;
+  border-radius: calc(8 * var(--ui));
+  box-shadow: 0 0 40px #ffc47820, inset 0 0 30px #ffc47815;
   pointer-events: none;
 }
 
-.feature-list .feature {
-  pointer-events: auto;
+.menu .activity-wheel__option {
+  /* 左缩进 120、宽 500：见文件头第 3 条，这两个数由斜切的几何反推出来 */
+  left: calc(120 * var(--ui));
+  width: calc(500 * var(--ui));
+  height: calc(120 * var(--ui));
+  margin: 0;
+  padding: 0 calc(16 * var(--ui));
+  transform: none;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(110deg, #243d63dc, #243d6360);
+  border: 1px solid #a8c6ed38;
+  border-radius: calc(12 * var(--ui));
+  box-shadow: 0 10px 24px #0003;
+  cursor: pointer;
+  transition: top 0.4s ease, background 0.4s ease;
 }
 
+.menu .activity-wheel__option .wheel__name {
+  font-size: calc(30 * var(--ui));
+  font-weight: 600;
+}
+
+.menu .activity-wheel__option.wheel__card--on {
+  background: linear-gradient(110deg, #ffcc93f5, #dc986ad9);
+  border-color: #ffe2bd;
+  box-shadow: 0 0 24px #efb46e55;
+  animation: wheel-breathe 5.2s ease-in-out infinite;
+}
+
+.menu .activity-wheel__option.wheel__card--on .wheel__name {
+  color: #cf2020;
+  font-size: calc(42 * var(--ui));
+}
+
+/* 「未开放」角标：轮盘项里的小字，别把行高撑开 */
+.activity-wheel__soon,
+.activity-detail__soon {
+  margin-left: calc(10 * var(--ui));
+  font-size: calc(24 * var(--ui));
+  color: #ffb478;
+}
+
+/* 轮盘项里字更小一点 */
+.menu .activity-wheel__option .activity-wheel__soon {
+  font-size: calc(22 * var(--ui));
+}
+
+/* --- 活动详情（选中模式的名字、说明与「进入」）------------------------------ */
+
 /*
-  位置与尺寸都按旧版的比例算：宽 45%、高 10%、起点 (15%, 28%)、间隔 4%。
-  面板是深蓝半透明 + 蓝边，悬停时底色变深、边框转成金色。
+  详情面板放在滚轮**右侧**：滚轮实际占到 x ≈ 150 + 735 = 885（含斜切偏移），
+  所以从 1000 起才不重叠。右侧按钮列在 80%（2304）起，1000+1000 也够不到。
+  垂直方向对齐滚轮的选中行（300 + 590 ≈ 890）附近。
 */
-.feature {
+.activity-detail {
   position: absolute;
-  left: 15%;
-  width: 45%;
-  height: 10%;
+  left: calc(1000 * var(--ui));
+  top: calc(700 * var(--ui));
+  width: calc(1000 * var(--ui));
+  z-index: 3;
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  gap: calc(4 * var(--ui));
-  padding: calc(10 * var(--ui)) calc(24 * var(--ui));
-  text-align: left;
-  font: inherit;
-  color: inherit;
-  /* top 由调用方按行内 style 给（start_y + idx × (高 + 间隔)） */
+  gap: calc(14 * var(--ui));
+  padding: calc(28 * var(--ui)) calc(32 * var(--ui));
   background: rgba(20, 35, 70, 0.59);
   border: calc(3 * var(--ui)) solid rgba(120, 160, 230, 0.63);
   border-radius: calc(16 * var(--ui));
-  cursor: pointer;
-  transition: background 140ms ease-out, border-color 140ms ease-out;
 }
 
-.feature:hover,
-.feature:focus-visible {
-  background: rgba(20, 35, 70, 0.82);
-  border-color: rgba(255, 220, 120, 0.86);
-}
-
-.feature__title {
-  font-size: calc(42 * var(--ui));
+.activity-detail__title {
+  margin: 0;
+  font-size: calc(46 * var(--ui));
   color: #ffe6b4;
 }
 
-.feature__desc {
+.activity-detail__desc {
+  margin: 0;
   font-size: calc(28 * var(--ui));
+  line-height: 1.6;
   color: #d7e6ff;
 }
 
-.feature__schedule {
+.activity-detail__schedule {
+  margin: 0;
   font-size: calc(28 * var(--ui));
   color: #96dcff;
+}
+
+.activity-detail__enter {
+  align-self: flex-start;
+  margin-top: calc(10 * var(--ui));
+  padding: calc(14 * var(--ui)) calc(56 * var(--ui));
+  font: inherit;
+  font-size: calc(32 * var(--ui));
+  color: #271809;
+  background: linear-gradient(145deg, #ffe0a2, #eaa453);
+  border: 1px solid #ffe4b6;
+  border-radius: calc(12 * var(--ui));
+  cursor: pointer;
+}
+
+.activity-detail__enter:hover {
+  background: linear-gradient(145deg, #fff0c2, #f5bd74);
 }
 
 /* --- 活动海报轮播（旧版 `ui/activity_poster.py`）--------------------------- */
@@ -7406,4 +7519,236 @@ code {
   .maze__showcase {
     transition: none;
   }
+}
+
+/* --- 设置屏 -------------------------------------------------------------- */
+
+/*
+  面板型屏幕（与图鉴同形态）：`.screen` 已经给了 flex 列与内边距，
+  这里只负责两块面板的排布与内部控件。
+*/
+
+.settings__lead {
+  margin: 4px 0 0;
+  color: var(--text-dim);
+  font-size: 13px;
+}
+
+.settings__back {
+  flex: none;
+  padding: 6px 14px;
+  font: inherit;
+  color: var(--text);
+  background: var(--bg-raised);
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.settings__back:hover {
+  background: var(--bg-raised-hover);
+}
+
+.settings__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+  gap: 14px;
+  align-items: start;
+}
+
+.settings__panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.settings__title {
+  margin: 0;
+  font-size: 15px;
+  color: var(--text);
+}
+
+.settings__row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.settings__row--check {
+  gap: 8px;
+  cursor: pointer;
+}
+
+.settings__label {
+  flex: none;
+  width: 84px;
+  color: var(--text-dim);
+  font-size: 13px;
+}
+
+.settings__value {
+  min-width: 44px;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  font-size: 13px;
+}
+
+.settings__note {
+  color: var(--text-dim);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.settings__segmented {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.settings__seg {
+  padding: 4px 12px;
+  font: inherit;
+  font-size: 13px;
+  color: var(--text-dim);
+  background: transparent;
+  border: none;
+  border-right: 1px solid var(--border);
+  cursor: pointer;
+}
+
+.settings__seg:last-child {
+  border-right: none;
+}
+
+.settings__seg:hover {
+  background: var(--bg-raised-hover);
+  color: var(--text);
+}
+
+.settings__seg--on {
+  background: var(--bg-raised-hover);
+  color: var(--accent);
+}
+
+.settings__select {
+  flex: 1;
+  min-width: 0;
+  max-width: 220px;
+  padding: 4px 8px;
+  font: inherit;
+  font-size: 13px;
+  color: var(--text);
+  background: var(--bg-raised-hover);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.settings__disclosure {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 0;
+  font: inherit;
+  font-size: 13px;
+  color: var(--accent);
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.settings__advanced {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+}
+
+.settings__readout {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 8px;
+  margin: 0;
+}
+
+.settings__readout div {
+  padding: 6px 8px;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 8px;
+}
+
+.settings__readout dt {
+  color: var(--text-dim);
+  font-size: 12px;
+}
+
+.settings__readout dd {
+  margin: 2px 0 0;
+  color: var(--text);
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+.settings__volume {
+  flex: 1;
+  min-width: 120px;
+  accent-color: var(--accent);
+}
+
+.settings__action {
+  padding: 6px 14px;
+  font: inherit;
+  font-size: 13px;
+  color: var(--text);
+  background: var(--bg-raised-hover);
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.settings__action:hover:not(:disabled) {
+  background: var(--border);
+}
+
+.settings__action:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.settings__action--primary {
+  color: #0d1018;
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.settings__preview-message {
+  margin: 0 0 10px;
+  color: var(--text);
+}
+
+.settings__subtitle {
+  margin: 12px 0 4px;
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+.settings__list {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.settings__list--unknown code {
+  color: var(--danger);
 }

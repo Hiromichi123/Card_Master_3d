@@ -5,6 +5,7 @@ import type { CardDefinition } from '../../domain/cards/types';
 import { WebGLGuard } from '../../scenes/WebGLGuard';
 import { CARD_BACK_URL, cardFaceUrl } from '../../data/assets';
 import { assetManager } from '../../services/AssetManager';
+import { audioEngine } from '../../services/audio/AudioEngine';
 import { CardMesh } from '../cards/CardMesh';
 import { SPEED_SCALE, useSettingsStore } from '../../state/settingsStore';
 import { damp } from '../anim/motion';
@@ -26,7 +27,7 @@ export interface FusionAltarProps {
 }
 
 export function FusionAltarStage(props: FusionAltarProps) {
-  const quality = useSettingsStore((state) => state.quality);
+  const profile = useSettingsStore((state) => state.profile);
   const camera = useMemo(() => ({ position: [0, 0, 10] as [number, number, number], zoom: 60, near: 0.1, far: 40 }), []);
   const finish = useRef(props.onFinished); finish.current = props.onFinished;
   useEffect(() => {
@@ -35,7 +36,7 @@ export function FusionAltarStage(props: FusionAltarProps) {
     return () => window.clearTimeout(timer);
   }, [props.run?.operationId, props.completed]);
   return <WebGLGuard><Canvas orthographic flat camera={camera}
-    dpr={[1, quality === 'high' ? 2 : 1.5]} gl={{ alpha: true, antialias: true }}>
+    dpr={[1, profile.dprCap]} gl={{ alpha: true, antialias: true }}>
     <AltarContent {...props} />
   </Canvas></WebGLGuard>;
 }
@@ -45,6 +46,8 @@ function AltarContent({ cards, run, completed, onRemove, onPreview, onFinished }
   const camera = useThree((state) => state.camera) as OrthographicCamera;
   const elapsed = useRef(0);
   const notified = useRef(false);
+  /** 「一次融合一声」的守卫，见 useFrame 里 burst 峰值那一行。 */
+  const burstCuePlayed = useRef(false);
   const result = useRef<Group>(null);
   const materialGroups = useRef<(Group | null)[]>([]);
   const ring = useRef<Mesh>(null);
@@ -67,7 +70,7 @@ function AltarContent({ cards, run, completed, onRemove, onPreview, onFinished }
     camera.zoom = Math.min(size.width / 6.7, size.height / 7.2);
     camera.updateProjectionMatrix();
   }, [camera, size.width, size.height]);
-  useLayoutEffect(() => { elapsed.current = 0; notified.current = false; }, [run?.operationId]);
+  useLayoutEffect(() => { elapsed.current = 0; notified.current = false; burstCuePlayed.current = false; }, [run?.operationId]);
   const paths = useMemo(() => {
     const points = Array.from({ length: 5 }, (_, i) => fusionSlotPosition(i));
     const shape = new BufferGeometry().setAttribute('position', new Float32BufferAttribute(points.flatMap((p) => [p[0], p[1], -0.08]), 3));
@@ -102,6 +105,11 @@ function AltarContent({ cards, run, completed, onRemove, onPreview, onFinished }
       result.current.rotation.y = pose.rotationY;
     }
     const burst = Math.max(0, 1 - Math.abs(time - 1.05) / 0.65);
+    // 一次融合只响一声：ref 守卫，与 60fps 的帧数无关（在 useLayoutEffect 里随 run 重置）
+    if (time >= 1.05 && !burstCuePlayed.current) {
+      burstCuePlayed.current = true;
+      audioEngine.play('fusion');
+    }
     if (ring.current) {
       ring.current.scale.setScalar(1 + burst * 3.5);
       (ring.current.material as MeshBasicMaterial).opacity = 0.25 + burst * 0.65;

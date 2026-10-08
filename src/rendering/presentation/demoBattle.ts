@@ -10,6 +10,7 @@
  * 牌组是挑过的，覆盖 25 个技能族 + 飞行规则。
  */
 
+import { summonDefinitionIds } from '../../domain/skills/tacticalTraits';
 import { cardById, slice } from '../../data';
 import type { BattleConfig } from '../../domain/battle/types';
 import type { CardDefinition } from '../../domain/cards/types';
@@ -43,7 +44,7 @@ export const DEMO_CONFIG: BattleConfig = {
  */
 export function demoDefinitions(): DefinitionTable {
   const table: Record<string, CardDefinition> = {};
-  for (const cardId of [...DEMO_PLAYER_DECK, ...DEMO_ENEMY_DECK]) {
+  for (const cardId of summonDefinitionIds([...DEMO_PLAYER_DECK, ...DEMO_ENEMY_DECK], (id) => cardById.get(id))) {
     const definition = cardById.get(cardId);
     if (!definition) {
       throw new Error(`演示牌组引用了不存在的卡：${cardId}`);

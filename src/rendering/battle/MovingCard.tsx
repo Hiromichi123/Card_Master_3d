@@ -2,7 +2,7 @@ import { useFrame } from '@react-three/fiber';
 import { useEffect, useRef } from 'react';
 import type { Group } from 'three';
 
-import type { CardDefinition } from '../../domain/cards/types';
+import type { AttackStatusKind, CardDefinition } from '../../domain/cards/types';
 import { damp } from '../anim/motion';
 import { FLYING_CARD_LIFT } from '../anim/combatMotion';
 import { effectDirector } from '../effects/effectDirector';
@@ -49,6 +49,8 @@ export interface MovingCardProps {
   readonly statLayout?: StatLayout | undefined;
   readonly showStats?: boolean | undefined;
   readonly holo?: boolean | undefined;
+  readonly attackStatuses?: readonly AttackStatusKind[] | undefined;
+  readonly flying?: boolean | undefined;
   readonly unyielding?: boolean | undefined;
   readonly onClick?: ((card: CardDefinition) => void) | undefined;
   readonly onHoverChange?: ((card: CardDefinition, hovered: boolean) => void) | undefined;
@@ -71,23 +73,25 @@ export function MovingCard({
   showStats,
   holo,
   unyielding,
+  flying,
+  attackStatuses,
   onClick,
   onHoverChange,
 }: MovingCardProps) {
   const groupRef = useRef<Group>(null);
-  const flyingInBattle = statLayout === 'battle' && card.rawTraits.includes('飞行');
-  const wasFlyingInBattle = useRef(false);
+  const flyingInBattle = statLayout === 'battle' && (flying ?? card.rawTraits.includes('飞行'));
+  const wasInBattle = useRef(false);
   useEffect(() => {
-    if (flyingInBattle && !wasFlyingInBattle.current) {
+    if (flyingInBattle && !wasInBattle.current) {
       const speed = useSettingsStore.getState().presentationSpeed;
       if (speed !== 'skip') effectDirector.play({
         template: 'flyingDeploy', from: target, to: [target[0], target[1] + 0.03, target[2]],
         color: '#ffffff', durationScale: SPEED_SCALE[speed],
       });
     }
-    wasFlyingInBattle.current = flyingInBattle;
+    wasInBattle.current = statLayout === 'battle';
     // Slot compaction and subsequent hits must never replay the deployment circle.
-  }, [flyingInBattle, instanceId]);
+  }, [flyingInBattle, statLayout, instanceId]);
   /** 当前的视觉位置。`null` 表示这张牌还没在画面上出现过。 */
   const current = useRef<[number, number, number] | null>(null);
 
@@ -131,6 +135,7 @@ export function MovingCard({
         showStats={showStats}
         holo={holo}
         unyielding={unyielding}
+        attackStatuses={attackStatuses}
         onClick={onClick}
         onHoverChange={onHoverChange}
       />

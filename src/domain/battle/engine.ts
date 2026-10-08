@@ -18,6 +18,9 @@ import {
   type SkillContext,
 } from '../skills/rules';
 
+import { MASTERPIECE_CARD_ID, lethalStrikeChance, canPhysicallyHit, physicalDefender, consumeConcealment } from '../skills/tacticalTraits';
+import { syncFlightState, syncBerserk, rememberBerserkBase } from '../skills/passiveTraits';
+import { attackTick, grantAttackStatus, triggerAttackStatuses, clearAttackStatuses } from '../skills/attackStatuses';
 import { createRng, type Rng } from './rng';
 import { isSelfDestructCard } from '../cards/traits';
 import {
@@ -309,10 +312,16 @@ class Resolver {
         value: event.to,
       });
     }
+    if (event.type === 'StatChanged' && event.cause !== 'berserk') rememberBerserkBase(this.state, event.instanceId, event.to);
+    if (event.type === 'DamageApplied' || event.type === 'Healed') {
+      const card = this.state.instances[event.instanceId];
+      if (card) syncBerserk(this, this.state, card, event.hpAfter);
+    }
     if (event.type === 'DamageApplied' && event.hpBefore > 0 && event.hpAfter === 0) {
       const instance = this.state.instances[event.instanceId];
       if (instance) activateUnyielding(this, this.state, instance);
     }
+    if (['DamageApplied', 'Healed', 'CardMoved', 'FormationShuffled', 'SlotCompacted'].includes(event.type)) syncFlightState(this, this.state);
   }
 
   /**
@@ -419,6 +428,29 @@ class Resolver {
     return healed;
   }
 
+  /** Summon a fresh definition directly into an empty friendly battle slot; never consumes a deck card. */
+  summon(source: CardInstance, definitionId: string): void {
+    const zones = this.state.zones[source.owner];
+    const slot = zones.battle.indexOf(null);
+    const definition = this.state.definitions[definitionId];
+    if (slot < 0 || !definition) return;
+    const instanceId = `${source.instanceId}-s${this.state.nextEventSeq}`;
+    const groupId = `${instanceId}-g`;
+    const card: CardInstance = { instanceId, definitionId, owner: source.owner, zone: 'battle', slotIndex: slot,
+      stateGroupId: groupId, cd: 0, flying: definition.rawTraits.includes('飞行'), hasAttackedThisTurn: false,
+      marks: { undyingUsed: false, revivedUsed: false, skillImmune: definition.rawTraits.includes('免疫'), silenced: false } };
+    this.state.instances[instanceId] = card;
+    this.state.groups[groupId] = { groupId, owner: source.owner, hp: definition.hp, maxHp: definition.hp,
+      atk: definition.atk, memberIds: [instanceId], deathHandled: false };
+    zones.battle[slot] = instanceId;
+    syncFlightState(this, this.state);
+    syncBerserk(this, this.state, card);
+    const group = groupOf(this.state, card);
+    this.emit({ type: 'CardSummoned', side: card.owner, instanceId, sourceInstanceId: source.instanceId,
+      definitionId, groupId, battleSlot: slot, atk: group.atk, hp: group.hp, maxHp: group.maxHp, cd: 0, flying: card.flying });
+    if (!isSilenced(this.state, card.owner, slot)) triggerSkills(this, this.state, card, 'ON_DEPLOY', null, null, 'effects');
+  }
+
   /** 建一个分身 / 复制体实例。 */
   duplicate(source: CardInstance, mode: 'shared' | 'independent', slot: number): void {
     const zones = this.state.zones[source.owner];
@@ -443,6 +475,10 @@ class Resolver {
         hp: group.hp,
         maxHp: group.maxHp,
         atk: group.atk,
+        ...(hasFamily(this.state, source, 'berserk') ? {
+          berserkBaseAtk: group.berserkBaseAtk ?? group.atk - (group.berserkBonus ?? 0),
+          berserkBonus: group.berserkBonus ?? 0,
+        } : {}),
         memberIds: [instanceId],
         deathHandled: false,
       };
@@ -469,6 +505,7 @@ class Resolver {
       },
     };
     zones.battle[slot] = instanceId;
+    syncFlightState(this, this.state);
 
     this.emit({
       type: 'CloneCreated',
@@ -486,7 +523,7 @@ function triggerSkills(
   resolver: Resolver,
   state: BattleState,
   instance: CardInstance,
-  trigger: 'ON_DEPLOY' | 'OWN_TURN' | 'BEFORE_ATTACK' | 'ON_DAMAGED' | 'AFTER_DAMAGED' | 'AFTER_ATTACK' | 'ON_DEATH',
+  trigger: 'ON_DEPLOY' | 'OWN_TURN' | 'BEFORE_ATTACK' | 'ON_DAMAGED' | 'AFTER_DAMAGED' | 'AFTER_TARGETED_ATTACK' | 'AFTER_ATTACK' | 'ON_DEATH',
   attack: AttackState | null,
   deathSlot: number | null,
   scope: 'all' | 'effects' | 'selfDestruct' = 'all',
@@ -511,14 +548,26 @@ function triggerSkills(
     skills.push({ raw: `闪避${giftedDodge}（赋予）`, family: 'dodge', param: giftedDodge, resolution: 'implemented' });
   }
   for (const skill of skills) {
+    if (['berserk', 'antiAir', 'groupGround', 'siege', 'concealment', 'firstStrike', 'vanguard'].includes(skill.family ?? '')) continue;
     if (!skill.family || (onlyFamily !== undefined && skill.family !== onlyFamily)) continue;
     if (skill.resolution !== 'implemented' && skill.resolution !== 'alias') continue;
     if (scope === 'effects' && skill.family === 'selfDestruct') continue;
     if (scope === 'selfDestruct' && skill.family !== 'selfDestruct') continue;
     const rule = SKILL_RULES[skill.family];
     if (!rule || rule.trigger !== trigger) continue;
+    if (skill.family === 'splash' && (onlyFamily !== 'splash' || !attack?.hitCard)) continue;
     if (skill.family === 'criticalCollapse' && (onlyFamily !== 'criticalCollapse' || (attack?.overflow ?? 0) <= 0)) continue;
     if (trigger !== 'ON_DEATH' && (instance.zone !== 'battle' || !isBattleActive(state, instance))) break;
+
+    if (skill.family === 'devour' && state.zones[opponentOf(instance.owner)].discard.length === 0) continue;
+    if (skill.family === 'masterpiece' && (!state.definitions[MASTERPIECE_CARD_ID] ||
+      !state.zones[instance.owner].battle.includes(null))) continue;
+    if (skill.family === 'lethalStrike') {
+      const id = state.zones[opponentOf(instance.owner)].battle[attack?.defenderSlot ?? instance.slotIndex];
+      const target = id ? state.instances[id] : undefined;
+      if (!target || !isBattleActive(state, target) || groupOf(state, target).hp <= 0 ||
+        !resolver.rng.chance(lethalStrikeChance(skill.param ?? 1))) continue;
+    }
 
     // Skip unmet conditional traits before emitting a skill or starting an animation.
     if (skill.family === 'sacrifice') {
@@ -571,6 +620,7 @@ function triggerSkills(
       damagePlayer: (side, amount, source) => resolver.damagePlayer(side, amount, source),
       discard: () => undefined, placeInPrep: () => false,
       createDuplicate: (source, mode, slot) => resolver.duplicate(source, mode, slot),
+      summonCard: (definitionId) => resolver.summon(instance, definitionId),
       kill: (target) => {
         const group = groupOf(state, target);
         const before = group.hp;
@@ -579,13 +629,15 @@ function triggerSkills(
           amount: before, hpBefore: before, hpAfter: 0, source: 'instantDeath' });
         removeDead(resolver, state);
       },
+      grantAttackStatus: (target, kind, level) => grantAttackStatus(resolver, state, target,
+        reflector ?? instance, kind, level, skill.family !== 'poisonCloud'),
       grantDodge: (target, level) => {
         target.marks.grantedDodge = Math.max(target.marks.grantedDodge ?? 0, level);
         resolver.emit({ type: 'DodgeGranted', side: target.owner, instanceId: target.instanceId,
           sourceInstanceId: instance.instanceId, level: target.marks.grantedDodge });
       },
       physicalAttack: (target, amount) => resolvePhysicalHit(resolver, state, instance, target, amount,
-        skill.family === 'groupPhysicalDamage'),
+        skill.family === 'groupPhysicalDamage', skill.family === 'splash'),
     };
     rule.apply(ctx);
     if (['directDamage', 'groupPhysicalDamage', 'slash', 'groupSlash', 'swordDance', 'groupSwordDance', 'sacrifice'].includes(skill.family)) removeDead(resolver, state);
@@ -607,27 +659,36 @@ function returnAttackOverflow(resolver: Resolver, state: BattleState, attacker: 
 
 /** Physical skill hits share normal mitigation/counters and emit the ordinary lunge request. */
 function resolvePhysicalHit(resolver: Resolver, state: BattleState, attacker: CardInstance,
-  defender: CardInstance, amount: number, allowDeadAttacker = false): void {
+  defender: CardInstance, amount: number, allowDeadAttacker = false, secondary = false): void {
   if (defender.zone !== 'battle' || !isBattleActive(state, defender) ||
     (!allowDeadAttacker && !isBattleActive(state, attacker))) return;
+  const intended = defender;
+  defender = physicalDefender(state, attacker, intended);
+  if (defender !== intended) resolver.emit({ type: 'VanguardIntercepted', side: defender.owner,
+    guardId: defender.instanceId, protectedId: intended.instanceId, attackerId: attacker.instanceId });
   const slot = defender.slotIndex;
   const attack: AttackState = { attacker, defenderSlot: slot, damage: amount,
     armorBreak: 0, dodged: false, dealt: 0 };
-  resolver.emit({ type: 'AttackDeclared', side: attacker.owner, attackerId: attacker.instanceId,
+  if (!secondary) resolver.emit({ type: 'AttackDeclared', side: attacker.owner, attackerId: attacker.instanceId,
     targetInstanceId: defender.instanceId, targetSlot: slot });
-  const redirected = traitsOf(state, defender).includes('飞行') && !traitsOf(state, attacker).includes('飞行');
+  const redirected = !canPhysicallyHit(state, attacker, defender);
   if (redirected) {
     attack.dealt = resolver.damagePlayer(defender.owner, amount, 'flyingRedirect');
   } else {
-    if (!isSilenced(state, defender.owner, slot)) triggerSkills(resolver, state, defender, 'ON_DAMAGED', attack, null);
+    if (!consumeConcealment(resolver, state, defender, attack) && !isSilenced(state, defender.owner, slot)) {
+      triggerSkills(resolver, state, defender, 'ON_DAMAGED', attack, null);
+    }
     const targetHpBefore = groupOf(state, defender).hp;
     attack.dealt = resolver.damage(defender, attack.damage, true);
-    returnAttackOverflow(resolver, state, attacker, attack, targetHpBefore);
+    if (!secondary) returnAttackOverflow(resolver, state, attacker, attack, targetHpBefore);
     if (attack.dealt > 0 && !isSilenced(state, defender.owner, slot)) {
       triggerSkills(resolver, state, defender, 'AFTER_DAMAGED', attack, null);
     }
   }
-  if (isBattleActive(state, attacker) && !isSilenced(state, attacker.owner, attacker.slotIndex)) {
+  if (!redirected && isBattleActive(state, attacker) && !isSilenced(state, defender.owner, slot)) {
+    triggerSkills(resolver, state, defender, 'AFTER_TARGETED_ATTACK', attack, null);
+  }
+  if (!secondary && isBattleActive(state, attacker) && !isSilenced(state, attacker.owner, attacker.slotIndex)) {
     triggerSkills(resolver, state, attacker, 'AFTER_ATTACK', attack, null);
   }
 }
@@ -639,6 +700,8 @@ function resolveAttack(
   attackerSlot: number,
   oneUseDeployment = false,
 ): void {
+  syncFlightState(resolver, state);
+  syncBerserk(resolver, state, attacker);
   const side = attacker.owner;
   const other = opponentOf(side);
   const defenderId = state.zones[other].battle[attackerSlot] ?? null;
@@ -665,6 +728,8 @@ function resolveAttack(
     triggerSkills(resolver, state, attacker, 'BEFORE_ATTACK', attack, null);
   }
 
+  // Healing/other attack modifiers before the lunge must immediately update its actual damage.
+  attack.damage = group.atk;
   const currentDefenderId = state.zones[other].battle[attackerSlot];
   defender = currentDefenderId ? state.instances[currentDefenderId] ?? null : null;
   const hadPhysicalSkill = state.definitions[attacker.definitionId]?.skills.some((skill) =>
@@ -675,18 +740,27 @@ function resolveAttack(
     return;
   }
 
+  const statusSnapshot = Object.values(attacker.marks.attackStatuses ?? {}).filter((status) => status !== undefined).map((status) => ({ ...status }));
+  attack.rawAtk = group.atk;
   const traits = traitsOf(state, attacker);
-  const directKind: 'ranged' | null = silenced ? null : traits.includes('远射') ? 'ranged' : null;
+  const directKind: 'ranged' | 'siege' | null = silenced ? null : hasFamily(state, attacker, 'siege') ? 'siege' : traits.includes('远射') ? 'ranged' : null;
+  if (!directKind && defender) {
+    const intended = defender;
+    defender = physicalDefender(state, attacker, intended);
+    attack.defenderSlot = defender.slotIndex;
+    if (defender !== intended) resolver.emit({ type: 'VanguardIntercepted', side: defender.owner,
+      guardId: defender.instanceId, protectedId: intended.instanceId, attackerId: attacker.instanceId });
+  }
   resolver.emit({
     type: 'AttackDeclared',
     side,
     attackerId: attacker.instanceId,
     targetInstanceId: directKind ? null : defender?.instanceId ?? null,
-    targetSlot: attackerSlot,
+    targetSlot: defender?.slotIndex ?? attackerSlot,
     ...(directKind ? { attackKind: directKind } : {}),
   });
 
-  const attackerIsFlying = traitsOf(state, attacker).includes('飞行');
+  const attackerCanHitAir = attacker.flying || (!silenced && hasFamily(state, attacker, 'antiAir'));
   /**
    * 这次普通攻击是否**真的打在卡上**。
    *
@@ -698,7 +772,7 @@ function resolveAttack(
   if (directKind) {
     // The aligned card is neither damaged nor asked to defend/counter this shot.
     attack.dealt = resolver.damagePlayer(other, attack.damage, directKind);
-  } else if (defender && traitsOf(state, defender).includes('飞行') && !attackerIsFlying) {
+  } else if (defender && defender.flying && !attackerCanHitAir) {
     // 地对空：**不能伤害飞行卡**，改为把攻击者的原始 atk 打到**飞行卡所属方**的本体上。
     // 这条路径绕过防御/闪避/免疫（旧版 `BBS:1347-1368` 就是这样，docs/rules.md 第 4.3 节）
     //
@@ -722,9 +796,10 @@ function resolveAttack(
     });
   } else if (defender) {
     hitCard = true;
+    attack.hitCard = true;
     // 正常卡对卡：防御者先跑 ON_DAMAGED（防御/闪避）
-    const defenderSilenced = isSilenced(state, other, attackerSlot);
-    if (!defenderSilenced) {
+    const defenderSilenced = isSilenced(state, other, defender.slotIndex);
+    if (!consumeConcealment(resolver, state, defender, attack) && !defenderSilenced) {
       const swapped: AttackState = { ...attack, attacker: defender };
       triggerSkills(resolver, state, defender, 'ON_DAMAGED', swapped, null);
       attack.damage = swapped.damage;
@@ -752,15 +827,24 @@ function resolveAttack(
     });
   }
 
+  if (hitCard && !silenced && isBattleActive(state, attacker)) {
+    triggerSkills(resolver, state, attacker, 'AFTER_ATTACK', attack, null, 'all', 'splash');
+  }
+  if (defender && hitCard && isBattleActive(state, attacker) && !isSilenced(state, other, defender.slotIndex)) {
+    triggerSkills(resolver, state, defender, 'AFTER_TARGETED_ATTACK', attack, null);
+  }
+
   // 受击后：反击只在**确实打在这张卡上**、且造成了伤害时触发
-  if (defender && hitCard && attack.dealt > 0 && !isSilenced(state, other, attackerSlot)) {
+  if (defender && hitCard && attack.dealt > 0 && !isSilenced(state, other, defender.slotIndex)) {
     triggerSkills(resolver, state, defender, 'AFTER_DAMAGED', attack, null);
   }
 
-  // 攻击后：吸血 / 受伤 / 狂暴
+  // 攻击后：吸血 / 受伤（狂暴由 HP 变化实时维护）
   if (!silenced && isBattleActive(state, attacker)) {
     triggerSkills(resolver, state, attacker, 'AFTER_ATTACK', attack, null);
   }
+  triggerAttackStatuses(resolver, state, attacker, statusSnapshot);
+  removeDead(resolver, state);
 }
 
 // ---------------------------------------------------------------------------
@@ -845,6 +929,8 @@ function removeDead(resolver: Resolver, state: BattleState): void {
       .map((id) => state.instances[id])
       .filter((member): member is CardInstance => member !== undefined);
 
+    for (const member of collapsed) clearAttackStatuses(resolver, state, member);
+
     resolver.emit({
       type: 'CardDied',
       side,
@@ -918,12 +1004,14 @@ function emitReviveHp(
   if (group.hp >= group.maxHp) {
     return;
   }
+  const before = group.hp;
+  group.hp = group.maxHp;
   resolver.emit({
     type: 'Healed',
     side,
     instanceId,
-    amount: group.maxHp - group.hp,
-    hpBefore: group.hp,
+    amount: group.maxHp - before,
+    hpBefore: before,
     hpAfter: group.maxHp,
   });
 }
@@ -1150,23 +1238,20 @@ function endTurn(resolver: Resolver, state: BattleState): void {
     removeDead(resolver, state);
   }
 
-  // Current side attacks from left to right after the friendly-turn effects.
-  const slots = state.zones[attacker].battle.length;
-  for (let index = 0; index < slots; index += 1) {
-    const instanceId = state.zones[attacker].battle[index];
-    if (!instanceId) {
-      continue;
-    }
-    const instance = state.instances[instanceId];
-    if (!instance) {
-      continue;
-    }
-    // 已经死掉的不再行动
-    if (!isBattleActive(state, instance)) {
-      continue;
-    }
-    resolveAttack(resolver, state, instance, index);
+  // First strike changes scheduling only. Physical slots and aligned targets remain unchanged.
+  const acted = new Set<string>();
+  while (true) {
+    const candidates = battleInstances(state, attacker).map(({ instance }) => instance)
+      .filter((card) => isBattleActive(state, card) && !acted.has(card.instanceId));
+    const next = candidates.find((card) => hasFamily(state, card, 'firstStrike') &&
+      !isSilenced(state, card.owner, card.slotIndex)) ?? candidates[0];
+    if (!next) break;
+    acted.add(next.instanceId);
+    next.hasAttackedThisTurn = true;
+    resolveAttack(resolver, state, next, next.slotIndex);
   }
+
+  for (const instance of Object.values(state.instances)) clearAttackStatuses(resolver, state, instance, true);
 
   // 5. A zero-HP unyielding unit expires only after its next full friendly action row.
   expireUnyielding(resolver, state);
@@ -1252,6 +1337,9 @@ function deployReady(resolver: Resolver, state: BattleState, side: SideId): void
     instance.zone = 'battle';
     instance.slotIndex = battleSlot;
     instance.hasAttackedThisTurn = false;
+    instance.marks.concealmentUsed = false;
+    syncFlightState(resolver, state);
+    syncBerserk(resolver, state, instance);
     resolver.emit({
       type: 'CardDeployed',
       side,
@@ -1337,6 +1425,7 @@ export function applyCommand(state: BattleState, command: Command): Resolution {
     endTurn(resolver, working);
   }
 
+  syncFlightState(resolver, working);
   working.rng = resolver.rng.snapshot();
 
   return {
@@ -1355,10 +1444,17 @@ export function applyCommand(state: BattleState, command: Command): Resolution {
 export function stateFingerprint(state: BattleState): string {
   return JSON.stringify({
     currentSide: state.currentSide,
+    concealment: Object.values(state.instances).filter((card) => card.zone === 'battle' && hasFamily(state, card, 'concealment'))
+      .map((card) => [card.instanceId, card.marks.concealmentUsed ?? false]),
+    flying: Object.values(state.instances).filter((card) => card.zone === 'battle').map((card) => [card.instanceId, card.flying]),
+    attackStatuses: Object.values(state.instances).filter((card) => Object.keys(card.marks.attackStatuses ?? {}).length > 0)
+      .map((card) => [card.instanceId, Object.values(card.marks.attackStatuses ?? {}).filter((s) => s !== undefined).map((s) =>
+        [s.kind, s.level, s.atkLoss, s.expiresAt - attackTick(state),
+          s.atkRestores?.map((debt) => [debt.amount, debt.expiresAt - attackTick(state)])])]),
     hp: state.hp,
     zones: state.zones,
     groups: Object.values(state.groups)
-      .map((group) => [group.groupId, group.hp, group.atk, group.unyielding?.active ?? false,
+      .map((group) => [group.groupId, group.hp, group.atk, group.berserkBaseAtk ?? null, group.berserkBonus ?? 0, group.unyielding?.active ?? false,
         group.unyielding?.active ? group.unyielding.expiresAfterTurn - state.turnNumber : null])
       .sort((a, b) => String(a[0]).localeCompare(String(b[0]))),
   });

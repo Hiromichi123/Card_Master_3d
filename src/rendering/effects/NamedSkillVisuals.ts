@@ -84,6 +84,7 @@ export class NamedSkillVisuals {
     const ice = spec.template === 'iceSeal' || spec.template === 'groupIceSeal';
     const bolt = spec.template === 'lightning' || spec.template === 'groupLightning';
     const injury = spec.template === 'injury';
+    const grievous = injury && spec.family === 'grievousWound';
     const instantDeath = spec.template === 'instantDeath';
     const snare = spec.template === 'curse' || injury || instantDeath;
     actor.name = instantDeath ? 'Instant Death:Black Voltaic Snare' : snare ? (injury ? 'Voltaic Snare:Injury-Red-Ground' : 'Voltaic Snare:Curse') : ice ? 'Glacial Crown' : bolt ? 'Storm Lance' : 'Cinder Fall';
@@ -346,6 +347,7 @@ export class NamedSkillVisuals {
       actor.add(haloMesh, coreMesh);
       const fieldMaterial = add(createSnareFieldMaterial());
       const field = new Mesh(this.plane, fieldMaterial);
+      if (grievous) field.renderOrder = 14; // Keep the spell visible above the dark persistent face mask.
       field.position.set(to.x, floor + 0.006 * scale, to.z);
       field.visible = false; actor.add(field);
       for (const material of [core, halo, fieldMaterial]) {
@@ -357,11 +359,15 @@ export class NamedSkillVisuals {
       const hand = from.clone(); const front = new Vector3();
       const radius = 0.64 * scale;
       draw = (phase, t) => {
+        const surfaceFloor = grievous
+          ? this.surfaceHeight(to, to.y + 0.02 * scale, scale) - 0.02 * scale + 0.004 * scale : floor;
+        centre.y = surfaceFloor;
+        field.position.y = surfaceFloor + (grievous ? 0.002 : 0.006) * scale;
         const travelling = phase === 'travel';
         const impacting = phase === 'impact' || phase === 'fade';
         const open = phase === 'impact' ? 1 - Math.pow(1 - t, 3) : phase === 'fade' ? 1 : 0;
         const fade = phase === 'fade' ? 1 - t * t : 1;
-        front.lerpVectors(from, to, travelling ? t : 1).setY(floor + 0.02 * scale);
+        front.lerpVectors(from, to, travelling ? t : 1).setY(surfaceFloor + 0.02 * scale);
         const counts = {
           leash: travelling && !injury ? 3 : 0,
           column: impacting && !injury ? 8 : 0,
@@ -377,11 +383,11 @@ export class NamedSkillVisuals {
           const u = material.uniforms;
           u['uWidth']!.value *= 0.64 * scale;
           u['uLeashSag']!.value *= 0.3 * scale;
-          u['uLeashCling']!.value = floor + 0.01 * scale;
+          u['uLeashCling']!.value = surfaceFloor + 0.01 * scale;
           u['uLeashSpread']!.value *= 0.3 * scale;
           u['uLeashKink']!.value *= 0.3 * scale;
           u['uColumnKink']!.value *= 0.35 * scale;
-          u['uTendrilHug']!.value = floor + 0.014 * scale;
+          u['uTendrilHug']!.value = surfaceFloor + 0.014 * scale;
           u['uTendrilArch']!.value = (injury ? 0.035 : 0.11) * scale;
           u['uTendrilKink']!.value *= (injury ? 0.16 : 0.35) * scale;
           u['uRimHeight']!.value = (injury ? 0.045 : 0.18) * scale;
@@ -391,7 +397,8 @@ export class NamedSkillVisuals {
             // Retire the COLUMN role entirely: no vertical pillar or updraft is created.
             u['uCountColumn']!.value = 0;
             u['uColorCore']!.value.set('#ffb9ac'); u['uColorInner']!.value.set('#ff7467');
-            u['uColorOuter']!.value.set('#e82d48'); u['uColorHalo']!.value.set('#8b102b');
+            u['uColorOuter']!.value.copy(spec.tint ?? new Color('#e82d48')); u['uColorHalo']!.value.copy(spec.tint?.clone().multiplyScalar(.4) ?? new Color('#8b102b'));
+            if (spec.tint) { u['uColorCore']!.value.copy(spec.tint.clone().multiplyScalar(1.35)); u['uColorInner']!.value.copy(spec.tint); }
             u['uGlow']!.value = 0.6;
           }
           if (instantDeath) {
@@ -406,10 +413,10 @@ export class NamedSkillVisuals {
         const u = fieldMaterial.uniforms;
         u['uBoundary']!.value = 0.085 * scale;
         u['uCore']!.value = injury ? 0.10 : 0.35;
-        u['uBoundaryGlow']!.value = injury ? 0.7 : 0.9;
-        u['uOpacity']!.value *= injury ? 0.7 : 0.85;
+        u['uBoundaryGlow']!.value = grievous ? 0.95 : injury ? 0.7 : 0.9;
+        u['uOpacity']!.value *= grievous ? 0.95 : injury ? 0.7 : 0.85;
         if (injury) {
-          u['uColorField']!.value.set('#ba253d'); u['uColorEdge']!.value.set('#f57866');
+          u['uColorField']!.value.copy(spec.tint ?? new Color('#ba253d')); u['uColorEdge']!.value.copy(spec.tint?.clone().multiplyScalar(1.4) ?? new Color('#f57866'));
           u['uPulse']!.value = 0.12;
         }
         if (instantDeath) {

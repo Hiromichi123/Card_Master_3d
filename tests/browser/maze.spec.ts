@@ -24,8 +24,14 @@ async function goToMaze(page: Page): Promise<void> {
   await expect(page.locator('.menu__title')).toHaveText('选择对战模式');
   await page.locator('.menu__columns').getByRole('button', { name: '活动模式', exact: true }).click();
   await expect(page.locator('.menu__title')).toHaveText('限时活动模式');
-  // 按标题点，不按位置——活动大厅会加卡，位置会变
-  await page.locator('.feature', { hasText: '迷宫挑战' }).click();
+  /*
+    2026-10-08 起活动大厅是**滚轮 + 进入按钮**：滚轮只管选中（换背景与说明），
+    进入要点面板上的「进入」。迷宫是第一个模式，进来就是选中态，
+    但仍按标题点一次——不假设默认下标，活动大厅以后还会加模式。
+  */
+  await page.locator('.activity-wheel__option', { hasText: '迷宫挑战' }).click();
+  await expect(page.locator('.activity-detail__title')).toContainText('迷宫挑战');
+  await page.locator('.activity-detail__enter').click();
   await expect(page.locator('.maze__title')).toHaveText('迷宫挑战·第一层');
 }
 

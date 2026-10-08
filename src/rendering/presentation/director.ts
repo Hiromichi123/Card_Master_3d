@@ -32,7 +32,10 @@ import type { SlotZone } from '../battle/layout';
 import { deathBlastIndex } from './eventEffects';
 import { BOMBARD_HIT_SECONDS, DEATH_BOMBARD_HIT_SECONDS, RANGED_HIT_SECONDS } from '../effects/artilleryTiming';
 import { SPEED_SCALE, type PresentationSpeed } from '../../state/settingsStore';
+// 只 import 类型：编不过时也不会把 DOM/WebAudio 拖进 node 测试网
+import type { SoundCue } from '../../services/audio/cues';
 import { FAMILY_TO_EFFECT } from '../effects/familyMap';
+import { statusAppliedHit, statusTriggeredHit } from '../effects/attackStatusTiming';
 import { slashTiming, usesSlash } from '../effects/slashTiming';
 import {
   DEFAULT_BEAT,
@@ -80,6 +83,13 @@ export interface DirectorDeps {
    * 所以收掉不影响任何规则状态。
    */
   readonly skipEffects: () => void;
+  /**
+   * 表现层音效出口。缺省（undefined）等于静音——node 测试不必提供它。
+   *
+   * **必须走注入**：`AudioEngine` 碰 `AudioContext`，而本文件与 `session.ts`
+   * 都刻意「不 import three / React / DOM」，整局要能在 node 里跑完。
+   */
+  readonly sound?: ((cue: SoundCue) => void) | undefined;
   readonly log: (line: string) => void;
   readonly worldPointOf: (instanceId: string) => Point;
   readonly cardFacePointOf?: ((instanceId: string) => Point) | undefined;
@@ -116,6 +126,7 @@ function spawnForEvent(
     case 'CardDeployed':
     case 'CloneCreated':
       return { instanceId: event.instanceId, point: deps.worldPointOf(event.instanceId) };
+    case 'CardSummoned': return { instanceId: event.instanceId, point: deps.worldPointOf(event.sourceInstanceId) };
     case 'CardMoved':
       if (event.from === 'discard') {
         return { instanceId: event.instanceId, point: deps.pilePointOf(event.side, 'discard') };
@@ -131,6 +142,7 @@ function spawnForEvent(
 
 /** 事件里有没有会改动 HP/ATK 的？有的话后面接一个高亮 beat。 */
 function touchesStats(event: BattleEvent): boolean {
+  if (event.type === 'StatChanged' && event.cause === 'berserk') return false;
   return (
     event.type === 'DamageApplied' ||
     event.type === 'Healed' ||
@@ -178,15 +190,20 @@ export function buildBeats(resolution: Resolution, deps: DirectorDeps): Beat[] {
     const slashHit = slashTemplate && usesSlash(slashTemplate) ? slashTiming(slashTemplate).hit : undefined;
     const duration = consumption || fatal || blast || immediateDeath ? 0
       : slashHit !== undefined ? slashHit
+      : event.type === 'AttackStatusApplied' ? (event.animate === false ? 0 : statusAppliedHit(event.kind))
+      : event.type === 'AttackStatusTriggered' ? statusTriggeredHit(event.kind)
+      : ['ConcealmentUsed', 'VanguardIntercepted', 'DiscardDevoured'].includes(event.type) || event.type === 'AttackStatusExpired' || event.type === 'FlightChanged' || (event.type === 'StatChanged' && event.cause === 'berserk') ? 0
       : event.type === 'UnyieldingChanged' ? 0
       : event.type === 'LifeTransferred' ? 0.42
       : event.type === 'FormationShuffled' ? 0.3
-      : event.type === 'AttackDeclared' ? (event.attackKind ? RANGED_HIT_SECONDS : ATTACK_OUT_SECONDS)
-      : event.type === 'SkillTriggered' && ['ranged', 'directDamage', 'groupPhysicalDamage', 'selfDestruct', 'sacrifice', 'unyielding'].includes(event.family ?? '') ? 0
+      : event.type === 'AttackDeclared' ? (event.attackKind && event.attackKind !== 'siege' ? RANGED_HIT_SECONDS : ATTACK_OUT_SECONDS)
+      : event.type === 'SkillTriggered' && ['concealment', 'firstStrike', 'vanguard', 'devour', 'masterpiece', 'antiAir', 'groupGround', 'siege', 'berserk', 'severeFrost', 'burning', 'venom', 'bleeding', 'grievousWound', 'splash', 'groupDelay', 'ranged', 'directDamage', 'groupPhysicalDamage', 'selfDestruct', 'sacrifice', 'unyielding'].includes(event.family ?? '') ? 0
       : event.type === 'SkillTriggered' && ['piercing', 'groupPiercing'].includes(event.family ?? '') ? RANGED_HIT_SECONDS
+      : event.type === 'SkillTriggered' && event.family === 'poisonCloud' ? .42
       : event.type === 'SkillTriggered' && event.family === 'grantDodge' ? 0.3
       : (event.type === 'SkillTriggered' && event.family === 'explodeOnDeath') || (event.type === 'SpellReflected' && event.family === 'explodeOnDeath') ? DEATH_BOMBARD_HIT_SECONDS
       : (event.type === 'SkillTriggered' || event.type === 'SpellReflected') && ['bombard', 'groupBombard'].includes(event.family ?? '') ? BOMBARD_HIT_SECONDS
+      : event.type === 'SpellReflected' && ['severeFrost', 'burning', 'venom', 'bleeding', 'grievousWound', 'groupDelay'].includes(event.family) ? 0
       : event.type === 'SpellReflected' ? (event.family === 'lightning' || event.family === 'groupLightning' ? 0.26 : 0.42)
       : event.type === 'SkillTriggered' && event.family === 'counter' ? ATTACK_OUT_SECONDS
       : EVENT_BEAT[event.type] ?? DEFAULT_BEAT;
@@ -194,6 +211,10 @@ export function buildBeats(resolution: Resolution, deps: DirectorDeps): Beat[] {
     const beat: Beat = {
       duration,
       onStart: () => {
+        // 只在表现层：不读 finalState、不改 display，胜负与数值都不经过这里
+        if (event.type === 'CardDied') {
+          deps.sound?.('death');
+        }
         // 坐标在这一刻解析：显示状态还没被本步改动，正是「出手前」的那一帧
         const context: EffectContext = {
           worldPointOf: deps.worldPointOf,
@@ -241,6 +262,10 @@ export function buildBeats(resolution: Resolution, deps: DirectorDeps): Beat[] {
       } });
       hpLoss.forEach((value, stepIndex) => {
         beats.push({ duration: hpStepSeconds(hpLoss.length), onComplete: () => {
+          // 「命中」在**第一个数字落地**那一刻响一次，不是每步都响
+          if (stepIndex === 0) {
+            deps.sound?.('hit');
+          }
           applyPatchesToDisplay(deps.display, hpPatches.map((patch) => ({ ...patch, value })));
           if (stepIndex === hpLoss.length - 1) beat.onComplete?.();
           else deps.publish();

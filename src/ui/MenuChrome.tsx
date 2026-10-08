@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { ReactNode, RefObject } from 'react';
 
 import { ComingSoonBadge } from './ComingSoonBadge';
 import { DesignStage } from './DesignStage';
@@ -30,6 +30,8 @@ export interface MenuChromeProps {
   readonly children: ReactNode;
   /** 标题字号（设计单位）。主菜单/对战模式是 96，活动大厅是 86。 */
   readonly titleSize?: number;
+  /** 屏幕根节点（`.menu`）的 ref；全页滚轮挂在这一层上。 */
+  readonly rootRef?: RefObject<HTMLDivElement | null> | undefined;
 }
 
 export function MenuChrome({
@@ -41,9 +43,10 @@ export function MenuChrome({
   children,
   titleSize = 96,
   className,
+  rootRef,
 }: MenuChromeProps) {
   return (
-    <DesignStage backgroundUrl={backgroundUrl} className={className}>
+    <DesignStage backgroundUrl={backgroundUrl} className={className} rootRef={rootRef}>
       {status && <div className="menu__status">{status}</div>}
 
       <h1 className="menu__title" style={{ ['--title-size' as string]: titleSize }}>

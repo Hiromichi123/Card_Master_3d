@@ -74,7 +74,17 @@ export interface MazeRunState {
   readonly shopByNode: Record<string, ShopDailyState>;
 }
 
-/** 展示与操作设置。这些**不参与规则计算**，改变它们不得改变战斗结果。 */
+/**
+ * 展示与操作设置。这些**不参与规则计算**，改变它们不得改变战斗结果。
+ *
+ * **运行期以 `useSettingsStore`（zustand）为准，这里是它的持久化镜像。**
+ * 启动时 `settingsPersistence.hydrateSettings` 把这一份灌进 zustand，
+ * 之后 zustand 的每次改动经 `attachSettingsPersistence` 防抖写回这里。
+ *
+ * 前六项（quality / dprCap / particleBudget / bloom / shadows）是画质档的
+ * **可单独覆盖参数**：`quality` 只是「上次选的预设」，其余四项是真实生效值——
+ * 玩家调过某一项之后两者就不再相等，界面显示「自定义」。详见 `state/settingsStore.ts`。
+ */
 export interface SettingsState {
   readonly quality: 'low' | 'medium' | 'high';
   readonly dprCap: number;
@@ -85,17 +95,34 @@ export interface SettingsState {
   /** 演出速度，只影响播放时长。 */
   readonly presentationSpeed: 'normal' | 'fast' | 'skip';
   readonly masterVolume: number;
+  /**
+   * 台面主题 id 与相机视角预设 id。
+   *
+   * 存 `string` 而不是渲染层的联合类型：领域层不该 import 渲染层。
+   * **空串代表「用引擎默认」**，由水合时解析（未知 id 也回落到默认）。
+   */
+  readonly tableThemeId: string;
+  readonly cameraModeId: string;
+  /** 冻结天气/视差等动态，不移除。 */
+  readonly reduceMotion: boolean;
+  /** 性能读数条（开发用）。 */
+  readonly showPerf: boolean;
 }
 
 export const DEFAULT_SETTINGS: SettingsState = {
   quality: 'medium',
-  dprCap: 2,
+  // 与 `QUALITY_PROFILES.medium.dprCap` 对齐（该字段长期没人消费，曾与预设不一致）
+  dprCap: 1.5,
   particleBudget: 'medium',
   bloom: true,
   shadows: true,
   cameraShake: true,
   presentationSpeed: 'normal',
   masterVolume: 0.7,
+  tableThemeId: '',
+  cameraModeId: '',
+  reduceMotion: false,
+  showPerf: false,
 };
 
 /**

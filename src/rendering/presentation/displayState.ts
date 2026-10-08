@@ -15,11 +15,13 @@
  */
 
 import type { BattleState, BattleEvent, DisplayPatch } from '../../domain/battle/types';
-import type { SideId } from '../../domain/cards/types';
+import type { AttackStatusKind, SideId } from '../../domain/cards/types';
 import type { StatKind } from '../cards/statBadge';
 
 /** 显示状态里的一张卡：只保留身份，不保留数值。 */
 export interface DisplayCard {
+  flying?: boolean;
+  attackStatuses?: readonly AttackStatusKind[];
   readonly definitionId: string;
   /**
    * 所属状态组。
@@ -70,6 +72,7 @@ export interface DisplaySide {
  * 代理的生命周期由演出导演控制（一个普通的 `wait` beat），不由它自己的动画回调决定。
  */
 export interface ProxyCard {
+  readonly flying?: boolean | undefined;
   readonly instanceId: string;
   readonly definitionId: string;
   readonly side: SideId;
@@ -130,6 +133,8 @@ export function displayFromState(state: BattleState): DisplayState {
 
   for (const [instanceId, card] of Object.entries(state.instances)) {
     instances[instanceId] = {
+      flying: card.flying,
+      attackStatuses: Object.keys(card.marks.attackStatuses ?? {}) as AttackStatusKind[],
       definitionId: card.definitionId,
       stateGroupId: card.stateGroupId,
     };
@@ -176,6 +181,7 @@ export function syncIdentities(display: DisplayState, state: BattleState): void 
   for (const [instanceId, card] of Object.entries(state.instances)) {
     if (!(instanceId in display.instances)) {
       display.instances[instanceId] = {
+        flying: card.flying,
         definitionId: card.definitionId,
         stateGroupId: card.stateGroupId,
       };
@@ -301,6 +307,20 @@ export function applyEventToDisplay(display: DisplayState, event: BattleEvent): 
       break;
     }
 
+    case 'CardSummoned': {
+      display.instances[event.instanceId] = { definitionId: event.definitionId, stateGroupId: event.groupId, flying: event.flying };
+      display.groups[event.groupId] = { hp: event.hp, maxHp: event.maxHp, atk: event.atk };
+      display.cd[event.instanceId] = event.cd;
+      display.zones[event.side].battle[event.battleSlot] = event.instanceId;
+      break;
+    }
+    case 'DiscardDevoured': {
+      const removed = new Set(event.instanceIds);
+      display.zones[event.side].discard = display.zones[event.side].discard.filter((id) => !removed.has(id));
+      break;
+    }
+    case 'ConcealmentUsed':
+    case 'VanguardIntercepted': break;
     case 'CloneCreated': {
       const side = display.zones[event.side];
       if (event.battleSlot >= 0 && event.battleSlot < side.battle.length) {
@@ -330,6 +350,8 @@ export function applyEventToDisplay(display: DisplayState, event: BattleEvent): 
       // `collapsedInstanceIds` 是整组的成员，**包含** primary 自己。
       // 分身共享一份状态，所以整组只死一次、只弃一张牌。
       for (const id of event.collapsedInstanceIds) {
+        const card = display.instances[id];
+        if (card) card.attackStatuses = [];
         const slotIndex = indexOfInBoard(side, id);
         if (slotIndex !== null) {
           pushProxy(display, id, event.side, slotIndex);
@@ -341,6 +363,22 @@ export function applyEventToDisplay(display: DisplayState, event: BattleEvent): 
       break;
     }
 
+    case 'FlightChanged': {
+      const card = display.instances[event.instanceId];
+      if (card) card.flying = event.flying;
+      break;
+    }
+    case 'AttackStatusApplied': {
+      const card = display.instances[event.instanceId];
+      if (card) card.attackStatuses = [...new Set([...(card.attackStatuses ?? []), event.kind])];
+      break;
+    }
+    case 'AttackStatusExpired': {
+      const card = display.instances[event.instanceId];
+      if (card) card.attackStatuses = (card.attackStatuses ?? []).filter((kind) => kind !== event.kind);
+      break;
+    }
+    case 'AttackStatusTriggered': break;
     case 'UnyieldingChanged': {
       const group = display.groups[event.groupId];
       if (group) group.unyielding = event.active;
@@ -392,6 +430,7 @@ function pushProxy(
   const stats = statsOf(display, instanceId) ?? { atk: 0, hp: 0, cd: 0 };
   display.proxies.push({
     instanceId,
+    flying: card.flying,
     definitionId: card.definitionId,
     side,
     slotIndex,
@@ -479,6 +518,10 @@ export function projectDisplay(display: DisplayState): string {
     playerHp: display.playerHp,
     zones: display.zones,
     groups: groupHp,
+    flying: Object.entries(display.instances).filter(([id]) => display.zones.player.battle.includes(id) || display.zones.enemy.battle.includes(id))
+      .map(([id, card]) => [id, card.flying ?? false]),
+    attackStatuses: Object.fromEntries(Object.entries(display.instances).filter(([, card]) => (card.attackStatuses?.length ?? 0) > 0)
+      .map(([id, card]) => [id, [...(card.attackStatuses ?? [])].sort()])),
     unyielding: Object.keys(display.groups).filter((id) => display.groups[id]?.unyielding).sort(),
     cd: display.cd,
   });

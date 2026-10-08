@@ -170,7 +170,22 @@ export interface CardInstance {
 }
 
 /** 需要跨回合保留的一次性标记。 */
+export type AttackStatusKind = 'frost' | 'burn' | 'poison' | 'bleed' | 'grievous';
+export interface AttackAffliction {
+  kind: AttackStatusKind;
+  level: number;
+  sourceId: string;
+  expiresAt: number;
+  /** Actual temporary reduction, restored additively without reverting other buffs/debuffs. */
+  atkLoss: number;
+  atkRestores?: { amount: number; expiresAt: number }[];
+}
+
 export interface CardMarks {
+  concealmentUsed?: boolean;
+  /** Removed from the discard zone by devour; not available to soulReturn. */
+  devoured?: boolean;
+  attackStatuses?: Partial<Record<AttackStatusKind, AttackAffliction>>;
   /** Granted dodge level; removed when this instance leaves battle. */
   grantedDodge?: number;
   /** Only while a one-use card resolves its deployment cast (including zero-HP spell cards). */
@@ -200,6 +215,9 @@ export interface UnyieldingState {
 }
 
 export interface CombatStateGroup {
+  /** Dynamic missing-HP attack; other ATK changes are recorded in the separate baseline. */
+  berserkBaseAtk?: number;
+  berserkBonus?: number;
   /** Shared by clones; activation is consumed once per deployment lifecycle. */
   unyielding?: UnyieldingState;
   readonly groupId: string;
