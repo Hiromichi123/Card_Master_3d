@@ -4,12 +4,22 @@ import { battleInstances, groupOf, hasFamily, isBattleActive, isSilenced } from 
 import type { AttackState } from './rules';
 
 export const MASTERPIECE_CARD_ID = 'A+_006';
+export const FOX_SPIRIT_CARD_ID = '#yoroi_009';
+export const SUMMON_TARGETS: Readonly<Record<string, string>> = {
+  masterpiece: MASTERPIECE_CARD_ID, foxSpiritSummon: FOX_SPIRIT_CARD_ID,
+};
 export const lethalStrikeChance = (level:number):number => .20 - .10 * Math.pow(.5, Math.max(1,Math.trunc(level))-1);
 
 /** Include cards that can be summoned even when they are absent from both decks. */
 export function summonDefinitionIds(ids:readonly string[],lookup:(id:string)=>CardDefinition|undefined):string[] {
-  const result=new Set(ids);
-  if(ids.some((id)=>lookup(id)?.skills.some((skill)=>skill.family==='masterpiece'))) result.add(MASTERPIECE_CARD_ID);
+  const result = new Set(ids);
+  const queue = [...result];
+  for (let i = 0; i < queue.length; i++) {
+    for (const skill of lookup(queue[i]!)?.skills ?? []) {
+      const target = SUMMON_TARGETS[skill.family ?? ''];
+      if (target && !result.has(target)) { result.add(target); queue.push(target); }
+    }
+  }
   return [...result];
 }
 

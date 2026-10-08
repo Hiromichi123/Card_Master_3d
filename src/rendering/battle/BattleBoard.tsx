@@ -1,3 +1,4 @@
+import type { ThreeEvent } from '@react-three/fiber';
 import type { AttackStatusKind, CardDefinition, SideId } from '../../domain/cards/types';
 import type { StatKind } from '../cards/statBadge';
 import type { StatLayout } from '../cards/StatBadges';
@@ -49,6 +50,9 @@ export interface CardPlacement {
   readonly attackStatuses?: readonly AttackStatusKind[] | undefined;
   readonly flying?: boolean | undefined;
   readonly unyielding?: boolean | undefined;
+  readonly ready?: boolean | undefined;
+  readonly dragging?: boolean | undefined;
+  readonly hoverTip?: boolean | undefined;
   /**
    * 这张牌上一次是从哪里来的（抽牌、还魂）。
    *
@@ -87,6 +91,8 @@ export interface BattleBoardProps {
   readonly onSlotClick?: ((side: SideId, zone: SlotZone, index: number) => void) | undefined;
   /** 双方的牌堆与弃牌堆。 */
   readonly piles?: readonly PileView[] | undefined;
+  readonly dragActive?: boolean | undefined;
+  readonly onCardPointerDown?: ((instanceId: string, event: ThreeEvent<PointerEvent>) => void) | undefined;
 }
 
 export function BattleBoard({
@@ -98,6 +104,8 @@ export function BattleBoard({
   onCardHover,
   onSlotClick,
   piles,
+  dragActive = false,
+  onCardPointerDown,
 }: BattleBoardProps) {
   const theme = useSettingsStore((state) => state.tableTheme);
   const quality = useSettingsStore((state) => state.quality);
@@ -107,7 +115,7 @@ export function BattleBoard({
 
   return (
     <>
-      <CameraRig />
+      <CameraRig interactionLocked={dragActive} />
 
       {/*
         环境与灯光移植自棋盘项目：一盏投影主光 + 冷色补光 + 轮廓光 + 极低环境光，
@@ -148,6 +156,10 @@ export function BattleBoard({
           showStats={placement.showStats}
           holo={placement.holo}
           unyielding={placement.unyielding}
+          ready={placement.ready}
+          dragging={placement.dragging}
+          hoverTip={placement.hoverTip}
+          onPointerDown={onCardPointerDown ? (event) => onCardPointerDown(placement.instanceId, event) : undefined}
           flying={placement.flying}
           attackStatuses={placement.attackStatuses}
           selected={placement.instanceId === selectedInstanceId}

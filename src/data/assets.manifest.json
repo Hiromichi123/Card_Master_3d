@@ -1,16 +1,16 @@
 {
   "generatedBy": "scripts/prepare-assets.py",
   "legacyRoot": "D:\\Github\\card_maker",
-  "contentVersion": "19f3f4132644",
+  "contentVersion": "a8a966f73431",
   "tiers": {
     "thumbnail": 384,
     "battle": 768,
     "detail": 1536
   },
   "tierBytes": {
-    "thumbnail": 11732362,
-    "battle": 34807066,
-    "detail": 57670124
+    "thumbnail": 11730522,
+    "battle": 34803824,
+    "detail": 57673342
   },
   "tierMiB": {
     "thumbnail": 11.19,
@@ -14301,7 +14301,7 @@
             256,
             384
           ],
-          "bytes": 42882
+          "bytes": 41042
         },
         "battle": {
           "url": "/assets/card/battle/yoroi/009.webp",
@@ -14313,7 +14313,7 @@
             512,
             768
           ],
-          "bytes": 124114
+          "bytes": 120872
         },
         "detail": {
           "url": "/assets/card/detail/yoroi/009.webp",
@@ -14325,7 +14325,7 @@
             720,
             1080
           ],
-          "bytes": 201188
+          "bytes": 204406
         }
       },
       "art": {

@@ -30,8 +30,9 @@ function starterCardIds(): readonly string[] {
  * 也方便验收组卡与商店。正式的存档应该让玩家从零收集——
  * 改回 `undefined` 就恢复成「只拥有起始卡组」。
  *
- * 只收 `status === 'complete'`：9 张 `#yoroi` 的攻防冷却全是 0，
- * 放进库存会污染卡池与货架。
+ * 只收 `status === 'complete'`：不完整的卡攻防冷却都是 0，放进库存会污染卡池与货架。
+ * （2026-10-09 那 9 张 `#yoroi` 已补齐数据、转为 `complete`，因此**从这一版起
+ * 也会入库**，图鉴总数从 247 变成 256；`incomplete-cards.json` 那份旧记录已经过期。）
  */
 function ownedCardIds(): readonly string[] {
   return cardDatabase.definitions

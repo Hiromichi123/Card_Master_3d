@@ -1,83 +1,73 @@
+import { useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
-
+import { CardTipOrb } from './CardTipOrb';
 import { cardById } from '../data';
+import { COOLDOWN_CARD, isCooldownCard } from '../domain/battle/turnActions';
+import { isSelfDestructCard } from '../domain/cards/traits';
+import { describeTraitFunction } from '../domain/skills/traitDescriptions';
 import { statPalette } from '../rendering/cards/statColors';
+import type { CardTipTarget } from '../state/cardTipStore';
+import { useSettingsStore } from '../state/settingsStore';
 import { useRarityIndex } from '../state/useRarityIndex';
 
-/**
- * 悬停详情框。
- *
- * 照旧版 `ui/tooltip.py`：鼠标停在卡上弹一块卡片详情（名称、数值、特性、说明），
- * 移开就收起来。**跟着卡片走**——位置由调用方给的那块矩形算出来，
- * 贴在卡右边；右边放不下就翻到左边（旧版也是先右后左）。
- *
- * 数值配色与展示位、战斗徽标同一份（`statColors.ts` 的红 / 绿 / 蓝），
- * 名称用该卡稀有度的代表色。
- *
- * 用坐标 + `position: fixed` 而不是「跟着鼠标」：跟着鼠标时，鼠标一动框就动，
- * 反而看不清；贴在卡边上稳定得多。
- *
- * **挂到 `document.body` 上（portal）。** 页面上只要有任何一个祖先带了
- * `transform` / `filter` / `will-change`，`position: fixed` 就会改成相对那个祖先定位——
- * 实测框整整偏了 888px（贴在屏幕外）。portal 一刀切掉这一类问题。
- */
-/** 被悬停元素的位置快照（`getBoundingClientRect()` 里要用的那几项）。 */
-export interface TipRect {
-  readonly left: number;
-  readonly top: number;
-  readonly right: number;
-  readonly bottom: number;
-}
-
-export interface CardHoverTipProps {
-  readonly cardId: string;
-  readonly rect: TipRect;
-}
-
-/**
- * 提示框的估算尺寸——必须与 CSS 里 `.cardtip` 的 `width` / `max-height` 对得上，
- * 否则「夹在视口内」这一步会算漏（第一版按 340 夹、CSS 却是 360，贴在下方的卡上就溢出了）。
- */
-const TIP_WIDTH = 280;
-const TIP_MAX_HEIGHT = 360;
-
-export function CardHoverTip({ cardId, rect }: CardHoverTipProps) {
+export function CardHoverTip({ target }: { readonly target: CardTipTarget }) {
   const rarityIndex = useRarityIndex();
-  const card = cardById.get(cardId);
-  if (!card) {
-    return null;
-  }
-
-  // 先放右边；右边不够宽就翻到左边；上下夹住，别跑出视口
-  const onRight = rect.right + TIP_WIDTH + 16 <= window.innerWidth;
-  const left = onRight ? rect.right + 12 : Math.max(12, rect.left - TIP_WIDTH - 12);
-  const top = Math.min(
-    Math.max(rect.top - 24, 12),
-    Math.max(12, window.innerHeight - TIP_MAX_HEIGHT - 12),
-  );
-
-  return createPortal(
-    <div className="cardtip" style={{ left, top, width: TIP_WIDTH }} role="tooltip">
-      <h4 className="cardtip__name" style={{ color: rarityIndex.colorOf(card.rarity) }}>
-        {card.name}
-      </h4>
-      <p className="cardtip__meta">
-        {card.cardId} · {card.rarity}
-      </p>
-      <ul className="cardtip__stats">
-        <li>
-          <b style={{ color: statPalette('atk').fg }}>{card.atk}</b>攻击
-        </li>
-        <li>
-          <b style={{ color: statPalette('hp').fg }}>{card.hp}</b>生命
-        </li>
-        <li>
-          <b style={{ color: statPalette('cd').fg }}>{card.cd}</b>冷却
-        </li>
-      </ul>
-      <p className="cardtip__traits">{card.rawTraits.join('、') || '没有特性'}</p>
-      <p className="cardtip__desc">{card.description}</p>
-    </div>,
-    document.body,
-  );
+  const still = useSettingsStore((state) => state.reduceMotion);
+  const ref = useRef<HTMLDivElement>(null);
+  const [size, setSize] = useState({ width: 340, height: 260 });
+  const card = target.card ?? (isCooldownCard(target.cardId) ? COOLDOWN_CARD : cardById.get(target.cardId));
+  const traits = useMemo(() => card?.skills.map((skill) => ({ raw: skill.raw, text: describeTraitFunction(skill) })) ?? [], [card]);
+  useLayoutEffect(() => {
+    const element = ref.current;
+    if (!element) return;
+    const measure = (): void => {
+      const rect = element.getBoundingClientRect();
+      setSize((previous) => previous.width === rect.width && previous.height === rect.height
+        ? previous : { width: rect.width, height: rect.height });
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [card]);
+  if (!card) return null;
+  const stats = target.stats ?? card;
+  const utility = isCooldownCard(card.cardId);
+  const color = rarityIndex.colorOf(card.rarity);
+  const gap = 18;
+  const margin = 18;
+  const width = Math.min(340, Math.max(1, window.innerWidth - margin * 2));
+  const onRight = target.pointer.x + gap + size.width <= window.innerWidth - margin;
+  const left = Math.max(margin, Math.min(window.innerWidth - size.width - margin,
+    onRight ? target.pointer.x + gap : target.pointer.x - size.width - gap));
+  const preferredTop = target.pointer.y + gap + size.height <= window.innerHeight - margin
+    ? target.pointer.y + gap : target.pointer.y - size.height - gap;
+  const top = Math.max(margin, Math.min(preferredTop, window.innerHeight - size.height - margin));
+  const style = { left, top, width, '--tip-rarity': color } as CSSProperties;
+  const statuses = (target.attackStatuses ?? []).map((kind) =>
+    ({ frost: '严霜', burn: '燃烧', poison: '剧毒', bleed: '流血', grievous: '重伤' })[kind]);
+  if (target.unyielding) statuses.push('不屈持续中');
+  if (card.rawTraits.includes('飞行') && target.flying === false) statuses.push('飞行被压制');
+  return createPortal(<div ref={ref} className={`cardtip${still ? ' cardtip--still' : ''}`} style={style} role="tooltip">
+    <div className="cardtip__frame"><div className="cardtip__surface">
+      <div className="cardtip__flow" aria-hidden="true" />
+      <div className="cardtip__trim" aria-hidden="true" />
+      <div className="cardtip__content">
+        <header><h4 className="cardtip__name" style={{ color }}>{card.name}</h4>
+          <p className="cardtip__meta">{utility ? '本局资源 · 不占普通出牌额度' : `${card.rarity} · ${card.cardId}`}</p></header>
+        {!utility && <ul className="cardtip__stats">
+          {!isSelfDestructCard(card) && <><li><span>攻击</span><b style={{ color: statPalette('atk').fg }}>{stats.atk}</b></li>
+            <li><span>生命</span><b style={{ color: statPalette('hp').fg }}>{stats.hp}</b></li></>}
+          <li><span>冷却</span><b style={{ color: statPalette('cd').fg }}>{stats.cd}</b></li>
+        </ul>}
+        {statuses.length > 0 && <p className="cardtip__status">当前状态：{statuses.join(' · ')}</p>}
+        {utility ? <p className="cardtip__function">指定己方等待卡冷却 −1，最低为 0；用后消耗。</p>
+          : traits.length > 0 ? <ul className="cardtip__skills">{traits.map((trait, index) =>
+            <li key={`${trait.raw}-${index}`}><b>{trait.raw}</b><span>{trait.text}</span></li>)}</ul>
+            : <p className="cardtip__empty">没有特性</p>}
+        {!utility && card.description && <p className="cardtip__desc">{card.description}</p>}
+      </div>
+    </div></div>
+    <span className="cardtip__orb-mount" aria-hidden="true"><CardTipOrb color={color} /></span>
+  </div>, document.body);
 }

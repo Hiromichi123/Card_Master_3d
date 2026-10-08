@@ -223,18 +223,21 @@ export function handCardTransform(
   side: SideId,
 ): { position: [number, number, number]; rotationY: number; rotationX: number } {
   const centered = total <= 1 ? 0 : index - (total - 1) / 2;
-  const arcDepth = HAND.arc * centered * centered;
+  // Cooling rewards can grow the hand beyond deck size; keep the fan inside the table.
+  const compression = Math.min(1, 12 / Math.max(1, total - 1));
+  const visualCentered = centered * compression;
+  const arcDepth = HAND.arc * visualCentered * visualCentered;
   const sign = side === 'player' ? 1 : -1;
   // 世界坐标里的「左侧」：玩家是下标小的，敌方因为镜像过来而是下标大的
   const stackIndex = side === 'player' ? total - 1 - index : index;
 
   return {
     position: [
-      sign * centered * HAND.spread,
-      HAND.lift + stackIndex * HAND.stackStep,
+      sign * centered * Math.min(HAND.spread, 8.8 / Math.max(1, total - 1)),
+      HAND.lift + stackIndex * HAND.stackStep * compression,
       rowZ(side, ROW.hand + arcDepth),
     ],
-    rotationY: -sign * centered * 0.075,
+    rotationY: -sign * visualCentered * 0.075,
     // 平放是 -π/2，加一个正角就立起来；敌方取负，朝它自己那一侧倾
     rotationX: -Math.PI / 2 + sign * HAND.tilt,
   };

@@ -18,10 +18,13 @@ import {
   type SkillContext,
 } from '../skills/rules';
 
-import { MASTERPIECE_CARD_ID, lethalStrikeChance, canPhysicallyHit, physicalDefender, consumeConcealment } from '../skills/tacticalTraits';
+import { SUMMON_TARGETS, lethalStrikeChance, canPhysicallyHit, physicalDefender, consumeConcealment } from '../skills/tacticalTraits';
 import { syncFlightState, syncBerserk, rememberBerserkBase } from '../skills/passiveTraits';
 import { attackTick, grantAttackStatus, triggerAttackStatuses, clearAttackStatuses } from '../skills/attackStatuses';
 import { createRng, type Rng } from './rng';
+import { resetCardLife } from './cardLifecycle';
+import { ENEMY_CARD_ATTACK_FAMILIES } from '../skills/targetRequirements';
+import { COOLDOWN_CARD, COOLDOWN_CARD_ID, isCooldownCard, inputSideOf, readyCardIds, insertionSlots } from './turnActions';
 import { isSelfDestructCard } from '../cards/traits';
 import {
   DEFAULT_BATTLE_RULES,
@@ -52,8 +55,9 @@ import {
  *
  * 顺序基线（`docs/rules.md` 第 2 节）：
  *
- *   出牌/结束回合 → 胜负预检 → 双方 CD 递减 → 部署 → 上场技能
- *   → 当前方从左到右攻击 → 死亡与死亡技能 → 槽位整理 → 胜负 → 换边
+ *   主场出牌/手动部署 → 自身技能与整排攻击 → 可选客场部署 → 换边
+ *   → 双方 CD 递减/新主场抽牌 → 有成熟客场卡则主场选抢先 → 下一行动窗口。
+ *   当前规则总文档：docs/GAME_RULES.md；旧版考据保留在 docs/rules.md。
  */
 
 /** 卡牌定义表。引擎自包含，不依赖外部数据库。 */
@@ -80,14 +84,19 @@ export function createBattle(
 ): BattleState {
   const rules: BattleRules = { ...DEFAULT_BATTLE_RULES, ...config.rules };
   const rng = createRng(config.seed);
+  const startingSide: SideId = rng.chance(0.5) ? 'player' : 'enemy';
 
   const state: BattleState = {
     rules,
-    definitions,
+    definitions: { ...definitions, [COOLDOWN_CARD_ID]: COOLDOWN_CARD },
     seed: config.seed,
     rng: rng.snapshot(),
     turnNumber: 1,
-    currentSide: 'player',
+    currentSide: startingSide,
+    startingSide,
+    turnIndex: 1,
+    priority: null,
+    hostAttacked: false,
     phase: 'awaitingPlay',
     hp: { player: rules.baseHp, enemy: rules.baseHp },
     zones: { player: emptyZones(rules), enemy: emptyZones(rules) },
@@ -156,12 +165,13 @@ export function createBattle(
     }
   }
 
+  grantCooldownCard(state, opponentOf(startingSide));
   state.rng = rng.snapshot();
   return state;
 }
 
 /** 抽一张牌进手牌。牌堆空则什么也不做。 */
-function drawOne(state: BattleState, rng: Rng, side: SideId): string | null {
+function drawOne(state: BattleState, rng: Rng, side: SideId, emit?: (event: BattleEventPayload) => void): string | null {
   const zones = state.zones[side];
   const instanceId = zones.deck.shift();
   if (!instanceId) {
@@ -172,9 +182,22 @@ function drawOne(state: BattleState, rng: Rng, side: SideId): string | null {
   if (instance) {
     instance.zone = 'hand';
     instance.slotIndex = zones.hand.length - 1;
+    resetCardLife(state, instance, emit);
   }
   void rng;
   return instanceId;
+}
+
+/** Creates only a battle resource; consumed tokens are not recoverable cards. */
+function grantCooldownCard(state: BattleState, side: SideId): string {
+  const id = `cooldown-${side}-${state.turnIndex}-${state.nextEventSeq}-${Object.keys(state.instances).length}`;
+  state.instances[id] = { instanceId: id, definitionId: COOLDOWN_CARD_ID, owner: side,
+    zone: 'hand', slotIndex: state.zones[side].hand.length, stateGroupId: `g-${id}`,
+    cd: 0, flying: false, hasAttackedThisTurn: false, marks: { undyingUsed: false, revivedUsed: false, skillImmune: false, silenced: false } };
+  state.groups[`g-${id}`] = { groupId: `g-${id}`, owner: side, hp: 0, maxHp: 0,
+    atk: 0, memberIds: [id], deathHandled: false };
+  state.zones[side].hand.push(id);
+  return id;
 }
 
 // ---------------------------------------------------------------------------
@@ -199,56 +222,43 @@ function cloneState(state: BattleState): BattleState {
  * 但必须允许在这种局面下结束回合——否则轮到谁都动不了，整局卡死。
  */
 export function hasLegalPlay(state: BattleState, side: SideId): boolean {
-  const zones = state.zones[side];
-  if (zones.hand.length === 0) {
-    return false;
-  }
-  // 准备区没有空位、且战斗区也满时，出了也放不下
-  const hasEmptyPrep = zones.prep.some((id) => id === null);
-  const hasEmptyBattle = zones.battle.some((id) => id === null);
-  return hasEmptyPrep || hasEmptyBattle;
+  return state.phase === 'awaitingPlay' && state.currentSide === side &&
+    state.cardsPlayedThisTurn < state.rules.cardsPerTurn &&
+    state.zones[side].prep.some((id) => id === null) &&
+    state.zones[side].hand.some((id) => !isCooldownCard(state.instances[id]?.definitionId ?? ''));
 }
 
-/** 校验一个命令是否当前合法。合法性与演出时长无关。 */
 export function validateCommand(state: BattleState, command: Command): CommandValidation {
-  if (state.outcome) {
-    return { ok: false, reason: 'battleEnded' };
-  }
-  if (state.phase !== 'awaitingPlay') {
-    return { ok: false, reason: 'wrongPhase' };
-  }
-  if (command.side !== state.currentSide) {
-    return { ok: false, reason: 'notYourTurn' };
-  }
-
-  if (command.kind === 'endTurn' || command.kind === 'concede') {
-    // 旧版必须先出一张才能结束回合（`BBS:566-568`），
-    // 但无牌可出时自动跳过（`BBS:674-683`）。这两条一起才不至于卡死。
-    if (
-      state.cardsPlayedThisTurn < state.rules.cardsPerTurn &&
-      hasLegalPlay(state, command.side)
-    ) {
-      return {
-        ok: false,
-        reason: 'alreadyPlayedThisTurn',
-        detail: '本回合还没出牌',
-      };
-    }
-    return { ok: true };
-  }
-
-  if (state.cardsPlayedThisTurn >= state.rules.cardsPerTurn) {
-    return { ok: false, reason: 'alreadyPlayedThisTurn' };
-  }
+  if (state.outcome) return { ok: false, reason: 'battleEnded' };
+  if (state.phase === 'resolving' || state.phase === 'ended') return { ok: false, reason: 'wrongPhase' };
+  if (command.side !== inputSideOf(state)) return { ok: false, reason: 'notYourTurn' };
+  if (command.kind === 'concede') return { ok: true };
+  if (command.kind === 'choosePriority') return state.phase === 'awaitingPriority'
+    ? { ok: true } : { ok: false, reason: 'wrongPhase' };
+  if (state.phase === 'awaitingPriority') return { ok: false, reason: 'wrongPhase' };
+  if (command.kind === 'endTurn') return { ok: true };
   const zones = state.zones[command.side];
-  if (!zones.hand.includes(command.instanceId)) {
-    return { ok: false, reason: 'cardNotInHand' };
+  const card = state.instances[command.instanceId];
+  if (command.kind === 'deployCard') {
+    if (!card || card.owner !== command.side || card.zone !== 'prep' || !zones.prep.includes(card.instanceId) || card.cd > 0)
+      return { ok: false, reason: 'cardNotReady' };
+    if (!zones.battle.includes(null)) return { ok: false, reason: 'rowsFull' };
+    return insertionSlots(state, command.side).includes(command.battleSlot)
+      ? { ok: true } : { ok: false, reason: 'invalidInsertion' };
   }
+  if (state.phase !== 'awaitingPlay') return { ok: false, reason: 'wrongPhase' };
+  if (!card || !zones.hand.includes(command.instanceId)) return { ok: false, reason: 'cardNotInHand' };
+  if (command.kind === 'useCooldownCard') {
+    const target = state.instances[command.targetInstanceId];
+    return isCooldownCard(card.definitionId) && target?.owner === command.side && target.zone === 'prep' &&
+      zones.prep.includes(target.instanceId) && target.cd > 0
+      ? { ok: true } : { ok: false, reason: 'invalidCooldownTarget' };
+  }
+  if (isCooldownCard(card.definitionId)) return { ok: false, reason: 'invalidCooldownTarget' };
+  if (state.cardsPlayedThisTurn >= state.rules.cardsPerTurn) return { ok: false, reason: 'alreadyPlayedThisTurn' };
   const slot = command.prepSlot ?? zones.prep.findIndex((id) => id === null);
-  if (slot < 0 || slot >= state.rules.prepSlots || zones.prep[slot] !== null) {
-    return { ok: false, reason: 'noEmptyPrepSlot' };
-  }
-  return { ok: true };
+  return slot >= 0 && slot < state.rules.prepSlots && zones.prep[slot] === null
+    ? { ok: true } : { ok: false, reason: 'noEmptyPrepSlot' };
 }
 
 // ---------------------------------------------------------------------------
@@ -342,7 +352,7 @@ class Resolver {
       - **不能**跑全部 ON_DAMAGED 技能，否则防御/闪避会开始挡技能伤害，
         那是另一条规则，不该被这条路径顺带改掉。
 
-      `attacker` 填自己：这条路上没有攻击方（伤害可能来自死亡爆裂、反击等），
+      `attacker` 填自己：这条路上没有攻击方（伤害可能来自群体爆裂、反击等），
       而圣盾的规则不读它。
     */
     const shieldCarrier: AttackState = {
@@ -559,9 +569,22 @@ function triggerSkills(
     if (skill.family === 'criticalCollapse' && (onlyFamily !== 'criticalCollapse' || (attack?.overflow ?? 0) <= 0)) continue;
     if (trigger !== 'ON_DEATH' && (instance.zone !== 'battle' || !isBattleActive(state, instance))) break;
 
-    if (skill.family === 'devour' && state.zones[opponentOf(instance.owner)].discard.length === 0) continue;
-    if (skill.family === 'masterpiece' && (!state.definitions[MASTERPIECE_CARD_ID] ||
-      !state.zones[instance.owner].battle.includes(null))) continue;
+    if (ENEMY_CARD_ATTACK_FAMILIES.has(skill.family) &&
+      !battleInstances(state, opponentOf(instance.owner)).some(({ instance: target }) => isBattleActive(state, target))) continue;
+    if (['curse', 'armorBreak'].includes(skill.family)) {
+      const id = state.zones[opponentOf(instance.owner)].battle[attack?.defenderSlot ?? instance.slotIndex];
+      const target = id ? state.instances[id] : undefined;
+      if (!target || !isBattleActive(state, target)) continue;
+    }
+
+    if (skill.family === 'devour'  && state.zones[opponentOf(instance.owner)].discard.length === 0) continue;
+    const summonTarget = SUMMON_TARGETS[skill.family];
+    if (summonTarget && (!state.definitions[summonTarget] || !state.zones[instance.owner].battle.includes(null))) continue;
+    if (skill.family === 'alignedDeathBlast') {
+      const id = state.zones[opponentOf(instance.owner)].battle[deathSlot ?? instance.slotIndex];
+      const target = id ? state.instances[id] : undefined;
+      if (!target || !isBattleActive(state, target)) continue;
+    }
     if (skill.family === 'lethalStrike') {
       const id = state.zones[opponentOf(instance.owner)].battle[attack?.defenderSlot ?? instance.slotIndex];
       const target = id ? state.instances[id] : undefined;
@@ -594,7 +617,9 @@ function triggerSkills(
       !battleInstances(state, opponentOf(instance.owner)).some(({ instance: target }) => isBattleActive(state, target))) continue;
 
     resolver.emit({ type: 'SkillTriggered', side: instance.owner, instanceId: instance.instanceId,
-      trigger, family: skill.family, raw: skill.raw, param: skill.param });
+      trigger, family: skill.family, raw: skill.raw, param: skill.param,
+      ...(['armorBreak', 'alignedDeathBlast'].includes(skill.family) ? { targetInstanceId:
+        state.zones[opponentOf(instance.owner)].battle[skill.family === 'alignedDeathBlast' ? deathSlot ?? instance.slotIndex : attack?.defenderSlot ?? instance.slotIndex] ?? null } : {}) });
 
     // An active reflector protects its entire side immediately. Run the captured
     // incoming spell once with reversed ownership; never dispatch another cast.
@@ -611,7 +636,7 @@ function triggerSkills(
       state, rng: resolver.rng, owner,
       self: reflector ? { ...instance, owner } : instance,
       ...(reflector && instance.zone === 'battle' && isBattleActive(state, instance) ? { reflectedTarget: instance } : {}),
-      param: skill.param ?? (skill.family === 'explodeOnDeath' ? 2 : 1), attack, deathSlot,
+      param: skill.param ?? (['explodeOnDeath', 'alignedDeathBlast'].includes(skill.family) ? 2 : 1), attack, deathSlot,
       emit: (event) => resolver.emit(event),
       damage: (target, amount, source: DamageSource) => source === 'trueDamage' || source === 'collapse'
         ? resolver.trueDamage(target, amount, source) : resolver.damage(target, amount),
@@ -854,9 +879,8 @@ function resolveAttack(
 function activateUnyielding(resolver: Resolver, state: BattleState, instance: CardInstance): void {
   const group = groupOf(state, instance);
   if (instance.zone !== 'battle' || group.deathHandled || group.unyielding?.used || !hasFamily(state, instance, 'unyielding')) return;
-  // turnNumber increments only when control returns to player. Enemy's next turn
-  // can still have the current number when its lethal hit occurred on player's turn.
-  const expiresAfterTurn = state.turnNumber + (state.currentSide === group.owner || group.owner === 'player' ? 1 : 0);
+  // Only host action turns advance this deadline; response deployment is not an extra turn.
+  const expiresAfterTurn = state.turnIndex + (state.currentSide === group.owner ? 2 : 1);
   group.unyielding = { active: true, used: true, expiresAfterTurn };
   resolver.emit({ type: 'UnyieldingChanged', side: group.owner, instanceId: instance.instanceId,
     groupId: group.groupId, active: true, expiresAfterTurn });
@@ -865,7 +889,7 @@ function activateUnyielding(resolver: Resolver, state: BattleState, instance: Ca
 function expireUnyielding(resolver: Resolver, state: BattleState): void {
   for (const group of Object.values(state.groups)) {
     const status = group.unyielding;
-    if (!status?.active || group.owner !== state.currentSide || state.turnNumber < status.expiresAfterTurn) continue;
+    if (!status?.active || group.owner !== state.currentSide || state.turnIndex < status.expiresAfterTurn) continue;
     const primary = group.memberIds.map((id) => state.instances[id]).find((card) => card?.zone === 'battle');
     if (!primary) { status.active = false; continue; }
     status.active = false;
@@ -979,41 +1003,10 @@ function removeDead(resolver: Resolver, state: BattleState): void {
         slotIndex: -1,
       });
     }
+    if (!revived) resetCardLife(state, primary, (event) => resolver.emit(event));
     group.deathHandled = false;
   }
   }
-}
-
-/**
- * 不死 / 复活把血补满时，要发一条 `Healed`。
- *
- * 这不是装饰：演出层只能通过事件与 patch 知道数值变了（PLAN 第 4.1 节
- * 「目标、数值、源实例、旧值/新值、事件序号均写入事件」）。
- * 先前这里只改了 `group.hp` 而没有事件，显示状态就永远停在 0，
- * 复活回来的卡在画面上是一张血量为 0 的牌——P3 的等价性测试抓到的就是这个。
- *
- * 发在 `CardMoved` **之前**：这样治疗的表现落在它倒下的那个槽位上，
- * 而不是等牌已经飞回手牌之后才在别处闪一下。
- */
-function emitReviveHp(
-  resolver: Resolver,
-  side: SideId,
-  instanceId: string,
-  group: CombatStateGroup,
-): void {
-  if (group.hp >= group.maxHp) {
-    return;
-  }
-  const before = group.hp;
-  group.hp = group.maxHp;
-  resolver.emit({
-    type: 'Healed',
-    side,
-    instanceId,
-    amount: group.maxHp - before,
-    hpBefore: before,
-    hpAfter: group.maxHp,
-  });
 }
 
 /**
@@ -1044,68 +1037,31 @@ function emitCooldownReset(
   });
 }
 
-/** 不死 / 复活。返回是否已经复活回场上（回场则不进弃牌堆）。 */
-function reviveIfAble(
-  resolver: Resolver,
-  state: BattleState,
-  instance: CardInstance,
-  traits: readonly string[],
-): boolean {
+/** Death returns restore base stats; direct revival retains its once-per-life consumption flag. */
+function reviveIfAble(resolver: Resolver, state: BattleState, instance: CardInstance, traits: readonly string[]): boolean {
   const side = instance.owner;
   const zones = state.zones[side];
-
   if (traits.includes('不死')) {
-    // 回**手牌**，旧版没有一次性标记，可以再次抽到再打出
-    const group = groupOf(state, instance);
-    emitReviveHp(resolver, side, instance.instanceId, group);
-    group.hp = group.maxHp;
     instance.zone = 'hand';
     zones.hand.push(instance.instanceId);
     instance.slotIndex = zones.hand.length - 1;
-    resolver.emit({
-      type: 'CardMoved',
-      side,
-      instanceId: instance.instanceId,
-      from: 'battle',
-      to: 'hand',
-      slotIndex: instance.slotIndex,
-    });
+    resetCardLife(state, instance, (event) => resolver.emit(event), true);
+    resolver.emit({ type: 'CardMoved', side, instanceId: instance.instanceId,
+      from: 'battle', to: 'hand', slotIndex: instance.slotIndex });
     return true;
   }
-
   if (traits.includes('复活') && !instance.marks.revivedUsed) {
     const slot = zones.prep.findIndex((id) => id === null);
-    if (slot < 0) {
-      // 没有空准备槽就留在弃牌堆（旧版也是静默返回）
-      return false;
-    }
-    const group = groupOf(state, instance);
-    emitReviveHp(resolver, side, instance.instanceId, group);
-    group.hp = group.maxHp;
-    const definition = state.definitions[instance.definitionId];
+    if (slot < 0) return false;
     instance.marks.revivedUsed = true;
-    // 复活把冷却也复位了，同样要说一声——理由见 `emitReviveHp`
-    emitCooldownReset(
-      resolver,
-      side,
-      instance,
-      definition?.cd ?? 0,
-      'reset',
-    );
     instance.zone = 'prep';
     instance.slotIndex = slot;
     zones.prep[slot] = instance.instanceId;
-    resolver.emit({
-      type: 'CardMoved',
-      side,
-      instanceId: instance.instanceId,
-      from: 'battle',
-      to: 'prep',
-      slotIndex: slot,
-    });
+    resetCardLife(state, instance, (event) => resolver.emit(event), true);
+    resolver.emit({ type: 'CardMoved', side, instanceId: instance.instanceId,
+      from: 'battle', to: 'prep', slotIndex: slot });
     return true;
   }
-
   return false;
 }
 
@@ -1150,7 +1106,7 @@ function compactRow(resolver: Resolver, state: BattleState, side: SideId): void 
 function hasCards(state: BattleState, side: SideId): boolean {
   const zones = state.zones[side];
   return (
-    zones.hand.length > 0 ||
+    zones.hand.some((id) => !isCooldownCard(state.instances[id]?.definitionId ?? '')) ||
     zones.prep.some((id) => id !== null) ||
     zones.battle.some((id) => id !== null) ||
     zones.deck.length > 0
@@ -1186,62 +1142,49 @@ function outcomeReason(state: BattleState, side: SideId): BattleEndReason {
 // 回合推进
 // ---------------------------------------------------------------------------
 
-function endTurn(resolver: Resolver, state: BattleState): void {
+/** One CD tick per handoff, for both sides. The guest window never ticks CD. */
+function tickCooldowns(resolver: Resolver, state: BattleState): void {
+  for (const side of ['player', 'enemy'] as const) {
+    for (const id of state.zones[side].prep) {
+      const card = id ? state.instances[id] : undefined;
+      if (!card || card.cd <= 0) continue;
+      const from = card.cd;
+      card.cd = Math.max(0, from - 1);
+      resolver.emit({ type: 'CooldownChanged', side, instanceId: card.instanceId,
+        from, to: card.cd, cause: 'turnTick' });
+    }
+  }
+}
+
+function concludeIfEnded(resolver: Resolver, state: BattleState): boolean {
+  const outcome = checkOutcome(state);
+  if (!outcome) return false;
+  state.outcome = outcome;
+  state.phase = 'ended';
+  resolver.emit({ type: 'BattleEnded', outcome });
+  return true;
+}
+
+function openResponse(resolver: Resolver, state: BattleState): void {
+  state.phase = 'awaitingResponse';
+  resolver.emit({ type: 'DeploymentWindowOpened', side: opponentOf(state.currentSide), hostSide: state.currentSide });
+}
+
+/** Current host alone performs one skill/attack row. */
+function resolveHostRow(resolver: Resolver, state: BattleState): void {
   state.phase = 'resolving';
-
-  // 1. 胜负预检（旧版在 `end_turn` 开头就查，这里保持同序）
-  const pre = checkOutcome(state);
-  if (pre) {
-    state.outcome = pre;
-    state.phase = 'ended';
-    resolver.emit({ type: 'BattleEnded', outcome: pre });
-    return;
-  }
-
-  // 2. 双方准备区 CD 各减 1。
-  //    **是双方，不是只在当前方回合**（旧版 `BBS:1517`，docs/rules.md 第 3 节）
-  for (const side of ['player', 'enemy'] as const) {
-    state.zones[side].prep.forEach((instanceId, slot) => {
-      if (!instanceId) {
-        return;
-      }
-      const instance = state.instances[instanceId];
-      if (!instance || instance.cd <= 0) {
-        return;
-      }
-      const from = instance.cd;
-      instance.cd = Math.max(0, instance.cd - 1);
-      resolver.emit({
-        type: 'CooldownChanged',
-        side,
-        instanceId,
-        from,
-        to: instance.cd,
-        cause: 'turnTick',
-      });
-      void slot;
-    });
-  }
-
-  // 3. 部署：CD 归零的卡进入第一个空战斗槽（从左到右）
-  for (const side of ['player', 'enemy'] as const) {
-    deployReady(resolver, state, side);
-  }
-
-  // 4. Friendly-turn traits fire once per deployed holder, independently of attacks.
-  const attacker = state.currentSide;
-  const turnHolders = [...battleInstances(state, attacker)];
+  const side = state.currentSide;
+  const turnHolders = [...battleInstances(state, side)];
   for (const { instance } of turnHolders) {
     if (instance.zone !== 'battle' || !isBattleActive(state, instance) ||
-      !state.zones[attacker].battle.includes(instance.instanceId) || isSilenced(state, attacker, instance.slotIndex)) continue;
+      !state.zones[side].battle.includes(instance.instanceId) || isSilenced(state, side, instance.slotIndex)) continue;
     triggerSkills(resolver, state, instance, 'OWN_TURN', null, null);
     removeDead(resolver, state);
+    if (concludeIfEnded(resolver, state)) return;
   }
-
-  // First strike changes scheduling only. Physical slots and aligned targets remain unchanged.
   const acted = new Set<string>();
   while (true) {
-    const candidates = battleInstances(state, attacker).map(({ instance }) => instance)
+    const candidates = battleInstances(state, side).map(({ instance }) => instance)
       .filter((card) => isBattleActive(state, card) && !acted.has(card.instanceId));
     const next = candidates.find((card) => hasFamily(state, card, 'firstStrike') &&
       !isSilenced(state, card.owner, card.slotIndex)) ?? candidates[0];
@@ -1249,121 +1192,98 @@ function endTurn(resolver: Resolver, state: BattleState): void {
     acted.add(next.instanceId);
     next.hasAttackedThisTurn = true;
     resolveAttack(resolver, state, next, next.slotIndex);
+    if (concludeIfEnded(resolver, state)) return;
   }
-
-  for (const instance of Object.values(state.instances)) clearAttackStatuses(resolver, state, instance, true);
-
-  // 5. A zero-HP unyielding unit expires only after its next full friendly action row.
+  for (const card of Object.values(state.instances)) clearAttackStatuses(resolver, state, card, true);
   expireUnyielding(resolver, state);
   removeDead(resolver, state);
-
-  // 6. 槽位整理
   compactRow(resolver, state, 'player');
   compactRow(resolver, state, 'enemy');
-
-  // 7. 胜负
-  const post = checkOutcome(state);
-  if (post) {
-    state.outcome = post;
-    state.phase = 'ended';
-    resolver.emit({ type: 'BattleEnded', outcome: post });
-    return;
-  }
-
-  // 8. 回合上限：到点判平局，避免无限循环
-  if (state.rules.turnLimit > 0 && state.turnNumber >= state.rules.turnLimit) {
-    const draw: BattleOutcome = { kind: 'draw', reason: 'turnLimit' };
-    state.outcome = draw;
-    state.phase = 'ended';
-    resolver.emit({ type: 'BattleEnded', outcome: draw });
-    return;
-  }
-
-  // 9. 换边
-  const next = opponentOf(state.currentSide);
-  state.currentSide = next;
-  if (next === 'player') {
-    state.turnNumber += 1;
-  }
-  state.cardsPlayedThisTurn = 0;
-  state.copyUsedThisTurn = { player: false, enemy: false };
-  for (const instance of Object.values(state.instances)) {
-    instance.hasAttackedThisTurn = false;
-  }
-
-  resolver.emit({ type: 'TurnEnded', side: attacker, nextSide: next });
-
-  // 10. 新回合抽一张
-  for (let i = 0; i < state.rules.drawPerTurn; i += 1) {
-    const drawn = drawOne(state, resolver.rng, next);
-    if (drawn) {
-      resolver.emit({
-        type: 'CardDrawn',
-        side: next,
-        instanceId: drawn,
-        fromDeckIndex: 0,
-      });
-    }
-  }
-
-  state.phase = 'awaitingPlay';
+  state.hostAttacked = true;
+  concludeIfEnded(resolver, state);
 }
 
-/** 把 CD 归零的卡部署到第一个空战斗槽。 */
-function deployReady(resolver: Resolver, state: BattleState, side: SideId): void {
-  const zones = state.zones[side];
-  for (let prepSlot = 0; prepSlot < zones.prep.length; prepSlot += 1) {
-    const instanceId = zones.prep[prepSlot];
-    if (!instanceId) {
-      continue;
-    }
-    const instance = state.instances[instanceId];
-    if (!instance || instance.cd > 0) {
-      continue;
-    }
-    const battleSlot = zones.battle.findIndex((id) => id === null);
-    if (battleSlot < 0) {
-      // 战斗区满，留在准备区等下一次
-      continue;
-    }
-    const enteringGroup = groupOf(state, instance);
-    if (!zones.battle.some((id) => id && state.instances[id]?.stateGroupId === instance.stateGroupId)) {
-      delete enteringGroup.unyielding;
-    }
-    const enteringDefinition = state.definitions[instance.definitionId];
-    if (enteringDefinition && isSelfDestructCard(enteringDefinition)) instance.marks.deploymentCast = true;
-    zones.prep[prepSlot] = null;
-    zones.battle[battleSlot] = instanceId;
-    instance.zone = 'battle';
-    instance.slotIndex = battleSlot;
-    instance.hasAttackedThisTurn = false;
-    instance.marks.concealmentUsed = false;
-    syncFlightState(resolver, state);
-    syncBerserk(resolver, state, instance);
-    resolver.emit({
-      type: 'CardDeployed',
-      side,
-      instanceId,
-      battleSlot,
-    });
-    const definition = state.definitions[instance.definitionId];
-    const oneUse = definition !== undefined && isSelfDestructCard(definition);
-    // Deployment abilities resolve first. One-use cards also execute their active
-    // action here, regardless of which side's turn caused them to enter the board.
-    if (!isSilenced(state, side, battleSlot)) {
-      triggerSkills(resolver, state, instance, 'ON_DEPLOY', null, null, 'effects');
-      if (oneUse && isBattleActive(state, instance)) {
-        resolveAttack(resolver, state, instance, battleSlot, true);
-      }
-    }
-    if (oneUse) {
-      // Consumption is last and unconditional: silence can block the effect,
-      // but a consumed spell never remains as a permanent unit on the board.
-      triggerSkills(resolver, state, instance, 'ON_DEPLOY', null, null, 'selfDestruct');
-      delete instance.marks.deploymentCast;
-      removeDead(resolver, state);
-    }
+function nextHostTurn(resolver: Resolver, state: BattleState): void {
+  if (concludeIfEnded(resolver, state)) return;
+  if (state.rules.turnLimit > 0 && state.turnIndex >= state.rules.turnLimit * 2) {
+    state.outcome = { kind: 'draw', reason: 'turnLimit' };
+    state.phase = 'ended';
+    resolver.emit({ type: 'BattleEnded', outcome: state.outcome });
+    return;
   }
+  const previous = state.currentSide;
+  state.currentSide = opponentOf(previous);
+  state.turnIndex += 1;
+  state.turnNumber = Math.floor((state.turnIndex - 1) / 2) + 1;
+  state.cardsPlayedThisTurn = 0;
+  state.copyUsedThisTurn = { player: false, enemy: false };
+  state.hostAttacked = false;
+  state.priority = null;
+  for (const card of Object.values(state.instances)) card.hasAttackedThisTurn = false;
+  resolver.emit({ type: 'TurnEnded', side: previous, nextSide: state.currentSide });
+  tickCooldowns(resolver, state);
+  for (let i = 0; i < state.rules.drawPerTurn; i += 1) {
+    const id = drawOne(state, resolver.rng, state.currentSide, (event) => resolver.emit(event));
+    if (id) resolver.emit({ type: 'CardDrawn', side: state.currentSide, instanceId: id, fromDeckIndex: 0 });
+  }
+  const guest = opponentOf(state.currentSide);
+  state.phase = readyCardIds(state, guest).length > 0 ? 'awaitingPriority' : 'awaitingPlay';
+}
+
+function endTurn(resolver: Resolver, state: BattleState): void {
+  if (state.phase === 'awaitingResponse') {
+    if (state.hostAttacked) nextHostTurn(resolver, state);
+    else state.phase = 'awaitingPlay';
+    return;
+  }
+  if (state.cardsPlayedThisTurn === 0) {
+    const id = grantCooldownCard(state, state.currentSide);
+    resolver.emit({ type: 'CooldownCardGranted', side: state.currentSide, instanceId: id, reason: 'skip' });
+  }
+  resolveHostRow(resolver, state);
+  if (state.outcome) return;
+  // First priority guarantees a response even if the attack made room on a full guest row.
+  if (state.priority === 'first' && readyCardIds(state, opponentOf(state.currentSide)).length > 0) openResponse(resolver, state);
+  else nextHostTurn(resolver, state);
+}
+
+/** Insert one ready card, retaining the relative order of every existing unit. */
+function deployCard(resolver: Resolver, state: BattleState, side: SideId, instanceId: string, battleSlot: number): void {
+  compactRow(resolver, state, side);
+  const zones = state.zones[side];
+  const instance = state.instances[instanceId]!;
+  const order = zones.battle.filter((id): id is string => id !== null);
+  order.splice(battleSlot, 0, instanceId);
+  zones.battle = Array.from({ length: state.rules.battleSlots }, (_, i) => order[i] ?? null);
+  for (let i = 0; i < order.length; i += 1) state.instances[order[i]!]!.slotIndex = i;
+  const prepSlot = zones.prep.indexOf(instanceId);
+  zones.prep[prepSlot] = null;
+  const group = groupOf(state, instance);
+  if (!order.some((id) => id !== instanceId && state.instances[id]?.stateGroupId === instance.stateGroupId)) delete group.unyielding;
+  const definition = state.definitions[instance.definitionId];
+  const oneUse = definition !== undefined && isSelfDestructCard(definition);
+  if (oneUse) instance.marks.deploymentCast = true;
+  instance.zone = 'battle';
+  instance.slotIndex = battleSlot;
+  instance.hasAttackedThisTurn = false;
+  instance.marks.concealmentUsed = false;
+  // Move old cards first, then show the deploying card at its reserved empty slot.
+  resolver.emit({ type: 'FormationInserted', side, order: zones.battle.map((id) => id === instanceId ? null : id) });
+  resolver.emit({ type: 'CardDeployed', side, instanceId, battleSlot });
+  syncFlightState(resolver, state);
+  syncBerserk(resolver, state, instance);
+  if (!isSilenced(state, side, battleSlot)) {
+    triggerSkills(resolver, state, instance, 'ON_DEPLOY', null, null, 'effects');
+    if (oneUse && isBattleActive(state, instance)) resolveAttack(resolver, state, instance, battleSlot, true);
+  }
+  if (oneUse) {
+    triggerSkills(resolver, state, instance, 'ON_DEPLOY', null, null, 'selfDestruct');
+    delete instance.marks.deploymentCast;
+  }
+  removeDead(resolver, state);
+  compactRow(resolver, state, 'player');
+  compactRow(resolver, state, 'enemy');
+  concludeIfEnded(resolver, state);
 }
 
 // ---------------------------------------------------------------------------
@@ -1400,6 +1320,25 @@ export function applyCommand(state: BattleState, command: Command): Resolution {
     working.outcome = outcome;
     working.phase = 'ended';
     resolver.emit({ type: 'BattleEnded', outcome });
+  } else if (command.kind === 'choosePriority') {
+    working.priority = command.order;
+    resolver.emit({ type: 'PriorityChosen', side: command.side, order: command.order });
+    if (command.order === 'last') openResponse(resolver, working);
+    else working.phase = 'awaitingPlay';
+  } else if (command.kind === 'deployCard') {
+    deployCard(resolver, working, command.side, command.instanceId, command.battleSlot);
+  } else if (command.kind === 'useCooldownCard') {
+    const zones = working.zones[command.side];
+    zones.hand.splice(zones.hand.indexOf(command.instanceId), 1);
+    const token = working.instances[command.instanceId]!;
+    delete working.groups[token.stateGroupId];
+    delete working.instances[command.instanceId];
+    resolver.emit({ type: 'CooldownCardUsed', side: command.side, instanceId: command.instanceId, targetInstanceId: command.targetInstanceId });
+    const target = working.instances[command.targetInstanceId]!;
+    const from = target.cd;
+    target.cd = Math.max(0, from - 1);
+    resolver.emit({ type: 'CooldownChanged', side: command.side, instanceId: target.instanceId,
+      from, to: target.cd, cause: 'cooldownCard' });
   } else if (command.kind === 'playCard') {
     const zones = working.zones[command.side];
     const from = zones.hand.indexOf(command.instanceId);
@@ -1443,7 +1382,7 @@ export function applyCommand(state: BattleState, command: Command): Resolution {
  */
 export function stateFingerprint(state: BattleState): string {
   return JSON.stringify({
-    currentSide: state.currentSide,
+    currentSide: state.currentSide, phase: state.phase, priority: state.priority, hostAttacked: state.hostAttacked,
     concealment: Object.values(state.instances).filter((card) => card.zone === 'battle' && hasFamily(state, card, 'concealment'))
       .map((card) => [card.instanceId, card.marks.concealmentUsed ?? false]),
     flying: Object.values(state.instances).filter((card) => card.zone === 'battle').map((card) => [card.instanceId, card.flying]),
@@ -1455,7 +1394,7 @@ export function stateFingerprint(state: BattleState): string {
     zones: state.zones,
     groups: Object.values(state.groups)
       .map((group) => [group.groupId, group.hp, group.atk, group.berserkBaseAtk ?? null, group.berserkBonus ?? 0, group.unyielding?.active ?? false,
-        group.unyielding?.active ? group.unyielding.expiresAfterTurn - state.turnNumber : null])
+        group.unyielding?.active ? group.unyielding.expiresAfterTurn - state.turnIndex : null])
       .sort((a, b) => String(a[0]).localeCompare(String(b[0]))),
   });
 }

@@ -17,6 +17,7 @@
 import { cardById } from '../../data';
 import { chooseCommand } from '../../domain/battle/ai';
 import { applyCommand, createBattle, hasLegalPlay } from '../../domain/battle/engine';
+import { COOLDOWN_CARD, inputSideOf, insertionSlots, isCooldownCard, readyCardIds } from '../../domain/battle/turnActions';
 import { createRng, type Rng } from '../../domain/battle/rng';
 import type {
   BattleConfig,
@@ -67,6 +68,12 @@ export interface BattleSnapshot {
   readonly phase: BattlePhase;
   readonly turnNumber: number;
   readonly currentSide: SideId;
+  readonly inputSide: SideId;
+  readonly startingSide: SideId;
+  readonly priority: 'first' | 'last' | null;
+  readonly selectedKind: 'hand' | 'cooldown' | 'ready' | null;
+  readonly deployableInstanceIds: readonly string[];
+  readonly playableBattleSlots: readonly number[];
   readonly cardsPlayedThisTurn: number;
   readonly cardLimit: number;
   /** 本体生命上限。血量条按它取比例。 */
@@ -208,6 +215,12 @@ export class BattleSession {
       phase: this.state.phase,
       turnNumber: this.state.turnNumber,
       currentSide: this.state.currentSide,
+      inputSide: inputSideOf(this.state),
+      startingSide: this.state.startingSide,
+      priority: this.state.priority,
+      selectedKind: this.selectedKind(),
+      deployableInstanceIds: this.canAct() && this.state.phase !== 'awaitingPriority' ? readyCardIds(this.state, inputSideOf(this.state)) : [],
+      playableBattleSlots: this.canAct() && this.selectedKind() === 'ready' ? insertionSlots(this.state, inputSideOf(this.state)) : [],
       cardsPlayedThisTurn: this.state.cardsPlayedThisTurn,
       cardLimit: rules.cardsPerTurn,
       baseHp: rules.baseHp,
@@ -219,7 +232,7 @@ export class BattleSession {
       autoPlayer: this.autoPlayer,
       localMultiplayer: this.localMultiplayer,
       autoEnemy: this.autoEnemy,
-      currentHasLegalPlay: hasLegalPlay(this.state, this.state.currentSide),
+      currentHasLegalPlay: hasLegalPlay(this.state, inputSideOf(this.state)),
       runId: this.runId,
     };
   }
@@ -244,7 +257,7 @@ export class BattleSession {
   /** 开一局（也是「再来一局」）。 */
   start(): void {
     this.director.reset();
-    this.state = createBattle(this.config, this.definitions);
+    this.state = createBattle({ ...this.config, seed: (this.config.seed + this.runId * 0x9e3779b9) >>> 0 }, this.definitions);
     // 注意是**灌进同一个显示状态对象**：导演在构造时就按引用拿住了它
     adoptDisplay(this.display, displayFromState(this.state));
     /*
@@ -265,6 +278,9 @@ export class BattleSession {
     this.needsAdvance = false;
     this.pendingAiAction = false;
     this.log.length = 0;
+    const first = this.localMultiplayer ? (this.state.startingSide === 'player' ? '下方' : '上方')
+      : (this.state.startingSide === 'player' ? '我方' : '敌方');
+    this.pushLog(`本局${first}先手，后手方获得一张冷却牌`);
 
     if (this.isHumanTurn()) {
       this.inputOpen = true;
@@ -294,7 +310,7 @@ export class BattleSession {
   setAutoEnemy(on: boolean): void {
     if (!this.localMultiplayer) return;
     this.autoEnemy = on;
-    if (this.state.currentSide === 'enemy') {
+    if (inputSideOf(this.state) === 'enemy') {
       this.selectedInstanceId = null;
       if (this.mode === 'battle' && !this.director.isPerforming) {
         this.pendingAiAction = false;
@@ -305,7 +321,7 @@ export class BattleSession {
   }
 
   private isHumanTurn(): boolean {
-    return this.state.currentSide === 'player'
+    return inputSideOf(this.state) === 'player'
       ? !this.autoPlayer
       : this.localMultiplayer && !this.autoEnemy;
   }
@@ -318,34 +334,72 @@ export class BattleSession {
    * 只有**手牌**能被选中：点场上的卡只是看详情，不该进入「选牌出牌」的状态。
    * 点别处一律视为取消选中。
    */
+  private selectedKind(): 'hand' | 'cooldown' | 'ready' | null {
+    const card = this.selectedInstanceId ? this.state.instances[this.selectedInstanceId] : undefined;
+    if (!card) return null;
+    if (card.zone === 'prep' && card.cd <= 0) return 'ready';
+    return card.zone === 'hand' ? (isCooldownCard(card.definitionId) ? 'cooldown' : 'hand') : null;
+  }
+
   select(instanceId: string | null): void {
-    const selectable =
-      instanceId !== null && this.canAct() && this.state.cardsPlayedThisTurn < this.state.rules.cardsPerTurn && this.display.zones[this.state.currentSide].hand.includes(instanceId)
-        ? instanceId
-        : null;
-    if (this.selectedInstanceId === selectable) {
+    if (!this.canAct() || this.state.phase === 'awaitingPriority') return;
+    const side = inputSideOf(this.state);
+    const card = instanceId ? this.state.instances[instanceId] : undefined;
+    if (this.selectedKind() === 'cooldown' && card?.owner === side && card.zone === 'prep' && card.cd > 0) {
+      this.useCooldownAt(card.slotIndex);
       return;
     }
+    const selectable = card?.owner === side && (
+      (card.zone === 'prep' && card.cd <= 0) ||
+      (this.state.phase === 'awaitingPlay' && card.zone === 'hand' &&
+        (isCooldownCard(card.definitionId) || this.state.cardsPlayedThisTurn < this.state.rules.cardsPerTurn))
+    ) ? instanceId : null;
     this.selectedInstanceId = selectable;
     this.publish();
   }
 
-  /** 把手牌放到准备槽。 */
   playSelectedAt(prepSlot: number): void {
-    if (!this.canAct() || this.selectedInstanceId === null) {
-      return;
-    }
+    if (this.selectedKind() === 'cooldown') { this.useCooldownAt(prepSlot); return; }
+    if (!this.canAct() || this.selectedKind() !== 'hand' || this.selectedInstanceId === null) return;
     const instanceId = this.selectedInstanceId;
     this.selectedInstanceId = null;
-    this.submit({ kind: 'playCard', side: this.state.currentSide, instanceId, prepSlot });
+    this.submit({ kind: 'playCard', side: inputSideOf(this.state), instanceId, prepSlot });
+  }
+
+  private useCooldownAt(prepSlot: number): void {
+    const targetInstanceId = this.state.zones[inputSideOf(this.state)].prep[prepSlot];
+    if (!this.canAct() || this.selectedKind() !== 'cooldown' || !this.selectedInstanceId || !targetInstanceId) return;
+    const instanceId = this.selectedInstanceId;
+    this.selectedInstanceId = null;
+    this.submit({ kind: 'useCooldownCard', side: inputSideOf(this.state), instanceId, targetInstanceId });
+  }
+
+  canDragDeploy(instanceId: string): boolean {
+    return this.canAct() && this.state.phase !== 'awaitingPriority' &&
+      readyCardIds(this.state, inputSideOf(this.state)).includes(instanceId) &&
+      insertionSlots(this.state, inputSideOf(this.state)).length > 0;
+  }
+
+  deployAt(instanceId: string, battleSlot: number): void {
+    if (!this.canDragDeploy(instanceId)) return;
+    this.selectedInstanceId = null;
+    this.submit({ kind: 'deployCard', side: inputSideOf(this.state), instanceId, battleSlot });
+  }
+
+  deploySelectedAt(battleSlot: number): void {
+    if (this.selectedKind() === 'ready' && this.selectedInstanceId) this.deployAt(this.selectedInstanceId, battleSlot);
+  }
+
+  choosePriority(order: 'first' | 'last'): void {
+    if (!this.canAct() || this.state.phase !== 'awaitingPriority') return;
+    this.selectedInstanceId = null;
+    this.submit({ kind: 'choosePriority', side: inputSideOf(this.state), order });
   }
 
   endTurn(): void {
-    if (!this.canAct()) {
-      return;
-    }
+    if (!this.canAct() || this.state.phase === 'awaitingPriority') return;
     this.selectedInstanceId = null;
-    this.submit({ kind: 'endTurn', side: this.state.currentSide });
+    this.submit({ kind: 'endTurn', side: inputSideOf(this.state) });
   }
 
   /** 手动跳过当前演出。 */
@@ -462,18 +516,16 @@ export class BattleSession {
     if (!identity) {
       return instanceId;
     }
-    return cardById.get(identity.definitionId)?.name ?? identity.definitionId;
+    return cardById.get(identity.definitionId)?.name ?? (isCooldownCard(identity.definitionId) ? COOLDOWN_CARD.name : identity.definitionId);
   }
 
   private playablePrepSlots(): readonly number[] {
-    if (!this.canAct() || this.selectedInstanceId === null || this.state.cardsPlayedThisTurn >= this.state.rules.cardsPerTurn || !hasLegalPlay(this.state, this.state.currentSide)) {
-      return [];
-    }
+    if (!this.canAct() || this.state.phase !== 'awaitingPlay') return [];
+    const kind = this.selectedKind();
     const slots: number[] = [];
-    this.display.zones[this.state.currentSide].prep.forEach((occupant, index) => {
-      if (occupant === null) {
-        slots.push(index);
-      }
+    this.display.zones[inputSideOf(this.state)].prep.forEach((id, index) => {
+      if (kind === 'cooldown' && id && (this.display.cd[id] ?? 0) > 0) slots.push(index);
+      if (kind === 'hand' && id === null && this.state.cardsPlayedThisTurn < this.state.rules.cardsPerTurn) slots.push(index);
     });
     return slots;
   }

@@ -1,5 +1,5 @@
 {
-  "contentVersion": "b44039dc45e1",
+  "contentVersion": "d346d47efa04",
   "source": "assets/outputs/*/cards.json",
   "definitions": [
     {
@@ -565,7 +565,7 @@
       "rawTraits": [
         "飞行",
         "毒雾5",
-        "爆裂"
+        "群体爆裂"
       ],
       "skills": [
         {
@@ -584,10 +584,10 @@
           "note": "无实现。"
         },
         {
-          "raw": "爆裂",
+          "raw": "群体爆裂",
           "resolution": "implemented",
           "family": "explodeOnDeath",
-          "param": null,
+          "param": 2,
           "matchKind": "exact"
         }
       ],
@@ -808,7 +808,7 @@
       "cd": 7,
       "rawTraits": [
         "闪电3",
-        "爆裂"
+        "群体爆裂"
       ],
       "skills": [
         {
@@ -819,10 +819,10 @@
           "matchKind": "full"
         },
         {
-          "raw": "爆裂",
+          "raw": "群体爆裂",
           "resolution": "implemented",
           "family": "explodeOnDeath",
-          "param": null,
+          "param": 2,
           "matchKind": "exact"
         }
       ],
@@ -7721,13 +7721,31 @@
       "rarity": "#yoroi",
       "name": "阿 斯 特 蕾 亚·光 铸",
       "level": 2,
-      "atk": 0,
-      "hp": 0,
-      "cd": 0,
-      "rawTraits": [],
-      "skills": [],
+      "atk": 2,
+      "hp": 6,
+      "cd": 4,
+      "rawTraits": [
+        "防御2",
+        "飞行"
+      ],
+      "skills": [
+        {
+          "raw": "防御2",
+          "resolution": "implemented",
+          "family": "defense",
+          "param": 2,
+          "matchKind": "full"
+        },
+        {
+          "raw": "飞行",
+          "resolution": "scene-rule",
+          "family": null,
+          "param": null,
+          "note": "战斗场景规则，非技能族"
+        }
+      ],
       "description": "",
-      "status": "incomplete",
+      "status": "complete",
       "art": {
         "artId": "card/yoroi/002",
         "sourcePresent": true
@@ -7738,13 +7756,40 @@
       "rarity": "#yoroi",
       "name": "阿 斯 特 蕾 亚",
       "level": 2.5,
-      "atk": 0,
-      "hp": 0,
-      "cd": 0,
-      "rawTraits": [],
-      "skills": [],
+      "atk": 2,
+      "hp": 6,
+      "cd": 6,
+      "rawTraits": [
+        "闪避1",
+        "圣盾1",
+        "对空"
+      ],
+      "skills": [
+        {
+          "raw": "闪避1",
+          "resolution": "implemented",
+          "family": "dodge",
+          "param": 1,
+          "matchKind": "full"
+        },
+        {
+          "raw": "圣盾1",
+          "resolution": "implemented",
+          "family": "holyShield",
+          "param": 1,
+          "matchKind": "full"
+        },
+        {
+          "raw": "对空",
+          "resolution": "unimplemented",
+          "family": null,
+          "param": null,
+          "evidence": "battle_base_scene.py:1348 只出现在注释「地面单位无法对空：伤害转移到防御者玩家」里",
+          "note": "注意：飞行规则只检查 `飞行`（battle_base_scene.py:1344-1345），带 `对空` 但不带 `飞行` 的卡没有任何对空收益。PLAN 第 4.3 节明确要求不擅自加入未实现对空技能。"
+        }
+      ],
       "description": "",
-      "status": "incomplete",
+      "status": "complete",
       "art": {
         "artId": "card/yoroi/003",
         "sourcePresent": true
@@ -7755,13 +7800,23 @@
       "rarity": "#yoroi",
       "name": "阿 斯 特 蕾 亚·神 怒",
       "level": 0.5,
-      "atk": 0,
-      "hp": 0,
-      "cd": 0,
-      "rawTraits": [],
-      "skills": [],
+      "atk": 1,
+      "hp": 8,
+      "cd": 9,
+      "rawTraits": [
+        "吸血3"
+      ],
+      "skills": [
+        {
+          "raw": "吸血3",
+          "resolution": "implemented",
+          "family": "vampire",
+          "param": 3,
+          "matchKind": "full"
+        }
+      ],
       "description": "",
-      "status": "incomplete",
+      "status": "complete",
       "art": {
         "artId": "card/yoroi/004",
         "sourcePresent": true
@@ -7772,13 +7827,23 @@
       "rarity": "#yoroi",
       "name": "蓝 羽 天 使",
       "level": 4,
-      "atk": 0,
-      "hp": 0,
-      "cd": 0,
-      "rawTraits": [],
-      "skills": [],
+      "atk": 1,
+      "hp": 7,
+      "cd": 3,
+      "rawTraits": [
+        "飞行"
+      ],
+      "skills": [
+        {
+          "raw": "飞行",
+          "resolution": "scene-rule",
+          "family": null,
+          "param": null,
+          "note": "战斗场景规则，非技能族"
+        }
+      ],
       "description": "",
-      "status": "incomplete",
+      "status": "complete",
       "art": {
         "artId": "card/yoroi/005",
         "sourcePresent": true
@@ -7789,13 +7854,31 @@
       "rarity": "#yoroi",
       "name": "阿 努 比 斯·谜 题",
       "level": 3,
-      "atk": 0,
-      "hp": 0,
-      "cd": 0,
-      "rawTraits": [],
-      "skills": [],
+      "atk": 2,
+      "hp": 4,
+      "cd": 6,
+      "rawTraits": [
+        "诅咒1",
+        "火球1"
+      ],
+      "skills": [
+        {
+          "raw": "诅咒1",
+          "resolution": "implemented",
+          "family": "curse",
+          "param": 1,
+          "matchKind": "full"
+        },
+        {
+          "raw": "火球1",
+          "resolution": "implemented",
+          "family": "fireball",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
       "description": "",
-      "status": "incomplete",
+      "status": "complete",
       "art": {
         "artId": "card/yoroi/006",
         "sourcePresent": true
@@ -7806,13 +7889,23 @@
       "rarity": "#yoroi",
       "name": "阿 努 比 斯·灵 化",
       "level": 4.5,
-      "atk": 0,
-      "hp": 0,
-      "cd": 0,
-      "rawTraits": [],
-      "skills": [],
+      "atk": 2,
+      "hp": 4,
+      "cd": 4,
+      "rawTraits": [
+        "爆裂2"
+      ],
+      "skills": [
+        {
+          "raw": "爆裂2",
+          "resolution": "ambiguous",
+          "family": null,
+          "param": null,
+          "note": "未在 trait-overlay.json 中登记"
+        }
+      ],
       "description": "",
-      "status": "incomplete",
+      "status": "complete",
       "art": {
         "artId": "card/yoroi/007",
         "sourcePresent": true
@@ -7824,12 +7917,31 @@
       "name": "九 天 狐 帝",
       "level": 2.5,
       "atk": 0,
-      "hp": 0,
-      "cd": 0,
-      "rawTraits": [],
-      "skills": [],
+      "hp": 5,
+      "cd": 5,
+      "rawTraits": [
+        "燃烧2",
+        "狐灵召唤"
+      ],
+      "skills": [
+        {
+          "raw": "燃烧2",
+          "resolution": "unimplemented",
+          "family": null,
+          "param": null,
+          "evidence": "全项目 .py 无该字符串；火球n 是即时伤害，不是持续燃烧",
+          "note": "无实现。"
+        },
+        {
+          "raw": "狐灵召唤",
+          "resolution": "ambiguous",
+          "family": null,
+          "param": null,
+          "note": "未在 trait-overlay.json 中登记"
+        }
+      ],
       "description": "",
-      "status": "incomplete",
+      "status": "complete",
       "art": {
         "artId": "card/yoroi/008",
         "sourcePresent": true
@@ -7839,14 +7951,24 @@
       "cardId": "#yoroi_009",
       "rarity": "#yoroi",
       "name": "火 焰 狐 灵",
-      "level": 4,
+      "level": 4.5,
       "atk": 0,
-      "hp": 0,
-      "cd": 0,
-      "rawTraits": [],
-      "skills": [],
+      "hp": 3,
+      "cd": 2,
+      "rawTraits": [
+        "火球2"
+      ],
+      "skills": [
+        {
+          "raw": "火球2",
+          "resolution": "implemented",
+          "family": "fireball",
+          "param": 2,
+          "matchKind": "full"
+        }
+      ],
       "description": "",
-      "status": "incomplete",
+      "status": "complete",
       "art": {
         "artId": "card/yoroi/009",
         "sourcePresent": true

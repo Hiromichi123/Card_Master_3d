@@ -22,11 +22,12 @@ import { ScrollArea } from '../ui/ScrollArea';
 import { useParallax } from '../ui/useParallax';
 import { CrossfadeBackground } from '../ui/SceneBackground';
 import { assetManifest } from '../data/assets';
+import '../ui/deckEditor.css';
 
 /**
  * 配置（组卡）。
  *
- * 左 12 槽、右收藏，照旧版 `scenes/deck_builder_scene.py` 的布局。
+ * 左侧放大的 12 槽、右侧紧凑收藏；保留原版 `scenes/deck_builder_scene.py` 的布局。
  * **两处按本项目的现状改了做法**（照搬不了的地方，写在这里）：
  *
  * 1. **点击加入 / 点击移出**，不是拖拽。旧版是拖拽，但 DOM 里把卡从滚动容器拖进槽位
@@ -212,7 +213,32 @@ export function DeckEditorScene({ profile, store }: DeckEditorSceneProps) {
       <CrossfadeBackground url={background} className="menu__bg deckedit__bg" />
       <div className="menu__scrim" aria-hidden="true" />
 
-      <header className="screen__head">
+      <div className="deckedit__body">
+        <section className="deckedit__slots" aria-label="出战卡组">
+          <div className="deckedit__formation-title">
+            <h2 className="deckedit__heading">出战卡组</h2>
+            <span>{summary?.size ?? 0} / {DECK_LIMIT}</span>
+          </div>
+          <div className="deckedit__grid">
+            {slots.map((slot) =>
+              slot.cardId ? (
+                <CardTile
+                  key={`${slot.index}-${slot.cardId}`}
+                  cardId={slot.cardId}
+                  size="md"
+                  onClick={() => handleRemove(slot.index)}
+                />
+              ) : (
+                <div key={`empty-${slot.index}`} className="deckedit__slot" aria-hidden="true">
+                  {slot.index + 1}
+                </div>
+              ),
+            )}
+          </div>
+        </section>
+
+        <section className="deckedit__collection" aria-label="收藏">
+      <header className="screen__head deckedit__header">
         <div>
           <h1 className="screen__title">配置</h1>
           <p className="deckedit__lead">
@@ -251,28 +277,7 @@ export function DeckEditorScene({ profile, store }: DeckEditorSceneProps) {
         </p>
       )}
 
-      <div className="deckedit__body">
-        <section className="deckedit__slots" aria-label="出战卡组">
-          <h2 className="deckedit__heading">出战卡组 · 点击卡牌移出</h2>
-          <div className="deckedit__grid">
-            {slots.map((slot) =>
-              slot.cardId ? (
-                <CardTile
-                  key={`${slot.index}-${slot.cardId}`}
-                  cardId={slot.cardId}
-                  size="sm"
-                  onClick={() => handleRemove(slot.index)}
-                />
-              ) : (
-                <div key={`empty-${slot.index}`} className="deckedit__slot" aria-hidden="true">
-                  {slot.index + 1}
-                </div>
-              ),
-            )}
-          </div>
-        </section>
 
-        <section className="deckedit__collection" aria-label="收藏">
           <div className="deckedit__filter" role="group" aria-label="按稀有度筛选">
             <button
               type="button"

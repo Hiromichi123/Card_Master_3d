@@ -66,7 +66,7 @@ export type EffectTemplateId =
  * P4 覆盖全部 35 族时，只需在这里补齐映射，不需要新写效果。
  */
 export const FAMILY_TO_EFFECT: Record<string, EffectTemplateId> = {
-  lethalStrike: 'instantDeath', masterpiece: 'flow',
+  lethalStrike: 'instantDeath', masterpiece: 'flow', foxSpiritSummon: 'flow', alignedDeathBlast: 'deathBombard',
   splash: 'normalAttack', groupDelay: 'cooldown', severeFrost: 'frostRetaliation',
   burning: 'burnMark', venom: 'poisonLance', bleeding: 'bleedMark', grievousWound: 'grievousMark', poisonCloud: 'poisonCloud',
   sacrifice: 'lifeDrain',

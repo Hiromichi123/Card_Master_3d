@@ -37,7 +37,7 @@ import { LAYOUT } from './layout';
 /** 视线目标：桌面中心。与 `LAYOUT.tableCenterZ` 一致，不另起一个常量。 */
 const TARGET = new Vector3(0, 0, LAYOUT.tableCenterZ);
 
-export function CameraRig() {
+export function CameraRig({ interactionLocked = false }: { interactionLocked?: boolean | undefined } = {}) {
   const camera = useThree((state) => state.camera) as PerspectiveCamera;
   const size = useThree((state) => state.size);
   const controlsRef = useRef<OrbitControlsImpl>(null);
@@ -113,6 +113,7 @@ export function CameraRig() {
   return (
     <OrbitControls
       ref={controlsRef}
+      enabled={!interactionLocked}
       target={TARGET}
       // 不允许平移：一平移取景就废了，而且玩家没有需要平移的理由
       enablePan={false}

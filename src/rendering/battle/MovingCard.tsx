@@ -1,3 +1,4 @@
+import type { ThreeEvent } from '@react-three/fiber';
 import { useFrame } from '@react-three/fiber';
 import { useEffect, useRef } from 'react';
 import type { Group } from 'three';
@@ -52,6 +53,10 @@ export interface MovingCardProps {
   readonly attackStatuses?: readonly AttackStatusKind[] | undefined;
   readonly flying?: boolean | undefined;
   readonly unyielding?: boolean | undefined;
+  readonly ready?: boolean | undefined;
+  readonly dragging?: boolean | undefined;
+  readonly hoverTip?: boolean | undefined;
+  readonly onPointerDown?: ((event: ThreeEvent<PointerEvent>) => void) | undefined;
   readonly onClick?: ((card: CardDefinition) => void) | undefined;
   readonly onHoverChange?: ((card: CardDefinition, hovered: boolean) => void) | undefined;
 }
@@ -73,13 +78,17 @@ export function MovingCard({
   showStats,
   holo,
   unyielding,
+  ready,
+  dragging = false,
+  hoverTip,
+  onPointerDown,
   flying,
   attackStatuses,
   onClick,
   onHoverChange,
 }: MovingCardProps) {
   const groupRef = useRef<Group>(null);
-  const flyingInBattle = statLayout === 'battle' && (flying ?? card.rawTraits.includes('飞行'));
+  const flyingInBattle = !dragging && statLayout === 'battle' && (flying ?? card.rawTraits.includes('飞行'));
   const wasInBattle = useRef(false);
   useEffect(() => {
     if (flyingInBattle && !wasInBattle.current) {
@@ -89,9 +98,9 @@ export function MovingCard({
         color: '#ffffff', durationScale: SPEED_SCALE[speed],
       });
     }
-    wasInBattle.current = statLayout === 'battle';
+    wasInBattle.current = !dragging && statLayout === 'battle';
     // Slot compaction and subsequent hits must never replay the deployment circle.
-  }, [flyingInBattle, statLayout, instanceId]);
+  }, [flyingInBattle, statLayout, instanceId, dragging]);
   /** 当前的视觉位置。`null` 表示这张牌还没在画面上出现过。 */
   const current = useRef<[number, number, number] | null>(null);
 
@@ -109,6 +118,11 @@ export function MovingCard({
       current.current = position;
     }
 
+    if (dragging) {
+      position[0] = target[0]; position[1] = target[1]; position[2] = target[2];
+      group.position.set(position[0], position[1], position[2]);
+      return;
+    }
     position[0] = damp(position[0], target[0], MOVE_DAMPING, delta);
     position[1] = damp(position[1], target[1] + (flyingInBattle ? FLYING_CARD_LIFT : 0), MOVE_DAMPING, delta);
     position[2] = damp(position[2], target[2], MOVE_DAMPING, delta);
@@ -116,7 +130,7 @@ export function MovingCard({
   });
 
   return (
-    <group ref={groupRef}>
+    <group ref={groupRef} onPointerDown={onPointerDown}>
       <CardMesh
         key={instanceId}
         attackKey={instanceId}
@@ -135,6 +149,10 @@ export function MovingCard({
         showStats={showStats}
         holo={holo}
         unyielding={unyielding}
+        ready={ready}
+        dragging={dragging}
+        hoverTip={hoverTip}
+        flying={flying}
         attackStatuses={attackStatuses}
         onClick={onClick}
         onHoverChange={onHoverChange}

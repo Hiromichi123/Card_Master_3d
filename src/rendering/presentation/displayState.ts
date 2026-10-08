@@ -281,6 +281,35 @@ export function clearEmphasis(display: DisplayState): void {
 /** 推进一件**结构**上的变化。数值一律不走这里。 */
 export function applyEventToDisplay(display: DisplayState, event: BattleEvent): void {
   switch (event.type) {
+    case 'CardReset': {
+      const identity = display.instances[event.instanceId];
+      if (identity) display.instances[event.instanceId] = { ...identity,
+        stateGroupId: event.groupId, flying: event.flying, attackStatuses: [] };
+      display.groups[event.groupId] = { hp: event.hp, maxHp: event.maxHp, atk: event.atk, unyielding: false };
+      display.cd[event.instanceId] = event.cd;
+      delete display.emphasised[event.instanceId];
+      break;
+    }
+    case 'CooldownCardGranted': {
+      display.zones[event.side].hand.push(event.instanceId);
+      break;
+    }
+    case 'CooldownCardUsed': {
+      removeFromList(display.zones[event.side].hand, event.instanceId);
+      const identity = display.instances[event.instanceId];
+      if (identity) delete display.groups[identity.stateGroupId];
+      delete display.instances[event.instanceId];
+      delete display.cd[event.instanceId];
+      delete display.spawns[event.instanceId];
+      delete display.emphasised[event.instanceId];
+      break;
+    }
+    case 'FormationInserted': {
+      display.zones[event.side].battle = [...event.order];
+      break;
+    }
+    case 'PriorityChosen':
+    case 'DeploymentWindowOpened': break;
     case 'CardDrawn': {
       const side = display.zones[event.side];
       // 从牌堆顶上抽走那张，剩下的顺序不变——顺序就是抽取顺序

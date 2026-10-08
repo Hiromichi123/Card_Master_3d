@@ -7,6 +7,7 @@
  * 不 import React——纯映射，出参直接喂给 `BattleBoard` 的 `placements`。
  */
 
+import { COOLDOWN_CARD, isCooldownCard } from '../../domain/battle/turnActions';
 import { cardById } from '../../data';
 import type { CardDefinition, SideId } from '../../domain/cards/types';
 import type { DisplayState } from '../presentation/displayState';
@@ -105,6 +106,9 @@ export interface BuildBoardOptions {
   /** Current human input side; defaults to lower player for existing single-player callers. */
   readonly inputSide?: SideId | undefined;
   readonly localHands?: boolean | undefined;
+  readonly placeableBattleSlots?: readonly number[] | undefined;
+  readonly handPlayable?: boolean | undefined;
+  readonly deployableInstanceIds?: readonly string[] | undefined;
   /** 选中手牌后，可放置的准备槽。 */
   readonly placeablePrepSlots?: readonly number[] | undefined;
 }
@@ -140,6 +144,8 @@ export function buildBoard(display: DisplayState, options: BuildBoardOptions = {
         position: slotPosition(side, 'prep', index),
         scale: PREP_CARD_SCALE,
         statLayout: 'prep',
+        interactive: side === inputSide && options.playerCanPlay === true,
+        ready: (display.cd[instanceId] ?? 1) <= 0,
       });
       if (placement) {
         entries.push(placement);
@@ -151,10 +157,11 @@ export function buildBoard(display: DisplayState, options: BuildBoardOptions = {
       const placement = makePlacement(display, instanceId, {
         position: hand.position,
         rotationY: hand.rotationY,
-        rotationX: options.localHands && side === 'enemy' ? -Math.PI / 2 + 0.42 : hand.rotationX,
+        rotationX: hand.rotationX,
         scale: HAND_CARD_SCALE,
         statLayout: 'hand',
-        interactive: side === inputSide && options.playerCanPlay === true,
+        hoverTip: side === 'player' || (options.localHands === true && side === inputSide),
+        interactive: side === inputSide && options.playerCanPlay === true && options.handPlayable !== false,
         /*
           敌方手牌**不翻面**：翻面之后牌背朝着相机、牌面朝下趴在桌上，
           而镜像过来的倾角本该让牌面朝天。去掉翻面，牌就是「面朝上、
@@ -173,6 +180,7 @@ export function buildBoard(display: DisplayState, options: BuildBoardOptions = {
   }
 
   const placeable = new Set<string>();
+  for (const index of options.placeableBattleSlots ?? []) placeable.add(slotKeyFor(inputSide, 'battle', index));
   for (const index of options.placeablePrepSlots ?? []) {
     placeable.add(slotKeyFor(inputSide, 'prep', index));
   }
@@ -231,13 +239,15 @@ function makePlacement(
     /** 不给就按「正面朝上就显示」推。对手手牌要显式关掉。 */
     showStats?: boolean | undefined;
     holo?: boolean | undefined;
+    ready?: boolean | undefined;
+    hoverTip?: boolean | undefined;
   },
 ): CardPlacement | null {
   const identity = display.instances[instanceId];
   if (!identity) {
     return null;
   }
-  const card: CardDefinition | undefined = cardById.get(identity.definitionId);
+  const card: CardDefinition | undefined = isCooldownCard(identity.definitionId) ? COOLDOWN_CARD : cardById.get(identity.definitionId);
   if (!card) {
     return null;
   }
@@ -253,6 +263,8 @@ function makePlacement(
     rotationY: placement.rotationY ?? undefined,
     rotationX: placement.rotationX ?? CARD_FLAT_ROTATION_X,
     faceDown,
+    ready: placement.ready,
+    hoverTip: placement.hoverTip,
     interactive: placement.interactive ?? false,
     scale: placement.scale,
     statLayout: placement.statLayout,

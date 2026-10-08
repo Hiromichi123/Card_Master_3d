@@ -42,6 +42,7 @@ export function holoIntensityForRarity(rarity: CardRarity): number {
       return 0.62;
     case 'A':
     case '#elna':
+    case '#yoroi':
       return 0.5;
     case 'B+':
     case 'B':

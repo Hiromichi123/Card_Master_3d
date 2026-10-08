@@ -13,6 +13,7 @@
 import type { BattleEvent } from '../../domain/battle/types';
 import type { SideId } from '../../domain/cards/types';
 import type { EffectRequest } from '../effects/effectDirector';
+import { ENEMY_CARD_ATTACK_FAMILIES } from '../../domain/skills/targetRequirements';
 import { FAMILY_TINT, FAMILY_TO_EFFECT } from '../effects/familyMap';
 import { usesSlash } from '../effects/slashTiming';
 import type { SlotZone } from '../battle/layout';
@@ -50,7 +51,7 @@ export function deathBlastIndex(events: readonly BattleEvent[], index: number, i
   for (let i = index + 1; i < events.length; i++) {
     const event = events[i];
     if (event?.type === 'CardDied' || event?.type === 'TurnEnded' || event?.type === 'BattleEnded') break;
-    if (event?.type === 'SkillTriggered' && event.instanceId === instanceId && event.family === 'explodeOnDeath') return i;
+    if (event?.type === 'SkillTriggered' && event.instanceId === instanceId && ['explodeOnDeath', 'alignedDeathBlast'].includes(event.family ?? '')) return i;
     if (event?.type === 'CardMoved' && event.instanceId === instanceId) break;
   }
   return -1;
@@ -154,17 +155,31 @@ export function effectRequestFor(
 ): EffectPlayRequest | null {
   switch (event.type) {
     case 'SkillTriggered': {
-      if (['concealment', 'firstStrike', 'vanguard', 'devour', 'masterpiece', 'antiAir', 'groupGround', 'siege', 'berserk', 'severeFrost', 'burning', 'venom', 'bleeding', 'grievousWound', 'splash', 'groupDelay', 'ranged', 'directDamage', 'groupPhysicalDamage', 'explodeOnDeath', 'selfDestruct', 'sacrifice', 'unyielding'].includes(event.family ?? '')) return null;
+      const deathCast = ['explodeOnDeath', 'alignedDeathBlast'].includes(event.family ?? '');
+      if (deathCast) {
+        for (let i = context.index - 1; i >= 0; i--) {
+          const previous = context.events[i];
+          if (previous?.type === 'CardDied' && previous.instanceId === event.instanceId) {
+            if (deathBlastIndex(context.events, i, event.instanceId) === context.index) return null;
+            break;
+          }
+        }
+      }
+      if (['concealment', 'firstStrike', 'vanguard', 'devour', 'masterpiece', 'foxSpiritSummon', 'antiAir', 'groupGround', 'siege', 'berserk', 'severeFrost', 'burning', 'venom', 'bleeding', 'grievousWound', 'splash', 'groupDelay', 'ranged', 'directDamage', 'groupPhysicalDamage', 'selfDestruct', 'sacrifice', 'unyielding'].includes(event.family ?? '')) return null;
       const template = event.family ? FAMILY_TO_EFFECT[event.family] : undefined;
       if (!template) {
         return null;
       }
-      const from = castPointOf(context.worldPointOf(event.instanceId), event.side);
+      const from = deathCast ? impactPointOf(context.worldPointOf(event.instanceId))
+        : castPointOf(context.worldPointOf(event.instanceId), event.side);
       // Self-heals/buffs must retain their actual recipient, including group casts.
       const next = context.events[context.index + 1];
       const targets = next?.type === 'SpellReflected' && next.casterId === event.instanceId
-        ? [{ instanceId: next.reflectorId, side: next.side }] : targetsOf(context);
+        ? [{ instanceId: next.reflectorId, side: next.side }]
+        : event.targetInstanceId ? [{ instanceId: event.targetInstanceId, side: oppositeOf(event.side) }] : targetsOf(context);
       if (usesSlash(template) && targets.length === 0) return null;
+      if (ENEMY_CARD_ATTACK_FAMILIES.has(event.family ?? '') &&
+        !targets.some((target) => target.side !== event.side)) return null;
       const points = targets.map((target) => (event.family === 'criticalCollapse' || event.family === 'poisonCloud')
         ? context.cardFacePointOf?.(target.instanceId) ?? pointFor(target, context) : pointFor(target, context));
       const [first, ...rest] = points;
@@ -184,11 +199,13 @@ export function effectRequestFor(
 
     case 'SpellReflected': {
       if (['severeFrost', 'burning', 'venom', 'bleeding', 'grievousWound', 'groupDelay'].includes(event.family)) return null;
-      const template = event.family === 'explodeOnDeath' ? 'groupBombard' : FAMILY_TO_EFFECT[event.family];
+      const template = event.family === 'explodeOnDeath' ? 'groupBombard' : event.family === 'alignedDeathBlast' ? 'bombard' : FAMILY_TO_EFFECT[event.family];
       if (!template) return null;
-      const points = targetsOf(context).map((target) => event.family === 'poisonCloud'
+      const resolvedTargets = targetsOf(context);
+      if (ENEMY_CARD_ATTACK_FAMILIES.has(event.family) && resolvedTargets.length === 0) return null;
+      const points = resolvedTargets.map((target) => event.family === 'poisonCloud'
         ? context.cardFacePointOf?.(target.instanceId) ?? pointFor(target, context) : pointFor(target, context));
-      return { template, family: event.family === 'explodeOnDeath' ? 'groupBombard' : event.family,
+      return { template, family: event.family === 'explodeOnDeath' ? 'groupBombard' : event.family === 'alignedDeathBlast' ? 'bombard' : event.family,
         sourceInstanceId: event.reflectorId, from: castPointOf(context.worldPointOf(event.reflectorId), event.side),
         to: points[0] ?? impactPointOf(context.worldPointOf(event.casterId)), extraTargets: points.slice(1),
         intensity: event.param ?? 1, color: FAMILY_TINT[event.family] };
@@ -282,7 +299,7 @@ export function effectRequestFor(
     }
 
     case 'CooldownChanged': {
-      if (event.cause !== 'skill') return null;
+      if (event.cause !== 'skill' && event.cause !== 'cooldownCard') return null;
       const point = impactPointOf(context.worldPointOf(event.instanceId));
       return { template: 'cooldown', family: event.to < event.from ? 'haste' : 'delay', from: point, to: point, intensity: 1 };
     }
@@ -302,9 +319,11 @@ export function effectRequestFor(
       if (skill?.type === 'SkillTriggered') {
         const next = context.events[index + 1];
         const refs = next?.type === 'SpellReflected' && next.casterId === event.instanceId
-          ? [{ instanceId: next.reflectorId, side: next.side }] : targetsOf({ ...context, index });
+          ? [{ instanceId: next.reflectorId, side: next.side }]
+          : skill.targetInstanceId ? [{ instanceId: skill.targetInstanceId, side: oppositeOf(event.side) }] : targetsOf({ ...context, index });
         const points = refs.map((target) => pointFor(target, context));
-        return { template: 'deathBombard', family: 'explodeOnDeath', sourceInstanceId: event.instanceId,
+        if (points.length === 0) return null;
+        return { template: 'deathBombard', family: skill.family ?? 'explodeOnDeath', sourceInstanceId: event.instanceId,
           from: point, to: points[0] ?? context.playerAnchor(oppositeOf(event.side)),
           extraTargets: points.slice(1), intensity: skill.param ?? 2 };
       }
@@ -330,6 +349,10 @@ export function effectRequestFor(
  */
 export function logLineFor(event: BattleEvent, nameOf: (id: string) => string): string | null {
   switch (event.type) {
+    case 'CooldownCardGranted': return `${event.side === 'player' ? '我方' : '敌方'}${event.reason === 'skip' ? '跳过普通出牌，获得冷却牌' : '获得后手补偿冷却牌'}`;
+    case 'CooldownCardUsed': return `冷却牌使 ${nameOf(event.targetInstanceId)} 冷却减少 1`;
+    case 'PriorityChosen': return `${event.side === 'player' ? '我方' : '敌方'}选择${event.order === 'first' ? '先行动' : '后行动'}`;
+    case 'DeploymentWindowOpened': return `${event.side === 'player' ? '我方' : '敌方'}获得客场部署窗口`;
     case 'CardPlayed':
       return `${nameOf(event.instanceId)} 进入准备区`;
     case 'CardDeployed':

@@ -645,14 +645,15 @@ describe('战役与结算', () => {
 });
 
 describe('稀有度索引', () => {
-  it('#yoroi 不在有效名单里，排序时给哨兵值而不是 NaN', () => {
-    expect(rarityIndex.isKnown('#yoroi')).toBe(false);
-    expect(rarityIndex.rankOf('#yoroi')).toBe(UNKNOWN_RANK);
-    const sorted = [...rarityIndex.order, '#yoroi'].sort(
+  it('没登记的稀有度给哨兵值而不是 NaN', () => {
+    // 用一个真的不存在的档位：`#yoroi` 2026-10-09 起已并入 `EVENT_RARITIES`
+    expect(rarityIndex.isKnown('#unknown')).toBe(false);
+    expect(rarityIndex.rankOf('#unknown')).toBe(UNKNOWN_RANK);
+    const sorted = [...rarityIndex.order, '#unknown'].sort(
       (a, b) => rarityIndex.rankOf(a) - rarityIndex.rankOf(b),
     );
-    expect(sorted[sorted.length - 1]).toBe('#yoroi');
-    expect(Number.isNaN(rarityIndex.rankOf('#yoroi'))).toBe(false);
+    expect(sorted[sorted.length - 1]).toBe('#unknown');
+    expect(Number.isNaN(rarityIndex.rankOf('#unknown'))).toBe(false);
   });
 
   it('顺序由稀有到普通，事件稀有度排在最后', () => {
@@ -660,6 +661,14 @@ describe('稀有度索引', () => {
     expect(rarityIndex.order).toContain('D');
     expect(rarityIndex.rankOf('SSS')).toBeLessThan(rarityIndex.rankOf('D'));
     expect(rarityIndex.rankOf('#elna')).toBeGreaterThan(rarityIndex.rankOf('D'));
+  });
+
+  it('`#yoroi` 已登记，图鉴/配置的筛选分组才排得出它', () => {
+    expect(rarityIndex.isKnown('#yoroi')).toBe(true);
+    expect(rarityIndex.rankOf('#yoroi')).toBeGreaterThan(rarityIndex.rankOf('D'));
+    expect(rarityIndex.order[rarityIndex.order.length - 1]).toBe('#yoroi');
+    // 配色仍取自 rarities.json，不是兜底灰
+    expect(rarityIndex.colorOf('#yoroi')).toBe('#ff1493');
   });
 
   it('配色取自数据，未知给中性灰', () => {

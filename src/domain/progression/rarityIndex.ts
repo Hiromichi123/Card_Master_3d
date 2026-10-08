@@ -3,13 +3,14 @@
  *
  * 这些信息在三个地方各有一份，容易对不上：
  * - `STANDARD_RARITIES` / `EVENT_RARITIES`（`domain/cards/types.ts`）——**顺序的权威**；
- * - `rarities.json`——**配色的权威**，也是唯一知道 `#yoroi` 存在的地方；
+ * - `rarities.json`——**配色的权威**（事件档 `#elna` / `#yoroi` 的配色只在这里）；
  * - 各处硬编码的数组——旧版三处顺序还不一样，其中一处在组卡里把 `+` 版本合并掉了。
  *
  * 所以这里只做一件事：把「顺序」和「配色」拼成一张查询表，
  * **未知稀有度一律给哨兵值**，绝不返回 `undefined`。
  * 旧版按硬编码顺序查 `#yoroi` 得到 `undefined`，排序里就冒出 `NaN`——
- * 那种排序不会报错，只是顺序莫名其妙。
+ * 那种排序不会报错，只是顺序莫名其妙。（`#yoroi` 自 2026-10-09 起已登记在
+ * `EVENT_RARITIES` 里，哨兵值这条规则仍然管着以后的未知档位。）
  */
 
 import { EVENT_RARITIES, STANDARD_RARITIES } from '../cards/types';
@@ -32,7 +33,7 @@ export interface RarityIndex {
   readonly colorOf: (rarity: string) => string;
   readonly isEvent: (rarity: string) => boolean;
   readonly isHighRarity: (rarity: string) => boolean;
-  /** 是否是本轮认识的有效稀有度（`#yoroi` 为 false）。 */
+  /** 是否是本轮认识的有效稀有度（只有 `order` 里的档位为 true）。 */
   readonly isKnown: (rarity: string) => boolean;
 }
 

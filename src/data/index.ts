@@ -70,9 +70,9 @@ export const cardById: ReadonlyMap<string, CardDefinition> = new Map(
 /**
  * 稀有度表，**带类型**。
  *
- * 注意它比 `CardRarity` 联合多一条 `#yoroi`（9 张元数据不完整的卡）。
- * 所以排序、配色一律从这张表派生，不要硬编码一份顺序——
- * 硬编码会让 `#yoroi` 查到 `undefined`、排序里冒出 `NaN`（P5 开工前实测过）。
+ * 它是**配色的权威**：`rarityIndex` 的顺序取自代码里的常量，配色一律走这张表。
+ * 不要另硬编码一份顺序——旧版就是那么干的，`#yoroi` 会查到 `undefined`、
+ * 排序里冒出 `NaN`（P5 开工前实测过）。
  */
 export interface RarityEntry {
   readonly rarity: string;

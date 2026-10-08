@@ -1,6 +1,7 @@
 import type { AttackStatusKind, CardInstance, CombatStateGroup, SideId } from '../cards/types';
 import type { BattleEventPayload, BattleState, DamageSource } from '../battle/types';
 import type { Rng } from '../battle/rng';
+import { resetCardLife } from '../battle/cardLifecycle';
 
 /**
  * 35 个技能族的规则实现。
@@ -249,7 +250,7 @@ function woundedAllies(ctx: SkillContext): CardInstance[] {
 /** Hostile spells are intercepted as one whole cast, including every target of group spells. */
 export const OFFENSIVE_SPELL_FAMILIES = new Set([
   'fireball', 'iceSeal', 'lightning', 'groupFireball', 'groupIceSeal', 'groupLightning',
-  'bombard', 'groupBombard', 'explodeOnDeath', 'curse', 'delay', 'instantDeath', 'slash', 'groupSlash', 'teleport', 'groupDelay', 'severeFrost', 'burning', 'venom', 'bleeding', 'grievousWound', 'poisonCloud',
+  'bombard', 'groupBombard', 'explodeOnDeath', 'alignedDeathBlast', 'curse', 'delay', 'instantDeath', 'slash', 'groupSlash', 'teleport', 'groupDelay', 'severeFrost', 'burning', 'venom', 'bleeding', 'grievousWound', 'poisonCloud',
   // Sword dance is direct HP loss across mechanisms, so it is not a reflectable spell.
 ]);
 
@@ -271,6 +272,7 @@ export const SKILL_RULES: Record<string, SkillRule> = {
     if(ids.length>0)ctx.emit({type:'DiscardDevoured',side,casterId:ctx.self.instanceId,instanceIds:ids});
   } },
   masterpiece: { trigger: 'ON_DEPLOY', apply: (ctx) => ctx.summonCard?.('A+_006') },
+  foxSpiritSummon: { trigger: 'ON_DEPLOY', apply: (ctx) => ctx.summonCard?.('#yoroi_009') },
   // The engine rolls once before emitting SkillTriggered, so failed rolls have no kill animation.
   lethalStrike: { trigger: 'BEFORE_ATTACK', apply(ctx) {
     const id=ctx.state.zones[opponentOf(ctx.owner)].battle[ctx.attack?.defenderSlot??ctx.self.slotIndex];
@@ -403,21 +405,23 @@ export const SKILL_RULES: Record<string, SkillRule> = {
   // ---- 爆破（3）----------------------------------------------------------
   bombard: { trigger: 'BEFORE_ATTACK', apply: hitRandomEnemy },
   groupBombard: { trigger: 'BEFORE_ATTACK', apply: hitAllEnemies },
+  alignedDeathBlast: {
+    trigger: 'ON_DEATH',
+    apply(ctx) {
+      const slot = ctx.deathSlot ?? ctx.self.slotIndex;
+      const id = ctx.state.zones[opponentOf(ctx.owner)].battle[slot];
+      const target = ctx.reflectedTarget ?? (id ? ctx.state.instances[id] : undefined);
+      if (target && isBattleActive(ctx.state, target)) ctx.damage(target, ctx.param, 'skill');
+    },
+  },
   explodeOnDeath: {
     trigger: 'ON_DEATH',
     apply(ctx) {
-      const side = opponentOf(ctx.owner);
       const enemies = enemiesInBattle(ctx).filter((card) => isBattleActive(ctx.state, card));
       if (enemies.length > 0) {
         for (const target of enemies) ctx.damage(target, ctx.param, 'skill');
       }
-      else {
-        const before = ctx.state.hp[side];
-        const amount = Math.max(0, Math.min(before, ctx.param));
-        ctx.state.hp[side] = before - amount;
-        ctx.emit({ type: 'PlayerHpChanged', side, amount, hpBefore: before,
-          hpAfter: ctx.state.hp[side], source: 'deathBlast' });
-      }
+
     },
   },
 
@@ -440,6 +444,7 @@ export const SKILL_RULES: Record<string, SkillRule> = {
         if (instance) {
           instance.zone = 'hand';
           instance.slotIndex = zones.hand.length - 1;
+          resetCardLife(ctx.state, instance, ctx.emit);
         }
         ctx.emit({
           type: 'CardDrawn',
@@ -467,12 +472,11 @@ export const SKILL_RULES: Record<string, SkillRule> = {
         if (!instance) {
           continue;
         }
-        // 回到手牌，重置一次性标记
-        instance.marks.revivedUsed = false;
-        instance.marks.undyingUsed = false;
+        // A retrieved card starts with clean base stats and a fresh lifecycle.
         instance.zone = 'hand';
         zones.hand.push(instanceId);
         instance.slotIndex = zones.hand.length - 1;
+        resetCardLife(ctx.state, instance, ctx.emit);
         ctx.emit({
           type: 'CardMoved',
           side: ctx.owner,

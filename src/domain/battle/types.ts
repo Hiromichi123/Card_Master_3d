@@ -76,6 +76,9 @@ export interface BattleConfig {
 export type BattlePhase =
   /** 等待当前方出牌或结束回合。 */
   | 'awaitingPlay'
+  /** 主场选择操作顺序；客场只获得部署窗口。 */
+  | 'awaitingPriority'
+  | 'awaitingResponse'
   /** 正在按顺序结算一次行动。 */
   | 'resolving'
   /** 已经结束。 */
@@ -116,9 +119,14 @@ export interface BattleState {
   readonly seed: number;
   /** RNG 的内部状态；规则随机与粒子随机完全分开（PLAN 第 4.2 节）。 */
   rng: RngState;
-  /** 从 1 开始；仅在控制权回到 player 时 +1，与旧版语义一致。 */
+  /** 从 1 开始；双方各持有一次回合为一轮，与开局先后手无关。 */
   turnNumber: number;
   currentSide: SideId;
+  readonly startingSide: SideId;
+  /** 单调增加的主场行动编号；客场部署不增加。 */
+  turnIndex: number;
+  priority: 'first' | 'last' | null;
+  hostAttacked: boolean;
   phase: BattlePhase;
   /** 双方本体生命。 */
   hp: Record<SideId, number>;
@@ -174,6 +182,9 @@ export type Command =
       /** 目标准备槽下标；省略时使用从左到右第一个空槽。 */
       readonly prepSlot?: number;
     }
+  | { readonly kind: 'deployCard'; readonly side: SideId; readonly instanceId: string; readonly battleSlot: number }
+  | { readonly kind: 'useCooldownCard'; readonly side: SideId; readonly instanceId: string; readonly targetInstanceId: string }
+  | { readonly kind: 'choosePriority'; readonly side: SideId; readonly order: 'first' | 'last' }
   | { readonly kind: 'endTurn'; readonly side: SideId }
   /** 测试与调试用：直接推进到下一方的回合开始。 */
   | { readonly kind: 'concede'; readonly side: SideId };
@@ -186,7 +197,10 @@ export type CommandRejection =
   | 'cardNotInHand'
   | 'noEmptyPrepSlot'
   | 'rowsFull'
-  | 'battleEnded';
+  | 'battleEnded'
+  | 'cardNotReady'
+  | 'invalidInsertion'
+  | 'invalidCooldownTarget';
 
 /** 命令校验结果。 */
 export type CommandValidation =
@@ -216,8 +230,14 @@ export type BattleEvent = { readonly seq: number; readonly turn: number } & (
   | { readonly type: 'CardDrawn'; readonly side: SideId; readonly instanceId: string; readonly fromDeckIndex: number }
   | { readonly type: 'CardPlayed'; readonly side: SideId; readonly instanceId: string; readonly prepSlot: number }
   | { readonly type: 'CooldownChanged'; readonly side: SideId; readonly instanceId: string; readonly from: number; readonly to: number; readonly cause: CooldownCause }
+  | { readonly type: 'CooldownCardGranted'; readonly side: SideId; readonly instanceId: string; readonly reason: 'secondPlayer' | 'skip' }
+  | { readonly type: 'CooldownCardUsed'; readonly side: SideId; readonly instanceId: string; readonly targetInstanceId: string }
+  | { readonly type: 'PriorityChosen'; readonly side: SideId; readonly order: 'first' | 'last' }
+  | { readonly type: 'DeploymentWindowOpened'; readonly side: SideId; readonly hostSide: SideId }
+  | { readonly type: 'FormationInserted'; readonly side: SideId; readonly order: readonly (string | null)[] }
+  | { readonly type: 'CardReset'; readonly side: SideId; readonly instanceId: string; readonly groupId: string; readonly atk: number; readonly hp: number; readonly maxHp: number; readonly cd: number; readonly flying: boolean }
   | { readonly type: 'CardDeployed'; readonly side: SideId; readonly instanceId: string; readonly battleSlot: number }
-  | { readonly type: 'SkillTriggered'; readonly side: SideId; readonly instanceId: string; readonly trigger: string; readonly family: string | null; readonly raw: string; readonly param: number | null }
+  | { readonly type: 'SkillTriggered'; readonly side: SideId; readonly instanceId: string; readonly trigger: string; readonly family: string | null; readonly raw: string; readonly param: number | null; readonly targetInstanceId?: string | null }
   | { readonly type: 'AttackDeclared'; readonly side: SideId; readonly attackerId: string; readonly targetInstanceId: string | null; readonly targetSlot: number; readonly attackKind?: 'ranged' | 'piercing' | 'siege' }
   | { readonly type: 'DamageApplied'; readonly side: SideId; readonly instanceId: string; readonly amount: number; readonly hpBefore: number; readonly hpAfter: number; readonly source: DamageSource }
   | { readonly type: 'SpellReflected'; readonly side: SideId; readonly casterId: string; readonly reflectorId: string; readonly family: string; readonly raw: string; readonly param: number | null }
@@ -244,7 +264,7 @@ export type BattleEvent = { readonly seq: number; readonly turn: number } & (
   | { readonly type: 'BattleEnded'; readonly outcome: BattleOutcome }
 );
 
-export type CooldownCause = 'turnTick' | 'skill' | 'deploy' | 'reset';
+export type CooldownCause = 'turnTick' | 'skill' | 'deploy' | 'reset' | 'cooldownCard';
 
 export type DamageSource =
   /** 从左到右的普通攻击。 */

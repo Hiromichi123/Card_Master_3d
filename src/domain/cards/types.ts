@@ -25,7 +25,8 @@ export type CardRarity =
   | 'C+'
   | 'C'
   | 'D'
-  | '#elna';
+  | '#elna'
+  | '#yoroi';
 
 /**
  * 旧项目的 RARITY_TO_LEVEL（`utils/card_database.py:11`）。
@@ -45,9 +46,10 @@ export const RARITY_TO_LEVEL: Record<CardRarity, number> = {
   C: 5,
   D: 6,
   '#elna': 0,
+  '#yoroi': 3,
 };
 
-/** 普通卡池参与的稀有度；`#yoroi` 未完成，不在其中。 */
+/** 普通卡池参与的稀有度。`#` 开头的事件档（`#elna` / `#yoroi`）不进这张表。 */
 export const STANDARD_RARITIES: readonly CardRarity[] = [
   'SSS',
   'SS+',
@@ -63,8 +65,18 @@ export const STANDARD_RARITIES: readonly CardRarity[] = [
   'D',
 ];
 
-/** 事件卡稀有度（目录名以 `#` 开头）。 */
-export const EVENT_RARITIES: readonly CardRarity[] = ['#elna'];
+/**
+ * 事件卡稀有度（目录名以 `#` 开头）。
+ *
+ * **这个数组的顺序就是各界面的分组顺序**（`rarityIndex.order` = 普通档 + 事件档），
+ * 事件档一律排在 12 个普通档之后，图鉴与配置的筛选 chip 直接照它渲染。
+ *
+ * `#yoroi` 原先不在这里：那 9 张卡的 atk/hp/cd 在旧数据里全是 0（`status:
+ * incomplete`），当时连 `CardRarity` 联合都不收它，于是图鉴/配置里既没有
+ * `#yoroi` 的分组、融合的材料网格也按 `fusionSpec.rarityOrder` 把它整张滤掉。
+ * 2026-10-09 数据补齐、9 张全部 `status: complete`，这里补登记。
+ */
+export const EVENT_RARITIES: readonly CardRarity[] = ['#elna', '#yoroi'];
 
 /**
  * 卡牌数据的完整程度。
@@ -210,7 +222,7 @@ export interface CardMarks {
 export interface UnyieldingState {
   active: boolean;
   used: boolean;
-  /** The next full friendly turn after the lethal hit. */
+  /** Host turnIndex of the next full friendly action after the lethal hit; response windows do not advance it. */
   expiresAfterTurn: number;
 }
 

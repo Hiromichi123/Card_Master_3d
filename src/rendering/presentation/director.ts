@@ -120,6 +120,7 @@ function spawnForEvent(
   deps: DirectorDeps,
 ): { instanceId: string; point: Point } | null {
   switch (event.type) {
+    case 'CooldownCardGranted':
     case 'CardDrawn':
       return { instanceId: event.instanceId, point: deps.pilePointOf(event.side, 'deck') };
     case 'CardPlayed':
@@ -197,11 +198,11 @@ export function buildBeats(resolution: Resolution, deps: DirectorDeps): Beat[] {
       : event.type === 'LifeTransferred' ? 0.42
       : event.type === 'FormationShuffled' ? 0.3
       : event.type === 'AttackDeclared' ? (event.attackKind && event.attackKind !== 'siege' ? RANGED_HIT_SECONDS : ATTACK_OUT_SECONDS)
-      : event.type === 'SkillTriggered' && ['concealment', 'firstStrike', 'vanguard', 'devour', 'masterpiece', 'antiAir', 'groupGround', 'siege', 'berserk', 'severeFrost', 'burning', 'venom', 'bleeding', 'grievousWound', 'splash', 'groupDelay', 'ranged', 'directDamage', 'groupPhysicalDamage', 'selfDestruct', 'sacrifice', 'unyielding'].includes(event.family ?? '') ? 0
+      : event.type === 'SkillTriggered' && ['concealment', 'firstStrike', 'vanguard', 'devour', 'masterpiece', 'foxSpiritSummon', 'antiAir', 'groupGround', 'siege', 'berserk', 'severeFrost', 'burning', 'venom', 'bleeding', 'grievousWound', 'splash', 'groupDelay', 'ranged', 'directDamage', 'groupPhysicalDamage', 'selfDestruct', 'sacrifice', 'unyielding'].includes(event.family ?? '') ? 0
       : event.type === 'SkillTriggered' && ['piercing', 'groupPiercing'].includes(event.family ?? '') ? RANGED_HIT_SECONDS
       : event.type === 'SkillTriggered' && event.family === 'poisonCloud' ? .42
       : event.type === 'SkillTriggered' && event.family === 'grantDodge' ? 0.3
-      : (event.type === 'SkillTriggered' && event.family === 'explodeOnDeath') || (event.type === 'SpellReflected' && event.family === 'explodeOnDeath') ? DEATH_BOMBARD_HIT_SECONDS
+      : ((event.type === 'SkillTriggered' || event.type === 'SpellReflected') && ['explodeOnDeath', 'alignedDeathBlast'].includes(event.family ?? '')) ? DEATH_BOMBARD_HIT_SECONDS
       : (event.type === 'SkillTriggered' || event.type === 'SpellReflected') && ['bombard', 'groupBombard'].includes(event.family ?? '') ? BOMBARD_HIT_SECONDS
       : event.type === 'SpellReflected' && ['severeFrost', 'burning', 'venom', 'bleeding', 'grievousWound', 'groupDelay'].includes(event.family) ? 0
       : event.type === 'SpellReflected' ? (event.family === 'lightning' || event.family === 'groupLightning' ? 0.26 : 0.42)

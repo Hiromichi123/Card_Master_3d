@@ -208,6 +208,7 @@ export function CardShowcase({ cardId, cardIds, onSelect, onClose }: CardShowcas
   return (
     <div
       className="showcase"
+      data-card-tip-scope="off"
       role="dialog"
       aria-label={`${card.name} 展示`}
       onClick={(event) => {

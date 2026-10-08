@@ -26,6 +26,7 @@ export function withModernTraits(original: CardDefinition): CardDefinition {
     else if (skill.raw === '先攻') family = 'firstStrike';
     else if (skill.raw === '吞噬') family = 'devour';
     else if (skill.raw === '至高之作') family = 'masterpiece';
+    else if (skill.raw === '召唤狐灵' || skill.raw === '狐灵召唤') family = 'foxSpiritSummon';
     else if (skill.raw === '先锋') family = 'vanguard';
     else if (skill.raw === '对空') family = 'antiAir';
     else if (skill.raw === '群体禁飞') family = 'groupGround';
@@ -45,8 +46,8 @@ export function withModernTraits(original: CardDefinition): CardDefinition {
       } else {
         const groupSlash = /^群体斩(\d+)击$/.exec(skill.raw);
         if (groupSlash) { family = 'groupSlash'; param = Number(groupSlash[1]); }
-        const death = /^(?:死亡爆裂|爆裂)(\d+)?$/.exec(skill.raw);
-        if (death) { family = 'explodeOnDeath'; param = death[1] ? Number(death[1]) : 2; }
+        const death = /^(群体爆裂|死亡爆裂|爆裂)(\d+)?$/.exec(skill.raw);
+        if (death) { family = death[1] === '爆裂' ? 'alignedDeathBlast' : 'explodeOnDeath'; param = death[2] ? Number(death[2]) : 2; }
       }
     }
     if (!family) return skill;

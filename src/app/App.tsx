@@ -277,7 +277,7 @@ function Screen({
     return <DataProbe />;
   }
   if (route === 'viewer') {
-    return <EffectLabScene />;
+    return <div data-card-tip-scope="off" style={{ display: 'contents' }}><EffectLabScene /></div>;
   }
 
   if (snapshot.status === 'loading') {

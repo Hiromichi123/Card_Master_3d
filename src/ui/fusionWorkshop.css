@@ -1,0 +1,52 @@
+/* Workshop surfaces share the warm brass/glass language of deck construction. */
+.fusion-workshop > .menu__scrim { background: linear-gradient(135deg, #101723dd, #151c27b8 48%, #211e20d9); }
+.fusion-workshop .fusion__header { left: 3.5%; right: 3.5%; top: 3%; }
+.fusion-workshop .fusion__header h1 { color: #f2dfb2; font-size: calc(59 * var(--ui)); letter-spacing: .1em; text-shadow: 0 3px 18px #0009; }
+.fusion-workshop .fusion__collection, .fusion-workshop .fusion__info {
+  top: 16%; height: 78%; padding: calc(23 * var(--ui));
+  border: 1px solid #cfb27a66; border-radius: calc(15 * var(--ui));
+  background: linear-gradient(135deg, #5147353d, #15212ddd 45%, #20262deb);
+  box-shadow: inset 0 0 0 1px #efd1910d, 0 12px 35px #0003;
+}
+.fusion-workshop .fusion__collection { left: 3.5%; width: 29.5%; }
+.fusion-workshop .fusion__info { left: 80.5%; width: 16%; }
+.fusion-workshop .fusion__altar { left: 34%; top: 14%; width: 45.5%; height: 81%; gap: calc(12 * var(--ui)); }
+.fusion-workshop .fusion__altar-heading { display: flex; flex-direction: column; align-items: center; gap: calc(8 * var(--ui)); padding-top: calc(8 * var(--ui)); }
+.fusion-workshop .fusion__altar-heading > span { color: #e5c88b; font-size: calc(32 * var(--ui)); letter-spacing: .15em; }
+.fusion-workshop .fusion__altar-heading small { color: #b4b5b1; font-size: calc(18 * var(--ui)); }
+.fusion-workshop .fusion__canvas {
+  border-radius: calc(20 * var(--ui));
+  background: radial-gradient(ellipse at 50% 68%, #9a774a1c, transparent 52%), radial-gradient(ellipse at 50% 35%, #395a7326, transparent 65%);
+}
+.fusion-workshop h2 { font-size: calc(28 * var(--ui)); color: #ead19d; }
+.fusion-workshop h2 small { font-size: calc(17 * var(--ui)); }
+.fusion-workshop .btn, .fusion-workshop .fusion__slot, .fusion-workshop .fusion__result {
+  border: 1px solid #d0af6b66; color: #eedab5;
+  background: linear-gradient(145deg, #80674238, #172331dd 60%, #55432830);
+  box-shadow: inset 0 1px #ffe5aa18, 0 3px 10px #0003;
+  border-radius: calc(8 * var(--ui));
+}
+.fusion-workshop .btn:hover:not(:disabled), .fusion-workshop .fusion__slot:hover:not(:disabled), .fusion-workshop .fusion__result:hover:not(:disabled) {
+  border-color: #ebca85; background: linear-gradient(135deg, #9b7a474c, #26313eee 60%, #79603338);
+}
+.fusion-workshop .btn--primary { border-color: #ebca85; color: #fff0cf; background: linear-gradient(135deg, #8d6f3f99, #393c32ef); }
+.fusion-workshop .btn:focus-visible, .fusion-workshop .fusion__slot:focus-visible { outline: 2px solid #ead19d; outline-offset: 2px; }
+.fusion-workshop .fusion__header .btn { font-size: calc(24 * var(--ui)); }
+.fusion-workshop .fusion__actions { margin-top: calc(10 * var(--ui)); gap: calc(14 * var(--ui)); }
+.fusion-workshop .fusion__actions .btn { font-size: calc(26 * var(--ui)); min-height: calc(62 * var(--ui)); }
+.fusion-workshop .fusion__slots { gap: calc(8 * var(--ui)); }
+.fusion-workshop .fusion__slot { font-size: calc(18 * var(--ui)); padding: calc(10 * var(--ui)) calc(7 * var(--ui)); }
+.fusion-workshop .fusion__hint, .fusion-workshop .fusion__deck-note, .fusion-workshop .fusion__error { font-size: calc(18 * var(--ui)); margin-top: calc(6 * var(--ui)); }
+.fusion-workshop .fusion__filters input, .fusion-workshop .fusion__filters select { border-color: #cfb27a50; background: #101a26bf; color: #ece1cb; font-size: calc(21 * var(--ui)); }
+.fusion-workshop .fusion__grid { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: calc(10 * var(--ui)); }
+.fusion-workshop .fusion__grid .tile { border-color: #cfb27a44; border-radius: calc(8 * var(--ui)); }
+.fusion-workshop .fusion__grid .tile:hover:not(:disabled) { border-color: #ebca85; }
+.fusion-workshop .fusion__info p { font-size: calc(19 * var(--ui)); }
+.fusion-workshop .fusion__probabilities li { padding: calc(8 * var(--ui)) calc(10 * var(--ui)); margin: calc(6 * var(--ui)) 0; border: 1px solid #cfb27a16; border-radius: calc(6 * var(--ui)); background: #111a253d; font-size: calc(22 * var(--ui)); }
+.fusion-workshop .fusion__latest { margin-top: calc(24 * var(--ui)); padding-top: calc(20 * var(--ui)); }
+.fusion-workshop .fusion__result { font-size: calc(22 * var(--ui)); padding: calc(15 * var(--ui)); }
+.fusion-workshop .fusion__result span { font-size: calc(18 * var(--ui)); }
+.fusion-workshop .scroll, .fusion-workshop .fusion__info { scrollbar-width: thin; scrollbar-color: #c7a96a #14202b; }
+.fusion-workshop .scroll::-webkit-scrollbar, .fusion-workshop .fusion__info::-webkit-scrollbar { width: 8px; }
+.fusion-workshop .scroll::-webkit-scrollbar-track, .fusion-workshop .fusion__info::-webkit-scrollbar-track { background: #14202b; border-radius: 8px; }
+.fusion-workshop .scroll::-webkit-scrollbar-thumb, .fusion-workshop .fusion__info::-webkit-scrollbar-thumb { border: 2px solid #14202b; border-radius: 8px; background: linear-gradient(#e6ce96, #9f804c); }

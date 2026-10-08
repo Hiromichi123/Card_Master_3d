@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 
 import { cardById } from '../data';
+import { assetManifest } from '../data/assets';
 import { collectionStats, filterByRarity, ownedEntries, sortForCollection } from '../domain/progression/collection';
 import type { ProfileState } from '../domain/progression/types';
 import { useRarityIndex } from '../state/useRarityIndex';
@@ -8,6 +9,8 @@ import { CardGrid } from '../ui/CardGrid';
 import { CardTile } from '../ui/CardTile';
 import { ScrollArea } from '../ui/ScrollArea';
 import { CardShowcase } from '../ui/CardShowcase';
+import { CrossfadeBackground } from '../ui/SceneBackground';
+import { useParallax } from '../ui/useParallax';
 
 /**
  * 卡牌图鉴。
@@ -16,11 +19,16 @@ import { CardShowcase } from '../ui/CardShowcase';
  * 只按稀有度筛选、旁边一块统计。排序用**固定的稀有度顺序**，不给玩家选——
  * 旧版也是这样，而「按拥有顺序」这种排序在有 247 张卡时并没有更好用。
  *
- * 两处按 PLAN 第 5 节做了调整：
+ * 三处按 PLAN 第 5 节做了调整：
  *
  * - 缩略图走 `thumbnail` 档并 `loading="lazy"`（一屏几十张走高清档会打爆纹理预算）；
  * - 排序从 `rarities.json` 派生而不是硬编码一份顺序——硬编码会让 `#yoroi`
  *   查到 `undefined`，排序里冒出 `NaN`，而那**不会报错**，只是顺序莫名其妙。
+ * - **背景与配置页同一套**（2026-10-09 按用户要求加）：同一张主菜单图、
+ *   同一个 `.menu__scrim` 压暗、同一个 `useParallax` 视差。旧版本屏是纯色底，
+ *   与配置页并排放着就不是一套界面了。用的是配置页那句
+ *   `assetManifest.shared.menu['menu_bg']`——主菜单图在 manifest 的 `menu`
+ *   分组里，不在 `bg` 分组（`backgroundUrl('bg/menu')` 查不到它）。
  */
 export interface CollectionSceneProps {
   readonly profile: ProfileState;
@@ -30,6 +38,9 @@ export function CollectionScene({ profile }: CollectionSceneProps) {
   const rarityIndex = useRarityIndex();
   const [rarity, setRarity] = useState<string | null>(null);
   const [showcaseCardId, setShowcaseCardId] = useState<string | null>(null);
+  /* 背景与视差：与配置页逐字相同（见文件头第 3 条） */
+  const parallaxRef = useParallax();
+  const background = assetManifest.shared.menu['menu_bg']?.url ?? null;
 
   const rarityOf = useMemo(
     () => (cardId: string) => cardById.get(cardId)?.rarity ?? null,
@@ -54,7 +65,11 @@ export function CollectionScene({ profile }: CollectionSceneProps) {
   const cardIds = useMemo(() => entries.map((entry) => entry.cardId), [entries]);
 
   return (
-    <div className="screen collection">
+    <div className="screen collection" ref={parallaxRef}>
+      {/* 与配置页同一套：背景图 + 压暗层，都在内容之下（见 `.collection__bg`） */}
+      <CrossfadeBackground url={background} className="menu__bg collection__bg" />
+      <div className="menu__scrim" aria-hidden="true" />
+
       <header className="screen__head">
         <div>
           <h1 className="screen__title">卡牌图鉴</h1>

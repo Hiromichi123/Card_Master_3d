@@ -78,8 +78,8 @@ export type CardPoolIndex = ReadonlyMap<CardRarity, readonly string[]>;
 /**
  * 从卡牌定义建卡池。
  *
- * 只收 `status === 'complete'`：9 张 `#yoroi` 的攻防冷却全是 0，
- * 抽到手里是一张不能用的卡。**按 cardId 排序**，
+ * 只收 `status === 'complete'`：不完整的卡攻防冷却都是 0，抽到手里是一张不能用的卡。
+ * **按 cardId 排序**，
  * 这样同一个种子抽到什么是确定的，与 JSON 里的数组顺序无关。
  */
 export function buildCardPool(

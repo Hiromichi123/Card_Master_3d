@@ -1,3 +1,4 @@
+import type { ThreeEvent } from '@react-three/fiber';
 import { Canvas } from '@react-three/fiber';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { PCFShadowMap } from 'three';
@@ -7,7 +8,8 @@ import { BattleBoard } from '../rendering/battle/BattleBoard';
 import { DealAnimation } from '../rendering/battle/DealAnimation';
 import { DepartingCard } from '../rendering/battle/DepartingCard';
 import { PresentationDriver } from '../rendering/battle/PresentationDriver';
-import { buildBoard } from '../rendering/battle/placements';
+import { buildBoard, slotPosition, slotKeyFor } from '../rendering/battle/placements';
+import { DeploymentDragController, type DeploymentDrag } from '../rendering/battle/DeploymentDragController';
 import { BATTLE_CARD_SCALE, type SlotZone } from '../rendering/battle/layout';
 import { effectDirector } from '../rendering/effects/effectDirector';
 import { audioEngine } from '../services/audio/AudioEngine';
@@ -138,25 +140,68 @@ export function BattleScene({
     readonly card: CardDefinition;
     readonly instanceId: string;
   } | null>(null);
-  const [hovered, setHovered] = useState<CardDefinition | null>(null);
+
   const [pinned, setPinned] = useState(false);
 
+  const [drag, setDrag] = useState<DeploymentDrag | null>(null);
+  const ignoreClickUntil = useRef(0);
+  useEffect(() => { if (!snapshot.inputOpen) setDrag(null); }, [snapshot.inputOpen]);
+  const handleDragStart = useCallback((instanceId: string, event: ThreeEvent<PointerEvent>) => {
+    if (event.button !== 0 || !session.canDragDeploy(instanceId)) return;
+    event.stopPropagation();
+    event.nativeEvent.preventDefault();
+    event.nativeEvent.stopImmediatePropagation();
+    session.select(instanceId);
+    setPinned(false);
+    setDetail(null);
+    setDrag({ instanceId, pointerId: event.pointerId, side: session.getSnapshot().inputSide,
+      position: [event.point.x, 0.24, event.point.z], insertIndex: null,
+      startClient: [event.clientX, event.clientY], moved: false });
+  }, [session]);
+  const handleDragDrop = useCallback((active: DeploymentDrag, cancel: boolean) => {
+    ignoreClickUntil.current = Date.now() + 300;
+    setDrag(null);
+    if (!cancel && active.insertIndex !== null) session.deployAt(active.instanceId, active.insertIndex);
+    else session.select(!cancel && !active.moved ? active.instanceId : null);
+  }, [session]);
+  const handleDragMove = useCallback((active: DeploymentDrag) => setDrag(active), []);
   const canPlay = snapshot.inputOpen;
 
   const view = useMemo(
-    () =>
-      buildBoard(snapshot.display, {
+    () => {
+      const board = buildBoard(snapshot.display, {
         selectedInstanceId: snapshot.selectedInstanceId,
         playerCanPlay: canPlay,
-        inputSide: snapshot.currentSide,
+        inputSide: snapshot.inputSide,
+        handPlayable: snapshot.phase === 'awaitingPlay',
+        placeableBattleSlots: snapshot.playableBattleSlots,
+        deployableInstanceIds: snapshot.deployableInstanceIds,
         localHands: localMultiplayer,
         placeablePrepSlots: snapshot.playablePrepSlots,
-      }),
-    [snapshot.display, snapshot.selectedInstanceId, canPlay, snapshot.playablePrepSlots, snapshot.currentSide, localMultiplayer],
+      });
+      if (!drag) return board;
+      const ownRow = snapshot.display.zones[drag.side].battle;
+      return { ...board,
+        targeted: drag.insertIndex === null ? board.targeted : new Set([slotKeyFor(drag.side, 'battle', drag.insertIndex)]),
+        entries: board.entries.map((entry) => {
+          if (entry.instanceId === drag.instanceId) return { ...entry, position: drag.position,
+            scale: BATTLE_CARD_SCALE, statLayout: 'battle' as const, dragging: true, flying: false, selected: false };
+          const index = ownRow.indexOf(entry.instanceId);
+          if (drag.insertIndex !== null && index >= drag.insertIndex) return { ...entry, position: slotPosition(drag.side, 'battle', index + 1) };
+          return entry;
+        }),
+      };
+    },
+    [snapshot.display, snapshot.selectedInstanceId, canPlay, snapshot.playablePrepSlots, snapshot.playableBattleSlots,
+      snapshot.inputSide, snapshot.phase, snapshot.deployableInstanceIds, localMultiplayer, drag],
   );
 
   const handleCardClick = useCallback(
     (card: CardDefinition, instanceId: string) => {
+      if (Date.now() < ignoreClickUntil.current) return;
+      const current = session.getSnapshot();
+      const index = current.display.zones[current.inputSide].battle.indexOf(instanceId);
+      if (current.selectedKind === 'ready' && index >= 0) { session.deploySelectedAt(index); return; }
       setDetail({ card, instanceId });
       setPinned(true);
       // 只有手牌会被会话接受为「待打出的牌」；点场上的卡等于取消选牌
@@ -165,27 +210,19 @@ export function BattleScene({
     [session],
   );
 
-  const handleCardHover = useCallback((card: CardDefinition, hoveredNow: boolean) => {
-    setHovered((current) => {
-      if (hoveredNow) {
-        return card;
-      }
-      // 只有移开的正是当前悬停的那张才清空，
-      // 否则在两张卡之间快速移动时会因为离开事件迟到而闪一下
-      return current?.cardId === card.cardId ? null : current;
-    });
-  }, []);
-
   const handleSlotClick = useCallback(
     (side: SideId, zone: SlotZone, index: number) => {
-      if (zone === 'prep' && side === session.getSnapshot().currentSide) {
+      if (Date.now() < ignoreClickUntil.current) return;
+      if (side !== session.getSnapshot().inputSide) return;
+      if (zone === 'battle') { session.deploySelectedAt(index); return; }
+      if (zone === 'prep') {
         session.playSelectedAt(index);
       }
     },
     [session],
   );
 
-  const detailCard = pinned && detail ? detail.card : (hovered ?? detail?.card ?? null);
+  const detailCard = pinned && detail ? detail.card : null;
   const detailStats = useMemo(() => {
     const instanceId = detail?.instanceId;
     if (!instanceId) {
@@ -214,6 +251,7 @@ export function BattleScene({
           camera={{ position: [0, 11, 9], fov: 45, near: 0.1, far: 120 }}
           gl={{ antialias: true, powerPreference: 'high-performance' }}
           onPointerMissed={() => {
+            if (drag || Date.now() < ignoreClickUntil.current) return;
             // 点空白处取消固定。面板内的点击不会走到这里（DOM 层已挡住）
             setPinned(false);
             setDetail(null);
@@ -233,6 +271,7 @@ export function BattleScene({
           )}
 
           <PresentationDriver session={session} />
+          <DeploymentDragController drag={drag} session={session} onMove={handleDragMove} onDrop={handleDragDrop} />
           <EffectSystem
             capacity={profile.particleCapacity}
             // 战斗区放大到 1.5 倍，特效按同一比例放大才不会显得又小又碎
@@ -247,8 +286,9 @@ export function BattleScene({
             targeted={view.targeted}
             selectedInstanceId={snapshot.selectedInstanceId}
             onCardClick={handleCardClick}
-            onCardHover={handleCardHover}
             onSlotClick={handleSlotClick}
+            dragActive={drag !== null}
+            onCardPointerDown={handleDragStart}
           />
 
           {snapshot.display.proxies.map((proxy) => (
@@ -271,6 +311,7 @@ export function BattleScene({
           <BattleHud
             snapshot={snapshot}
             onEndTurn={() => session.endTurn()}
+            onChoosePriority={(order) => session.choosePriority(order)}
             onSkipPerformance={() => session.skipPerformance()}
             onAutoEnemyChange={(on) => session.setAutoEnemy(on)}
             {...(localMultiplayer && onExit ? { onExit } : {})}
@@ -287,7 +328,6 @@ export function BattleScene({
             pinned={pinned && detail !== null}
             onClose={() => {
               setDetail(null);
-              setHovered(null);
               setPinned(false);
               session.select(null);
             }}

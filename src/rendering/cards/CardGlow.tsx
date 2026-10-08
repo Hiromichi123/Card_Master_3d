@@ -56,6 +56,7 @@ const RARITY_GLOW: Record<CardRarity, { color: string; intensity: number; pulse:
   'SS+': { color: '#ff8072', intensity: 0.6, pulse: true },
   SSS: { color: '#ff0000', intensity: 0.65, pulse: true },
   '#elna': { color: '#ff1493', intensity: 0.65, pulse: true },
+  '#yoroi': { color: '#ff1493', intensity: 0.5, pulse: false },
 };
 
 export function CardGlow({ rarity, strength = 1, highlight }: {

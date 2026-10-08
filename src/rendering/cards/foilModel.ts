@@ -49,6 +49,7 @@ const STRENGTH: Record<CardRarity, number> = {
   'SS+': 0.64,
   SSS: 0.58,
   '#elna': 0.68,
+  '#yoroi': 0.52,
 };
 
 export function foilStrengthForRarity(rarity: CardRarity): number {

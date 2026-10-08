@@ -1,9 +1,13 @@
 import { ANIMATION_DURATION_SCALE } from '../anim/timing';
 import { useFrame } from '@react-three/fiber';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import type { Group, MeshStandardMaterial } from 'three';
 
 import type { AttackStatusKind, CardDefinition } from '../../domain/cards/types';
+import { hideCardTip, showCardTip, refreshCardTip, useCardTipStore } from '../../state/cardTipStore';
+import type { ThreeEvent } from '@react-three/fiber';
+import { isCooldownCard } from '../../domain/battle/turnActions';
+import { CooldownCardFace } from './CooldownCardFace';
 import { isSelfDestructCard } from '../../domain/cards/traits';
 import { CARD_BACK_URL, cardFaceUrl } from '../../data/assets';
 import { useManagedTexture } from '../../services/useManagedTexture';
@@ -54,6 +58,10 @@ export interface CardMeshProps {
   readonly attackKey?: string | undefined;
   readonly attackStatuses?: readonly AttackStatusKind[] | undefined;
   readonly unyielding?: boolean | undefined;
+  readonly ready?: boolean | undefined;
+  readonly dragging?: boolean | undefined;
+  readonly hoverTip?: boolean | undefined;
+  readonly flying?: boolean | undefined;
   readonly position: readonly [number, number, number];
   readonly rotationY?: number | undefined;
   readonly rotationX?: number | undefined;
@@ -125,6 +133,10 @@ export function CardMesh({
   textureTier,
   attackKey,
   unyielding = false,
+  ready = false,
+  dragging = false,
+  hoverTip = true,
+  flying,
   attackStatuses,
   position,
   rotationY = 0,
@@ -146,6 +158,8 @@ export function CardMesh({
   onClick,
   onHoverChange,
 }: CardMeshProps) {
+  const tipId = useId();
+  const tipOwner = `3d-card:${attackKey ?? tipId}`;
   const groupRef = useRef<Group>(null);
   const attackTimeline = useRef<Timeline | null>(null);
   const attackOffset = useRef(0);
@@ -170,6 +184,17 @@ export function CardMesh({
     return () => { unsubscribe(); unregister(); stop(); };
   }, [attackKey, card.cardId, statLayout, scale]);
   const [hovered, setHovered] = useState(false);
+  // Cards keep their component identity across zones; a disabled hitbox may never send pointer-out.
+  const previousInteraction = useRef({ interactive, dragging, statLayout, faceDown, cardId: card.cardId });
+  useEffect(() => {
+    const previous = previousInteraction.current;
+    const changed = previous.interactive !== interactive || previous.dragging !== dragging ||
+      previous.statLayout !== statLayout || previous.faceDown !== faceDown || previous.cardId !== card.cardId;
+    previousInteraction.current = { interactive, dragging, statLayout, faceDown, cardId: card.cardId };
+    if (!changed) return;
+    setHovered(false);
+    onHoverChange?.(card, false);
+  }, [interactive, dragging, statLayout, faceDown, card, onHoverChange]);
 
   // 纹理档跟随画质：低档用缩略图，减少核显上的显存与带宽压力
   const cardTier = useSettingsStore((state) => state.profile.cardTier);
@@ -220,6 +245,14 @@ export function CardMesh({
     controlled ? flipControl.current < 0.5 : !faceDown,
   );
   const holoVisibleRef = useRef(controlled ? flipControl.current < 0.5 : !faceDown);
+  const tipEnabled = hoverTip && !dragging && holoVisible;
+  useEffect(() => {
+    if (!tipEnabled) hideCardTip(tipOwner);
+    return () => hideCardTip(tipOwner);
+  }, [tipEnabled, tipOwner, statLayout]);
+  useEffect(() => {
+    refreshCardTip(tipOwner, { card, stats, attackStatuses, flying, unyielding });
+  }, [tipOwner, card, stats, attackStatuses, flying, unyielding]);
 
   useEffect(() => {
     // 受控：进度由外面写，这里不建时间轴
@@ -248,9 +281,11 @@ export function CardMesh({
   // ---- 悬停/选中：追踪目标，用阻尼 ----
   // 悬停与选中**同时**抬高并放大：在实机里试对局时，光靠一点点抬升
   // 根本看不出「鼠标现在停在哪张牌上」，而手牌本来就小。
-  const targetLift = (selected ? SELECTED_LIFT : 0) + (hovered ? HOVER_LIFT : 0);
-  const targetTilt = hovered ? HOVER_TILT : 0;
-  const targetScale = selected ? SELECTED_SCALE : hovered ? HOVER_SCALE : 1;
+  const activeHover = interactive && !dragging && hovered;
+  const activeSelection = interactive && selected;
+  const targetLift = dragging ? 0 : (activeSelection ? SELECTED_LIFT : 0) + (activeHover ? HOVER_LIFT : 0);
+  const targetTilt = activeHover ? HOVER_TILT : 0;
+  const targetScale = dragging ? 1 : activeSelection ? SELECTED_SCALE : activeHover ? HOVER_SCALE : 1;
   const liftRef = useRef(0);
   const tiltRef = useRef(0);
   const scaleRef = useRef(1);
@@ -291,9 +326,9 @@ export function CardMesh({
       return;
     }
 
-    liftRef.current = damp(liftRef.current, targetLift, DAMPING, delta);
-    tiltRef.current = damp(tiltRef.current, targetTilt, DAMPING, delta);
-    scaleRef.current = damp(scaleRef.current, targetScale, DAMPING, delta);
+    liftRef.current = dragging ? 0 : damp(liftRef.current, targetLift, DAMPING, delta);
+    tiltRef.current = dragging ? 0 : damp(tiltRef.current, targetTilt, DAMPING, delta);
+    scaleRef.current = dragging ? 1 : damp(scaleRef.current, targetScale, DAMPING, delta);
 
     rotXRef.current = damp(rotXRef.current, rotationX, ROT_DAMPING, delta);
     rotYRef.current = damp(rotYRef.current, rotationY, ROT_DAMPING, delta);
@@ -306,19 +341,25 @@ export function CardMesh({
     group.rotation.y = rotYRef.current + flipAngle(flipRef.current);
   });
 
-  const handleOver = (event: { stopPropagation: () => void }): void => {
-    if (!interactive) {
-      return;
-    }
+  const showTip = (event: ThreeEvent<PointerEvent>): void => {
+    if (!tipEnabled || event.pointerType === 'touch') return;
     event.stopPropagation();
-    setHovered(true);
+    // Position is batched once per frame by the host; live stats refresh through the effect above.
+    if (useCardTipStore.getState().target?.ownerKey === tipOwner) return;
+    showCardTip(card.cardId, { x: event.clientX, y: event.clientY }, {
+      ownerKey: tipOwner, source: '3d', card, stats, attackStatuses, flying, unyielding,
+      ownerElement: event.nativeEvent.target instanceof Element ? event.nativeEvent.target : undefined,
+    });
+  };
+  const handleOver = (event: ThreeEvent<PointerEvent>): void => {
+    showTip(event);
+    if (!interactive && !tipEnabled) return;
+    event.stopPropagation();
+    if (interactive) setHovered(true);
     onHoverChange?.(card, true);
   };
-
   const handleOut = (): void => {
-    if (!interactive) {
-      return;
-    }
+    hideCardTip(tipOwner);
     setHovered(false);
     onHoverChange?.(card, false);
   };
@@ -326,8 +367,9 @@ export function CardMesh({
   const bodyGeometry = getCardBodyGeometry();
   const faceGeometry = getCardFaceGeometry();
 
-  const edgeColor = hovered || selected ? '#c9d4e6' : '#7b869c';
-  const holoEnabled = holo ?? true;
+  const utility = isCooldownCard(card.cardId);
+  const edgeColor = ready || utility ? '#e9b849' : activeHover || activeSelection ? '#c9d4e6' : '#7b869c';
+  const holoEnabled = !utility && (holo ?? true);
   const holoIntensity = holoIntensityForRarity(card.rarity) * holoScale;
 
   // 只有正面朝上时才叠全息；盖着的牌不显示
@@ -340,7 +382,7 @@ export function CardMesh({
    */
   const showGlow = holoVisible && (glow ?? statLayout !== 'hand');
   // 数值徽标只在正面朝上时显示，且与全息无关（关掉全息仍要看得到数值）
-  const showStatsNow = showStats && holoVisible;
+  const showStatsNow = showStats && holoVisible && !utility;
 
   return (
     <group
@@ -358,11 +400,13 @@ export function CardMesh({
         <meshStandardMaterial
           ref={faceMaterialRef}
           map={faceTexture}
-          color={faceTexture ? '#ffffff' : '#2f3644'}
+          color={utility ? '#163648' : faceTexture ? '#ffffff' : '#2f3644'}
           roughness={0.55}
           metalness={0.05}
         />
       </mesh>
+
+      {utility && <CooldownCardFace />}
 
       {/* 背面：卡背。翻面靠的是整体旋转，两面始终都在 */}
       <mesh
@@ -379,7 +423,7 @@ export function CardMesh({
         />
       </mesh>
 
-      {showGlow && <CardGlow rarity={card.rarity} strength={glowScale} highlight={glowHighlight} />}
+      {showGlow && <CardGlow rarity={ready ? 'S' : card.rarity} strength={ready ? 1.8 : glowScale} highlight={glowHighlight} />}
 
       {showHolo && <HoloLayer rarity={card.rarity} />}
 
@@ -403,6 +447,7 @@ export function CardMesh({
         visible={false}
         onPointerOver={handleOver}
         onPointerOut={handleOut}
+        onPointerMove={showTip}
         onClick={(event) => {
           if (!interactive) {
             return;

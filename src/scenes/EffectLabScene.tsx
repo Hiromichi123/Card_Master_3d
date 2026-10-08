@@ -93,6 +93,8 @@ const TEMPLATE_LABELS: { id: EffectTemplateId; label: string; family?: string }[
   { id: 'instantDeath', label: '即死', family: 'instantDeath' },
   { id: 'instantDeath', label: '必杀（成功演出）', family: 'lethalStrike' },
   { id: 'flow', label: '至高之作 · 召唤流光', family: 'masterpiece' },
+  { id: 'flow', label: '召唤狐灵 · 召唤流光', family: 'foxSpiritSummon' },
+  { id: 'deathBombard', label: '爆裂n · 对位炮击', family: 'alignedDeathBlast' },
   { id: 'armorBreak', label: '闪避赋予', family: 'grantDodge' },
   { id: 'shield', label: '法术反弹', family: 'spellReflect' },
   { id: 'normalAttack', label: '伤害n', family: 'directDamage' },
@@ -103,7 +105,7 @@ const TEMPLATE_LABELS: { id: EffectTemplateId; label: string; family?: string }[
   { id: 'bombard', label: '炮击' },
   { id: 'groupBombard', label: '群体爆破' },
   { id: 'deathBurst', label: '自毁' },
-  { id: 'deathBombard', label: '死亡爆裂' },
+  { id: 'deathBombard', label: '群体爆裂' },
   { id: 'ranged', label: '远射' },
   { id: 'piercing', label: '贯穿' },
   { id: 'groupPiercing', label: '群体贯穿', family: 'groupPiercing' },
@@ -258,7 +260,7 @@ export function EffectLabScene() {
     () =>
       [...new Set([...slice.cards.map((entry) => entry.cardId),
         ...cardDatabase.definitions.filter((card) => card.skills.some((skill) =>
-          ['ranged', 'piercing', 'bombard', 'groupBombard', 'explodeOnDeath', 'instantDeath', 'spellReflect', 'grantDodge', 'directDamage', 'groupPhysicalDamage', 'slash', 'groupSlash', 'swordDance', 'groupSwordDance', 'sacrifice', 'execute', 'teleport', 'groupPiercing', 'criticalCollapse', 'unyielding', 'concealment', 'firstStrike', 'devour', 'masterpiece', 'vanguard', 'lethalStrike', 'antiAir', 'groupGround', 'siege', 'berserk', 'splash', 'groupDelay', 'severeFrost', 'burning', 'venom', 'bleeding', 'grievousWound', 'poisonCloud'].includes(skill.family ?? ''))).map((card) => card.cardId)])]
+          ['ranged', 'piercing', 'bombard', 'groupBombard', 'explodeOnDeath', 'instantDeath', 'spellReflect', 'grantDodge', 'directDamage', 'groupPhysicalDamage', 'slash', 'groupSlash', 'swordDance', 'groupSwordDance', 'sacrifice', 'execute', 'teleport', 'groupPiercing', 'criticalCollapse', 'unyielding', 'concealment', 'firstStrike', 'devour', 'masterpiece', 'foxSpiritSummon', 'alignedDeathBlast', 'vanguard', 'lethalStrike', 'antiAir', 'groupGround', 'siege', 'berserk', 'splash', 'groupDelay', 'severeFrost', 'burning', 'venom', 'bleeding', 'grievousWound', 'poisonCloud'].includes(skill.family ?? ''))).map((card) => card.cardId)])]
         .map((id) => cardById.get(id))
         .filter((card): card is CardDefinition => card !== undefined),
     [],
@@ -335,7 +337,7 @@ export function EffectLabScene() {
       const primary: Vec3 = selfBurst ? self : direct ? [SOURCE_X, IMPACT_Y + 0.4, TARGET_Z - 1.35]
         : (targetPoints[ALIGNED_SLOT] ?? targetPoints[0] ?? self);
       const extra = targetPoints.filter((_, slot) => slot !== ALIGNED_SLOT);
-      const spreads = template === 'deathBombard' || template.startsWith('group') || family?.startsWith('group') === true || family === 'teleport';
+      const spreads = (template === 'deathBombard' && family !== 'alignedDeathBlast') || template.startsWith('group') || family?.startsWith('group') === true || family === 'teleport';
       const aimed =
         selfBurst ? '作用于自身' : template === 'groupPiercing' ? '战场五路平行贯穿，独立命中本体' : direct ? '越过对位命中本体' : targetPoints.length === 0 ? '单张大图：落在自己身上' : spreads ? '三张' : '只打对位';
 

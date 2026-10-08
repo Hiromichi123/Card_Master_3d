@@ -1,3 +1,4 @@
+import { isCooldownCard } from '../domain/battle/turnActions';
 import type { CardDefinition } from '../domain/cards/types';
 
 /**
@@ -48,6 +49,7 @@ export function CardDetailPanel({
   onClose,
   onTogglePin,
 }: CardDetailPanelProps) {
+  const utility = isCooldownCard(card.cardId);
   const atk = stats?.atk ?? card.atk;
   const hp = stats?.hp ?? card.hp;
   const cd = stats?.cd ?? card.cd;
@@ -86,13 +88,13 @@ export function CardDetailPanel({
 
       <div className="detail__meta">
         <code>{card.cardId}</code>
-        <span className="detail__rarity">{card.rarity}</span>
+        <span className="detail__rarity">{utility ? '本局资源' : card.rarity}</span>
         {card.status === 'incomplete' && (
           <span className="detail__warn">数据不完整，不进入战斗</span>
         )}
       </div>
 
-      <dl className="detail__stats">
+      {!utility && <dl className="detail__stats">
         <div className={changed.atk ? 'detail__stat detail__stat--changed' : 'detail__stat'}>
           <dt>ATK</dt>
           <dd>
@@ -114,12 +116,12 @@ export function CardDetailPanel({
             {changed.cd && <em>（初始 {card.cd}）</em>}
           </dd>
         </div>
-      </dl>
+      </dl>}
 
       <section className="detail__section">
-        <h3>技能</h3>
+        <h3>{utility ? '使用' : '技能'}</h3>
         {card.skills.length === 0 ? (
-          <p className="detail__empty">这张卡没有技能。</p>
+          <p className="detail__empty">{utility ? '在己方主场指定一张等待卡，冷却 −1，不占普通出牌额度。' : '这张卡没有技能。'}</p>
         ) : (
           <ul className="detail__traits">
             {card.skills.map((skill, index) => (

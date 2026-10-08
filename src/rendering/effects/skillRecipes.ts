@@ -93,7 +93,7 @@ export function buildSkillTimeline(template: EffectTemplateId, context: EffectCo
       } });
   }
   if (usesQuarks(template)) {
-    const grouped = template === 'groupBombard' || template === 'deathBombard' || context.family === 'groupBombard';
+    const grouped = template === 'groupBombard' || (template === 'deathBombard' && context.family !== 'alignedDeathBlast') || context.family === 'groupBombard';
     const targets = template === 'groupPiercing' ? Array.from({ length: 5 }, (_, index) =>
       new Vector3((index - 2) * LAYOUT.battleSpacing, to.y, to.z))
       : grouped ? [to, ...context.extraTargets].slice(0, 8) : [to];

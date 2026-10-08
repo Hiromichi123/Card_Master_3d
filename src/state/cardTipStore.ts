@@ -1,58 +1,53 @@
 import { create } from 'zustand';
+import type { AttackStatusKind, CardDefinition } from '../domain/cards/types';
 
-/**
- * 全局的「悬停卡牌详情」。
- *
- * **做成全局是为了只实现一次。** 卡面出现在图鉴、组卡、商店、抽卡结果与
- * 3D 演出里——每个界面各接一遍悬停，迟早有几处漏掉或者行为不一致
- * （组卡页那版就是因为「满卡组时每张收藏卡都是 `disabled`」而整个失效）。
- *
- * 触发方式有两条，最终都落到这个 store：
- *
- * 1. **DOM 侧用事件委托**（`CardTipHost` 只挂一次全局监听）：
- *    `pointerover` 冒泡到 document，往上找最近的 `[data-card-id]` 就完事——
- *    于是任何带这个属性的卡片元素**自动**有详情，不需要各自接 props；
- * 2. **3D 侧**（`GachaCard`）拿不到 DOM 委托，在 `onPointerOver/Out` 里直接调。
- *
- * 只存卡片 id 与它当时的矩形：位置由宿主算，跟着卡片贴边，
- * 不跟着鼠标飘（鼠标一动框就动，反而看不清）。
- */
-export interface CardTipTarget {
-  readonly cardId: string;
-  /** 被悬停元素的位置快照。 */
-  readonly rect: {
-    readonly left: number;
-    readonly top: number;
-    readonly right: number;
-    readonly bottom: number;
-  };
+export interface CardTipDetails {
+  readonly ownerKey?: string | undefined;
+  readonly ownerElement?: Element | undefined;
+  readonly source?: 'dom' | '3d' | undefined;
+  readonly card?: CardDefinition | undefined;
+  readonly stats?: { readonly atk: number; readonly hp: number; readonly cd: number } | undefined;
+  readonly attackStatuses?: readonly AttackStatusKind[] | undefined;
+  readonly flying?: boolean | undefined;
+  readonly unyielding?: boolean | undefined;
 }
-
+export interface CardTipTarget extends CardTipDetails {
+  readonly cardId: string;
+  readonly pointer: { readonly x: number; readonly y: number };
+}
+type Anchor = { readonly x: number; readonly y: number } | {
+  readonly left: number; readonly top: number; readonly right: number; readonly bottom: number;
+};
 interface CardTipState {
   readonly target: CardTipTarget | null;
-  show: (cardId: string, rect: DOMRect) => void;
-  hide: () => void;
+  show: (cardId: string, anchor: Anchor, details?: CardTipDetails) => void;
+  hide: (ownerKey?: string) => void;
 }
-
-export const useCardTipStore = create<CardTipState>((set) => ({
+export function cardTipsSuppressed(): boolean {
+  return typeof document !== 'undefined' && document.querySelector('[data-card-tip-scope="off"]') !== null;
+}
+export const useCardTipStore = create<CardTipState>((set, get) => ({
   target: null,
-  show: (cardId, rect) =>
-    set({
-      target: {
-        cardId,
-        rect: { left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom },
-      },
-    }),
-  hide: () => set({ target: null }),
+  show: (cardId, anchor, details = {}) => {
+    if (cardTipsSuppressed()) return;
+    const pointer = 'x' in anchor ? anchor : { x: anchor.right, y: anchor.top };
+    set({ target: { cardId, pointer, ...details } });
+  },
+  hide: (ownerKey) => {
+    const target = get().target;
+    if (target && (ownerKey === undefined || target.ownerKey === ownerKey)) set({ target: null });
+  },
 }));
-
-/**
- * 非 React 入口：3D 侧（R3F 的指针事件）与原生监听都用它。
- */
-export function showCardTip(cardId: string, rect: DOMRect): void {
-  useCardTipStore.getState().show(cardId, rect);
+export function showCardTip(cardId: string, anchor: Anchor, details?: CardTipDetails): void {
+  useCardTipStore.getState().show(cardId, anchor, details);
 }
-
-export function hideCardTip(): void {
-  useCardTipStore.getState().hide();
+export function hideCardTip(ownerKey?: string): void { useCardTipStore.getState().hide(ownerKey); }
+export function moveCardTip(x: number, y: number): void {
+  const target = useCardTipStore.getState().target;
+  if (target && (target.pointer.x !== x || target.pointer.y !== y))
+    useCardTipStore.setState({ target: { ...target, pointer: { x, y } } });
+}
+export function refreshCardTip(ownerKey: string, details: CardTipDetails): void {
+  const target = useCardTipStore.getState().target;
+  if (target?.ownerKey === ownerKey) useCardTipStore.setState({ target: { ...target, ...details } });
 }

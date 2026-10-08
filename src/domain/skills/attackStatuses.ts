@@ -7,7 +7,7 @@ export interface StatusResolver {
   damage(target: CardInstance, amount: number): number;
 }
 
-export const attackTick = (state: BattleState): number => state.turnNumber * 2 + (state.currentSide === 'enemy' ? 1 : 0);
+export const attackTick = (state: BattleState): number => state.turnIndex;
 
 /** One complete opportunity to act; refreshing a mark never duplicates its ATK debt. */
 export function grantAttackStatus(resolver: StatusResolver, state: BattleState, target: CardInstance,

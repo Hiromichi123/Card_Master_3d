@@ -2918,16 +2918,22 @@ code {
   缩放，写死的 px 会跟着缩；活动大厅的 `.menu__stage` 不缩放，是靠 `--ui`
   换算的，写死 px 就不会随窗口变化。组件那边对应传 `lengthUnit="var(--ui)"`。
 
-  几何（2026-10-08 按「不遮挡、不裁切」重算过，不是照抄 gacha 的 620×1620）：
+  几何（2026-10-08 建，2026-10-09 按「要 gacha 那种平行四边形」重算过）：
 
   - **top 300**：左上角的 `.menu__status` 从 (40, 118) 起，原来从 90 起会把它压住。
   - **height 1300 = `ActivityScene.ACTIVITY_WHEEL_HEIGHT`**，两者必须一致：
     组件按「舞台高 / 2」算选中行的中线。五个模式总高 4×140+120 = 680，
     所以选中任意一项时整列都落在 1300 之内，**任何时候都不会被上下裁掉**。
-  - **width 740、选项左缩进 120**：这是 `skewX(10deg)` 的几何要求。斜切把内容
-    越往下推得越靠右（偏移 = y·tan10°）；把原点从左上改到**正中**后偏移是对称的，
-    最大 ±(1300/2)·tan10° ≈ ±115。选项左边缘 120 > 115，右边缘
-    120+500+115 = 735 < 740 —— 两侧都不越界，**横向完全不裁切**。
+  - **`overflow: visible`（2026-10-09 修，见下条）**、**width 740、选项左缩进 120**。
+  - **`wheel__stage` 的 `overflow: hidden` 只裁卡片，不裁底板**：`skewX(10deg)`
+    绕着正中切，底板左右各探出 ±(1300/2)·tan10° ≈ ±115，外框（`.menu .activity-wheel`）
+    要是也 `overflow: hidden`，两条斜边会被框的竖边**切掉，平行四边形就变成六边形**。
+    抽卡那边 `.gacha-menu .gacha-dashboard` 本来就写了 `overflow: visible`，
+    两边才一致。底板因此实际占到 x ≈ 150-115 ～ 150+740+115，即 **35 ～ 1005**：
+    左端 35 出现在最上方，而状态面板底边只到 ~240、下面又是斜的，压不到；
+    右端 1005 只在最下方，详情面板从 700 起就在右边一列，也不重叠。
+  - **选项仍左缩进 120、宽 500**：舞台自己保留 `overflow: hidden`（滚动时要把
+    卡片裁掉），120～620 落在 740 宽的框内，任何滚动位置都不会被裁。
 
   **选择器必须带 `.menu ` 前缀**：通用的 `.wheel__card` / `.wheel__stage` 基础样式
   定义在本文件更靠后的位置（~5300 行），同优先级下**后来者赢**——
@@ -2945,13 +2951,15 @@ code {
   border: 0;
   border-radius: 0;
   background: none;
+  /* 底板要像抽卡那样是**完整**的平行四边形，别被自己的框裁成六边形 */
+  overflow: visible;
 }
 
 .menu .activity-wheel__stage {
   height: 100%;
   overflow: hidden;
   transform: skewX(10deg);
-  /* 原点放正中：斜切偏移左右对称，两侧才不会各自越界（见上面第 3 条） */
+  /* 原点放正中：斜切偏移左右对称，底板两条斜边才不会一边多一边少 */
   transform-origin: center;
   perspective: none;
   background: linear-gradient(90deg, #111b3075, #26365230);
@@ -2974,8 +2982,24 @@ code {
   pointer-events: none;
 }
 
+/*
+  选项做成**八边形**（四角倒角 24 设计单位 = 横向 4.8%、纵向 20%）。
+  `clip-path` 会把 `border` 与 `box-shadow` 一起裁掉，所以这两样都不写，改成分层：
+
+  - 描边环 = `::before` 铺满整个倒角八边形（`#a8c6ed38`，选中 `#ffe2bd`）；
+  - 填色 = `::after` 内缩 1px 的同一条八边形，边缘留出那 1px 描边；
+  - 外阴影 / 选中辉光 = 画在**选项本身**的 `filter: drop-shadow()`：
+    同一条链上 `filter` 先算、`clip-path` 后裁，写在一起阴影会被整条裁掉，
+    所以形状必须交给伪元素、阴影留在父级。用 `drop-shadow` 而不是 `box-shadow`，
+    是因为前者跟着倒角轮廓走，后者是矩形。
+  - 两个伪元素都在流外、又都是定位元素，在同一个堆叠上下文里**画在普通流之上**，
+    会盖住按钮里的字（grid 项就是普通流），所以下面 `.wheel__name` /
+    `.activity-wheel__soon` 都要抬到 `z-index: 1`。
+  - `box-shadow: none` 是**必须**的：基础样式 `.wheel__card--on`（本文件靠后）
+    会给选中项加一圈矩形内阴影 + 大黑影，压在倒角卡片上就是穿帮。
+*/
 .menu .activity-wheel__option {
-  /* 左缩进 120、宽 500：见文件头第 3 条，这两个数由斜切的几何反推出来 */
+  /* 左缩进 120、宽 500：见文件头的几何条目，这两个数由斜切的几何反推出来 */
   left: calc(120 * var(--ui));
   width: calc(500 * var(--ui));
   height: calc(120 * var(--ui));
@@ -2984,29 +3008,75 @@ code {
   transform: none;
   display: grid;
   place-items: center;
-  background: linear-gradient(110deg, #243d63dc, #243d6360);
-  border: 1px solid #a8c6ed38;
-  border-radius: calc(12 * var(--ui));
-  box-shadow: 0 10px 24px #0003;
+  background: none;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  filter: drop-shadow(0 10px 24px rgba(0, 0, 0, 0.19));
   cursor: pointer;
-  transition: top 0.4s ease, background 0.4s ease;
+  transition: top 0.4s ease;
+}
+
+.menu .activity-wheel__option::before,
+.menu .activity-wheel__option::after {
+  content: '';
+  position: absolute;
+  /* 倒角 24 设计单位：24/500 = 4.8%（横向）、24/120 = 20%（纵向） */
+  clip-path: polygon(4.8% 0, 95.2% 0, 100% 20%, 100% 80%, 95.2% 100%, 4.8% 100%, 0 80%, 0 20%);
+}
+
+.menu .activity-wheel__option::before {
+  inset: 0;
+  background: #a8c6ed38;
+  transition: background 0.4s ease;
+}
+
+.menu .activity-wheel__option::after {
+  inset: 1px;
+  background: linear-gradient(110deg, #243d63dc, #243d6360);
+  transition: background 0.4s ease;
 }
 
 .menu .activity-wheel__option .wheel__name {
+  position: relative;
+  z-index: 1;
   font-size: calc(30 * var(--ui));
   font-weight: 600;
 }
 
 .menu .activity-wheel__option.wheel__card--on {
+  filter: drop-shadow(0 0 24px #efb46e55);
+  animation: activity-wheel-breathe 5.2s ease-in-out infinite;
+}
+
+.menu .activity-wheel__option.wheel__card--on::before {
+  background: #ffe2bd;
+}
+
+.menu .activity-wheel__option.wheel__card--on::after {
   background: linear-gradient(110deg, #ffcc93f5, #dc986ad9);
-  border-color: #ffe2bd;
-  box-shadow: 0 0 24px #efb46e55;
-  animation: wheel-breathe 5.2s ease-in-out infinite;
 }
 
 .menu .activity-wheel__option.wheel__card--on .wheel__name {
   color: #cf2020;
   font-size: calc(42 * var(--ui));
+}
+
+/*
+  呼吸：动画里的 `filter` 是**整条替换**而不是叠加，关键帧不写全 `drop-shadow`
+  的话，一呼吸辉光就没了（基础样式里的 `wheel-breathe` 只动 brightness，不能用）。
+*/
+@keyframes activity-wheel-breathe {
+  0%, 100% { filter: drop-shadow(0 0 24px #efb46e55); }
+  50% { filter: drop-shadow(0 0 24px #efb46e55) brightness(1.14); }
+}
+
+/*
+  关掉动效时连呼吸一起停。基础样式那条 `.wheel--still .wheel__card--on`
+  （0,2,0）压不过上面的选中态规则（0,3,0），所以这里多带一个类名。
+*/
+.activity-wheel.wheel--still .activity-wheel__option.wheel__card--on {
+  animation: none;
 }
 
 /* 「未开放」角标：轮盘项里的小字，别把行高撑开 */
@@ -3017,16 +3087,20 @@ code {
   color: #ffb478;
 }
 
-/* 轮盘项里字更小一点 */
+/* 轮盘项里字更小一点；同样要抬到倒角层的 `::before` / `::after` 之上 */
 .menu .activity-wheel__option .activity-wheel__soon {
+  position: relative;
+  z-index: 1;
   font-size: calc(22 * var(--ui));
 }
 
 /* --- 活动详情（选中模式的名字、说明与「进入」）------------------------------ */
 
 /*
-  详情面板放在滚轮**右侧**：滚轮实际占到 x ≈ 150 + 735 = 885（含斜切偏移），
-  所以从 1000 起才不重叠。右侧按钮列在 80%（2304）起，1000+1000 也够不到。
+  详情面板放在滚轮**右侧**。
+  滚轮底板（`2026-10-09` 起是完整的平行四边形）最右点到 x = 1005，但那只出现在
+  最下沿：面板占的 y ≈ 700～1010 这一段，底板的右斜边（x = 775 + (y-300)/1300·229）
+  落在 846～900 之间，离 1000 还有一段，不重叠。入口列另见 `.menu .activity-entries`。
   垂直方向对齐滚轮的选中行（300 + 590 ≈ 890）附近。
 */
 .activity-detail {
@@ -3078,6 +3152,23 @@ code {
 
 .activity-detail__enter:hover {
   background: linear-gradient(145deg, #fff0c2, #f5bd74);
+}
+
+/* --- 活动入口列（右移，让开滚轮与详情面板）--------------------------------- */
+
+/*
+  `.menu__columns` 自己是 left: 70%（2016）、top: 25%（450）。
+
+  **注意**：`--cols-x` / `--cols-y` 这两个行内变量全库没有任何 CSS 读它
+  （`BattleMenuScene` 与本组件都写过，但从来没有规则消费），所以这里以前写的
+  80%/30% 一直没生效——**渲染出来是 70%/25%**。2026-10-09 按用户要求右移到
+  86%（2477）：按钮宽 320，第一行不缩进（`--row-stagger: -20` 只把后两行再左移），
+  右边缘 2797，离 2880 还剩 83 设计单位。纵坐标**保持现状 25%**（不是 30%），
+  这一轮只右移；横向在详情面板（1000～2000）之右，两者不重叠。
+*/
+.menu .activity-entries {
+  left: 86%;
+  top: 25%;
 }
 
 /* --- 活动海报轮播（旧版 `ui/activity_poster.py`）--------------------------- */
@@ -4439,6 +4530,35 @@ code {
 
 }
 
+/*
+  图鉴的背景：**与配置页逐条相同**（见 `.deckedit__bg` / `.deckedit > .menu__scrim`），
+  只是按用户要求补到了图鉴上——旧版图鉴是纯色底，跟配置并排就不是一套界面。
+  `.menu__bg` 自带 `inset: -5%`（给视差留余量），这里收回 0，免得图溢出到导航栏外。
+
+  **内容抬升那条末尾多了个 `:not(.showcase)`**：卡牌详情（`.showcase`）是这一屏的
+  直接子元素，且靠 `position: fixed` 铺满视口；照配置页那样无条件写
+  `position: relative; z-index: 1`，选择器（0,3,0）会压过 `.showcase`（0,1,0），
+  弹层会被压成文档流里的一小块。
+*/
+.collection__bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.collection > .menu__scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: linear-gradient(180deg, rgba(6, 9, 15, 0.86) 0%, rgba(6, 9, 15, 0.78) 100%);
+}
+
+/* 内容压在背景之上（详情弹层除外，见上面那段说明） */
+.collection > :not(.menu__bg):not(.menu__scrim):not(.showcase) {
+  position: relative;
+  z-index: 1;
+}
+
 
 
 .collection__lead {
@@ -4663,72 +4783,187 @@ code {
   pointer-events: none;
 }
 
-/* 悬停详情框（旧版 `ui/tooltip.py`） */
+/* Shared cursor-near card information: glass flow, bevelled gold frame and rarity orb. */
 .cardtip {
   position: fixed;
-  z-index: 120;
+  z-index: 5000;
+  box-sizing: border-box;
+  pointer-events: none;
+  color: #ebe7dc;
+  font-size: 12px;
+  line-height: 1.5;
+  filter: drop-shadow(0 12px 22px rgba(0, 0, 0, 0.42));
+}
+.cardtip__frame {
+  position: relative;
+  padding: 1px;
+  background: linear-gradient(130deg, #f0d58d 0%, #ae8c45 21%, rgba(170, 134, 59, .4) 43%, #d7b774 69%, #f0d58d 100%);
+  clip-path: polygon(12px 0, calc(100% - 14px) 0, 100% 14px, 100% calc(100% - 12px), calc(100% - 12px) 100%, 14px 100%, 0 calc(100% - 14px), 0 12px);
+}
+.cardtip__surface {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  max-height: min(540px, calc(100vh - 38px));
+  background: rgba(15, 23, 34, .81);
+  backdrop-filter: blur(16px) saturate(130%);
+  -webkit-backdrop-filter: blur(16px) saturate(130%);
+  clip-path: polygon(12px 0, calc(100% - 14px) 0, 100% 14px, 100% calc(100% - 12px), calc(100% - 12px) 100%, 14px 100%, 0 calc(100% - 14px), 0 12px);
+}
+.cardtip__flow {
+  position: absolute;
+  z-index: -1;
+  inset: -48%;
+  opacity: .3;
+  background: radial-gradient(ellipse at 25% 32%, rgba(115, 151, 159, .42), transparent 38%),
+    radial-gradient(ellipse at 74% 69%, rgba(218, 184, 104, .25), transparent 40%),
+    conic-gradient(from 25deg at 48% 54%, transparent 0deg, rgba(155, 180, 183, .2) 85deg, transparent 155deg, rgba(93, 101, 139, .25) 235deg, transparent 360deg);
+  animation: cardtip-flow 18s ease-in-out infinite alternate;
+}
+.cardtip__trim {
+  position: absolute;
+  inset: 7px;
+  border: 1px solid rgba(223, 190, 123, .19);
+  clip-path: polygon(8px 0, calc(100% - 25px) 0, 100% 25px, 100% calc(100% - 8px), calc(100% - 8px) 100%, 8px 100%, 0 calc(100% - 8px), 0 8px);
+}
+.cardtip__trim::before, .cardtip__trim::after {
+  content: '';
+  position: absolute;
+  width: 36px;
+  height: 2px;
+  background: linear-gradient(90deg, #e4c47b, transparent);
+}
+.cardtip__trim::before { top: 0; left: 12px; }
+.cardtip__trim::after { bottom: 0; right: 12px; transform: rotate(180deg); }
+.cardtip__content {
+  position: relative;
+  padding: 17px 18px 16px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 14px 16px;
-  border: 1px solid var(--border-strong);
-  border-radius: 10px;
-  background: rgba(16, 20, 30, 0.96);
-  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6);
-  color: var(--text-dim);
-  font-size: 13px;
-  line-height: 1.6;
-  pointer-events: none;
-  /*
-    **高度封顶**：说明文字长短不一，长的那几张会让框高出视口
-    （实测贴在屏幕下方的卡上时就溢出了）。宁可截断说明——完整说明在图鉴的
-    展示位里，那里是玩家专门看卡的地方。
-  */
-  max-height: min(360px, calc(100vh - 24px)); /* 与 CardHoverTip 的 TIP_MAX_HEIGHT 一致 */
-  overflow: hidden;
+  gap: 10px;
 }
-
 .cardtip__name {
   margin: 0;
-  font-size: 17px;
+  padding-right: 50px;
+  color: var(--tip-rarity);
+  font-size: 23px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-weight: 650;
+  line-height: 1.3;
+  letter-spacing: .035em;
+  text-shadow: 0 1px 6px #0008;
 }
-
-.cardtip__meta {
-  margin: 0;
-  font-size: 12px;
-}
-
+.cardtip__meta { margin: 5px 0 0; font-size: 10px; color: #aaa99e; letter-spacing: .06em; }
 .cardtip__stats {
   display: flex;
-  gap: 16px;
-  margin: 2px 0;
+  gap: 8px;
+  margin: 0;
   padding: 0;
   list-style: none;
 }
-
-.cardtip__stats b {
-  margin-right: 4px;
-  font-size: 18px;
-  font-variant-numeric: tabular-nums;
+.cardtip__stats li {
+  flex: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 9px;
+  background: rgba(5, 12, 22, .32);
+  border: 1px solid rgba(230, 203, 145, .12);
+  border-radius: 4px;
 }
-
-.cardtip__traits,
+.cardtip__stats span { font-size: 10px; color: #c5c1b4; }
+.cardtip__stats b { font-size: 19px; line-height: 1.2; font-variant-numeric: tabular-nums; }
+.cardtip__skills { margin: 0; padding: 0; list-style: none; }
+.cardtip__skills li {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  align-items: start;
+  gap: 9px;
+  padding: 5px 0;
+  border-top: 1px solid rgba(224, 190, 127, .1);
+}
+.cardtip__skills b { color: #e9cc8e; font-size: 11px; font-weight: 600; }
+.cardtip__skills span { color: #dddeda; font-size: 11px; line-height: 1.6; overflow-wrap: anywhere; }
+.cardtip__status { margin: 0; color: #f2c3aa; font-size: 11px; }
+.cardtip__function, .cardtip__empty { margin: 0; color: #e7d6ae; }
 .cardtip__desc {
   margin: 0;
-}
-
-.cardtip__traits {
-  color: #ffd7a0;
-}
-
-.cardtip__desc {
-  color: var(--text);
-  /* 最多四行，超出截断（见 `.cardtip` 的注释） */
+  padding-top: 7px;
+  border-top: 1px solid rgba(224, 190, 127, .14);
+  color: #a9b1b5;
+  font-size: 11px;
   display: -webkit-box;
-  -webkit-line-clamp: 4;
+  -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+.cardtip__orb-mount {
+  position: absolute;
+  top: -13px;
+  right: 18px;
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  padding: 4px;
+  box-sizing: border-box;
+  border-radius: 50%;
+  border: 1px solid #e0c586;
+  background: linear-gradient(145deg, #dbbd78, #3e382b 45%, #c6a865);
+  box-shadow: 0 0 0 3px rgba(22, 28, 34, .9), 0 3px 7px #0008;
+}
+.cardtip__orb {
+  position: relative;
+  overflow: hidden;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 25%, #fff9e7 0%, #ffffffa0 10%, var(--tip-rarity) 42%, #141426 100%);
+  box-shadow: inset -3px -4px 6px #09091799, inset 2px 2px 5px #fff5, 0 0 11px var(--tip-rarity);
+  animation: none;
+}
+.cardtip__orb::before, .cardtip__orb::after {
+  content: '';
+  position: absolute;
+  border-radius: inherit;
+  pointer-events: none;
+}
+.cardtip__orb::before {
+  inset: -20%;
+  background: conic-gradient(from 25deg, var(--orb-a, var(--tip-rarity)), var(--orb-b, #ffffff70) 65deg, var(--orb-a, var(--tip-rarity)) 130deg, var(--orb-c, #10101f) 215deg, var(--orb-b, var(--tip-rarity)) 320deg);
+  transform: rotate(var(--orb-phase, 0deg));
+  animation: none;
+}
+.cardtip__orb::after {
+  inset: 0;
+  background: radial-gradient(circle at var(--orb-highlight-x, 30%) var(--orb-highlight-y, 25%), #fffceb 0%, #ffffffd0 10%, #ffffff45 22%, transparent 40%);
+  animation: none;
+}
+@keyframes cardtip-orb-rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.cardtip--still .cardtip__orb::before, .cardtip--still .cardtip__orb::after { animation: none; }
+@media (prefers-reduced-motion: reduce) {
+  .cardtip__orb::before, .cardtip__orb::after { animation: none; }
+}
+@keyframes cardtip-flow {
+  from { transform: translate(-3%, 1%) rotate(-12deg) scale(1); }
+  to { transform: translate(4%, -3%) rotate(16deg) scale(1.08); }
+}
+@keyframes cardtip-orb {
+  0%, 100% { opacity: .8; transform: scale(.94); filter: brightness(.92) hue-rotate(-7deg); }
+  50% { opacity: 1; transform: scale(1.04); filter: brightness(1.2) hue-rotate(7deg); }
+}
+.cardtip--still .cardtip__flow, .cardtip--still .cardtip__orb { animation: none; }
+@media (prefers-reduced-motion: reduce) {
+  .cardtip__flow, .cardtip__orb { animation: none; }
+}
+
+
+
 
 
 

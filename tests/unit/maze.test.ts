@@ -414,7 +414,7 @@ describe('楼层商店', () => {
   });
 
   it('权重表覆盖所有常规稀有度：数值越大越容易', () => {
-    // `rarities.json` 里还有 `#yoroi`（旧版遗留、本轮无效）与 `#elna`——都不参与敌方牌组
+    // `rarities.json` 里的两个事件档（`#elna` / `#yoroi`）都不参与敌方牌组
     const rarities = rarityList
       .map((entry) => entry.rarity)
       .filter((rarity) => !rarity.startsWith('#'));

@@ -105,7 +105,7 @@ export const SKILL_FAMILIES = [
     summary: '闪避概率 0.9 − 0.6·0.5^(n−1)，成功则伤害置 0' },
   { id: 'berserk', sourceName: '狂暴', category: 'special', hasParam: false, purity: 'declarative',
     summary: '当前缺失 HP 等量转换为动态 ATK，受伤增加、回血回落，不主动自伤' },
-  { id: 'explodeOnDeath', sourceName: '爆裂', category: 'blast', hasParam: false, purity: 'scene',
+  { id: 'explodeOnDeath', sourceName: '群体爆裂n', category: 'blast', hasParam: true, purity: 'scene',
     summary: '离场时原地爆裂并向敌方全体发炮；默认 2 伤害，带数字时使用该值' },
 
   // 单位复制（2）
@@ -189,6 +189,8 @@ export const SKILL_FAMILIES = [
   { id: 'concealment', sourceName: '隐匿', category: 'special', hasParam: false, purity: 'declarative', summary: '规避本次入场后真正作用于自身的第一次普通攻击；不消耗于技能或打本体' },
   { id: 'firstStrike', sourceName: '先攻', category: 'special', hasParam: false, purity: 'declarative', summary: '己方攻击顺序优先于普通单位，多个先攻仍按原槽位顺序；不改变位置和对位' },
   { id: 'devour', sourceName: '吞噬', category: 'deckPrep', hasParam: false, purity: 'pure', summary: '攻击前清空敌方全部弃牌，吞噬的牌不能再被还魂取回' },
+  { id: 'alignedDeathBlast', sourceName: '爆裂n', category: 'blast', hasParam: true, purity: 'scene', summary: '死亡离场时，对死亡槽的敌方对位造成 n 点炮击；对位为空跳过' },
+  { id: 'foxSpiritSummon', sourceName: '召唤狐灵', category: 'copy', hasParam: false, purity: 'scene', summary: '上场在己方空位召唤独立的 #yoroi_009 火焰狐灵，满场跳过，兼容狐灵召唤' },
   { id: 'masterpiece', sourceName: '至高之作', category: 'copy', hasParam: false, purity: 'scene', summary: '上场时在己方第一个空战斗槽召唤独立的 A+_006 蒸汽艺术，满场跳过' },
   { id: 'vanguard', sourceName: '先锋', category: 'special', hasParam: false, purity: 'declarative', summary: '在场且 HP>0 时优先替友方承受可命中的普通攻击，多先锋按槽位择一，不递归转移' },
   { id: 'lethalStrike', sourceName: '必杀n', category: 'special', hasParam: true, purity: 'scene', summary: '攻击前以 20%−10%×0.5^(n−1) 概率直接击杀对位，成功时播放即死动画' },
@@ -214,7 +216,7 @@ export const LEGACY_FAMILY_COUNT = 35;
  * 所以它不再是 35——两个数不一样是**预期**，不是漂移。
  * 新加族时把它加进这个数组，`EXPECTED_FAMILY_COUNT` 会跟着走。
  */
-export const EXTRA_FAMILY_IDS = ['holyShield', 'ranged', 'piercing', 'directDamage', 'instantDeath', 'spellReflect', 'grantDodge', 'groupPhysicalDamage', 'slash', 'groupSlash', 'swordDance', 'groupSwordDance', 'sacrifice', 'execute', 'teleport', 'groupPiercing', 'criticalCollapse', 'unyielding', 'splash', 'groupDelay', 'severeFrost', 'burning', 'venom', 'bleeding', 'grievousWound', 'poisonCloud', 'antiAir', 'groupGround', 'siege', 'concealment', 'firstStrike', 'devour', 'masterpiece', 'vanguard', 'lethalStrike'] as const;
+export const EXTRA_FAMILY_IDS = ['holyShield', 'ranged', 'piercing', 'directDamage', 'instantDeath', 'spellReflect', 'grantDodge', 'groupPhysicalDamage', 'slash', 'groupSlash', 'swordDance', 'groupSwordDance', 'sacrifice', 'execute', 'teleport', 'groupPiercing', 'criticalCollapse', 'unyielding', 'splash', 'groupDelay', 'severeFrost', 'burning', 'venom', 'bleeding', 'grievousWound', 'poisonCloud', 'antiAir', 'groupGround', 'siege', 'concealment', 'firstStrike', 'devour', 'masterpiece', 'vanguard', 'lethalStrike', 'alignedDeathBlast', 'foxSpiritSummon'] as const;
 
 /** 表里应有的族数。 */
 export const EXPECTED_FAMILY_COUNT = LEGACY_FAMILY_COUNT + EXTRA_FAMILY_IDS.length;

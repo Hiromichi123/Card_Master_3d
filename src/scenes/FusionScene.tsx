@@ -13,6 +13,7 @@ import { CurrencyBar } from '../ui/CurrencyBar';
 import { CardTile } from '../ui/CardTile';
 import { CardShowcase } from '../ui/CardShowcase';
 import { ScrollArea } from '../ui/ScrollArea';
+import '../ui/fusionWorkshop.css';
 import { FusionAltarStage, type FusionAltarRun } from '../rendering/fusion/FusionAltarStage';
 
 export interface FusionSceneProps {
@@ -101,7 +102,7 @@ export function FusionScene({ profile, store, busy, onReturn }: FusionSceneProps
     return () => window.removeEventListener('keydown', key);
   }, [locked, preview, onReturn]);
 
-  return <DesignStage backgroundUrl={backgroundUrl('bg/activity')}>
+  return <DesignStage backgroundUrl={backgroundUrl('bg/activity')} className="fusion-workshop">
     <section className="fusion" aria-label="融合工坊">
       <header className="fusion__header">
         <CurrencyBar currencies={profile.currencies} />
@@ -125,6 +126,7 @@ export function FusionScene({ profile, store, busy, onReturn }: FusionSceneProps
         </div></ScrollArea>
       </section>
       <section className="fusion__altar" aria-label="五槽祭坛">
+        <div className="fusion__altar-heading"><span>炼 成 祭 坛</span><small>投入五张材料，让灵光在圆环中汇聚</small></div>
         <div className="fusion__canvas"><FusionAltarStage cards={cards} run={run} completed={!presenting} onRemove={remove}
           onPreview={(card) => setPreview(card.cardId)} onFinished={finished} /></div>
         <div className="fusion__slots">
@@ -152,7 +154,7 @@ export function FusionScene({ profile, store, busy, onReturn }: FusionSceneProps
         {!rows.length && <p className="fusion__empty">放入卡牌可查看概率</p>}
         <p className="fusion__rules">自身稀有度权重最高，相邻稀有度加权。可能获得同名或较低稀有度的卡牌。</p>
         <div className="fusion__latest"><h2>最新结果</h2>
-          {latest ? <button type="button" className="fusion__result" disabled={presenting} onClick={() => setPreview(latest.cardId)}>
+          {latest ? <button type="button" className="fusion__result" data-card-id={latest.cardId} disabled={presenting} onClick={() => setPreview(latest.cardId)}>
             <strong style={{ color: index.colorOf(latest.rarity) }}>{latest.rarity} · {cardById.get(latest.cardId)?.name}</strong>
             <span>{presenting ? '正在显现…' : '已加入收藏 · 点击查看详情'}</span>
           </button> : <p>暂无融合记录</p>}

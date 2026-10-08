@@ -133,7 +133,6 @@ export function CardTile({
       disabled={disabled}
       onMouseEnter={() => onHover?.(true)}
       onMouseLeave={() => onHover?.(false)}
-      title={card ? `${card.name}（${rarity}）` : cardId}
     >
       {body}
     </button>

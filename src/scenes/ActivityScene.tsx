@@ -199,11 +199,16 @@ export function ActivityScene({ profile, onNavigate }: ActivitySceneProps) {
       </section>
 
       <nav
-        className="menu__columns"
+        className="menu__columns activity-entries"
         aria-label="活动入口"
         style={{
-          ['--cols-x' as string]: '80%',
-          ['--cols-y' as string]: '30%',
+          /*
+            位置（86% / 25%）写在 `global.css` 的 `.menu .activity-entries` 里——
+            与滚轮、详情面板同一处看，三者的横向关系才看得出来。
+            这里原来还传了 `--cols-x: 80%` / `--cols-y: 30%`，但**没有任何 CSS
+            读它们**（见那条规则的注释），渲染出来的其实是 `.menu__columns` 的
+            70%/25%；2026-10-09 一并删掉，别留一个看着像生效的假坐标。
+          */
           ['--entry-w' as string]: 320,
           ['--entry-h' as string]: 58,
           ['--row-stagger' as string]: -20,

@@ -80,6 +80,8 @@ export function GachaCard({ card, flipControl, register, completed, onPreview }:
         */
         showStats={false}
         interactive={false}
+        hoverTip={completed}
+        onHoverChange={(_, over) => setHovered(completed && over)}
         glow
         glowScale={hovered ? 2.6 : 2.2}
         glowHighlight={highlight}
