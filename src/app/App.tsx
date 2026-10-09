@@ -1,4 +1,4 @@
-import { Suspense, useCallback, useEffect, useState } from 'react';
+import { Suspense, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 import { BattleScene } from '../scenes/BattleScene';
 import { CollectionScene } from '../scenes/CollectionScene';
@@ -14,6 +14,9 @@ import { MazeScene } from '../scenes/MazeScene';
 import { ShopScene } from '../scenes/ShopScene';
 import { SettingsScene } from '../scenes/SettingsScene';
 import { HubScene } from '../scenes/HubScene';
+import { LoginScene } from '../scenes/LoginScene';
+import type { LoginAccount } from '../services/auth/accounts';
+import { preloadHub } from '../services/preloadHub';
 import { getProfileStore } from '../state/profileStore';
 import type { ProfileStore } from '../state/createProfileStore';
 import { pushToast } from '../state/toastStore';
@@ -23,6 +26,7 @@ import { audioEngine, unlockAudioOnFirstGesture } from '../services/audio/AudioE
 import { SceneBackgroundProvider } from '../ui/SceneBackground';
 import { useProfileStore } from '../state/useProfileStore';
 import { PerfToggle } from '../ui/BattleSettings';
+import { AdminResources } from '../ui/AdminResources';
 import { configFor, definitionsFor, settlementFor } from '../scenes/campaignFlow';
 import type { SettlementView, StageLaunch } from '../domain/progression/campaign';
 import { planSettlement } from '../domain/progression/campaign';
@@ -47,10 +51,20 @@ import { ROUTES, type RouteId } from './routes';
  *    它是跨屏幕的一次性数据，放这里最直观。
  */
 export function App() {
+  const reduceUiMotion = useSettingsStore((state) => state.reduceMotion);
+  useEffect(() => {
+    document.documentElement.dataset.uiMotion = reduceUiMotion ? 'still' : 'flow';
+    return () => { delete document.documentElement.dataset.uiMotion; };
+  }, [reduceUiMotion]);
   const [route, setRoute] = useState<RouteId>('hub');
+  const [entered, setEntered] = useState(false);
+  const [account, setAccount] = useState<LoginAccount | null>(null);
+  const gameLayer = useRef<HTMLDivElement>(null);
+  const detachSettings = useRef<(() => void) | null>(null);
+  const mounted = useRef(true);
   const [store, setStore] = useState<ProfileStore | null>(null);
   /** 抬头是否收起。只活在这一会话里（与其余设置一样，不进存档）。 */
-  const [navCollapsed, setNavCollapsed] = useState(false);
+  const [navCollapsed, setNavCollapsed] = useState(true);
   /*
     这一局的战役启动参数与它的结算。
 
@@ -97,36 +111,53 @@ export function App() {
   const navigate = useCallback((next: RouteId) => { setRoute(next); }, []);
 
   useEffect(() => {
-    let alive = true;
-    let detachSettings: (() => void) | null = null;
-    void getProfileStore().then(async (opened) => {
-      if (!alive) {
-        return;
-      }
-      setStore(opened);
-      // `load()` 是幂等的：StrictMode 会让这个 effect 跑两次
-      await opened.load();
-      if (!alive) {
-        return;
-      }
-      /*
-        设置的两条线在这里接上（见 state/settingsPersistence）：
-
-        先「存档 → store」，再「store → 存档」。顺序不能反——后者记下的
-        「上一帧值」是水合之后的值，于是水合本身不会触发一次多余的写盘。
-        这一步早于任何屏幕渲染（App 只在 `ready` 之后才挂屏幕）。
-      */
-      const loaded = opened.getSnapshot().profile;
-      if (loaded) {
-        hydrateSettings(loaded);
-      }
-      detachSettings = attachSettingsPersistence(opened);
-    });
+    mounted.current = true;
+    void preloadHub();
     return () => {
-      alive = false;
-      detachSettings?.();
+      mounted.current = false;
+      detachSettings.current?.();
+      detachSettings.current = null;
     };
   }, []);
+
+  // Authentication precedes save access. The default admin retains the existing save;
+  // each registered account opens its own persistent namespace.
+  const authenticate = useCallback(async (next: LoginAccount): Promise<void> => {
+    const opened = await getProfileStore(next.id);
+    await opened.load();
+    const loaded = opened.getSnapshot();
+    if (loaded.status !== 'ready' || !loaded.profile) {
+      throw new Error(loaded.error ?? '无法读取此账号的存档，请重试。');
+    }
+    await preloadHub();
+    if (!mounted.current) return;
+    detachSettings.current?.();
+    hydrateSettings(loaded.profile);
+    detachSettings.current = attachSettingsPersistence(opened);
+    setAccount(next);
+    setStore(opened);
+    setRoute('hub');
+    // Allow the actual Hub DOM, background and logo canvas to mount behind the card.
+    await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+  }, []);
+
+  const revealLobby = useCallback((polygon: string, _progress: number) => {
+    const layer = gameLayer.current;
+    if (!layer) return;
+    // The 3D card supplies its projected outline. No React render per animation frame.
+    layer.style.clipPath = polygon;
+    layer.style.visibility = 'visible';
+  }, []);
+  const finishEntrance = useCallback(() => setEntered(true), []);
+  useLayoutEffect(() => {
+    if (!entered) return;
+    // Clear the portal only after React has removed the locked class and login stage.
+    // Keeping the final full-screen polygon until this commit avoids a hidden-frame flash.
+    const layer = gameLayer.current;
+    layer?.style.removeProperty('clip-path');
+    layer?.style.removeProperty('visibility');
+    layer?.focus({ preventScroll: true });
+  }, [entered]);
 
   const snapshot = useProfileStore(store);
 
@@ -154,14 +185,17 @@ export function App() {
 
   return (
     <SceneBackgroundProvider>
-    <div className="app-shell">
+    {!entered && <LoginScene onAuthenticated={authenticate} onReveal={revealLobby} onComplete={finishEntrance} />}
+    <div ref={gameLayer} className={`app-shell${entered ? '' : ' app-shell--locked'}`}
+      inert={!entered} aria-hidden={!entered} tabIndex={-1}>
+      {store && <>
       {/*
         抬头可手动收起（2026-10-07）：3D 屏（战桌、实验台、抽卡）最想要的是纵向空间，
         而抬头在那些屏上只是「我现在不想切屏」。收起来只剩品牌与一个展开按钮，
         再点就回来——状态不进存档，刷新即恢复展开。
       */}
-      <nav className={navCollapsed ? 'app-nav app-nav--collapsed' : 'app-nav'}>
-        <span className="app-nav__brand">Card Master 3D</span>
+      <nav className={navCollapsed ? 'app-nav app-nav--admin app-nav--collapsed' : 'app-nav app-nav--admin'} aria-label="admin 导航栏">
+        <span className="app-nav__brand">admin 导航栏</span>
         {!navCollapsed &&
           ROUTES.filter((item) => !['maze', 'draft'].includes(item.id)).map((item) => (
             <button
@@ -178,16 +212,18 @@ export function App() {
             </button>
           ))}
         <span className="app-nav__spacer" />
+        {!navCollapsed && account && <span className="app-nav__account" title="当前本地账号">{account.username}</span>}
+        {!navCollapsed && <AdminResources store={store} busy={snapshot.busy} />}
         {!navCollapsed && <PerfToggle />}
         <button
           type="button"
           className="app-nav__toggle"
           onClick={() => setNavCollapsed((current) => !current)}
-          aria-label={navCollapsed ? '展开导航' : '收起导航'}
+          aria-label={navCollapsed ? '展开 admin 导航栏' : '收起 admin 导航栏'}
           aria-expanded={!navCollapsed}
-          title={navCollapsed ? '展开导航' : '收起导航（多为 3D 画面腾出纵向空间）'}
+          title={navCollapsed ? '展开 admin 导航栏' : '收起 admin 导航栏'}
         >
-          {navCollapsed ? '▾ 展开导航' : '▴'}
+          {navCollapsed ? '▾ 展开' : '▴ 收起'}
         </button>
       </nav>
 
@@ -228,7 +264,7 @@ export function App() {
       <ToastHost />
       {/* 悬停卡牌详情：全应用挂一次，卡片只要带 `data-card-id` 就自动有 */}
       <CardTipHost />
-
+      </>}
     </div>
     </SceneBackgroundProvider>
   );

@@ -46,7 +46,7 @@ export const ROUTES: readonly RouteMeta[] = [
   { id: 'hub', label: '主菜单', hint: '回到主界面' },
   { id: 'campaign', label: '战役', hint: '三章十二关' },
   { id: 'gacha', label: '抽卡', hint: '八个卡池' },
-  { id: 'fusion', label: '融合', hint: '五槽祭坛，五张换一张' },
+  { id: 'fusion', label: '融合工坊', hint: '五槽祭坛，五张换一张' },
   /*
     「组卡」改名「配置」，并移到图鉴**之前**：先决定带什么上场，再回头清点自己有什么，
     这个顺序和玩家实际的动线一致。`RouteId` 仍是 `'deck'`——改名只动标签，

@@ -14,6 +14,8 @@ import { buildMaterial } from '../table/materials';
 import type { TableTheme } from '../table/themes';
 import { hasWeather, WeatherLayer } from '../table/weather';
 import { LAYOUT } from './layout';
+import { MechaTable } from './MechaTable';
+import { VolcanoTable } from './VolcanoTable';
 
 /**
  * 战斗桌。
@@ -101,7 +103,17 @@ export interface TableProps {
   readonly reduceMotion?: boolean | undefined;
 }
 
-export function Table({
+export function Table(props: TableProps) {
+  if (props.theme.geometry === 'mecha') {
+    return <MechaTable theme={props.theme} quality={props.quality} reduceMotion={props.reduceMotion ?? false} />;
+  }
+  if (props.theme.geometry === 'volcano') {
+    return <VolcanoTable theme={props.theme} quality={props.quality} reduceMotion={props.reduceMotion ?? false} />;
+  }
+  return <ClassicTable {...props} />;
+}
+
+function ClassicTable({
   theme,
   quality,
   weatherId,

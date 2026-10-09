@@ -1,0 +1,36 @@
+@layer control-defaults, legacy, theme, hub, controls;
+@layer hub {
+  .hub-menu .menu__title { text-shadow: none; letter-spacing: 0; }
+  .hub-wordmark {
+    position: relative; display: inline-flex; align-items: baseline; gap: .18em;
+    font-family: 'Palatino Linotype', 'Book Antiqua', 'Baskerville', Georgia, serif;
+    font-weight: 700; line-height: 1.15; letter-spacing: -.015em;
+    transform-style: preserve-3d;
+    animation: hub-wordmark-float 9s ease-in-out infinite;
+    animation-play-state: var(--ui-flow-play, running);
+    filter: drop-shadow(0 9px 13px #0006);
+    pointer-events: none;
+  }
+  .hub-wordmark__name { position: relative; display: inline-block; }
+  .hub-wordmark__face {
+    position: relative; display: block; z-index: 1; padding-bottom: .05em;
+    background: linear-gradient(110deg, #a47d39 5%, #dcc492 25%, #fff1c4 44%, #b18a47 55%, #e7d6a9 75%, #b69b67 95%);
+    background-size: 220% 100%; background-clip: text; -webkit-background-clip: text; color: transparent;
+    -webkit-text-stroke: .45px #d9c39a65;
+    animation: hub-wordmark-sheen 12s ease-in-out infinite alternate;
+    animation-play-state: var(--ui-flow-play, running);
+  }
+  .hub-wordmark__depth {
+    position: absolute; inset: 0; color: #71592f; transform: translate(1px, 3px);
+    text-shadow: 0 1px #8b6c35, 0 2px #6d532b, 0 3px #564222, 1px 4px #30281b, 2px 5px #171a1b;
+  }
+  .hub-wordmark__edition { font-size: .5em; color: #d9c499; font-weight: 400; letter-spacing: .02em; text-shadow: 0 1px #fff0, 0 2px #554325, 1px 3px #272219; }
+  .hub-wordmark__version { align-self: center; margin: .28em 0 0 .35em; padding: .22em .55em; font: 500 .2em/1.3 Georgia, serif; letter-spacing: .06em; color: #d3c0a0; border-block: 1px solid #b49b674d; text-shadow: 0 1px 2px #0008; }
+  .hub-wordmark__rule { position: absolute; left: 7%; right: 6%; bottom: -.14em; display: flex; gap: 12px; align-items: center; justify-content: center; }
+  .hub-wordmark__rule i { flex: 1; height: 1px; background: linear-gradient(90deg, transparent, #c7ad7066); }
+  .hub-wordmark__rule i:last-child { transform: rotate(180deg); }
+  .hub-wordmark__rule b { font: 8px/1 Georgia, serif; color: #c7ad7080; }
+  @keyframes hub-wordmark-float { 0%,100% { transform: perspective(1000px) rotateX(4deg) translateY(0); } 50% { transform: perspective(1000px) rotateX(7deg) translateY(-2px); } }
+  @keyframes hub-wordmark-sheen { from { background-position: 0% 50%; } to { background-position: 100% 50%; } }
+  @media (prefers-reduced-motion: reduce) { .hub-wordmark, .hub-wordmark__face { animation: none; } }
+}

@@ -29,6 +29,13 @@ export function BattleHud({ snapshot, onEndTurn, onChoosePriority, onSkipPerform
       <span>{!canAct ? '演出 / AI 行动中…' : priority ? '选择行动顺序' : response ? `${sideName(snapshot, snapshot.inputSide)}客场部署` : '出牌与部署'}</span>
     </div>
     <div className="hud__bottom">
+      {/*
+        日志**不上屏**：每一条事件都同时是画面上的演出（伤害数字、粒子、血条），
+        再抄一份文字反而在牌桌边上压出一块读不过来的长条。
+        它还留在 DOM 里、并且保持「可渲染」——浏览器用例
+        （`tests/browser/battleSlice.spec.ts`）读它当「画面与数值变化一致」的证据，
+        裁剪方式见 global.css 的 `.hud__log`。
+      */}
       <ol className="hud__log">{snapshot.log.map((line, index) => <li key={`${index}-${line}`}>{line}</li>)}</ol>
       <div className="hud__actions">
         <BattleSettings />
@@ -38,13 +45,20 @@ export function BattleHud({ snapshot, onEndTurn, onChoosePriority, onSkipPerform
         {onLeave && <button type="button" className="btn" onClick={onLeave}>返回对战菜单</button>}
         <p className="hud__hint">{hintText(snapshot)}</p>
         <button type="button" className="btn" onClick={onSkipPerformance} disabled={canAct}>跳过演出</button>
-        {priority ? <>
-          <button type="button" className="btn btn--primary" disabled={!canAct} onClick={() => onChoosePriority?.('first')}>先手 · 我方先行动</button>
-          <button type="button" className="btn" disabled={!canAct} onClick={() => onChoosePriority?.('last')}>后手 · 对方先部署</button>
-        </> : <button type="button" className="btn btn--primary" disabled={!canAct} onClick={onEndTurn}>
-          {response ? '完成部署 / 不上场' : snapshot.cardsPlayedThisTurn === 0 ? '跳过出牌 · 获得冷却牌' : '结束行动 · 战斗结算'}
-        </button>}
       </div>
+    </div>
+    {/*
+      回合推进按钮：底层中央，不和上面那列辅助操作混在一起。
+      「第 N 轮」在顶层中央、推进键在底层中央——这两件每次都要用的东西
+      成一根轴线，其余的信息与开关退到两侧。
+    */}
+    <div className="hud__advance">
+      {priority ? <>
+        <button type="button" className="btn btn--primary" disabled={!canAct} onClick={() => onChoosePriority?.('first')}>先手 · 我方先行动</button>
+        <button type="button" className="btn" disabled={!canAct} onClick={() => onChoosePriority?.('last')}>后手 · 对方先部署</button>
+      </> : <button type="button" className="btn btn--primary" disabled={!canAct} onClick={onEndTurn}>
+        {response ? '完成部署 / 不上场' : snapshot.cardsPlayedThisTurn === 0 ? '跳过出牌 · 获得冷却牌' : '结束行动 · 战斗结算'}
+      </button>}
     </div>
   </div>;
 }

@@ -1,0 +1,229 @@
+/* Shared appearance. Layout and card art remain in the legacy layer. */
+@layer control-defaults, legacy, theme, hub, controls;
+
+@layer theme {
+  :root {
+    --ui-gold: #d7b774;
+    --ui-gold-bright: #f0d58d;
+    --ui-gold-dim: #ae8c45;
+    --ui-edge: rgba(215, 183, 116, .58);
+    --ui-edge-inner: rgba(223, 190, 123, .16);
+    --ui-default: rgba(15, 23, 34, .84);
+    --ui-flow-cool: rgba(115, 151, 159, .22);
+    --ui-flow-warm: rgba(218, 184, 104, .17);
+    --ui-flow-violet: rgba(93, 101, 139, .16);
+    --ui-flow-duration: 22s;
+    --ui-text: #ebe7dc;
+    --ui-text-dim: #b6b7b1;
+    --ui-radius-panel: 12px;
+    --ui-radius-control: 7px;
+    --ui-rim-gradient: linear-gradient(130deg, var(--ui-gold-bright), var(--ui-gold-dim) 21%, rgba(170, 134, 59, .4) 43%, var(--ui-gold) 69%, var(--ui-gold-bright));
+    --ui-shadow: inset 0 0 0 1px var(--ui-edge-inner), inset 0 1px 0 #fff0ca14, 0 8px 22px #0003;
+    --bg-raised: #161e29;
+    --bg-raised-hover: #28303a;
+    --border: #796640;
+    --border-strong: var(--ui-gold);
+    --text: var(--ui-text);
+    --text-dim: var(--ui-text-dim);
+    --accent: var(--ui-gold-bright);
+  }
+
+  /* Resolve the recipe on each surface so local color overrides remain live. */
+  :where(.ui-panel, .overlay__panel, .modal__panel, .detail, .lab__panel,
+    .battle-settings, .hud__side, .hud__turn, .hud__log, .app-nav,
+    .activity-detail, .campaign__detail, .maze__detail, .maze__status,
+    .settings__panel, .settings__advanced, .collection__stats,
+    .deckedit__slots, .deckedit__collection, .fusion__collection, .fusion__info,
+    .shop__shelf-row, .shop__pack-row, .chart, .shop__badge,
+    .local-draft__deck, .gacha__panel, .gacha-probability, .gacha__dev,
+    .showcase__info, .probe__stat, .toast, .player, .wheel__stage, .ui-control, button) {
+    --ui-fill:
+      radial-gradient(ellipse at 25% 32%, var(--ui-flow-cool), transparent 42%),
+      radial-gradient(ellipse at 74% 69%, var(--ui-flow-warm), transparent 44%),
+      linear-gradient(130deg, var(--ui-default), var(--ui-default));
+  }
+
+  /* Explicit panel adapters keep full-screen backdrops and 3D canvases clear. */
+  :where(.ui-panel, .overlay__panel, .modal__panel, .detail, .lab__panel,
+    .battle-settings, .hud__side, .hud__turn, .hud__log, .app-nav,
+    .activity-detail, .campaign__detail, .maze__detail, .maze__status,
+    .settings__panel, .settings__advanced, .collection__stats,
+    .deckedit__slots, .deckedit__collection, .fusion__collection, .fusion__info,
+    .shop__shelf-row, .shop__pack-row, .chart, .shop__badge,
+    .local-draft__deck, .gacha__panel, .gacha-probability, .gacha__dev,
+    .showcase__info, .probe__stat, .toast, .player) {
+    color: var(--ui-text);
+    border: 1px solid var(--ui-edge);
+    border-radius: var(--ui-radius-panel);
+    background-color: transparent;
+    background-image: var(--ui-fill);
+    background-size: 210% 240%, 240% 220%, 100% 100%;
+    background-position: 0% 20%, 100% 80%, center;
+    background-repeat: no-repeat;
+    box-shadow: var(--ui-shadow);
+    animation: ui-surface-flow var(--ui-flow-duration) ease-in-out infinite alternate;
+    animation-play-state: var(--ui-flow-play, running);
+  }
+  :where(.ui-panel, .overlay__panel, .modal__panel, .detail, .activity-detail,
+    .campaign__detail, .settings__panel, .shop__shelf-row, .shop__pack-row,
+    .gacha-probability, .local-draft__deck) {
+    backdrop-filter: blur(9px) saturate(115%);
+    -webkit-backdrop-filter: blur(9px) saturate(115%);
+  }
+  :where(.deckedit__slots, .deckedit__collection)::before { border-color: var(--ui-edge-inner); }
+  :where(.shop__shelf-row, .shop__pack-row, .chart) { --ui-flow-duration: 28s; }
+  .shop__shelf:nth-child(2) .shop__shelf-row { animation-delay: -9s; }
+  .shop__shelf:nth-child(3) .shop__shelf-row { animation-delay: -17s; }
+  :where(.shop__shelf-label, .shop__panel-label, .chart__title,
+    .deckedit__heading, .settings__title, .lab__section h3) { color: var(--ui-gold-bright); }
+
+  /* Native action buttons share one recipe; card/image hit areas keep their art. */
+  :where(.ui-control, button):not(:where(.tile, .gacha-menu__card-hit,
+    .campaign__poster, .maze__tile, .maze__showcase, .lab__swatch)) {
+    --ui-default: rgba(22, 31, 43, .88);
+    color: var(--ui-text);
+    border: 1px solid var(--ui-edge);
+    border-radius: var(--ui-radius-control);
+    background-color: transparent;
+    background-image: var(--ui-fill);
+    background-size: 210% 240%, 240% 220%, 100% 100%;
+    background-position: 0% 20%, 100% 80%, center;
+    background-repeat: no-repeat;
+    box-shadow: inset 0 0 0 1px #e6c8840c, inset 0 1px #fff0ca20, 0 3px 9px #0004;
+    text-shadow: 0 1px 3px #0008;
+    animation: ui-surface-flow var(--ui-flow-duration) ease-in-out infinite alternate;
+    animation-play-state: var(--ui-flow-play, running);
+    transition: border-color .18s, box-shadow .18s, color .18s;
+  }
+  :where(.ui-control, button):not(:where(.tile, .gacha-menu__card-hit,
+    .campaign__poster, .maze__tile, .maze__showcase, .lab__swatch)):hover:not(:disabled) {
+    --ui-default: rgba(38, 43, 47, .94);
+    --ui-flow-warm: rgba(230, 191, 106, .32);
+    color: #fff3d4;
+    border-color: var(--ui-gold-bright);
+    box-shadow: inset 0 1px #fff0ca32, inset 0 0 0 1px #e6c88418, 0 0 15px #d7b77430;
+  }
+  :where(.ui-control, button):not(:where(.tile, .gacha-menu__card-hit,
+    .campaign__poster, .maze__tile, .maze__showcase, .lab__swatch)):focus-visible {
+    outline: 2px solid var(--ui-gold-bright);
+    outline-offset: 3px;
+  }
+  :where(.ui-control, button):not(:where(.tile, .gacha-menu__card-hit,
+    .campaign__poster, .maze__tile, .maze__showcase, .lab__swatch)):active:not(:disabled) {
+    box-shadow: inset 0 2px 8px #0006, 0 0 9px #d7b77425;
+  }
+  :where(.ui-control, button):not(:where(.tile, .gacha-menu__card-hit,
+    .campaign__poster, .maze__tile, .maze__showcase, .lab__swatch)):disabled {
+    --ui-default: rgba(21, 27, 34, .78);
+    --ui-flow-cool: transparent;
+    --ui-flow-warm: transparent;
+    color: #8e928e;
+    border-color: #9b87573d;
+    box-shadow: inset 0 1px #ffffff08;
+    opacity: .48;
+    cursor: not-allowed;
+    animation: none;
+  }
+  :where(.btn--primary, .settings__action--primary, .ui-control--primary) {
+    --ui-default: rgba(76, 60, 34, .92);
+    --ui-flow-warm: rgba(238, 198, 107, .3);
+    color: #fff0cb;
+    border-color: var(--ui-gold-bright);
+    box-shadow: inset 0 1px #ffe6ab32, 0 0 12px #d7b77422;
+  }
+  :where(.ui-selected, .chip--on, .app-nav__tab--active, .detail__pin--on,
+    .settings__seg--on, .battle-settings__seg--on, .wheel__card--on,
+    button[aria-pressed='true'], button[aria-selected='true']) {
+    --ui-default: rgba(67, 53, 34, .93);
+    --ui-flow-warm: rgba(238, 198, 107, .38);
+    color: #fff0c9;
+    border-color: var(--ui-gold-bright);
+    box-shadow: inset 0 0 0 1px #e6c88428, inset 0 1px #fff0ca30, 0 0 18px #d7b77435;
+  }
+  :where(.settings__segmented, .battle-settings__segmented) {
+    border-color: var(--ui-edge);
+    background: var(--ui-default);
+    border-radius: var(--ui-radius-control);
+  }
+  :where(.settings__seg, .battle-settings__seg) { border-radius: 0; box-shadow: none; }
+  :where(.menu__entry-glow) { display: none; }
+  :where(.menu__entry-tri) { color: var(--ui-gold); }
+  .menu__entry--persistent { border-color: var(--ui-gold-bright); }
+  .menu__entry { --ui-radius-control: 6px; }
+  .shop__price-btn { --ui-default: rgba(62, 49, 30, .94); }
+
+  /* Skew and row placement still come from the wheel's layout stylesheet. */
+  :where(.wheel__stage) {
+    border: 1px solid var(--ui-edge);
+    border-radius: var(--ui-radius-panel);
+    background-image: var(--ui-fill);
+    background-size: 210% 240%, 240% 220%, 100% 100%;
+    background-position: 0% 20%, 100% 80%, center;
+    box-shadow: var(--ui-shadow);
+    animation: ui-surface-flow 28s ease-in-out infinite alternate;
+    animation-play-state: var(--ui-flow-play, running);
+  }
+  :where(.gacha-dashboard__selection, .activity-wheel__selection) {
+    background: linear-gradient(90deg, #d7b77420, #f0d58d12, #d7b77420);
+    border-color: #f0d58d70;
+    box-shadow: 0 0 24px #d7b77424, inset 0 0 18px #d7b77416;
+  }
+  :where(.activity-wheel__option)::before,
+  :where(.activity-wheel__option)::after { content: none; }
+  :where(.activity-wheel__option) { border-radius: 10px; filter: none; }
+  :where(.wheel__card--on) { filter: none; }
+  :where(.wheel__card .wheel__name) { color: var(--ui-text); }
+  :where(.wheel__card--on .wheel__name) { color: #fff0c9; text-shadow: 0 0 12px #d7b77466; }
+  :where(.wheel__stage):focus-visible { outline: 2px solid var(--ui-gold-bright); outline-offset: 4px; }
+
+  /* Tooltip shares the same palette, while keeping its bevel and rarity orb. */
+  .cardtip__frame { background: var(--ui-rim-gradient); }
+  .cardtip__surface { background: var(--ui-default); }
+  .cardtip__flow {
+    animation-play-state: var(--ui-flow-play, running);
+    opacity: .65;
+    background: radial-gradient(ellipse at 25% 32%, var(--ui-flow-cool), transparent 38%),
+      radial-gradient(ellipse at 74% 69%, var(--ui-flow-warm), transparent 40%),
+      conic-gradient(from 25deg at 48% 54%, transparent, var(--ui-flow-violet) 85deg, transparent 155deg, var(--ui-flow-cool) 235deg, transparent);
+  }
+  .cardtip__trim { border-color: var(--ui-edge-inner); }
+  :where(.cardtip__skills b, .cardtip__function) { color: var(--ui-gold-bright); }
+  :where(.cardtip__trim)::before, :where(.cardtip__trim)::after {
+    background: linear-gradient(90deg, var(--ui-gold), transparent);
+  }
+
+  :where(select, textarea, input:not([type='range']):not([type='checkbox']):not([type='radio']):not([type='color']):not([type='file'])) {
+    color: var(--ui-text);
+    background: var(--ui-default);
+    border: 1px solid var(--ui-edge);
+    border-radius: var(--ui-radius-control);
+    box-shadow: inset 0 1px 5px #0004;
+  }
+  :where(select, textarea, input):focus-visible { outline: 2px solid var(--ui-gold-bright); outline-offset: 2px; }
+  :where(select option) { color: var(--ui-text); background: #17212e; }
+  :where(input[type='range'], input[type='checkbox'], input[type='radio'], progress) { accent-color: var(--ui-gold); }
+  :where(.scroll, .detail, .lab__panel, .fusion__info, .deckedit__body, .settings__grid, .showcase__info) {
+    scrollbar-width: thin;
+    scrollbar-color: var(--ui-gold-dim) #111c29;
+  }
+  :where(.scroll, .detail, .lab__panel, .fusion__info, .deckedit__body, .settings__grid, .showcase__info)::-webkit-scrollbar { width: 8px; height: 8px; }
+  :where(.scroll, .detail, .lab__panel, .fusion__info, .deckedit__body, .settings__grid, .showcase__info)::-webkit-scrollbar-track { background: #111c29; border-radius: 8px; }
+  :where(.scroll, .detail, .lab__panel, .fusion__info, .deckedit__body, .settings__grid, .showcase__info)::-webkit-scrollbar-thumb { background: var(--ui-rim-gradient); border: 2px solid #111c29; border-radius: 8px; }
+
+  /* Preserve semantic feedback and team colors within the common gold frame. */
+  .toast--error, .probe__stat--bad { --ui-flow-warm: rgba(210, 65, 54, .24); border-color: var(--danger); }
+  .local-draft__deck--enemy { color: #9ecaff; }
+  .local-draft__deck--player { color: #91f0b6; }
+  .hud__side--enemy { --ui-flow-warm: rgba(175, 81, 62, .18); }
+
+  @keyframes ui-surface-flow {
+    from { background-position: 0% 20%, 100% 80%, center; }
+    to { background-position: 100% 70%, 0% 25%, center; }
+  }
+  /* Pause appearance only: gacha transitions, card motion and orb logic stay separate. */
+  :root[data-ui-motion='still'],
+  :where(.wheel--still, .gacha-menu--still, .cardtip--still) { --ui-flow-play: paused; }
+  @media (prefers-reduced-motion: reduce) {
+    :root { --ui-flow-play: paused; }
+  }
+}

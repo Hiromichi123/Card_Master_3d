@@ -1,7 +1,7 @@
 /**
- * 应用里的那一份存档实例。
+ * 每个本地账号独立的存档实例。
  *
- * 模块级单例：路由切换会卸载屏幕，存档不能跟着一起死。
+ * 模块级账号缓存：路由切换会卸载屏幕，存档不能跟着一起死。
  * 依赖在这里注入一次——时间、随机种子、数据版本、起始卡组——
  * 于是 `ProfileStore` 本身在单测里可以完全脱离浏览器。
  */
@@ -14,8 +14,8 @@ import type { SaveRepository } from '../services/save/SaveRepository';
 import { ProfileStore } from './createProfileStore';
 import { pushToast } from './toastStore';
 
-let instance: ProfileStore | null = null;
-let opening: Promise<ProfileStore> | null = null;
+const instances = new Map<string, ProfileStore>();
+const opening = new Map<string, Promise<ProfileStore>>();
 
 /** 起始卡组：切片里的演示玩家牌组（12 张，正好是卡组上限）。 */
 function starterCardIds(): readonly string[] {
@@ -81,8 +81,9 @@ function makeSeedSource(): () => number {
   };
 }
 
-async function build(): Promise<ProfileStore> {
-  const opened = await openSaveRepository();
+async function build(accountId: string): Promise<ProfileStore> {
+  // Login must never turn an unavailable saved profile into a temporary new game.
+  const opened = await openSaveRepository(accountId, true);
   let repository: SaveRepository = opened.repository;
   if (devFailSave()) {
     repository = new FailingSaveRepository(repository);
@@ -107,15 +108,23 @@ async function build(): Promise<ProfileStore> {
  * 并发调用共享同一个 promise——`<StrictMode>` 会让 effect 跑两次，
  * 第二次必须复用第一次的结果，而不是再开一个数据库连接。
  */
-export function getProfileStore(): Promise<ProfileStore> {
-  if (instance) {
+export function getProfileStore(accountId = 'admin'): Promise<ProfileStore> {
+  const instance = instances.get(accountId);
+  if (instance && instance.getSnapshot().status !== 'error') {
     return Promise.resolve(instance);
   }
-  if (!opening) {
-    opening = build().then((store) => {
-      instance = store;
-      return store;
-    });
+  if (instance) {
+    // A failed load has a settled loadPromise; rebuilding lets the next login retry it.
+    instance.dispose();
+    instance.getRepository().close();
+    instances.delete(accountId);
   }
-  return opening;
+  const pending = opening.get(accountId);
+  if (pending) return pending;
+  const request = build(accountId).then((store) => {
+    instances.set(accountId, store);
+    return store;
+  }).finally(() => { opening.delete(accountId); });
+  opening.set(accountId, request);
+  return request;
 }

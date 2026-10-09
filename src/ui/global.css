@@ -1,3 +1,5 @@
+@layer control-defaults, legacy, theme, hub, controls;
+@layer legacy {
 /*
 
  * 全局样式与最小设计基线。
@@ -1901,13 +1903,22 @@ code {
 
 
 
+/* 轮次信息：**顶层中央**。
+   原先它是 `.hud` 中间那个 flex 子项，靠 `justify-content: space-between`
+   落到了画面正中——牌桌最该空着的地方被一条「第 N 轮」占着。
+   改成绝对定位钉在顶边中央，桌面正中央整块留给牌。
+   字号比原先略大一档：这是每回合唯一必须读到的那行字。 */
 .hud__turn {
 
-  align-self: center;
+  position: absolute;
 
-  margin-top: -8px;
+  top: 12px;
 
-  padding: 4px 14px;
+  left: 50%;
+
+  transform: translateX(-50%);
+
+  padding: 6px 18px;
 
   background: rgba(22, 27, 38, 0.86);
 
@@ -1915,11 +1926,19 @@ code {
 
   border-radius: 999px;
 
-  font-size: 13px;
+  font-size: 15px;
 
   color: var(--text);
 
   white-space: nowrap;
+
+}
+
+.hud__turn-number {
+
+  font-size: 16px;
+
+  font-weight: 700;
 
 }
 
@@ -1939,7 +1958,9 @@ code {
 
   display: flex;
 
-  justify-content: space-between;
+  /* 日志已经退出文档流（见下面的 `.hud__log`），这一行现在只有右侧那列操作。
+     留 `space-between` 的话单个子项会被摆到**左端**，也就是操作列会跳到左下角。 */
+  justify-content: flex-end;
 
   align-items: flex-end;
 
@@ -1951,31 +1972,36 @@ code {
 
 
 
+/* 战斗日志**不上屏**。
+   每一条事件本来就同时是画面上的演出（伤害数字、粒子、血条），再抄一份文字
+   只是趴在牌桌左下角压出一条读不完的长条。
+   这条日志仍留在 DOM 里、并且保持「可渲染」——浏览器用例
+   （tests/browser/battleSlice.spec.ts）读它的文本，当「画面与数值变化一致」
+   这条验收的可读证据（见 rendering/presentation/eventEffects.ts 的注释）。
+   用 1px 裁剪而不是 display: none，就是为了不连这块证据一起藏掉。 */
 .hud__log {
 
-  flex: 1;
+  position: absolute;
 
-  max-width: 460px;
+  width: 1px;
 
-  margin: 0;
+  height: 1px;
 
-  padding: 8px 12px;
+  margin: -1px;
 
-  list-style: none;
+  padding: 0;
 
-  background: rgba(22, 27, 38, 0.78);
+  overflow: hidden;
 
-  border: 1px solid var(--border);
+  clip-path: inset(50%);
 
-  border-radius: 8px;
+  white-space: nowrap;
 
-  font-size: 12px;
+  border: 0;
 
-  color: var(--text-dim);
+  /* 已经没有可点、可滚的内容，别再拦着桌面上的点击 */
 
-  /* 日志要能滚动查看，所以它自己接点击 */
-
-  pointer-events: auto;
+  pointer-events: none;
 
 }
 
@@ -1998,6 +2024,37 @@ code {
   align-items: flex-end;
 
   gap: 8px;
+
+}
+
+/* 回合推进按钮：**底层中央**。
+   原先它排在右下角那列辅助操作的末尾（设置、跳过演出、提示都在那一列），
+   离顶上的轮次提示最远，每次都要在屏幕上横穿一次。
+   挪到正中之后，「看轮次 → 按推进」是同一根竖轴上的两次注视。
+   比其它按钮略大一号：整场战斗只有这个键是每个回合都必须按的。 */
+.hud__advance {
+
+  position: absolute;
+
+  bottom: 14px;
+
+  left: 50%;
+
+  transform: translateX(-50%);
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 10px;
+
+}
+
+.hud__advance .btn {
+
+  padding: 9px 24px;
+
+  font-size: 15px;
 
 }
 
@@ -7986,4 +8043,6 @@ code {
 
 .settings__list--unknown code {
   color: var(--danger);
+}
+
 }

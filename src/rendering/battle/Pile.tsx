@@ -18,6 +18,7 @@ import {
 } from '../cards/cardGeometry';
 import type { PileView } from './placements';
 import { PILE_CARD_SCALE, pilePosition } from './layout';
+import { MechaPileCounter } from './MechaPileCounter';
 
 /**
  * 牌堆与弃牌堆。
@@ -138,7 +139,7 @@ function Stack({ count, texture }: { count: number; texture: Texture }) {
  * three 不会自动重编译着色器，结果是这一摞永远渲染成纯白（P3 实机截图里那两块
  * 白方块就是这么来的）。
  */
-export function Pile({ pile }: { pile: PileView }) {
+export function Pile({ pile, mecha = false }: { pile: PileView; mecha?: boolean }) {
   const position = pilePosition(pile.side, pile.kind);
   const backTexture = useManagedTexture(CARD_BACK_URL);
   const isDeck = pile.kind === 'deck';
@@ -148,6 +149,7 @@ export function Pile({ pile }: { pile: PileView }) {
 
   return (
     <group position={[position[0], position[1], position[2]]}>
+      {mecha && <MechaPileCounter pile={pile} />}
       {/* 整堆按同一个比例缩放：底衬、叠层与明牌要一起变小，各自写一份迟早对不齐 */}
       <group scale={PILE_CARD_SCALE}>
         {!filled && <PileBase color={isDeck ? '#7fb2ff' : '#c9a86a'} />}

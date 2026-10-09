@@ -19,6 +19,8 @@ import type { SurfaceSpec } from './materials';
 export interface TableTheme {
   readonly id: string;
   readonly name: string;
+  /** Independent arena geometry; omitted themes retain the classic tiled table. */
+  readonly geometry?: 'mecha' | 'volcano';
   /** 一句话描述，显示在切换器里。 */
   readonly blurb: string;
 
@@ -88,11 +90,11 @@ export const TABLE_THEMES: readonly TableTheme[] = [
   {
     id: 'tournament',
     name: '锦标赛',
-    blurb: '黄杨木与胡桃木，每一张棋桌上都摆着的那副。',
-    table: { color: 0x161a21, roughness: 0.9 },
-    background: 0x1b1f27,
-    fog: fog(0x1b1f27, 26, 74),
-    environmentIntensity: 0.35,
+    blurb: '木质牌桌承托黄杨木与胡桃木棋盘，大理石地面映出柔和反光。',
+    table: { color: 0x6b4b2e, roughness: .36 },
+    background: 0x282018,
+    fog: fog(0x302822, 52, 128),
+    environmentIntensity: .48,
     mat: {
       light: {
         kind: 'wood', color: 0xd9b98a, light: 0xe9d4b0, dark: 0xcaab7e,
@@ -110,6 +112,43 @@ export const TABLE_THEMES: readonly TableTheme[] = [
     },
     accent: ACCENT_DEFAULT,
     post: { bloom: 0.12, bloomThreshold: 0.85 },
+  },
+
+  {
+    id: 'white-mecha', name: '未来', geometry: 'mecha',
+    blurb: '灰银金属装甲与青蓝能源导轨，悬浮科技立方体上的虚空战场。',
+    // Darker metallic coating: soft metal reflections replace the earlier ceramic matte finish.
+    table: { color: 0x9ba8b1, roughness: .42 },
+    background: 0x696f77, fog: fog(0x696f77, 70, 290), environmentIntensity: .75,
+    mat: {
+      light: { kind: 'plain', color: 0xb0bac2, roughness: .4, metalness: .68, clearcoat: .16, clearcoatRoughness: .28, envMapIntensity: .85 },
+      dark: { kind: 'plain', color: 0x8b98a3, roughness: .46, metalness: .72, clearcoat: .12, clearcoatRoughness: .3, envMapIntensity: .8 },
+      frame: { kind: 'plain', color: 0x647580, roughness: .34, metalness: .82 },
+      inlay: 0x2cacc5,
+    },
+    accent: { slot: 0x607f8e, placeable: 0x1684b5, target: 0xc88630 },
+    post: { bloom: .14, bloomThreshold: 1.08 },
+  },
+
+  {
+    id: 'volcano',
+    name: '火山',
+    geometry: 'volcano',
+    blurb: '起伏的玄武岩柱承托六角岩台，明亮熔岩在战斗阵列间流动。',
+    table: { color: 0x25262a, roughness: .95 },
+    background: 0x17181b,
+    fog: fog(0x232126, 48, 120),
+    environmentIntensity: 0.35,
+    mat: {
+      light: { kind: 'stone', color: 0x424348, roughness: .94, metalness: .02, envMapIntensity: .24 },
+      dark: { kind: 'stone', color: 0x2c2d31, roughness: .94, metalness: .04, envMapIntensity: .24 },
+      frame: {
+        kind: 'metal', color: 0x2e2422, light: 0x3a2c28, dark: 0x1d1614, roughness: 0.5, metalness: 0.6,
+      },
+      inlay: 0xff7a3d,
+    },
+    accent: { slot: 0x8a6a63, placeable: 0x6ee7ff, target: 0xff9a4d },
+    post: { bloom: .4, bloomThreshold: 1.05 },
   },
 
   {
@@ -161,80 +200,6 @@ export const TABLE_THEMES: readonly TableTheme[] = [
   },
 
   {
-    id: 'emerald',
-    name: '祖母绿牌室',
-    blurb: '把那张绿色绒布卷桌认真做了一遍。',
-    table: { color: 0x121815, roughness: 0.92 },
-    background: 0x161d1a,
-    fog: fog(0x161d1a, 26, 76),
-    environmentIntensity: 0.4,
-    mat: {
-      light: { kind: 'plain', color: 0xeae3d2, roughness: 0.72, clearcoat: 0.06, envMapIntensity: 0.45 },
-      dark: { kind: 'plain', color: 0x4a7a5c, roughness: 0.74, clearcoat: 0.06, envMapIntensity: 0.45 },
-      frame: {
-        kind: 'wood', color: 0x2f3a33, light: 0x3a4840, dark: 0x27332c, rings: 14, roughness: 0.5,
-      },
-      inlay: 0xe0d7c0,
-    },
-    accent: ACCENT_DEFAULT,
-    post: { bloom: 0.1, bloomThreshold: 0.9 },
-  },
-
-  {
-    id: 'neon',
-    name: '霓虹网格',
-    blurb: '凌晨三点在 CRT 上打牌。',
-    table: { color: 0x040210, roughness: 0.35 },
-    background: 0x05030f,
-    fog: fog(0x0a0620, 18, 60),
-    environmentIntensity: 0.25,
-    mat: {
-      light: {
-        kind: 'plain', color: 0x2a1e63, roughness: 0.34, metalness: 0.35,
-        emissive: 0x1b1145, emissiveIntensity: 0.2, envMapIntensity: 0.5,
-      },
-      dark: {
-        kind: 'plain', color: 0x0a0619, roughness: 0.36, metalness: 0.4,
-        emissive: 0x0a0620, emissiveIntensity: 0.15, envMapIntensity: 0.5,
-      },
-      frame: {
-        kind: 'metal', color: 0x161034, roughness: 0.22, metalness: 1,
-        emissive: 0x8c1a60, emissiveIntensity: 0.1,
-      },
-      inlay: 0x00e5ff,
-    },
-    accent: { slot: 0x6a5fa8, placeable: 0x7cff6b, target: 0x00e5ff },
-    post: { bloom: 0.5, bloomThreshold: 0.72 },
-  },
-
-  {
-    id: 'ivory',
-    name: '象牙与乌木',
-    blurb: '温暖的书房，台灯在左边。',
-    table: { color: 0x231b14, roughness: 0.88 },
-    background: 0x2a2119,
-    fog: fog(0x2a2119, 26, 76),
-    environmentIntensity: 0.45,
-    mat: {
-      light: {
-        kind: 'marble', color: 0xefe4cd, base: 0xf4ead6, vein: 0xd2c1a0,
-        roughness: 0.38, clearcoat: 0.3, envMapIntensity: 0.5,
-      },
-      dark: {
-        kind: 'wood', color: 0x2b1d16, light: 0x372619, dark: 0x1f1510,
-        rings: 20, roughness: 0.44, clearcoat: 0.28, envMapIntensity: 0.5,
-      },
-      frame: {
-        kind: 'wood', color: 0x6b4a2c, light: 0x7d5533, dark: 0x553921,
-        rings: 14, angle: 1.2, roughness: 0.34, clearcoat: 0.5,
-      },
-      inlay: 0xe8d3a8,
-    },
-    accent: ACCENT_DEFAULT,
-    post: { bloom: 0.2, bloomThreshold: 0.82 },
-  },
-
-  {
     id: 'grass',
     name: '草原',
     blurb: '修剪过的田野：光与影的格子，风从上面吹过。',
@@ -273,26 +238,6 @@ export const TABLE_THEMES: readonly TableTheme[] = [
   },
 
   {
-    id: 'volcano',
-    name: '火山',
-    blurb: '玄武岩与余烬：裂缝之间透出地面的光。',
-    table: { color: 0x140f11, roughness: 0.8 },
-    background: 0x1b1216,
-    fog: fog(0x2a1414, 20, 64),
-    environmentIntensity: 0.35,
-    mat: {
-      light: { kind: 'plain', color: 0x6d4a44, roughness: 0.8 },
-      dark: { kind: 'plain', color: 0x35211f, roughness: 0.85 },
-      frame: {
-        kind: 'metal', color: 0x2e2422, light: 0x3a2c28, dark: 0x1d1614, roughness: 0.5, metalness: 0.6,
-      },
-      inlay: 0xff7a3d,
-    },
-    accent: { slot: 0x8a6a63, placeable: 0x6ee7ff, target: 0xff9a4d },
-    post: { bloom: 0.32, bloomThreshold: 0.74 },
-  },
-
-  {
     id: 'snow',
     name: '雪原',
     blurb: '缓慢落雪下的冻土；格子读起来像冰与板岩。',
@@ -314,5 +259,5 @@ export const TABLE_THEMES: readonly TableTheme[] = [
 export const DEFAULT_THEME_ID = 'tournament';
 
 export function getTableTheme(id: string): TableTheme {
-  return TABLE_THEMES.find((theme) => theme.id === id) ?? (TABLE_THEMES[0] as TableTheme);
+  return TABLE_THEMES.find((theme) => theme.id === id) ?? TABLE_THEMES.find((theme) => theme.id === DEFAULT_THEME_ID)!;
 }

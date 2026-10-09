@@ -1,3 +1,5 @@
+@layer control-defaults, legacy, theme, hub, controls;
+@layer legacy {
 /* Gold frame vocabulary, scoped to deck construction only. */
 .deckedit { --deck-gold: #d6b878; --deck-gold-dim: rgba(212, 179, 108, .34); padding: 14px 18px; }
 .deckedit .deckedit__body {
@@ -107,4 +109,6 @@
 @media (max-width: 680px) {
   .deckedit .deckedit__body { grid-template-columns: 1fr; grid-template-rows: minmax(350px, 57vh) minmax(340px, 1fr); overflow-y: auto; }
   .deckedit .deckedit__collection .card-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+}
+
 }

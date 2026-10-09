@@ -19,6 +19,7 @@ import type { ProfileStore } from '../state/createProfileStore';
 import { useRarityIndex } from '../state/useRarityIndex';
 import { SPEED_SCALE, useSettingsStore } from '../state/settingsStore';
 import { GachaMenu } from '../ui/GachaMenu';
+import { ArtButtonSurface, artButtonStyle, gachaButtonArt } from '../ui/ArtButtonSurface';
 import { CardShowcase } from '../ui/CardShowcase';
 import { GachaProbabilityStrip } from '../ui/GachaProbabilityStrip';
 import { UI_EXIT } from '../rendering/gacha/choreography';
@@ -74,9 +75,6 @@ interface Run {
  */
 type Phase = 'select' | 'reveal' | 'result';
 
-/** 测试按钮每次发多少。 */
-const GRANT_AMOUNT = 50_000;
-
 export function GachaScene({ profile, store, busy, onReturn }: GachaSceneProps) {
   const rarityIndex = useRarityIndex();
   const presentationSpeed = useSettingsStore((state) => state.presentationSpeed);
@@ -127,31 +125,6 @@ export function GachaScene({ profile, store, busy, onReturn }: GachaSceneProps) 
     () => rarePercent(slots, (rarity) => rarityIndex.isHighRarity(rarity)),
     [slots, rarityIndex],
   );
-
-  /**
-   * 测试用：直接给自己发一笔钱。
-   *
-   * 走**和抽卡同一条提交路径**（`commitEconomic`）——它不关心事务里是什么，
-   * 只保证「一次原子写」。绕过它直接改 profile 的话，货币会只存在内存里，
-   * 一刷新就回去了（那正是抽卡页面最不该出现的行为）。
-   */
-  const grant = async (currency: 'gold' | 'crystal'): Promise<void> => {
-    if (running) {
-      return;
-    }
-    setError(null);
-    const outcome = await store.commitEconomic<null>(() => ({
-      transaction: {
-        operationId: store.nextOperationId(),
-        currencyDelta: { [currency]: GRANT_AMOUNT },
-        inventoryDelta: {},
-      },
-      view: null,
-    }));
-    if (!outcome.ok) {
-      setError(outcome.message);
-    }
-  };
 
   const pull = async (count: 1 | 10): Promise<void> => {
     if (!pool || pending || busy) {
@@ -205,6 +178,7 @@ export function GachaScene({ profile, store, busy, onReturn }: GachaSceneProps) 
   }
 
   const running = pending || busy;
+  const buttonArt = artButtonStyle(gachaButtonArt(pool));
 
   /** 这一批抽到的卡（按抽出顺序，重复的也在）。 */
   const runCards = useMemo((): CardDefinition[] => {
@@ -229,7 +203,7 @@ export function GachaScene({ profile, store, busy, onReturn }: GachaSceneProps) 
       {(phase === 'select' || (phase === 'reveal' && transitionOrigin === 'menu' && !uiDismissed)) && <GachaMenu
         pools={pools} pool={pool} poolIndex={poolIndex} onSelectPool={setPoolIndex}
         currencies={profile.currencies} running={running || phase !== 'select'} error={error}
-        onPull={(count) => { void pull(count); }} onGrant={(currency) => { void grant(currency); }}
+        onPull={(count) => { void pull(count); }}
         onReturn={onReturn}
         leaving={phase === 'reveal' && uiStarted} exitSeconds={UI_EXIT * SPEED_SCALE[presentationSpeed]}
         onHoverCard={setShowcaseHovered} onCardPointer={setShowcasePointer}
@@ -252,10 +226,10 @@ export function GachaScene({ profile, store, busy, onReturn }: GachaSceneProps) 
           style={{ ['--gacha-exit-duration' as string]: `${UI_EXIT * SPEED_SCALE[presentationSpeed]}s` }}>
           <header className="gacha-complete__head"><h2>抽卡完成</h2><p>获得 {run.view.cardIds.length} 张卡牌 · 点击卡牌查看预览</p></header>
           <div className="gacha-complete__actions">
-            <button type="button" className="btn" onClick={closeRun} disabled={running || phase !== 'result'}>离开</button>
-            <button type="button" className="btn btn--primary" disabled={running || phase !== 'result'} data-testid="pull-again"
+            <button type="button" className="btn art-button" style={buttonArt} onClick={closeRun} disabled={running || phase !== 'result'}><ArtButtonSurface /><span className="art-button__label">离开</span></button>
+            <button type="button" className="btn btn--primary art-button art-button--gold" style={buttonArt} disabled={running || phase !== 'result'} data-testid="pull-again"
               onClick={() => void pull(run.view.cardIds.length === 1 ? 1 : 10)}>
-              继续抽卡<span>{run.view.cardIds.length === 1 ? pool.singleCost : pool.tenCost} {pool.currency === 'gold' ? '金币' : '水晶'} · {run.view.cardIds.length === 1 ? '单抽' : '十连'}</span>
+              <ArtButtonSurface /><span className="art-button__label">继续抽卡<small>{run.view.cardIds.length === 1 ? pool.singleCost : pool.tenCost} {pool.currency === 'gold' ? '金币' : '水晶'} · {run.view.cardIds.length === 1 ? '单抽' : '十连'}</small></span>
             </button>
           </div>
           {error && <p className="gacha__error gacha-complete__error" role="status">{error}</p>}
@@ -270,11 +244,11 @@ export function GachaScene({ profile, store, busy, onReturn }: GachaSceneProps) 
       {phase === 'reveal' && (
         <button
           type="button"
-          className="gacha__skip"
+          className="gacha__skip art-button" style={buttonArt}
           onClick={() => setAnimated(false)}
           disabled={run === null}
         >
-          跳过演出
+          <ArtButtonSurface /><span className="art-button__label">跳过演出</span>
         </button>
       )}
       {previewId && <CardShowcase cardId={previewId} cardIds={[...new Set(runCards.map((card) => card.cardId))]}

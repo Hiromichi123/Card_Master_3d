@@ -1,0 +1,95 @@
+/* Declare this order in every entry stylesheet so page import order cannot change it. */
+@layer control-defaults, legacy, theme, hub, controls;
+
+@layer control-defaults {
+  :where(.ui-control, button):not(:where(.tile, .gacha-menu__card-hit,
+    .campaign__poster, .maze__tile, .maze__showcase, .lab__swatch)) {
+    position: relative;
+    isolation: isolate;
+  }
+}
+
+@layer controls {
+  :root { --ui-control-bevel: 8px; --ui-rim-opacity: .78; }
+
+  /* The two clipped surfaces form the bevel; the button itself stays unclipped
+     so price labels, tooltips and the existing hit area keep working. */
+  :where(.ui-control, button):not(:where(.tile, .gacha-menu__card-hit,
+    .campaign__poster, .maze__tile, .maze__showcase, .lab__swatch)) {
+    background: none;
+    border-color: transparent;
+    border-radius: 0;
+  }
+  :where(.ui-control, button):not(:where(.tile, .gacha-menu__card-hit,
+    .campaign__poster, .maze__tile, .maze__showcase, .lab__swatch))::before,
+  :where(.ui-control, button):not(:where(.tile, .gacha-menu__card-hit,
+    .campaign__poster, .maze__tile, .maze__showcase, .lab__swatch))::after {
+    content: '';
+    position: absolute;
+    border: 0;
+    border-radius: 0;
+    pointer-events: none;
+  }
+  :where(.ui-control, button):not(:where(.tile, .gacha-menu__card-hit,
+    .campaign__poster, .maze__tile, .maze__showcase, .lab__swatch))::before {
+    z-index: -2;
+    inset: -1px;
+    clip-path: polygon(var(--ui-control-bevel) 0, calc(100% - var(--ui-control-bevel)) 0,
+      100% var(--ui-control-bevel), 100% calc(100% - var(--ui-control-bevel)),
+      calc(100% - var(--ui-control-bevel)) 100%, var(--ui-control-bevel) 100%,
+      0 calc(100% - var(--ui-control-bevel)), 0 var(--ui-control-bevel));
+    background-image: var(--ui-rim-gradient);
+    background-size: 240% 200%;
+    opacity: var(--ui-rim-opacity);
+    animation: ui-gold-rim 16s ease-in-out infinite alternate;
+    animation-play-state: var(--ui-flow-play, running);
+    transition: opacity .18s;
+  }
+  :where(.ui-control, button):not(:where(.tile, .gacha-menu__card-hit,
+    .campaign__poster, .maze__tile, .maze__showcase, .lab__swatch))::after {
+    --inner-bevel: max(1px, calc(var(--ui-control-bevel) - 1px));
+    z-index: -1;
+    inset: 0;
+    clip-path: polygon(var(--inner-bevel) 0, calc(100% - var(--inner-bevel)) 0,
+      100% var(--inner-bevel), 100% calc(100% - var(--inner-bevel)),
+      calc(100% - var(--inner-bevel)) 100%, var(--inner-bevel) 100%,
+      0 calc(100% - var(--inner-bevel)), 0 var(--inner-bevel));
+    background-image: linear-gradient(90deg, #e4c47b88, transparent),
+      linear-gradient(270deg, #e4c47b88, transparent), var(--ui-control-fill, var(--ui-fill));
+    background-size: 30px 1px, 30px 1px, 210% 240%, 240% 220%, 100% 100%;
+    background-position: 10px 6px, calc(100% - 10px) calc(100% - 6px), 0% 20%, 100% 80%, center;
+    background-repeat: no-repeat;
+    box-shadow: inset 0 0 0 1px var(--ui-edge-inner);
+    animation: ui-gold-fill var(--ui-flow-duration) ease-in-out infinite alternate;
+    animation-play-state: var(--ui-flow-play, running);
+  }
+  :where(.ui-control, button):not(:where(.tile, .gacha-menu__card-hit,
+    .campaign__poster, .maze__tile, .maze__showcase, .lab__swatch)):hover:not(:disabled),
+  :where(.ui-control, button):not(:where(.tile, .gacha-menu__card-hit,
+    .campaign__poster, .maze__tile, .maze__showcase, .lab__swatch)):focus-visible {
+    --ui-rim-opacity: 1;
+  }
+  :where(.btn--primary, .ui-control--primary, .ui-selected, .chip--on,
+    .app-nav__tab--active, .settings__seg--on, .battle-settings__seg--on,
+    .wheel__card--on, .hub-button--active, button[aria-pressed='true'], button[aria-selected='true']) {
+    --ui-rim-opacity: 1;
+  }
+  :where(.ui-control, button):not(:where(.tile, .gacha-menu__card-hit,
+    .campaign__poster, .maze__tile, .maze__showcase, .lab__swatch)):disabled {
+    --ui-rim-opacity: .42;
+  }
+  :where(.ui-control, button):disabled::before,
+  :where(.ui-control, button):disabled::after { animation: none; }
+  :where(.chip, .btn--tiny, .app-nav__tab) { --ui-control-bevel: 5px; }
+  .hub-button { --ui-control-bevel: calc(15 * var(--ui)); }
+  .gacha-menu__actions .btn { --ui-control-bevel: 12px; }
+
+  @keyframes ui-gold-rim {
+    from { background-position: 0% 15%; }
+    to { background-position: 100% 85%; }
+  }
+  @keyframes ui-gold-fill {
+    from { background-position: 10px 6px, calc(100% - 10px) calc(100% - 6px), 0% 20%, 100% 80%, center; }
+    to { background-position: 10px 6px, calc(100% - 10px) calc(100% - 6px), 100% 70%, 0% 25%, center; }
+  }
+}

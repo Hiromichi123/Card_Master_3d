@@ -109,8 +109,8 @@ export function FusionScene({ profile, store, busy, onReturn }: FusionSceneProps
         <h1>融 合 工 坊</h1>
         <button type="button" className="btn" onClick={onReturn} disabled={locked}>返回菜单</button>
       </header>
-      <section className="fusion__collection" aria-label="收藏材料">
-        <h2>收藏卡牌 <small>点击投入祭坛</small></h2>
+      <section className="fusion__collection" aria-label="牌库">
+        <h2>牌库 <small>点击投入祭坛</small></h2>
         <div className="fusion__filters">
           <input aria-label="搜索融合材料" placeholder="搜索卡牌" value={query} onChange={(e) => setQuery(e.target.value)} />
           <select aria-label="材料稀有度" value={filter} onChange={(e) => setFilter(e.target.value)}>
@@ -152,7 +152,7 @@ export function FusionScene({ profile, store, busy, onReturn }: FusionSceneProps
           <span>{row.rarity}</span><strong>{row.percent.toFixed(2)}%</strong>
         </li>)}</ul>
         {!rows.length && <p className="fusion__empty">放入卡牌可查看概率</p>}
-        <p className="fusion__rules">自身稀有度权重最高，相邻稀有度加权。可能获得同名或较低稀有度的卡牌。</p>
+        <p className="fusion__rules">每张材料只影响自身及上下各两档稀有度，距离越远权重越低。最高产出不超过最高材料的上两档；可能获得同名或较低档卡牌。</p>
         <div className="fusion__latest"><h2>最新结果</h2>
           {latest ? <button type="button" className="fusion__result" data-card-id={latest.cardId} disabled={presenting} onClick={() => setPreview(latest.cardId)}>
             <strong style={{ color: index.colorOf(latest.rarity) }}>{latest.rarity} · {cardById.get(latest.cardId)?.name}</strong>

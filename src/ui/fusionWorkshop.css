@@ -1,3 +1,5 @@
+@layer control-defaults, legacy, theme, hub, controls;
+@layer legacy {
 /* Workshop surfaces share the warm brass/glass language of deck construction. */
 .fusion-workshop > .menu__scrim { background: linear-gradient(135deg, #101723dd, #151c27b8 48%, #211e20d9); }
 .fusion-workshop .fusion__header { left: 3.5%; right: 3.5%; top: 3%; }
@@ -8,7 +10,7 @@
   background: linear-gradient(135deg, #5147353d, #15212ddd 45%, #20262deb);
   box-shadow: inset 0 0 0 1px #efd1910d, 0 12px 35px #0003;
 }
-.fusion-workshop .fusion__collection { left: 3.5%; width: 29.5%; }
+.fusion-workshop .fusion__collection { left: .5%; width: 32.5%; }
 .fusion-workshop .fusion__info { left: 80.5%; width: 16%; }
 .fusion-workshop .fusion__altar { left: 34%; top: 14%; width: 45.5%; height: 81%; gap: calc(12 * var(--ui)); }
 .fusion-workshop .fusion__altar-heading { display: flex; flex-direction: column; align-items: center; gap: calc(8 * var(--ui)); padding-top: calc(8 * var(--ui)); }
@@ -38,7 +40,7 @@
 .fusion-workshop .fusion__slot { font-size: calc(18 * var(--ui)); padding: calc(10 * var(--ui)) calc(7 * var(--ui)); }
 .fusion-workshop .fusion__hint, .fusion-workshop .fusion__deck-note, .fusion-workshop .fusion__error { font-size: calc(18 * var(--ui)); margin-top: calc(6 * var(--ui)); }
 .fusion-workshop .fusion__filters input, .fusion-workshop .fusion__filters select { border-color: #cfb27a50; background: #101a26bf; color: #ece1cb; font-size: calc(21 * var(--ui)); }
-.fusion-workshop .fusion__grid { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: calc(10 * var(--ui)); }
+.fusion-workshop .fusion__grid { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: calc(10 * var(--ui)); }
 .fusion-workshop .fusion__grid .tile { border-color: #cfb27a44; border-radius: calc(8 * var(--ui)); }
 .fusion-workshop .fusion__grid .tile:hover:not(:disabled) { border-color: #ebca85; }
 .fusion-workshop .fusion__info p { font-size: calc(19 * var(--ui)); }
@@ -50,3 +52,5 @@
 .fusion-workshop .scroll::-webkit-scrollbar, .fusion-workshop .fusion__info::-webkit-scrollbar { width: 8px; }
 .fusion-workshop .scroll::-webkit-scrollbar-track, .fusion-workshop .fusion__info::-webkit-scrollbar-track { background: #14202b; border-radius: 8px; }
 .fusion-workshop .scroll::-webkit-scrollbar-thumb, .fusion-workshop .fusion__info::-webkit-scrollbar-thumb { border: 2px solid #14202b; border-radius: 8px; background: linear-gradient(#e6ce96, #9f804c); }
+
+}

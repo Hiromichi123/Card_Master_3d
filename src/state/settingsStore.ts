@@ -194,7 +194,10 @@ export const useSettingsStore = create<SettingsStateShape>((set) => {
     setPresentationSpeed: (presentationSpeed) => set({ presentationSpeed }),
     setCameraShake: (cameraShake) => set({ cameraShake }),
     setShowPerf: (showPerf) => set({ showPerf }),
-    setTableTheme: (id) => set({ tableThemeId: id, tableTheme: getTableTheme(id) }),
+    setTableTheme: (id) => {
+      const tableTheme = getTableTheme(id);
+      set({ tableThemeId: tableTheme.id, tableTheme });
+    },
     setReduceMotion: (reduceMotion) => set({ reduceMotion }),
     setCameraMode: (cameraModeId) => set({ cameraModeId }),
     setMasterVolume: (value) => set({ masterVolume: safeUnit(value, 0.7) }),
@@ -211,8 +214,9 @@ export const useSettingsStore = create<SettingsStateShape>((set) => {
           bloom: safeBool(settings.bloom, true),
           shadows: safeBool(settings.shadows, true),
         };
-        // 空串或未知 id 都回落到引擎默认（getTableTheme 自己会把未知 id 解析成默认）
-        const tableThemeId = settings.tableThemeId || DEFAULT_THEME_ID;
+        // Deleted or unknown themes resolve to the default, including the saved selection ID.
+        const tableTheme = getTableTheme(settings.tableThemeId || DEFAULT_THEME_ID);
+        const tableThemeId = tableTheme.id;
         return {
           quality,
           ...knobs,
@@ -226,7 +230,7 @@ export const useSettingsStore = create<SettingsStateShape>((set) => {
           reduceMotion: safeBool(settings.reduceMotion, false),
           showPerf: safeBool(settings.showPerf, false),
           tableThemeId,
-          tableTheme: getTableTheme(tableThemeId),
+          tableTheme,
           cameraModeId: settings.cameraModeId
             ? (settings.cameraModeId as CameraModeId)
             : DEFAULT_CAMERA_MODE,

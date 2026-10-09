@@ -89,6 +89,8 @@ export interface PileView {
   /** 牌堆是盖着的；弃牌堆画最上面那张明牌。 */
   readonly topCard: CardDefinition | null;
   readonly count: number;
+  /** Initial deck size; does not include temporary cooldown cards or summoned units. */
+  readonly totalCount?: number | undefined;
 }
 
 export interface BoardView {
@@ -99,6 +101,7 @@ export interface BoardView {
 }
 
 export interface BuildBoardOptions {
+  readonly deckTotals?: Readonly<Record<SideId, number>> | undefined;
   /** 当前选中的卡（`instanceId`）。 */
   readonly selectedInstanceId?: string | null | undefined;
   /** 现在能不能出牌：决定手牌是否可点。 */
@@ -189,12 +192,12 @@ export function buildBoard(display: DisplayState, options: BuildBoardOptions = {
     entries,
     placeable,
     targeted: new Set<string>(),
-    piles: buildPiles(display),
+    piles: buildPiles(display, options.deckTotals),
   };
 }
 
 /** 双方的牌堆与弃牌堆。牌堆盖着，弃牌堆露出最上面那张。 */
-function buildPiles(display: DisplayState): PileView[] {
+function buildPiles(display: DisplayState, totals?: Readonly<Record<SideId, number>>): PileView[] {
   const piles: PileView[] = [];
   for (const side of SIDES) {
     const zones = display.zones[side];
@@ -203,7 +206,7 @@ function buildPiles(display: DisplayState): PileView[] {
     const topCard = topIdentity ? (cardById.get(topIdentity.definitionId) ?? null) : null;
 
     piles.push(
-      { side, kind: 'deck', topCard: null, count: zones.deck.length },
+      { side, kind: 'deck', topCard: null, count: zones.deck.length, totalCount: totals?.[side] },
       { side, kind: 'discard', topCard, count: zones.discard.length },
     );
   }

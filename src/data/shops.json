@@ -202,7 +202,7 @@
   },
   "fusion": {
     "altarSlots": 5,
-    "baseWeight": 0.05,
+    "baseWeight": 0,
     "sameRarityBonus": 1.0,
     "rarerNeighborBonus": 0.35,
     "commonNeighborBonus": 0.2,
@@ -221,7 +221,7 @@
       "C",
       "D"
     ],
-    "distributionRule": "每个稀有度基础权重 0.05；每张投入卡：自身稀有度 +1.0、更稀有的一档 +0.35、更常见的一档 +0.2；最后按总和归一化",
+    "distributionRule": "无全档基础权重；每张材料：自身 +1.0，向上第1/2档 +0.35/+0.175，向下第1/2档 +0.2/+0.1；仅合并这些档位，剔除无可用卡的档位后归一化",
     "displayMatchesDraw": true,
     "evidence": "scenes/workshop_scene.py:475-493 计算，:495-518 使用同一个分布抽取"
   },

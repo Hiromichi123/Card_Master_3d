@@ -9,6 +9,7 @@ import { useSettingsStore } from '../../state/settingsStore';
 import { CameraRig } from './CameraRig';
 import { SceneEnvironment } from './SceneEnvironment';
 import { SceneGround } from './SceneGround';
+import { TournamentSetting } from './TournamentSetting';
 import { SlotMarkers } from './SlotMarkers';
 import type { SlotZone } from './layout';
 import { Table } from './Table';
@@ -126,7 +127,8 @@ export function BattleBoard({
       <SceneEnvironment theme={theme} shadows={shadows} shadowMapSize={shadowMapSize} />
 
       {/* 棋盘之外的大圆桌：远端的边缘由雾化成背景色 */}
-      <SceneGround theme={theme} />
+      {theme.id === 'tournament' ? <TournamentSetting quality={quality} />
+        : theme.geometry !== 'mecha' && theme.geometry !== 'volcano' && <SceneGround theme={theme} />}
 
       <Table
         theme={theme}
@@ -136,7 +138,7 @@ export function BattleBoard({
       />
       <SlotMarkers placeable={placeable} targeted={targeted} onSlotClick={onSlotClick} />
 
-      {piles?.map((pile) => <Pile key={`${pile.side}-${pile.kind}`} pile={pile} />)}
+      {piles?.map((pile) => <Pile key={`${pile.side}-${pile.kind}`} pile={pile} mecha={theme.geometry === 'mecha'} />)}
 
       {placements?.map((placement) => (
         <MovingCard

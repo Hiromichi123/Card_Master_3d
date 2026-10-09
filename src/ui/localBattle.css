@@ -1,3 +1,5 @@
+@layer control-defaults, legacy, theme, hub, controls;
+@layer legacy {
 
 /* Same design coordinates as legacy draft_scene.py; DesignStage handles viewport fit. */
 .local-draft .menu__scrim { background: rgba(12, 17, 32, 0.42); }
@@ -28,3 +30,5 @@
 .local-draft__accessible { position: absolute; width: calc(1 * var(--ui)); height: calc(1 * var(--ui)); overflow: hidden; clip-path: inset(50%); }
 .local-draft__accessible:focus-within { width: auto; height: auto; clip-path: none;
   bottom: calc(8 * var(--ui)); left: 10%; right: 10%; display: flex; gap: calc(8 * var(--ui)); flex-wrap: wrap; background: #111726; padding: calc(12 * var(--ui)); }
+
+}

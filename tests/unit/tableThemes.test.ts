@@ -6,15 +6,15 @@ import { hasWeather, TABLE_WEATHER } from '../../src/rendering/table/weather';
 /**
  * 台面主题的数据断言。
  *
- * 「十套台面互不相同」这件事放在这里而不是浏览器用例里：
+ * 「保留的台面互不相同」这件事放在这里而不是浏览器用例里：
  * 浏览器用例每换一套台面都要现生成 768² 的木纹并重编译着色器，
- * 十套在软件渲染下要跑四分钟以上。数据层面的差异是快速且确定的，
+ * 多套主题在软件渲染下的切换耗时较长。数据层面的差异是快速且确定的，
  * 浏览器那边只留一组抽查验证渲染路径确实跟着主题走。
  */
 
 describe('战斗台面主题', () => {
-  it('至少有 10 套，且 id 唯一', () => {
-    expect(TABLE_THEMES.length).toBeGreaterThanOrEqual(10);
+  it('八套可选台面，且 id 唯一', () => {
+    expect(TABLE_THEMES.length).toBe(8);
     const ids = TABLE_THEMES.map((theme) => theme.id);
     expect(new Set(ids).size).toBe(ids.length);
   });

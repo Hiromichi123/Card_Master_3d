@@ -50,6 +50,7 @@ export interface SceneEnvironmentProps {
 export function SceneEnvironment({ theme, shadows, shadowMapSize }: SceneEnvironmentProps) {
   const gl = useThree((state) => state.gl);
   const scene = useThree((state) => state.scene);
+  const tournament = theme.id === 'tournament';
 
   useEffect(() => {
     scene.environment = getRoomEnvironment(gl);
@@ -68,8 +69,8 @@ export function SceneEnvironment({ theme, shadows, shadowMapSize }: SceneEnviron
       {/* 主光：唯一投影的光源。用平行光而不是聚光，阴影视锥就是一个盒子，
           整张桌子都在里面，不用为每张台面重算视锥。 */}
       <directionalLight
-        color={0xfff4e6}
-        intensity={1.35}
+        color={tournament ? 0xffecd0 : theme.geometry === 'mecha' ? 0xf8fcff : 0xfff4e6}
+        intensity={tournament ? .85 : 1.35}
         position={[-11, 20, 9]}
         castShadow={shadows}
         shadow-mapSize-width={shadowMapSize}
@@ -89,13 +90,13 @@ export function SceneEnvironment({ theme, shadows, shadowMapSize }: SceneEnviron
       />
 
       {/* 补光：对侧、偏冷、不投影。把暗部从背景里托起来。 */}
-      <directionalLight color={0xbcd4ff} intensity={0.5} position={[13, 9, -11]} />
+      <directionalLight color={0xbcd4ff} intensity={tournament ? .22 : .5} position={[13, 9, -11]} />
 
       {/* 轮廓光：低位后方，把主体边缘从背景里分出来。
           力度要克制——推猛了会把靠近镜头的一侧打出一条白边。 */}
-      <pointLight color={0xffd9a0} intensity={14} distance={70} decay={2} position={[-4, 6, -19]} />
+      <pointLight color={theme.geometry === 'mecha' ? 0x87d5e4 : 0xffd9a0} intensity={14} distance={70} decay={2} position={[-4, 6, -19]} />
 
-      <ambientLight intensity={0.1} />
+      <ambientLight color={tournament ? 0xffecd8 : 0xffffff} intensity={tournament ? .16 : .1} />
     </>
   );
 }

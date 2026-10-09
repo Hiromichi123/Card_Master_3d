@@ -19,15 +19,24 @@ const profile = (copies = 5) => createInitialProfile({ contentVersion: cardDatab
   now: new Date('2026-10-06T00:00:00Z'), starterCardIds: [], ownedCardIds: Array.from({ length: copies }, () => material) });
 const args = () => ({ profile: profile(), materials, definitions: cardById, pool, spec: fusionSpec, rng: createRng(31), operationId: 'fusion-1' });
 
-describe('legacy five-card fusion rules', () => {
-  it('keeps the original edge weights and uses the displayed normalized odds for drawing', () => {
+describe('bounded five-card fusion rules', () => {
+  it('limits low-tier materials to nearby rarities and uses the displayed normalized odds for drawing', () => {
     const slots = fusionRaritySlots(materials, cardById, pool, fusionSpec);
-    expect(slots.find((slot) => slot.rarity === 'D')!.weight).toBeCloseTo(5.05);
-    expect(slots.find((slot) => slot.rarity === 'C')!.weight).toBeCloseTo(1.8);
+    expect(slots.find((slot) => slot.rarity === 'D')!.weight).toBeCloseTo(5);
+    expect(slots.find((slot) => slot.rarity === 'C')!.weight).toBeCloseTo(1.75);
+    expect(slots.map((slot) => slot.rarity)).toEqual(['C+', 'C', 'D']);
+    expect(slots.find((slot) => slot.rarity === 'C+')!.weight).toBeCloseTo(.875);
     const rows = probabilityRows(slots);
     expect(rows.reduce((sum, row) => sum + row.percent, 0)).toBeCloseTo(100);
     const total = slots.reduce((sum, slot) => sum + slot.weight, 0);
-    expect(rows.find((row) => row.rarity === 'D')!.percent).toBeCloseTo(5.05 / total * 100);
+    expect(rows.find((row) => row.rarity === 'D')!.percent).toBeCloseTo(5 / total * 100);
+  });
+
+  it('rejects a pool containing only far higher tiers without consuming randomness or materials', () => {
+    const rng = createRng(31);
+    const plan = planFusion({ ...args(), rng, pool: new Map([['SSS', pool.get('SSS')!]]) });
+    expect(isRejection(plan)).toBe(true);
+    expect(rng.snapshot().draws).toBe(0);
   });
 
   it('combines consumption and same-card output into one delta without adding a currency cost', () => {
@@ -52,7 +61,7 @@ describe('legacy five-card fusion rules', () => {
 
   it('excludes empty output tiers, rejects no output, and produces the same result for the same seed', () => {
     const slots = fusionRaritySlots(materials, cardById, new Map([['D', [material]]]), fusionSpec);
-    expect(probabilityRows(slots)).toEqual([{ rarity: 'D', weight: 5.05, percent: 100 }]);
+    expect(probabilityRows(slots)).toEqual([{ rarity: 'D', weight: 5, percent: 100 }]);
     expect(isRejection(planFusion({ ...args(), pool: new Map() }))).toBe(true);
     expect(planFusion(args())).toEqual(planFusion(args()));
   });

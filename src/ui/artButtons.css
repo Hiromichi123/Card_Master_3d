@@ -1,0 +1,66 @@
+@layer control-defaults, legacy, theme, hub, controls;
+
+@layer hub {
+  .art-button {
+    --button-from: rgba(27, 35, 42, .96);
+    --button-to: rgba(58, 60, 58, .94);
+    --ui-rim-gradient: linear-gradient(125deg, #dcc9a3, #776349 24%, #bfa476 51%, #655945 76%, #d4bc8d);
+    --ui-rim-opacity: .8;
+    color: #eee2ca;
+    text-shadow: 0 1px 3px #0008;
+  }
+  .art-button__surface {
+    position: absolute; inset: 0; z-index: 0; pointer-events: none; overflow: hidden;
+    clip-path: polygon(var(--ui-control-bevel) 0, calc(100% - var(--ui-control-bevel)) 0,
+      100% var(--ui-control-bevel), 100% calc(100% - var(--ui-control-bevel)),
+      calc(100% - var(--ui-control-bevel)) 100%, var(--ui-control-bevel) 100%,
+      0 calc(100% - var(--ui-control-bevel)), 0 var(--ui-control-bevel));
+    background: linear-gradient(105deg, #0e111a55 5%, #161b2010 50%, #080a1366),
+      repeating-linear-gradient(98deg, #f4e7cf04 0 1px, transparent 1px 4px);
+    box-shadow: inset 0 1px #f4ead022, inset 0 -10px 18px #0003;
+  }
+  .art-button__image {
+    position: absolute; inset: -8% -2%; background-image: var(--button-art, var(--hub-art, none));
+    background-size: cover; background-position: 72% 34%; opacity: .24;
+    filter: saturate(.48) sepia(.12) contrast(1.07); mix-blend-mode: luminosity;
+    mask-image: linear-gradient(90deg, transparent, #0008 24%, #000 66%, #000a);
+    transition: opacity .4s, transform .7s cubic-bezier(.2,.8,.2,1);
+  }
+  .art-button__grain { position: absolute; inset: 0; background: url('/assets/ui/hub-grain.svg') repeat; mix-blend-mode: soft-light; opacity: .75; }
+  .art-button__engraving { position: absolute; inset: 5px 8px; border-block: 1px solid #e6d1a51a; box-shadow: inset 0 0 20px #14141124; }
+  .art-button__label { position: relative; z-index: 2; }
+  .art-button:hover:not(:disabled) .art-button__image,
+  .art-button:focus-visible .art-button__image,
+  .art-button[aria-selected='true'] .art-button__image,
+  .art-button.hub-button--active .art-button__image { opacity: .37; transform: translateX(-2%) scale(1.025); }
+  .art-button--gold {
+    --button-from: rgba(101, 73, 32, .97);
+    --button-to: rgba(147, 111, 52, .94);
+    --ui-rim-gradient: linear-gradient(125deg, #fff0b7, #b18b46 24%, #ffe9a3 51%, #ad8038 76%, #f1d494);
+    --ui-rim-opacity: 1;
+    color: #fff0ca;
+    box-shadow: inset 0 1px #fff0be38, 0 5px 16px #6f4a2230;
+  }
+  .art-button--gold .art-button__image { opacity: .31; filter: saturate(.64) sepia(.35) contrast(1.05); }
+  .art-button--gold:hover:not(:disabled), .art-button--gold:focus-visible { color: #fff8dc; box-shadow: inset 0 1px #fff2cc66, 0 0 18px #d9b15d38; }
+  .art-button--gold:hover:not(:disabled) .art-button__image { opacity: .44; }
+  .art-button:disabled .art-button__surface { opacity: .55; }
+  .art-button .gacha-menu__cost { z-index: 2; }
+  .gacha-complete__actions .art-button > .art-button__surface { display: block; font-size: inherit; margin: 0; opacity: 1; }
+  .gacha-complete__actions .art-button .art-button__surface > span { margin: 0; }
+  .gacha-complete__actions .art-button > .art-button__label { display: block; font-size: inherit; margin: 0; opacity: 1; }
+  .gacha-complete__actions .art-button .art-button__label > small { display: block; font-size: 12px; margin-top: 3px; opacity: .8; }
+  .gacha-menu--still .art-button__image, .hub-menu--still .art-button__image,
+  :root[data-ui-motion='still'] .art-button__image { transition: none; }
+  @media (prefers-reduced-motion: reduce) { .art-button__image { transition: none; } }
+}
+
+@layer controls {
+  .art-button::after {
+    background-image: linear-gradient(90deg, #e4cba188, transparent), linear-gradient(270deg, #b99d6a66, transparent),
+      linear-gradient(108deg, var(--hub-from, var(--button-from)), var(--hub-to, var(--button-to)));
+    background-size: 26px 1px, 26px 1px, 100% 100%;
+    background-position: 10px 6px, calc(100% - 10px) calc(100% - 6px), center;
+    animation: none;
+  }
+}

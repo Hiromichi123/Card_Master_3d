@@ -19,7 +19,7 @@ import { visibleMenuContent } from './menuVisibility';
 export interface MenuChromeProps {
   readonly backgroundUrl: string | null;
   readonly className?: string | undefined;
-  readonly title: string;
+  readonly title: ReactNode;
   /** 标题下面的一行说明（活动大厅有，另两个没有）。 */
   readonly subtitle?: string | undefined;
   /** 标题之下的补充信息，例如主菜单的「当前出战」。 */

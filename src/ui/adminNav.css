@@ -1,0 +1,8 @@
+@layer control-defaults, legacy, theme, hub, controls;
+@layer hub {
+  .app-nav--admin:not(.app-nav--collapsed) { height: auto; min-height: 46px; box-sizing: border-box; flex-wrap: wrap; padding-block: 6px; }
+  .app-nav--admin .app-nav__brand { color: #b8ac95; font: 600 12px/1.4 Georgia, 'SimSun', serif; white-space: nowrap; }
+  .admin-resources { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding-inline: 10px; border-left: 1px solid #a48d5859; }
+  .admin-resources > span { color: #ab9875; font-size: 10px; white-space: nowrap; }
+  .admin-resources .btn { padding: 4px 8px; font-size: 11px; white-space: nowrap; }
+}

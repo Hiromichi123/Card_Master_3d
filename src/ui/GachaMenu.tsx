@@ -7,6 +7,7 @@ import { useSettingsStore } from '../state/settingsStore';
 import { useRarityIndex } from '../state/useRarityIndex';
 import { CardShowcase } from './CardShowcase';
 import { CurrencyBar } from './CurrencyBar';
+import { ArtButtonSurface, artButtonStyle, gachaButtonArt } from './ArtButtonSurface';
 import { GachaWheel } from './GachaWheel';
 import { usePageWheel } from './usePageWheel';
 
@@ -19,7 +20,6 @@ interface Props {
   readonly running: boolean;
   readonly error: string | null;
   readonly onPull: (count: 1 | 10) => void;
-  readonly onGrant: (currency: 'gold' | 'crystal') => void;
   readonly onReturn: (() => void) | undefined;
   readonly leaving: boolean;
   readonly exitSeconds: number;
@@ -29,7 +29,8 @@ interface Props {
 
 /** All UI and 3D positions share the original design frame, fitted with a uniform scale. */
 export function GachaMenu({ pools, pool, poolIndex, onSelectPool, currencies,
-  running, error, onPull, onGrant, onReturn, leaving, exitSeconds, onHoverCard, onCardPointer }: Props) {
+  running, error, onPull, onReturn, leaving, exitSeconds, onHoverCard, onCardPointer }: Props) {
+  const buttonArt = artButtonStyle(gachaButtonArt(pool));
   const ref = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(0);
   const [detail, setDetail] = useState<string | null>(null);
@@ -94,18 +95,13 @@ export function GachaMenu({ pools, pool, poolIndex, onSelectPool, currencies,
           })}
         </div>
         <div className="gacha__buttons gacha-menu__actions">
-          <button type="button" className="btn" disabled={running} data-testid="pull-1" onClick={() => onPull(1)}>
-            <span className="gacha-menu__cost">{pool.singleCost} {pool.currency === 'gold' ? '金币' : '水晶'}</span>单 抽
+          <button type="button" className="btn art-button art-button--gold" style={buttonArt} disabled={running} data-testid="pull-1" onClick={() => onPull(1)}>
+            <span className="gacha-menu__cost">{pool.singleCost} {pool.currency === 'gold' ? '金币' : '水晶'}</span><ArtButtonSurface /><span className="art-button__label">单 抽</span>
           </button>
-          <button type="button" className="btn btn--primary" disabled={running} data-testid="pull-10" onClick={() => onPull(10)}>
-            <span className="gacha-menu__cost">{pool.tenCost} {pool.currency === 'gold' ? '金币' : '水晶'}</span>十 连 抽
+          <button type="button" className="btn btn--primary art-button art-button--gold" style={buttonArt} disabled={running} data-testid="pull-10" onClick={() => onPull(10)}>
+            <span className="gacha-menu__cost">{pool.tenCost} {pool.currency === 'gold' ? '金币' : '水晶'}</span><ArtButtonSurface /><span className="art-button__label">十 连 抽</span>
           </button>
-          <button type="button" className="btn gacha-menu__return" onClick={onReturn} disabled={running || !onReturn}>返回主菜单</button>
-        </div>
-        <div className="gacha__dev gacha-menu__dev">
-          <span className="gacha__dev-label">测试</span>
-          <button type="button" className="btn btn--tiny" data-testid="grant-gold" disabled={running} onClick={() => onGrant('gold')}>+50000 金币</button>
-          <button type="button" className="btn btn--tiny" data-testid="grant-crystal" disabled={running} onClick={() => onGrant('crystal')}>+50000 水晶</button>
+          <button type="button" className="btn gacha-menu__return art-button" style={buttonArt} onClick={onReturn} disabled={running || !onReturn}><ArtButtonSurface /><span className="art-button__label">返回主菜单</span></button>
         </div>
         {error && <p className="gacha__error gacha-menu__error" role="status">{error}</p>}
       </div>}

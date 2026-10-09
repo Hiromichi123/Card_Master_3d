@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { GachaPool } from '../data';
+import { ArtButtonSurface, artButtonStyle, gachaButtonArt } from './ArtButtonSurface';
 import { DASHBOARD_STEP, dashboardSelection } from '../rendering/gacha/menuLayout';
 
 export interface GachaWheelProps {
@@ -59,11 +60,12 @@ export function GachaWheel({ pools, activeIndex, onSelect, still }: GachaWheelPr
         {pools.map((pool, index) => (
           <button key={pool.id} id={`wheel-option-${index}`} type="button" role="option" tabIndex={-1}
             aria-selected={index === activeIndex} data-pool-id={pool.id} data-pool-index={index}
-            className={`wheel__card gacha-dashboard__option${index === activeIndex ? ' wheel__card--on' : ''}`}
-            style={{ top: 750 + index * DASHBOARD_STEP - offset,
+            className={`wheel__card gacha-dashboard__option art-button${index === activeIndex ? ' art-button--gold' : ''}${index === activeIndex ? ' wheel__card--on' : ''}`}
+            style={{ ...artButtonStyle(gachaButtonArt(pool)), top: 750 + index * DASHBOARD_STEP - offset,
               transition: dragging || still ? 'none' : undefined }}
             onClick={() => select(index)}>
-            <span className="wheel__name">{pool.name}</span>
+            <ArtButtonSurface />
+            <span className="wheel__name art-button__label">{pool.name}</span>
           </button>
         ))}
       </div>

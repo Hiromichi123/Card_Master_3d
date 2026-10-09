@@ -2,8 +2,8 @@ import { useEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { AdditiveBlending, DoubleSide, type Group, type Mesh, type MeshBasicMaterial } from 'three';
 import { useManagedTexture } from '../../services/useManagedTexture';
-import { SPEED_SCALE, useSettingsStore } from '../../state/settingsStore';
-import { fusionSlotPosition } from './motion';
+import { useSettingsStore } from '../../state/settingsStore';
+import { fusionSlotPosition, fusionSpinAngle } from './motion';
 
 export const ALTAR_TOP = .64;
 export const CARD_REST_Y = .83;
@@ -62,15 +62,12 @@ export function FusionMagicCircle({ elapsed, active, color }: {
   const texture = useManagedTexture(`${import.meta.env.BASE_URL}assets/vfx/magic-circle.png`);
   const first = useRef<Group>(null), second = useRef<Group>(null);
   const seal = useRef<Mesh>(null);
-  const clock = useRef(0);
   const still = useSettingsStore((state) => state.reduceMotion);
-  const speed = useSettingsStore((state) => state.presentationSpeed);
   useEffect(() => { if (seal.current) (seal.current.material as MeshBasicMaterial).needsUpdate = true; }, [texture]);
-  useFrame((_, delta) => {
-    if (!still) clock.current += Math.min(delta, .05) / SPEED_SCALE[speed];
-    const phase = active ? elapsed.current : clock.current;
-    if (first.current) first.current.rotation.y = phase * (active ? .65 : .09);
-    if (second.current) second.current.rotation.y = -phase * (active ? .85 : .13);
+  useFrame(() => {
+    const phase = still ? 0 : fusionSpinAngle(elapsed.current);
+    if (first.current) first.current.rotation.y = phase * .5;
+    if (second.current) second.current.rotation.y = -phase * 1.5;
     const burst = active ? Math.max(0, 1 - Math.abs(elapsed.current - 1.05) / .65) : 0;
     if (seal.current) {
       seal.current.scale.setScalar(1 + burst * .12);
@@ -81,7 +78,8 @@ export function FusionMagicCircle({ elapsed, active, color }: {
     <group ref={first}>
       <mesh ref={seal} visible={texture !== null} rotation={[-Math.PI / 2, 0, 0]}>
         <planeGeometry args={[5.05, 5.05]} />
-        <meshBasicMaterial map={texture} color={color} transparent opacity={.17} blending={AdditiveBlending}
+        {/* The texture has an opaque black background: use its luminance as alpha, not a square tray. */}
+        <meshBasicMaterial map={texture} alphaMap={texture} alphaTest={.025} color={color} transparent opacity={.17} blending={AdditiveBlending}
           depthWrite={false} side={DoubleSide} toneMapped={false} />
       </mesh>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, .008, 0]}>

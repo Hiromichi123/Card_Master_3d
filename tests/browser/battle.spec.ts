@@ -142,7 +142,7 @@ test.describe('战斗台面主题', () => {
     expect(all.length).toBeGreaterThanOrEqual(6);
 
     // 木 / 大理石 / 石+玻璃 / 自发光 / 天气，各取一套
-    const ids = ['tournament', 'marble', 'obsidian', 'neon', 'snow'].filter((id) =>
+    const ids = ['tournament', 'white-mecha', 'volcano', 'marble', 'snow'].filter((id) =>
       all.includes(id),
     );
     expect(ids.length).toBe(5);

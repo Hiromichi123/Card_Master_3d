@@ -6,6 +6,7 @@ import type { ProfileState } from './types';
 
 export interface FusionSpec {
   readonly altarSlots: number;
+  /** Retained for data compatibility; no global weights are granted. */
   readonly baseWeight: number;
   readonly sameRarityBonus: number;
   readonly rarerNeighborBonus: number;
@@ -28,10 +29,10 @@ export function fusionMaterialCounts(materials: readonly (string | null)[]): Rec
   return counts;
 }
 
-/** Preview and draw share these exact weights; empty output rarities are excluded. */
+/** Only each material's own tier and two tiers on each side may contribute; preview and draw share the same weights. */
 export function fusionRaritySlots(materials: readonly string[], definitions: ReadonlyMap<string, CardDefinition>, pool: CardPoolIndex, spec: FusionSpec): readonly RaritySlot[] {
   if (!materials.length) return [];
-  const weights = new Map<CardRarity, number>(spec.rarityOrder.map((rarity) => [rarity, spec.baseWeight]));
+  const weights = new Map<CardRarity, number>();
   const add = (rarity: CardRarity | undefined, amount: number): void => {
     if (rarity) weights.set(rarity, (weights.get(rarity) ?? 0) + amount);
   };
@@ -41,8 +42,10 @@ export function fusionRaritySlots(materials: readonly string[], definitions: Rea
     const index = spec.rarityOrder.indexOf(card.rarity);
     if (index < 0) return [];
     add(card.rarity, spec.sameRarityBonus);
-    add(spec.rarityOrder[index - 1], spec.rarerNeighborBonus);
-    add(spec.rarityOrder[index + 1], spec.commonNeighborBonus);
+    for (let distance = 1; distance <= 2; distance++) {
+      add(spec.rarityOrder[index - distance], spec.rarerNeighborBonus / distance);
+      add(spec.rarityOrder[index + distance], spec.commonNeighborBonus / distance);
+    }
   }
   return spec.rarityOrder.flatMap((rarity) => {
     const weight = weights.get(rarity) ?? 0;

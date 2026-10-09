@@ -10,7 +10,7 @@ import { CardMesh } from '../cards/CardMesh';
 import { SPEED_SCALE, useSettingsStore } from '../../state/settingsStore';
 import { damp } from '../anim/motion';
 import { FusionAltarModel, FusionMagicCircle, ALTAR_TOP, CARD_REST_Y, altarPoint } from './FusionAltarModel';
-import { FUSION_SECONDS, fusionSlotPosition, fusionMaterialPose, fusionResultPose } from './motion';
+import { FUSION_SECONDS, fusionSlotPosition, fusionMaterialPose, fusionResultPose, fusionSpinAngle } from './motion';
 
 export interface FusionAltarRun {
   readonly operationId: string;
@@ -29,7 +29,7 @@ export interface FusionAltarProps {
 
 export function FusionAltarStage(props: FusionAltarProps) {
   const profile = useSettingsStore((state) => state.profile);
-  const camera = useMemo(() => ({ position: [5.5, 8, 10] as [number, number, number], fov: 44, near: 0.1, far: 100 }), []);
+  const camera = useMemo(() => ({ position: [0, 8, 10] as [number, number, number], fov: 44, near: 0.1, far: 100 }), []);
   const finish = useRef(props.onFinished); finish.current = props.onFinished;
   useEffect(() => {
     if (!props.run || props.completed) return;
@@ -49,11 +49,13 @@ function AltarContent({ cards, run, completed, onRemove, onPreview, onFinished }
   const notified = useRef(false);
   /** 「一次融合一声」的守卫，见 useFrame 里 burst 峰值那一行。 */
   const burstCuePlayed = useRef(false);
+  const altar = useRef<Group>(null);
   const result = useRef<Group>(null);
   const materialGroups = useRef<(Group | null)[]>([]);
   const ring = useRef<Mesh>(null);
   const sparkles = useRef<Points>(null);
   const speed = useSettingsStore((state) => state.presentationSpeed);
+  const still = useSettingsStore((state) => state.reduceMotion);
   const profile = useSettingsStore((state) => state.profile);
   const finish = useRef(onFinished); finish.current = onFinished;
   const [readyOperation, setReadyOperation] = useState<string | null>(null);
@@ -70,7 +72,7 @@ function AltarContent({ cards, run, completed, onRemove, onPreview, onFinished }
   useLayoutEffect(() => {
     if (size.width <= 0 || size.height <= 0) return;
     const target = new Vector3(0, .7, 0);
-    const direction = new Vector3(.55, .9, 1).normalize();
+    const direction = new Vector3(0, .9, 1).normalize();
     const aspect = size.width / Math.max(1, size.height);
     const halfFov = Math.tan(camera.fov * Math.PI / 360);
     const distance = Math.max(7.2 / (2 * halfFov * aspect), 6.4 / (2 * halfFov)) * 1.07;
@@ -92,6 +94,7 @@ function AltarContent({ cards, run, completed, onRemove, onPreview, onFinished }
   useEffect(() => () => { paths.shape.dispose(); paths.star.dispose(); paths.particles.dispose(); }, [paths]);
   useFrame((_, delta) => {
     if (!run) {
+      if (altar.current) altar.current.rotation.y = 0;
       if (ring.current) ring.current.scale.setScalar(1);
       if (sparkles.current) sparkles.current.visible = false;
       return;
@@ -99,6 +102,7 @@ function AltarContent({ cards, run, completed, onRemove, onPreview, onFinished }
     if (readyOperation !== run.operationId && !completed) return;
     elapsed.current = completed || speed === 'skip' ? FUSION_SECONDS : Math.min(FUSION_SECONDS, elapsed.current + delta / SPEED_SCALE[speed]);
     const time = elapsed.current;
+    if (altar.current) altar.current.rotation.y = still ? 0 : fusionSpinAngle(time);
     for (let i = 0; i < 5; i++) {
       const group = materialGroups.current[i]; if (!group) continue;
       const pose = fusionMaterialPose(i, time);
@@ -136,6 +140,7 @@ function AltarContent({ cards, run, completed, onRemove, onPreview, onFinished }
       shadow-mapSize-width={profile.shadowMapSize} shadow-mapSize-height={profile.shadowMapSize}
       shadow-camera-left={-4} shadow-camera-right={4} shadow-camera-top={4} shadow-camera-bottom={-4} shadow-bias={-.0005} />
     <pointLight position={[-3, 2.5, -3]} color="#92bedc" intensity={6} distance={12} />
+    <group ref={altar}>
     <FusionAltarModel />
     <FusionMagicCircle elapsed={elapsed} active={Boolean(run && !completed)} color={run?.color ?? '#e5c88b'} />
     <lineLoop geometry={paths.shape}><lineBasicMaterial color="#d9b568" transparent opacity={0.6} /></lineLoop>
@@ -149,6 +154,7 @@ function AltarContent({ cards, run, completed, onRemove, onPreview, onFinished }
     {run && shown.map((card, i) => card && <group key={`${run.operationId}-${i}`} ref={(group) => { materialGroups.current[i] = group; }} position={altarPoint(fusionSlotPosition(i))} scale={0.82}>
       <CardMesh card={card} position={[0, 0, 0]} rotationX={-Math.PI / 2} interactive={false} hoverTip={false} glow showStats={false} textureTier="detail" />
     </group>)}
+    </group>
     {run && <group ref={result} position={[0, CARD_REST_Y + .85, 0]} visible={completed}>
       <CardMesh card={run.result} position={[0, 0, 0]} rotationX={-.82} glow glowScale={1.5} textureTier="detail"
         showStats={false} hoverTip={completed} interactive={completed} onClick={() => { if (completed) onPreview(run.result); }} />

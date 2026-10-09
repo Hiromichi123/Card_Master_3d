@@ -1,0 +1,140 @@
+/* Scoped login stage: existing menu motion and shared gold controls keep their settings. */
+.app-shell--locked {
+  position: fixed;
+  inset: 0;
+  z-index: 41;
+  visibility: hidden;
+  pointer-events: none;
+  clip-path: inset(50%);
+  will-change: clip-path;
+  background: #10151c;
+}
+.app-nav__account { font-size: 11px; color: var(--ui-gold); margin-inline: 8px; white-space: nowrap; }
+.login-scene {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  isolation: isolate;
+  overflow: hidden;
+  background: #000;
+  color: #f1dfb4;
+  font-family: Georgia, 'Noto Serif SC', 'Songti SC', SimSun, serif;
+}
+.login-scene__world { position: absolute; inset: 0; pointer-events: none; }
+.login-scene__vignette {
+  position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(ellipse at 50% 49%, transparent 36%, #0007 100%), linear-gradient(0deg, #0008, transparent 22%);
+}
+.login-title {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding-bottom: 5vh; box-sizing: border-box; pointer-events: none;
+  opacity: 1; transform: scale(1);
+  transition: opacity 1.15s ease, transform 2.4s cubic-bezier(.2,.6,.2,1), filter 1.3s;
+}
+.login-title__eyebrow { font: 10px/1.5 Georgia, serif; letter-spacing: .65em; padding-left: .65em; color: #bd9c62; animation: login-letter-arrive 1.4s both; }
+.login-title h1 {
+  position: relative; margin: 26px 0 25px; text-align: center;
+  font-size: clamp(42px, 6.5vw, 124px); font-weight: 600; line-height: 1.15;
+  letter-spacing: .055em;
+  background: linear-gradient(110deg, #896637 4%, #e2bf7e 23%, #fff1c7 42%, #a07938 55%, #f4daa2 72%, #b68f50 92%);
+  background-size: 190% 100%; background-clip: text; -webkit-background-clip: text;
+  color: transparent; filter: drop-shadow(0 1px 1px #322105) drop-shadow(0 0 28px #b184353b);
+  animation: login-title-arrive 1.8s cubic-bezier(.18,.68,.25,1) both, login-title-sheen 9s linear infinite;
+}
+.login-title h1 span { font-weight: 400; font-size: .74em; letter-spacing: .015em; }
+.login-title__rule { display: flex; align-items: center; gap: 22px; animation: login-letter-arrive 1.8s both; }
+.login-title__rule b { color: #cfad76; font-size: 12px; font-weight: 400; letter-spacing: .35em; }
+.login-title__rule i { width: clamp(25px, 8vw, 140px); height: 1px; background: linear-gradient(90deg, transparent, #c39d62); }
+.login-title__rule i:last-child { transform: rotate(180deg); }
+.login-scene:not([data-phase='title']) .login-title { opacity: 0; transform: scale(1.26) translateY(-5vh); filter: blur(8px); }
+.login-brand { position: absolute; top: clamp(22px, 4vh, 48px); left: clamp(22px, 4vw, 70px); display: flex; align-items: center; gap: 15px; font-size: 9px; letter-spacing: .25em; opacity: 0; transition: opacity 1.6s; pointer-events: none; color: #d1b57d; }
+.login-brand > span { font-size: 19px; letter-spacing: -.08em; color: #f5deb0; }
+.login-brand > i { height: 17px; width: 1px; background: #9b7b48; }
+.login-scene[data-phase='cruise'] .login-brand { opacity: .8; }
+.login-start-wrap { position: absolute; bottom: max(10vh, 65px); left: 0; right: 0; text-align: center; transition: opacity .5s; }
+.login-start {
+  display: inline-flex; align-items: center; justify-content: center; gap: 24px;
+  margin: 0; padding: 18px 22px; min-height: 58px; border: 0; background: transparent;
+  font: 600 clamp(14px, 1.3vw, 20px)/1.5 'Songti SC', SimSun, serif;
+  color: #f4d691; letter-spacing: .24em; cursor: pointer;
+  box-shadow: none; text-shadow: 0 0 14px #dcac6199;
+  animation: login-prompt 2.8s ease-in-out infinite;
+}
+.login-start::before, .login-start::after { display: none; }
+.login-start:hover { color: #fff3cc; background: none; box-shadow: none; }
+.login-start:focus-visible { outline: 1px solid #dabc7d; outline-offset: 3px; }
+.login-start > i { width: 5px; height: 5px; transform: rotate(45deg); background: #cba563; box-shadow: 0 0 12px #e8c17866; }
+.login-start__loading { font: 10px/1.6 'Songti SC', SimSun, serif; color: #b59c6f; opacity: .65; letter-spacing: .5em; }
+.login-start__loading i { display: block; height: 1px; width: 85px; margin: 16px auto 0; background: linear-gradient(90deg, transparent, #d7b672, transparent); animation: login-prompt 2.5s infinite; }
+.login-form-stage { position: absolute; inset: 0; display: grid; place-items: center; perspective: 1300px; padding: 22px; box-sizing: border-box; }
+.login-form {
+  --ui-default: rgba(11, 17, 24, .87);
+  --ui-flow-cool: rgba(90, 114, 131, .15);
+  --ui-flow-warm: rgba(198, 150, 76, .19);
+  position: relative; width: min(420px, calc(100vw - 44px)); padding: 24px 34px 20px; box-sizing: border-box;
+  border: 1px solid #c3a368b8; border-radius: 15px;
+  backdrop-filter: blur(21px) saturate(120%); -webkit-backdrop-filter: blur(21px) saturate(120%);
+  box-shadow: 0 25px 90px #0009, 0 0 40px #c59c4010, inset 0 0 0 5px #0d141c88, inset 0 0 0 6px #aa874325;
+  transform-origin: center bottom;
+  animation: login-form-arrive 1.05s cubic-bezier(.16,.8,.2,1) both, ui-surface-flow 22s ease-in-out infinite alternate;
+  animation-play-state: running, var(--ui-flow-play, running);
+}
+.login-form::before, .login-form::after { content: ''; position: absolute; pointer-events: none; width: 48px; height: 9px; border-top: 2px solid #e6c784; top: 8px; }
+.login-form::before { left: 14px; border-left: 1px solid #e6c784; transform: skewX(-27deg); }
+.login-form::after { right: 14px; border-right: 1px solid #e6c784; transform: skewX(27deg); }
+.login-form__topline, .login-form__foot { display: flex; align-items: center; justify-content: center; gap: 12px; font: 8px/1.5 Georgia, serif; letter-spacing: .26em; color: #b69b69; }
+.login-form__topline i, .login-form__foot i { flex: 1; height: 1px; background: linear-gradient(90deg, transparent, #b391514f); }
+.login-form__topline i:last-child, .login-form__foot i:last-child { transform: rotate(180deg); }
+.login-form__seal { position: relative; width: 56px; height: 56px; margin: 22px auto 10px; display: grid; place-items: center; }
+.login-form__seal span, .login-form__seal i { position: absolute; inset: 7px; border: 1px solid #d1b074a6; transform: rotate(45deg); }
+.login-form__seal i { inset: 1px; border: 1px solid #a88a492d; animation: login-seal 30s linear infinite; }
+.login-form__seal b { font-size: 25px; font-weight: 400; color: #efd394; text-shadow: 0 0 20px #d9b66077; }
+.login-form header { text-align: center; margin: 0 0 26px; }
+.login-form header p { font: 8px/1.4 Georgia, serif; letter-spacing: .35em; color: #96866b; margin: 12px 0 9px; }
+.login-form h2 { font: 700 25px/1.4 'Songti SC', SimSun, serif; letter-spacing: .13em; color: #eddaa9; margin: 0; }
+.login-field { display: block; margin-top: 18px; }
+.login-field > span { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; color: #d4c29b; font-size: 12px; letter-spacing: .15em; }
+.login-field small { font: 8px Georgia, serif; color: #8c836e; letter-spacing: .18em; }
+.login-field input { display: block; width: 100%; height: 44px; padding: 9px 13px; box-sizing: border-box; border: 1px solid #91754380; border-radius: 5px; background: linear-gradient(100deg, #080e18cf, #23232680); color: #f4ead1; font: 15px/1.4 Georgia, 'Songti SC', SimSun, serif; outline: none; user-select: text; transition: border-color .2s, box-shadow .2s; }
+.login-field input:focus { border-color: #d6b874; box-shadow: 0 0 0 3px #b68d391b, inset 0 0 20px #ad88440a; }
+.login-field input:disabled { opacity: .65; }
+.login-form__hint { margin: 13px 0 0; font: 10px/1.8 system-ui, sans-serif; color: #978d78; letter-spacing: .02em; }
+.login-form__hint strong { color: #ccb889; font-weight: 500; }
+.login-feedback { min-height: 37px; box-sizing: border-box; padding: 11px 0 8px; font: 11px/1.6 system-ui, sans-serif; color: #cdbb93; }
+.login-feedback--error { color: #f2ab95; }
+.login-form__actions { display: grid; grid-template-columns: 1.2fr 1fr; gap: 14px; margin: 4px 0 23px; }
+.login-action { min-height: 44px; padding: 10px 15px; font: 700 15px/1.5 'Songti SC', SimSun, serif; letter-spacing: .16em; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+.login-action.btn--primary { --ui-default: rgba(94, 65, 27, .82); --ui-flow-warm: rgba(236, 193, 106, .24); color: #f8e7bc; }
+.login-action > span { font: 16px Georgia, serif; color: #baa273; }
+.login-action:focus-visible { outline: 2px solid #eed59b; outline-offset: 4px; }
+.login-action:disabled { cursor: wait; opacity: .65; }
+.login-form__foot { font-size: 7px; color: #887553; }
+.login-footer { position: absolute; left: 4vw; right: 4vw; bottom: 24px; display: flex; justify-content: space-between; pointer-events: none; font: 9px/1.5 Georgia, 'Songti SC', SimSun, serif; color: #a59477; letter-spacing: .2em; opacity: .55; transition: opacity .7s; }
+.login-scene--departing .login-form { pointer-events: none; animation: login-form-depart .65s ease-in forwards; animation-play-state: running; }
+.login-scene--departing .login-brand, .login-scene--departing .login-footer { opacity: 0; }
+.login-scene--departing .login-scene__vignette { opacity: .35; transition: opacity .8s; }
+.login-fallback { position: absolute; inset: 0; background: #000; }
+.login-fallback > i { position: absolute; inset: 0; background-image: radial-gradient(circle, #f7e7c499 0 1px, transparent 1.5px); background-size: 137px 157px; animation: login-prompt 4s ease-in-out infinite; }
+.login-fallback > i:nth-child(2) { background-size: 217px 193px; background-position: 58px 32px; animation-delay: -2s; opacity: .5; }
+.login-fallback > i:nth-child(3) { background: radial-gradient(ellipse at 50% 53%, #f5d09344, #b27b1110 8%, transparent 27%); }
+@keyframes login-title-arrive { from { opacity: 0; transform: scale(.97); filter: blur(8px); } to { opacity: 1; transform: scale(1); filter: drop-shadow(0 0 26px #b184353b); } }
+@keyframes login-letter-arrive { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes login-title-sheen { to { background-position: 190% 0; } }
+@keyframes login-prompt { 0%, 100% { opacity: .4; filter: drop-shadow(0 0 1px #e3bd63); } 50% { opacity: 1; filter: drop-shadow(0 0 7px #e3bd6355); } }
+@keyframes login-seal { to { transform: rotate(405deg); } }
+@keyframes login-form-arrive { from { opacity: 0; transform: translate3d(0, 90px, -70px) rotateX(13deg); } to { opacity: 1; transform: translate3d(0,0,0) rotateX(0); } }
+@keyframes login-form-depart { to { opacity: 0; transform: translateY(-22px) scale(.95); filter: blur(4px); } }
+@media (max-height: 650px) {
+  .login-form { padding: 19px 28px 16px; max-height: calc(100dvh - 28px); overflow-y: auto; }
+  .login-form__seal { width: 38px; height: 38px; margin-top: 14px; }
+  .login-form header { margin-bottom: 14px; }
+  .login-form header p { margin-top: 8px; }
+  .login-field { margin-top: 12px; }
+  .login-form__actions { margin-bottom: 13px; }
+  .login-footer { bottom: 10px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .login-title, .login-title h1, .login-title__eyebrow, .login-title__rule, .login-form, .login-start, .login-form__seal i { animation: none; transition-duration: .25s; }
+  .login-scene--departing .login-form { animation: login-form-depart .3s forwards; }
+}

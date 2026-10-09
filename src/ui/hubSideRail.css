@@ -1,0 +1,50 @@
+@layer control-defaults, legacy, theme, hub, controls;
+
+@layer hub {
+  .hub-side {
+    --rail-size: clamp(36px, calc(88 * var(--ui)), 50px);
+    position: absolute; left: clamp(14px, 1.7%, 34px); top: 49%; transform: translateY(-50%);
+    display: flex; flex-direction: column; gap: 14px; padding: 9px 0; z-index: 10;
+  }
+  .hub-side__group { display: grid; gap: 8px; }
+  .hub-side__link {
+    --ui-control-bevel: 7px;
+    --ui-default: rgba(24, 26, 27, .75);
+    --ui-flow-cool: rgba(122, 132, 131, .12);
+    --ui-flow-warm: rgba(156, 128, 80, .14);
+    --ui-rim-opacity: .42;
+    width: var(--rail-size); height: var(--rail-size); padding: 0;
+    display: grid; place-items: center; position: relative; isolation: isolate;
+    color: #c8bba1; text-decoration: none; cursor: pointer;
+    box-shadow: 0 2px 8px #0002;
+    transition: color .2s, transform .25s;
+  }
+  .hub-side__link > svg { width: 53%; height: 53%; filter: drop-shadow(0 1px 1px #0007); }
+  .hub-side__link:hover, .hub-side__link:focus-visible { color: #eee0bf; transform: translateX(3px); }
+  .hub-side__external { position: absolute; right: 4px; bottom: 2px; font: 10px/1 Georgia, serif; color: #a08c67; }
+  .hub-side__divider { display: block; width: 70%; height: 1px; margin: 0 auto; background: linear-gradient(90deg, transparent, #b09a7269, transparent); }
+  .hub-side__caption {
+    position: absolute; left: calc(100% + 12px); top: 50%; transform: translate(-4px, -50%);
+    white-space: nowrap; padding: 8px 12px; pointer-events: none;
+    border: 1px solid #a18a5c70; border-radius: 4px;
+    background: linear-gradient(110deg, #222628ef, #161b20ef);
+    color: #e7dcc1; font: 600 12px/1.4 'SimSun', 'Songti SC', serif;
+    box-shadow: 0 4px 15px #0004; opacity: 0; transition: opacity .2s, transform .2s;
+  }
+  .hub-side__link:hover .hub-side__caption, .hub-side__link:focus-visible .hub-side__caption { opacity: 1; transform: translate(0,-50%); }
+  .hub-side__link[data-unconfigured='true'] .hub-side__external { opacity: .4; }
+  .hub-menu--still .hub-side__link, .hub-menu--still .hub-side__caption { transition: none; }
+  @media (max-height: 600px) {
+    .hub-side { --rail-size: 30px; gap: 9px; }
+    .hub-side__group { gap: 5px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .hub-side__link, .hub-side__caption { transition: none; }
+    .hub-side__link:hover, .hub-side__link:focus-visible { transform: none; }
+  }
+}
+
+@layer controls {
+  .hub-side__link::after { animation: none; }
+  .hub-side__link::before { animation-duration: 28s; }
+}

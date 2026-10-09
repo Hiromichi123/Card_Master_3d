@@ -27,7 +27,6 @@ import { useSettingsStore } from '../state/settingsStore';
 import { BattleHud } from '../ui/BattleHud';
 import { BattleMenu } from '../ui/BattleMenu';
 import { BattleResultPanel } from '../ui/BattleResultPanel';
-import { CardDetailPanel } from '../ui/CardDetailPanel';
 import { PerfOverlay } from '../ui/PerfOverlay';
 
 import { WebGLGuard } from './WebGLGuard';
@@ -43,10 +42,11 @@ import { WebGLGuard } from './WebGLGuard';
  * 同步算完，所以卸载只丢掉播放位置，丢不掉规则
  * （PLAN 第 4.1 节：切换场景不依赖动画回调完成结算）。
  *
- * 详情面板的规则（`V-CARD-6`）：
- * - **悬停**显示临时详情，移开即收起；
- * - **点击**固定选中，之后悬停别的卡不再抢走面板；
- * - 点空白处取消固定。面板本身在 DOM 之上，点击不会穿透到场景。
+ * 卡牌详情的唯一出口是**全局悬停信息框**（`CardTipHost` + `CardMesh` 的 `hoverTip`）：
+ * 鼠标移到牌上就出，移开就收，跟着指针走。
+ * 这里**没有**「点一下把详情固定到右上角」那套——战斗桌面上点击已经被
+ * 「选牌 / 部署 / 拖拽插入」占满了，再往右上角钉一个面板只会挡住对手那一排牌，
+ * 而且和悬停框显示的是同一份内容（`V-CARD-6` 的悬停那一半仍然成立）。
  */
 export interface BattleSceneProps {
   /**
@@ -104,6 +104,7 @@ export function BattleScene({
       }, { localMultiplayer, autoEnemy }),
   );
   const snapshot = useBattleSession(session);
+  const [deckTotals] = useState(() => ({ player: config.playerDeck.length, enemy: config.enemyDeck.length }));
   useEffect(() => {
     if (autoStart && session.getSnapshot().runId === 0) session.start();
   }, [autoStart, session]);
@@ -136,13 +137,6 @@ export function BattleScene({
     }
   }, [snapshot.runId, snapshot.mode]);
 
-  const [detail, setDetail] = useState<{
-    readonly card: CardDefinition;
-    readonly instanceId: string;
-  } | null>(null);
-
-  const [pinned, setPinned] = useState(false);
-
   const [drag, setDrag] = useState<DeploymentDrag | null>(null);
   const ignoreClickUntil = useRef(0);
   useEffect(() => { if (!snapshot.inputOpen) setDrag(null); }, [snapshot.inputOpen]);
@@ -152,8 +146,6 @@ export function BattleScene({
     event.nativeEvent.preventDefault();
     event.nativeEvent.stopImmediatePropagation();
     session.select(instanceId);
-    setPinned(false);
-    setDetail(null);
     setDrag({ instanceId, pointerId: event.pointerId, side: session.getSnapshot().inputSide,
       position: [event.point.x, 0.24, event.point.z], insertIndex: null,
       startClient: [event.clientX, event.clientY], moved: false });
@@ -170,6 +162,7 @@ export function BattleScene({
   const view = useMemo(
     () => {
       const board = buildBoard(snapshot.display, {
+        deckTotals,
         selectedInstanceId: snapshot.selectedInstanceId,
         playerCanPlay: canPlay,
         inputSide: snapshot.inputSide,
@@ -193,18 +186,17 @@ export function BattleScene({
       };
     },
     [snapshot.display, snapshot.selectedInstanceId, canPlay, snapshot.playablePrepSlots, snapshot.playableBattleSlots,
-      snapshot.inputSide, snapshot.phase, snapshot.deployableInstanceIds, localMultiplayer, drag],
+      snapshot.inputSide, snapshot.phase, snapshot.deployableInstanceIds, localMultiplayer, drag, deckTotals],
   );
 
   const handleCardClick = useCallback(
-    (card: CardDefinition, instanceId: string) => {
+    (_card: CardDefinition, instanceId: string) => {
       if (Date.now() < ignoreClickUntil.current) return;
       const current = session.getSnapshot();
       const index = current.display.zones[current.inputSide].battle.indexOf(instanceId);
       if (current.selectedKind === 'ready' && index >= 0) { session.deploySelectedAt(index); return; }
-      setDetail({ card, instanceId });
-      setPinned(true);
-      // 只有手牌会被会话接受为「待打出的牌」；点场上的卡等于取消选牌
+      // 只有手牌会被会话接受为「待打出的牌」；点场上的卡等于取消选牌。
+      // 详情不在这里出：全局悬停信息框已经负责（见类注释）。
       session.select(instanceId);
     },
     [session],
@@ -222,20 +214,6 @@ export function BattleScene({
     [session],
   );
 
-  const detailCard = pinned && detail ? detail.card : null;
-  const detailStats = useMemo(() => {
-    const instanceId = detail?.instanceId;
-    if (!instanceId) {
-      return undefined;
-    }
-    const identity = snapshot.display.instances[instanceId];
-    const group = identity ? snapshot.display.groups[identity.stateGroupId] : undefined;
-    if (!group) {
-      return undefined;
-    }
-    return { atk: group.atk, hp: group.hp, cd: snapshot.display.cd[instanceId] ?? 0 };
-  }, [detail, snapshot.display]);
-
   return (
     <WebGLGuard>
       <div className="scene-viewport">
@@ -248,13 +226,11 @@ export function BattleScene({
           flat
           shadows={profile.shadows ? { type: PCFShadowMap } : false}
           dpr={[1, profile.dprCap]}
-          camera={{ position: [0, 11, 9], fov: 45, near: 0.1, far: 120 }}
+          camera={{ position: [0, 11, 9], fov: 45, near: 0.1, far: theme.geometry === 'mecha' ? 260 : 120 }}
           gl={{ antialias: true, powerPreference: 'high-performance' }}
           onPointerMissed={() => {
             if (drag || Date.now() < ignoreClickUntil.current) return;
-            // 点空白处取消固定。面板内的点击不会走到这里（DOM 层已挡住）
-            setPinned(false);
-            setDetail(null);
+            // 点空白处取消选中
             session.select(null);
           }}
         >
@@ -320,24 +296,6 @@ export function BattleScene({
         )}
 
         <PerfOverlay visible={showPerf} />
-
-        {detailCard && (
-          <CardDetailPanel
-            card={detailCard}
-            stats={detailStats}
-            pinned={pinned && detail !== null}
-            onClose={() => {
-              setDetail(null);
-              setPinned(false);
-              session.select(null);
-            }}
-            onTogglePin={() => {
-              if (detail) {
-                setPinned((current) => !current);
-              }
-            }}
-          />
-        )}
 
         {snapshot.mode === 'menu' && !autoStart && (
           <BattleMenu

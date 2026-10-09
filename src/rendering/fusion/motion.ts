@@ -22,3 +22,10 @@ export function fusionResultPose(elapsed: number): { readonly visible: boolean; 
   const t = Math.min(1, Math.max(0, (elapsed - FUSION_REVEAL_SECONDS) / 0.7));
   return { visible: elapsed >= FUSION_REVEAL_SECONDS, scale: 1.28 * (0.35 + 0.65 * easeInOutCubic(t)), rotationY: (1 - t) * Math.PI };
 }
+
+/** Two full turns: ease into acceleration, decelerate during reveal, then hold the front-facing pose. */
+export function fusionSpinAngle(elapsed: number): number {
+  const stopAt = FUSION_REVEAL_SECONDS + .7;
+  const progress = Math.min(1, Math.max(0, elapsed / stopAt));
+  return Math.PI * 4 * easeInOutCubic(progress);
+}

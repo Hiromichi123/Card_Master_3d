@@ -11,6 +11,7 @@ import {
   polarForAspect,
   polarLimits,
   viewportShortEdge,
+  TABLE_RADIUS,
 } from './cameraModes';
 import { LAYOUT } from './layout';
 
@@ -43,6 +44,8 @@ export function CameraRig({ interactionLocked = false }: { interactionLocked?: b
   const controlsRef = useRef<OrbitControlsImpl>(null);
 
   const modeId = useSettingsStore((state) => state.cameraModeId);
+  const geometry = useSettingsStore((state) => state.tableTheme.geometry);
+  const themeId = useSettingsStore((state) => state.tableThemeId);
   /**
    * 上一次取景定下的距离，轨道的缩放范围以它为基准。
    *
@@ -79,7 +82,8 @@ export function CameraRig({ interactionLocked = false }: { interactionLocked?: b
       camera.position.copy(TARGET).add(unit);
       camera.lookAt(TARGET);
 
-      const distance = fitCameraTo(camera, TARGET) * mode.zoom;
+      const radius = geometry === 'volcano' ? 8.95 : themeId === 'tournament' ? 8.5 : TABLE_RADIUS;
+      const distance = fitCameraTo(camera, TARGET, { radius }) * mode.zoom;
       camera.position.copy(TARGET).addScaledVector(unit, distance);
       camera.lookAt(TARGET);
       camera.updateProjectionMatrix();
@@ -89,7 +93,7 @@ export function CameraRig({ interactionLocked = false }: { interactionLocked?: b
       // 否则下一帧 update() 会拿旧角度把相机拽回去
       controlsRef.current?.update();
     },
-    [camera, modeId, size.width, size.height],
+    [camera, modeId, geometry, themeId, size.width, size.height],
   );
 
   // 尺寸变化时重新取景，保留用户转过的方位角

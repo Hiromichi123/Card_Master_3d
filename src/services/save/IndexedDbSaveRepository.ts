@@ -24,39 +24,54 @@ const OPEN_TIMEOUT_MS = 2000;
 
 export class SaveOpenError extends Error {}
 
-function openDatabase(): Promise<IDBDatabase> {
+function openDatabase(accountId: string): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
     let request: IDBOpenDBRequest;
     try {
-      request = indexedDB.open(DB_NAME, DB_VERSION);
+      // admin keeps the pre-login save; every registered player has an isolated database.
+      const name = accountId === 'admin' ? DB_NAME : `${DB_NAME}:account:${accountId}`;
+      request = indexedDB.open(name, DB_VERSION);
     } catch (error) {
       // 隐私模式、被策略禁用等：同步抛出，连 request 都拿不到
       reject(new SaveOpenError(`打不开 IndexedDB：${String(error)}`));
       return;
     }
 
+    let settled = false;
+    const fail = (message: string): void => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      reject(new SaveOpenError(message));
+    };
     const timer = setTimeout(() => {
-      reject(new SaveOpenError('IndexedDB 打开超时（2 秒内没有任何回调）'));
+      fail('IndexedDB 打开超时（2 秒内没有任何回调）');
     }, OPEN_TIMEOUT_MS);
 
     request.onupgradeneeded = () => {
+      if (settled) {
+        request.transaction?.abort();
+        return;
+      }
       const db = request.result;
       if (!db.objectStoreNames.contains(STORE)) {
         db.createObjectStore(STORE);
       }
     };
     request.onsuccess = () => {
+      // A late success after timeout must not leave an unowned open connection.
+      if (settled) {
+        request.result.close();
+        return;
+      }
+      settled = true;
       clearTimeout(timer);
-      resolve(request.result);
+      const db = request.result;
+      db.onversionchange = () => db.close();
+      resolve(db);
     };
-    request.onerror = () => {
-      clearTimeout(timer);
-      reject(new SaveOpenError(`IndexedDB 打开失败：${String(request.error)}`));
-    };
-    request.onblocked = () => {
-      clearTimeout(timer);
-      reject(new SaveOpenError('IndexedDB 被另一个标签页占用，暂时打不开'));
-    };
+    request.onerror = () => fail(`IndexedDB 打开失败：${String(request.error)}`);
+    request.onblocked = () => fail('IndexedDB 被另一个标签页占用，暂时打不开');
   });
 }
 
@@ -65,11 +80,14 @@ export class IndexedDbSaveRepository implements SaveRepository {
 
   private constructor(private readonly db: IDBDatabase) {}
 
-  static async open(): Promise<IndexedDbSaveRepository> {
+  static async open(accountId = 'admin'): Promise<IndexedDbSaveRepository> {
     if (typeof indexedDB === 'undefined') {
       throw new SaveOpenError('这个环境没有 IndexedDB');
     }
-    return new IndexedDbSaveRepository(await openDatabase());
+    if (!/^(admin|player-[a-f0-9]{32})$/.test(accountId)) {
+      throw new SaveOpenError('账号标识不正确，无法打开存档。');
+    }
+    return new IndexedDbSaveRepository(await openDatabase(accountId));
   }
 
   load(): Promise<ProfileState | null> {
