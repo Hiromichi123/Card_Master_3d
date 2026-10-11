@@ -14,10 +14,10 @@
  * 这正是 P3 里风险最集中的部分。
  */
 
-import { cardById } from '../../data';
+import { resolveBattleDefinition } from './definitions';
 import { chooseCommand } from '../../domain/battle/ai';
 import { applyCommand, createBattle, hasLegalPlay } from '../../domain/battle/engine';
-import { COOLDOWN_CARD, inputSideOf, insertionSlots, isCooldownCard, readyCardIds } from '../../domain/battle/turnActions';
+import { inputSideOf, insertionSlots, isCooldownCard, readyCardIds } from '../../domain/battle/turnActions';
 import { createRng, type Rng } from '../../domain/battle/rng';
 import type {
   BattleConfig,
@@ -99,6 +99,8 @@ export interface BattleSnapshot {
 }
 
 export interface SessionControl {
+  /** 规则已得出终局，尚未等待表现层；持久化入口不应依赖动画完成。 */
+  readonly onOutcome?: ((outcome: BattleOutcome) => void) | undefined;
   readonly localMultiplayer?: boolean | undefined;
   readonly autoEnemy?: boolean | undefined;
 }
@@ -116,6 +118,8 @@ export class BattleSession {
   private autoPlayer = false;
   private autoEnemy = true;
   private readonly localMultiplayer: boolean;
+  private readonly onOutcome: ((outcome: BattleOutcome) => void) | undefined;
+  private outcomeReported = false;
   private runId = 0;
   private readonly log: string[] = [];
   private readonly listeners = new Set<() => void>();
@@ -142,6 +146,7 @@ export class BattleSession {
     control: SessionControl = {},
   ) {
     this.localMultiplayer = control.localMultiplayer ?? false;
+    this.onOutcome = control.onOutcome;
     this.autoEnemy = control.autoEnemy ?? true;
     this.state = createBattle(config, definitions);
     this.display = displayFromState(this.state);
@@ -160,7 +165,7 @@ export class BattleSession {
       cardFacePointOf: (instanceId) => {
         const point = this.worldPointOf(instanceId);
         const identity = this.display.instances[instanceId];
-        const definition = identity ? cardById.get(identity.definitionId) : undefined;
+        const definition = identity ? resolveBattleDefinition(identity.definitionId, this.state.definitions) : undefined;
         const lift = (identity?.flying ?? definition?.rawTraits.includes('飞行')) ? FLYING_CARD_LIFT : 0;
         return [point[0], point[1] + lift + CARD_SIZE.thickness * BATTLE_CARD_SCALE + 0.025, point[2]];
       },
@@ -271,6 +276,7 @@ export class BattleSession {
       }
     }
     this.runId += 1;
+    this.outcomeReported = false;
     this.aiRng = createRng(this.config.seed ^ AI_SEED_MIX);
     this.mode = 'battle';
     this.inputOpen = false;
@@ -425,6 +431,10 @@ export class BattleSession {
     // 分身/复活会凭空造出实例，先把身份补上，后面解析世界坐标才找得到它们
     syncIdentities(this.display, this.state);
     this.inputOpen = false;
+    if (this.state.outcome && !this.outcomeReported) {
+      this.outcomeReported = true;
+      this.onOutcome?.(this.state.outcome);
+    }
     this.director.perform(resolution);
     this.publish();
   }
@@ -516,7 +526,7 @@ export class BattleSession {
     if (!identity) {
       return instanceId;
     }
-    return cardById.get(identity.definitionId)?.name ?? (isCooldownCard(identity.definitionId) ? COOLDOWN_CARD.name : identity.definitionId);
+    return resolveBattleDefinition(identity.definitionId, this.state.definitions)?.name ?? identity.definitionId;
   }
 
   private playablePrepSlots(): readonly number[] {

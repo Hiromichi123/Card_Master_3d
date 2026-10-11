@@ -7,6 +7,25 @@
  * 派生出来的东西没有这个问题。
  */
 
+import type { CardDefinition } from '../cards/types';
+
+export interface CollectionCompletion {
+  readonly owned: number;
+  readonly total: number;
+  readonly ratio: number;
+}
+
+/** 完整卡库中的不同卡种拥有率；未知库存、重复张数和筛选条件不影响分母。 */
+export function collectionCompletion(
+  inventory: Readonly<Record<string, number>>,
+  definitions: readonly Pick<CardDefinition, 'cardId' | 'status'>[],
+): CollectionCompletion {
+  const ids = new Set(definitions.filter(card => card.status === 'complete' && card.cardId).map(card => card.cardId));
+  let owned = 0;
+  for (const id of ids) if ((inventory[id] ?? 0) > 0) owned += 1;
+  return { owned, total: ids.size, ratio: ids.size ? owned / ids.size : 0 };
+}
+
 export interface CollectionEntry {
   readonly cardId: string;
   readonly count: number;

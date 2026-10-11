@@ -1,5 +1,6 @@
 import { CanvasTexture, LinearFilter, SRGBColorSpace } from 'three';
 
+import { numberCanvasFont } from '../text/numberFont';
 import { STAT_COLORS, type StatKind } from './statColors';
 
 export type { StatKind };
@@ -70,7 +71,7 @@ export function getStatTexture(
   const text = String(value);
   // 字号留出边距：填满整张纹理的话，数字会顶到方块的边缘，看起来又大又挤
   const fontSize = text.length >= 3 ? 58 : text.length === 2 ? 70 : 82;
-  ctx.font = `700 ${fontSize}px "Microsoft YaHei", "PingFang SC", system-ui, sans-serif`;
+  ctx.font = numberCanvasFont(fontSize);
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.lineJoin = 'round';

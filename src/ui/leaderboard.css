@@ -1,0 +1,49 @@
+@layer controls {
+  .leaderboard {
+    position: fixed; inset: 0; margin: auto; padding: 0;
+    width: min(1040px, 94vw); max-width: 94vw; max-height: 90dvh;
+    color: #efe7d7; border: 1px solid #c6aa70; border-radius: 14px;
+    background: #101925; box-shadow: 0 24px 100px #000a; overflow: hidden;
+    font-family: inherit;
+  }
+  .leaderboard::backdrop { background: #030813b8; backdrop-filter: blur(5px); }
+  .leaderboard__panel { display: flex; flex-direction: column; max-height: 90dvh; padding: clamp(14px, 2.5vw, 30px); gap: 12px; }
+  .leaderboard__header { display: flex; align-items: center; justify-content: space-between; gap: 20px; flex: 0 0 auto; }
+  .leaderboard__eyebrow { font-size: 11px; letter-spacing: .22em; color: #c8b98f; }
+  .leaderboard__header h2 { margin: 3px 0 0; font-size: clamp(24px, 3vw, 34px); font-weight: 800; letter-spacing: .1em; }
+  .leaderboard__close { width: 38px; height: 38px; padding: 0; font-size: 27px; line-height: 1; }
+  .leaderboard button { color: #eee4cf; border: 1px solid #9c855780; border-radius: 6px; background: #26303c; cursor: pointer; font-family: inherit; }
+  .leaderboard button:hover:not(:disabled) { background: #36404b; border-color: #ddc38b; }
+  .leaderboard button:focus-visible, .leaderboard__content:focus-visible { outline: 2px solid #ebd297; outline-offset: 3px; }
+  .leaderboard button:disabled { cursor: default; opacity: .45; }
+  .leaderboard__description { margin: 0; color: #b7c1cf; font-size: 13px; line-height: 1.5; }
+  .leaderboard__tabs { display: flex; gap: 9px; flex: 0 0 auto; }
+  .leaderboard__tabs button { min-width: 120px; padding: 10px 20px; font-size: 16px; }
+  .leaderboard__tabs button[aria-selected="true"] { background: #423b2d; border-color: #d1b16d; box-shadow: inset 0 -3px #d1b16d; font-weight: 700; }
+  .leaderboard__summary { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 18px; color: #b7c1cf; font-size: 13px; }
+  .leaderboard__summary strong { margin-left: 6px; color: #f5ead3; font-variant-numeric: tabular-nums; }
+  .leaderboard__content { overflow: auto; min-height: 0; overscroll-behavior: contain; scrollbar-color: #87764c #18212e; scrollbar-width: thin; }
+  .leaderboard__table { width: 100%; border-collapse: separate; border-spacing: 0; text-align: left; font-size: clamp(12px, 1.6vw, 15px); }
+  .leaderboard__caption { text-align: left; color: #a8b3c3; font-size: 12px; padding: 0 8px 10px; }
+  .leaderboard__table thead { position: sticky; top: 0; z-index: 1; }
+  .leaderboard__table thead th { background: #24303e; color: #c7d0dc; font-weight: 500; padding: 11px 12px; white-space: nowrap; }
+  .leaderboard__table tbody td, .leaderboard__table tbody th { padding: 12px; border-bottom: 1px solid #74829622; font-weight: 400; }
+  .leaderboard__table tbody tr:nth-child(even) { background: #ffffff03; }
+  .leaderboard__table tbody tr[data-self="true"] { background: #d1b16d17; }
+  .leaderboard__table tbody tr[data-self="true"] th { font-weight: 700; }
+  .leaderboard__table tbody tr[data-self="true"] td:first-child { box-shadow: inset 3px 0 #d1b16d; }
+  .leaderboard__table small { margin-left: 9px; font-size: 10px; border: 1px solid #74829655; padding: 2px 5px; border-radius: 3px; color: #bbc6d6; white-space: nowrap; }
+  .leaderboard__name { overflow-wrap: anywhere; }
+  .leaderboard__rank { white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .leaderboard__rank[data-podium="true"] { font-weight: 800; }
+  .leaderboard__value, .leaderboard__table thead th:last-child { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .leaderboard__footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; flex: 0 0 auto; }
+  .leaderboard__footer p { margin: 0; font-size: 12px; color: #a8b3c3; }
+  .leaderboard__footer nav { display: flex; align-items: center; gap: 12px; font-size: 13px; }
+  .leaderboard__footer button { padding: 6px 12px; }
+  @media (max-width: 520px) {
+    .leaderboard__table tbody td, .leaderboard__table tbody th, .leaderboard__table thead th { padding: 9px 5px; }
+    .leaderboard__table small { display: block; width: fit-content; margin: 4px 0 0; }
+    .leaderboard__tabs button { flex: 1; min-width: 0; }
+  }
+}

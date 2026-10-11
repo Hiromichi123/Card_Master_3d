@@ -1,5 +1,5 @@
 {
-  "contentVersion": "d346d47efa04",
+  "contentVersion": "de6770c73d05",
   "source": "assets/outputs/*/cards.json",
   "definitions": [
     {
@@ -7982,8 +7982,18 @@
       "atk": 8,
       "hp": 5,
       "cd": 6,
-      "rawTraits": [],
-      "skills": [],
+      "rawTraits": [
+        "临点坍缩"
+      ],
+      "skills": [
+        {
+          "raw": "临点坍缩",
+          "resolution": "ambiguous",
+          "family": null,
+          "param": null,
+          "note": "未在 trait-overlay.json 中登记"
+        }
+      ],
       "description": "祂的真身横跨无数维度，星河般的面容与明暗交织的神躯，仅是降临此世的一道投影。环绕其冠冕的每一颗光球，都代表一个世界的过去与未来。祂抬手之际，空间如薄镜碎裂，尚未发生的败亡便已成为不可更改的历史，陷入无休止的坍缩。",
       "status": "complete",
       "art": {
@@ -10099,6 +10109,836 @@
       "status": "complete",
       "art": {
         "artId": "card/s-plus/019",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "C+_015",
+      "rarity": "C+",
+      "name": "巴 别 塔",
+      "level": 4.5,
+      "atk": 1,
+      "hp": 7,
+      "cd": 3,
+      "rawTraits": [],
+      "skills": [],
+      "description": "",
+      "status": "complete",
+      "art": {
+        "artId": "card/c-plus/015",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "C+_016",
+      "rarity": "C+",
+      "name": "地 狱 屠 夫",
+      "level": 4.5,
+      "atk": 1,
+      "hp": 6,
+      "cd": 10,
+      "rawTraits": [
+        "伤害1",
+        "吸血1"
+      ],
+      "skills": [
+        {
+          "raw": "伤害1",
+          "resolution": "ambiguous",
+          "family": null,
+          "param": null,
+          "note": "未在 trait-overlay.json 中登记"
+        },
+        {
+          "raw": "吸血1",
+          "resolution": "implemented",
+          "family": "vampire",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "",
+      "status": "complete",
+      "art": {
+        "artId": "card/c-plus/016",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "C+_017",
+      "rarity": "C+",
+      "name": "等 待",
+      "level": 4.5,
+      "atk": 0,
+      "hp": 0,
+      "cd": 8,
+      "rawTraits": [
+        "加速8",
+        "自毁"
+      ],
+      "skills": [
+        {
+          "raw": "加速8",
+          "resolution": "implemented",
+          "family": "haste",
+          "param": 8,
+          "matchKind": "full"
+        },
+        {
+          "raw": "自毁",
+          "resolution": "implemented",
+          "family": "selfDestruct",
+          "param": null,
+          "matchKind": "exact"
+        }
+      ],
+      "description": "",
+      "status": "complete",
+      "art": {
+        "artId": "card/c-plus/017",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "C+_018",
+      "rarity": "C+",
+      "name": "黑 白 鱼",
+      "level": 4.5,
+      "atk": 2,
+      "hp": 4,
+      "cd": 4,
+      "rawTraits": [
+        "冰封1",
+        "对空"
+      ],
+      "skills": [
+        {
+          "raw": "冰封1",
+          "resolution": "implemented",
+          "family": "iceSeal",
+          "param": 1,
+          "matchKind": "full"
+        },
+        {
+          "raw": "对空",
+          "resolution": "unimplemented",
+          "family": null,
+          "param": null,
+          "evidence": "battle_base_scene.py:1348 只出现在注释「地面单位无法对空：伤害转移到防御者玩家」里",
+          "note": "注意：飞行规则只检查 `飞行`（battle_base_scene.py:1344-1345），带 `对空` 但不带 `飞行` 的卡没有任何对空收益。PLAN 第 4.3 节明确要求不擅自加入未实现对空技能。"
+        }
+      ],
+      "description": "",
+      "status": "complete",
+      "art": {
+        "artId": "card/c-plus/018",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "C+_019",
+      "rarity": "C+",
+      "name": "黑 猫 主 教",
+      "level": 4.5,
+      "atk": 0,
+      "hp": 5,
+      "cd": 7,
+      "rawTraits": [
+        "祝福1"
+      ],
+      "skills": [
+        {
+          "raw": "祝福1",
+          "resolution": "implemented",
+          "family": "blessing",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "",
+      "status": "complete",
+      "art": {
+        "artId": "card/c-plus/019",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "C+_020",
+      "rarity": "C+",
+      "name": "轰 龙 迪 迦 雷 克 斯",
+      "level": 4.5,
+      "atk": 1,
+      "hp": 7,
+      "cd": 16,
+      "rawTraits": [
+        "破甲4",
+        "狂暴"
+      ],
+      "skills": [
+        {
+          "raw": "破甲4",
+          "resolution": "implemented",
+          "family": "armorBreak",
+          "param": 4,
+          "matchKind": "full"
+        },
+        {
+          "raw": "狂暴",
+          "resolution": "implemented",
+          "family": "berserk",
+          "param": null,
+          "matchKind": "exact"
+        }
+      ],
+      "description": "",
+      "status": "complete",
+      "art": {
+        "artId": "card/c-plus/020",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "C+_021",
+      "rarity": "C+",
+      "name": "教 团 剑 士",
+      "level": 4.5,
+      "atk": 2,
+      "hp": 5,
+      "cd": 7,
+      "rawTraits": [
+        "防御1",
+        "反击1"
+      ],
+      "skills": [
+        {
+          "raw": "防御1",
+          "resolution": "implemented",
+          "family": "defense",
+          "param": 1,
+          "matchKind": "full"
+        },
+        {
+          "raw": "反击1",
+          "resolution": "implemented",
+          "family": "counter",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "",
+      "status": "complete",
+      "art": {
+        "artId": "card/c-plus/021",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "C+_022",
+      "rarity": "C+",
+      "name": "火 恶 魔",
+      "level": 4.5,
+      "atk": 0,
+      "hp": 6,
+      "cd": 6,
+      "rawTraits": [
+        "飞行",
+        "火球2"
+      ],
+      "skills": [
+        {
+          "raw": "飞行",
+          "resolution": "scene-rule",
+          "family": null,
+          "param": null,
+          "note": "战斗场景规则，非技能族"
+        },
+        {
+          "raw": "火球2",
+          "resolution": "implemented",
+          "family": "fireball",
+          "param": 2,
+          "matchKind": "full"
+        }
+      ],
+      "description": "",
+      "status": "complete",
+      "art": {
+        "artId": "card/c-plus/022",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "C+_023",
+      "rarity": "C+",
+      "name": "凯 恩 的 遗 产",
+      "level": 4.5,
+      "atk": 2,
+      "hp": 2,
+      "cd": 9,
+      "rawTraits": [
+        "群体闪电1",
+        "受伤1"
+      ],
+      "skills": [
+        {
+          "raw": "群体闪电1",
+          "resolution": "implemented",
+          "family": "groupLightning",
+          "param": 1,
+          "matchKind": "full"
+        },
+        {
+          "raw": "受伤1",
+          "resolution": "implemented",
+          "family": "injury",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "",
+      "status": "complete",
+      "art": {
+        "artId": "card/c-plus/023",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "C+_024",
+      "rarity": "C+",
+      "name": "珂 莱 塔·黑 执 事",
+      "level": 4.5,
+      "atk": 2,
+      "hp": 5,
+      "cd": 4,
+      "rawTraits": [
+        "远射1"
+      ],
+      "skills": [
+        {
+          "raw": "远射1",
+          "resolution": "ambiguous",
+          "family": null,
+          "param": null,
+          "note": "未在 trait-overlay.json 中登记"
+        }
+      ],
+      "description": "",
+      "status": "complete",
+      "art": {
+        "artId": "card/c-plus/024",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "C+_025",
+      "rarity": "C+",
+      "name": "莫 比 乌 斯 环",
+      "level": 4.5,
+      "atk": 0,
+      "hp": 0,
+      "cd": 5,
+      "rawTraits": [
+        "抽卡3",
+        "还魂1",
+        "闪避赋予1",
+        "自毁"
+      ],
+      "skills": [
+        {
+          "raw": "抽卡3",
+          "resolution": "implemented",
+          "family": "drawCard",
+          "param": 3,
+          "matchKind": "full"
+        },
+        {
+          "raw": "还魂1",
+          "resolution": "implemented",
+          "family": "soulReturn",
+          "param": 1,
+          "matchKind": "full"
+        },
+        {
+          "raw": "闪避赋予1",
+          "resolution": "ambiguous",
+          "family": null,
+          "param": null,
+          "note": "未在 trait-overlay.json 中登记"
+        },
+        {
+          "raw": "自毁",
+          "resolution": "implemented",
+          "family": "selfDestruct",
+          "param": null,
+          "matchKind": "exact"
+        }
+      ],
+      "description": "",
+      "status": "complete",
+      "art": {
+        "artId": "card/c-plus/025",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "C+_026",
+      "rarity": "C+",
+      "name": "神 里 绫 华·侠 客",
+      "level": 4.5,
+      "atk": 1,
+      "hp": 4,
+      "cd": 1,
+      "rawTraits": [
+        "闪避1"
+      ],
+      "skills": [
+        {
+          "raw": "闪避1",
+          "resolution": "implemented",
+          "family": "dodge",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "",
+      "status": "complete",
+      "art": {
+        "artId": "card/c-plus/026",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "C+_027",
+      "rarity": "C+",
+      "name": "神 隐",
+      "level": 4.5,
+      "atk": 0,
+      "hp": 0,
+      "cd": 3,
+      "rawTraits": [
+        "隐匿赋予",
+        "自毁"
+      ],
+      "skills": [
+        {
+          "raw": "隐匿赋予",
+          "resolution": "ambiguous",
+          "family": null,
+          "param": null,
+          "note": "未在 trait-overlay.json 中登记"
+        },
+        {
+          "raw": "自毁",
+          "resolution": "implemented",
+          "family": "selfDestruct",
+          "param": null,
+          "matchKind": "exact"
+        }
+      ],
+      "description": "",
+      "status": "complete",
+      "art": {
+        "artId": "card/c-plus/027",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "C+_028",
+      "rarity": "C+",
+      "name": "索 敌 致 胜",
+      "level": 4.5,
+      "atk": 2,
+      "hp": 4,
+      "cd": 5,
+      "rawTraits": [
+        "贯穿1"
+      ],
+      "skills": [
+        {
+          "raw": "贯穿1",
+          "resolution": "ambiguous",
+          "family": null,
+          "param": null,
+          "note": "未在 trait-overlay.json 中登记"
+        }
+      ],
+      "description": "",
+      "status": "complete",
+      "art": {
+        "artId": "card/c-plus/028",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "C+_029",
+      "rarity": "C+",
+      "name": "维 京 勇 士",
+      "level": 4.5,
+      "atk": 3,
+      "hp": 5,
+      "cd": 4,
+      "rawTraits": [
+        "受伤1"
+      ],
+      "skills": [
+        {
+          "raw": "受伤1",
+          "resolution": "implemented",
+          "family": "injury",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "",
+      "status": "complete",
+      "art": {
+        "artId": "card/c-plus/029",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "C+_030",
+      "rarity": "C+",
+      "name": "永 恒 财 宝",
+      "level": 4.5,
+      "atk": 0,
+      "hp": 8,
+      "cd": 8,
+      "rawTraits": [
+        "防御1",
+        "闪电1",
+        "不死"
+      ],
+      "skills": [
+        {
+          "raw": "防御1",
+          "resolution": "implemented",
+          "family": "defense",
+          "param": 1,
+          "matchKind": "full"
+        },
+        {
+          "raw": "闪电1",
+          "resolution": "implemented",
+          "family": "lightning",
+          "param": 1,
+          "matchKind": "full"
+        },
+        {
+          "raw": "不死",
+          "resolution": "implemented",
+          "family": "undying",
+          "param": null,
+          "matchKind": "exact"
+        }
+      ],
+      "description": "",
+      "status": "complete",
+      "art": {
+        "artId": "card/c-plus/030",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "C_039",
+      "rarity": "C",
+      "name": "古 海 要 塞",
+      "level": 5,
+      "atk": 1,
+      "hp": 1,
+      "cd": 5,
+      "rawTraits": [
+        "防御5"
+      ],
+      "skills": [
+        {
+          "raw": "防御5",
+          "resolution": "implemented",
+          "family": "defense",
+          "param": 5,
+          "matchKind": "full"
+        }
+      ],
+      "description": "",
+      "status": "complete",
+      "art": {
+        "artId": "card/c/039",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "D_036",
+      "rarity": "D",
+      "name": "古 代 猛 犸",
+      "level": 6,
+      "atk": 2,
+      "hp": 12,
+      "cd": 17,
+      "rawTraits": [],
+      "skills": [],
+      "description": "",
+      "status": "complete",
+      "art": {
+        "artId": "card/d/036",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "D_037",
+      "rarity": "D",
+      "name": "元 素 术 士·水",
+      "level": 6,
+      "atk": 0,
+      "hp": 3,
+      "cd": 2,
+      "rawTraits": [
+        "冰封1"
+      ],
+      "skills": [
+        {
+          "raw": "冰封1",
+          "resolution": "implemented",
+          "family": "iceSeal",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "",
+      "status": "complete",
+      "art": {
+        "artId": "card/d/037",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "D_038",
+      "rarity": "D",
+      "name": "十 字 军",
+      "level": 6,
+      "atk": 2,
+      "hp": 2,
+      "cd": 5,
+      "rawTraits": [
+        "防御2"
+      ],
+      "skills": [
+        {
+          "raw": "防御2",
+          "resolution": "implemented",
+          "family": "defense",
+          "param": 2,
+          "matchKind": "full"
+        }
+      ],
+      "description": "",
+      "status": "complete",
+      "art": {
+        "artId": "card/d/038",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "D_039",
+      "rarity": "D",
+      "name": "骸 骨 领 地",
+      "level": 6,
+      "atk": 0,
+      "hp": 5,
+      "cd": 5,
+      "rawTraits": [
+        "剧毒2"
+      ],
+      "skills": [
+        {
+          "raw": "剧毒2",
+          "resolution": "unimplemented",
+          "family": null,
+          "param": null,
+          "evidence": "全项目 .py 无该字符串；不存在持续伤害/中毒状态",
+          "note": "无实现。"
+        }
+      ],
+      "description": "",
+      "status": "complete",
+      "art": {
+        "artId": "card/d/039",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "D_040",
+      "rarity": "D",
+      "name": "古 巴 别 塔",
+      "level": 6,
+      "atk": 0,
+      "hp": 5,
+      "cd": 2,
+      "rawTraits": [
+        "反击1"
+      ],
+      "skills": [
+        {
+          "raw": "反击1",
+          "resolution": "implemented",
+          "family": "counter",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "",
+      "status": "complete",
+      "art": {
+        "artId": "card/d/040",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "SS+_017",
+      "rarity": "SS+",
+      "name": "烈 性 玫 瑰",
+      "level": 0.5,
+      "atk": 2,
+      "hp": 9,
+      "cd": 8,
+      "rawTraits": [
+        "刺甲2",
+        "吸血1"
+      ],
+      "skills": [
+        {
+          "raw": "刺甲2",
+          "resolution": "ambiguous",
+          "family": null,
+          "param": null,
+          "note": "未在 trait-overlay.json 中登记"
+        },
+        {
+          "raw": "吸血1",
+          "resolution": "implemented",
+          "family": "vampire",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "",
+      "status": "complete",
+      "art": {
+        "artId": "card/ss-plus/017",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "SS_018",
+      "rarity": "SS",
+      "name": "尽 在 掌 控",
+      "level": 1,
+      "atk": 0,
+      "hp": 0,
+      "cd": 10,
+      "rawTraits": [
+        "群体沉默1",
+        "自毁"
+      ],
+      "skills": [
+        {
+          "raw": "群体沉默1",
+          "resolution": "ambiguous",
+          "family": null,
+          "param": null,
+          "note": "未在 trait-overlay.json 中登记"
+        },
+        {
+          "raw": "自毁",
+          "resolution": "implemented",
+          "family": "selfDestruct",
+          "param": null,
+          "matchKind": "exact"
+        }
+      ],
+      "description": "",
+      "status": "complete",
+      "art": {
+        "artId": "card/ss/018",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "S+_020",
+      "rarity": "S+",
+      "name": "结 晶 之 心",
+      "level": 1.5,
+      "atk": 7,
+      "hp": 2,
+      "cd": 5,
+      "rawTraits": [
+        "隐匿",
+        "吸血2"
+      ],
+      "skills": [
+        {
+          "raw": "隐匿",
+          "resolution": "unimplemented",
+          "family": null,
+          "param": null,
+          "evidence": "全项目 .py 无该字符串；不存在目标选择/潜行机制",
+          "note": "无实现。"
+        },
+        {
+          "raw": "吸血2",
+          "resolution": "implemented",
+          "family": "vampire",
+          "param": 2,
+          "matchKind": "full"
+        }
+      ],
+      "description": "",
+      "status": "complete",
+      "art": {
+        "artId": "card/s-plus/020",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "S_021",
+      "rarity": "S",
+      "name": "曼珠沙华·红莲死神姬",
+      "level": 2,
+      "atk": 2,
+      "hp": 7,
+      "cd": 4,
+      "rawTraits": [
+        "吸血2",
+        "防御2",
+        "对空"
+      ],
+      "skills": [
+        {
+          "raw": "吸血2",
+          "resolution": "implemented",
+          "family": "vampire",
+          "param": 2,
+          "matchKind": "full"
+        },
+        {
+          "raw": "防御2",
+          "resolution": "implemented",
+          "family": "defense",
+          "param": 2,
+          "matchKind": "full"
+        },
+        {
+          "raw": "对空",
+          "resolution": "unimplemented",
+          "family": null,
+          "param": null,
+          "evidence": "battle_base_scene.py:1348 只出现在注释「地面单位无法对空：伤害转移到防御者玩家」里",
+          "note": "注意：飞行规则只检查 `飞行`（battle_base_scene.py:1344-1345），带 `对空` 但不带 `飞行` 的卡没有任何对空收益。PLAN 第 4.3 节明确要求不擅自加入未实现对空技能。"
+        }
+      ],
+      "description": "",
+      "status": "complete",
+      "art": {
+        "artId": "card/s/021",
         "sourcePresent": true
       }
     }

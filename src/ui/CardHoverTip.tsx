@@ -69,5 +69,5 @@ export function CardHoverTip({ target }: { readonly target: CardTipTarget }) {
       </div>
     </div></div>
     <span className="cardtip__orb-mount" aria-hidden="true"><CardTipOrb color={color} /></span>
-  </div>, document.body);
+  </div>, target.ownerElement?.closest('dialog[open]') ?? document.body);
 }

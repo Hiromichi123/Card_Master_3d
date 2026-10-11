@@ -24,7 +24,7 @@ import {
  *
  * **移植自** `D:\Github\Chessboard-three.js`（MIT）的
  * `src/render/realtime/mapEffects.js`。原项目的五张战场各有各的天气：
- * 草地会摇、荒原浮尘、火山呼吸着余烬与热气、雪原落雪。
+ * 丰收花粉浮动、火山呼吸着余烬与热气、冰原落雪；草叶摇曳的通用实现仍可复用。
  *
  * 三条设计约束一并保留：
  *
@@ -72,13 +72,6 @@ type WeatherSpec = ParticleSpec | GrassSpec;
  * 「同一场对局，没有天气」。这与原项目的划分一致。
  */
 export const TABLE_WEATHER: Readonly<Record<string, WeatherSpec>> = Object.freeze({
-  grass: {
-    kind: 'grass',
-    blades: { low: 1, medium: 2, high: 3 },
-    tint: 0x7fbf6a,
-    swayRadians: 0.014,
-    swaySeconds: 5.2,
-  },
   wasteland: {
     kind: 'dust',
     count: { low: 40, medium: 90, high: 150 },

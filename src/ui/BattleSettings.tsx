@@ -1,5 +1,6 @@
 import { useState } from 'react';
 
+import { useBattleVisuals } from '../rendering/battle/battleVisuals';
 import { CAMERA_MODES } from '../rendering/battle/cameraModes';
 import { QUALITY_LABELS, type QualityTier } from '../rendering/quality';
 import { TABLE_THEMES } from '../rendering/table/themes';
@@ -43,7 +44,9 @@ export interface BattleSettingsProps {
 export function BattleSettings({ defaultOpen = false, columns = 1 }: BattleSettingsProps) {
   const [open, setOpen] = useState(defaultOpen);
 
-  const quality = useSettingsStore((state) => state.quality);
+  const visuals = useBattleVisuals();
+  const quality = visuals.quality;
+  const fixedQuality = visuals.theme.geometry === 'abyss';
   const setQuality = useSettingsStore((state) => state.setQuality);
   const speed = useSettingsStore((state) => state.presentationSpeed);
   const setSpeed = useSettingsStore((state) => state.setPresentationSpeed);
@@ -51,7 +54,7 @@ export function BattleSettings({ defaultOpen = false, columns = 1 }: BattleSetti
   const setCameraShake = useSettingsStore((state) => state.setCameraShake);
   const reduceMotion = useSettingsStore((state) => state.reduceMotion);
   const setReduceMotion = useSettingsStore((state) => state.setReduceMotion);
-  const tableThemeId = useSettingsStore((state) => state.tableThemeId);
+  const tableThemeId = visuals.theme.id;
   const setTableTheme = useSettingsStore((state) => state.setTableTheme);
   const cameraModeId = useSettingsStore((state) => state.cameraModeId);
   const setCameraMode = useSettingsStore((state) => state.setCameraMode);
@@ -78,6 +81,7 @@ export function BattleSettings({ defaultOpen = false, columns = 1 }: BattleSetti
               className="battle-settings__select"
               aria-label="战斗台面"
               value={tableThemeId}
+              disabled={visuals.lockedTheme}
               onChange={(event) => setTableTheme(event.target.value)}
             >
               {TABLE_THEMES.map((theme) => (
@@ -115,6 +119,8 @@ export function BattleSettings({ defaultOpen = false, columns = 1 }: BattleSetti
                     tier === quality ? 'battle-settings__seg battle-settings__seg--on' : 'battle-settings__seg'
                   }
                   onClick={() => setQuality(tier)}
+                  disabled={fixedQuality}
+                  title={fixedQuality ? '深渊盘面固定最高画质' : undefined}
                 >
                   {QUALITY_LABELS[tier]}
                 </button>

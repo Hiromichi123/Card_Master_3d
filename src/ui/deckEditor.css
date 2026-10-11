@@ -2,6 +2,22 @@
 @layer legacy {
 /* Gold frame vocabulary, scoped to deck construction only. */
 .deckedit { --deck-gold: #d6b878; --deck-gold-dim: rgba(212, 179, 108, .34); padding: 14px 18px; }
+.deckedit__toolbar { position: relative; z-index: 1; display: flex; align-items: center; flex-wrap: wrap; gap: 10px 16px; flex: none; }
+.deckedit__tabs { display: flex; flex-wrap: wrap; gap: 6px; }
+.deckedit .deckedit__tab { display: flex; align-items: center; gap: 8px; min-height: 38px; padding: 8px 16px; border: 1px solid #c9a96955; border-radius: 8px; font: inherit; font-size: 13px; color: #dfd1b6; background: #111b25e8; cursor: pointer; }
+.deckedit .deckedit__tab[aria-selected="true"] { color: #fff0cb; border-color: #e2bf76; background: linear-gradient(120deg, #735d3999, #29352de8); box-shadow: inset 0 1px #ffe5aa22; }
+.deckedit .deckedit__tab:hover:not(:disabled) { border-color: #f0d395; }
+.deckedit .deckedit__tab:focus-visible, .deckedit__other select:focus-visible { outline: 2px solid #f0d395; outline-offset: 2px; }
+.deckedit .deckedit__tab:disabled { cursor: default; opacity: .55; }
+.deckedit__tab small { font-size: 10px; color: #b9d8bb; white-space: nowrap; }
+.deckedit__other { display: flex; align-items: center; gap: 6px; color: #c0b69f; font-size: 11px; }
+.deckedit__other select { max-width: 180px; padding: 6px; border: 1px solid #c9a96955; border-radius: 6px; color: #e8d5ae; background: #111b25; font: inherit; }
+.deckedit__nav { display: flex; flex-wrap: wrap; gap: 8px; margin-left: auto; }
+.deckedit__save { position: relative; z-index: 1; display: flex; align-items: center; flex-wrap: wrap; gap: 10px; min-height: 26px; flex: none; color: #b9c8b8; font-size: 11px; }
+.deckedit__save .btn { padding: 3px 10px; }
+.deckedit__completion { flex: none; margin: 0; color: #c6cbd1; font-size: 12px; line-height: 1.5; }
+.deckedit__completion strong { color: #f1e5cc; font-size: 15px; font-variant-numeric: tabular-nums; }
+.deckedit .deckedit__actions { display: flex; flex-wrap: wrap; gap: 6px; }
 .deckedit .deckedit__body {
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   grid-template-rows: minmax(0, 1fr);

@@ -1,0 +1,38 @@
+@layer controls {
+  .abyss-countdown { color: #f5d2c6; padding: 12px 18px; border-left: 2px solid #bb5265; background: linear-gradient(90deg, #1a0d1ee8, #140e1966); width: fit-content; }
+  .abyss-countdown > div { display: flex; align-items: baseline; gap: 14px; }
+  .abyss-countdown span { font-size: 13px; color: #d6a9ae; }
+  .abyss-countdown time { font-size: 21px; font-variant-numeric: tabular-nums; letter-spacing: .04em; white-space: nowrap; }
+  .abyss-countdown small { display: block; margin-top: 5px; font-size: 11px; color: #b8a1b6; }
+  .activity-abyss-countdown { position: absolute; left: calc(40 * var(--ui)); top: calc(294 * var(--ui)); padding: calc(12 * var(--ui)) calc(18 * var(--ui)); }
+  .activity-abyss-countdown > div { gap: calc(20 * var(--ui)); }
+  .activity-abyss-countdown span { font-size: calc(21 * var(--ui)); }
+  .activity-abyss-countdown time { font-size: calc(29 * var(--ui)); }
+  .activity-abyss-countdown small { margin-top: calc(4 * var(--ui)); font-size: calc(18 * var(--ui)); }
+  .menu--activity-abyss .activity-wheel { top: calc(420 * var(--ui)); }
+  .abyss-new { display: inline-block; padding: .18em .4em; border: 1px solid #e9a29a; border-radius: .22em; background: #9f243e; color: #fff2d3; font-size: .42em; font-weight: 800; letter-spacing: .08em; line-height: 1.15; vertical-align: middle; }
+  .menu .activity-wheel__option[data-wheel-id="abyss"]::before { background: #d47b89; }
+  .menu .activity-wheel__option[data-wheel-id="abyss"]::after { background: linear-gradient(110deg, #7d223cec, #360f22ed); }
+  .menu .activity-wheel__option[data-wheel-id="abyss"] .wheel__name { color: #ffe9dc; }
+  .menu .activity-wheel__option[data-wheel-id="abyss"].wheel__card--on { filter: drop-shadow(0 0 24px #d63f6460); animation-name: abyss-entry-breathe; }
+  .menu .activity-wheel__option[data-wheel-id="abyss"].wheel__card--on::before { background: #ffd0bd; }
+  .menu .activity-wheel__option[data-wheel-id="abyss"].wheel__card--on::after { background: linear-gradient(110deg, #be3652, #60172c); }
+  .menu .activity-wheel__option[data-wheel-id="abyss"] .abyss-new { position: relative; z-index: 1; margin-left: calc(12 * var(--ui)); font-size: calc(20 * var(--ui)); }
+  .activity-detail__title > .abyss-new { margin-left: calc(20 * var(--ui)); }
+  .hub-abyss-entry { position: absolute; left: 18%; top: 34%; width: 29%; min-height: calc(250 * var(--ui)); display: flex; align-items: center; gap: calc(18 * var(--ui)); padding: calc(20 * var(--ui)); color: #f7ded3; border: 1px solid #d78e8999; border-radius: calc(16 * var(--ui)); background: linear-gradient(115deg, #371022e8, #130e21b8 76%); box-shadow: inset 0 0 calc(50 * var(--ui)) #a6425530, 0 calc(12 * var(--ui)) calc(40 * var(--ui)) #03010980; cursor: pointer; z-index: 3; text-align: left; font-family: inherit; animation: abyss-entry-breathe 6s ease-in-out infinite; }
+  .hub-abyss-entry:hover { border-color: #ffe0bd; background: linear-gradient(115deg, #572139ef, #1c142ade 76%); }
+  .hub-abyss-entry:focus-visible { outline: 2px solid #ffcdac; outline-offset: 5px; }
+  .abyss-logo { width: calc(180 * var(--ui)); height: calc(180 * var(--ui)); flex: 0 0 auto; filter: drop-shadow(0 0 calc(16 * var(--ui)) #e0798450); }
+  .hub-abyss-entry__copy { display: flex; flex-direction: column; gap: calc(14 * var(--ui)); }
+  .hub-abyss-entry__copy > small { color: #d59a9e; font-size: calc(18 * var(--ui)); letter-spacing: .3em; }
+  .hub-abyss-entry__copy > strong { font-size: calc(45 * var(--ui)); font-weight: 600; letter-spacing: .08em; white-space: nowrap; }
+  .hub-abyss-entry__copy > span { font-size: calc(22 * var(--ui)); color: #c2a5b3; }
+  .hub-abyss-entry__arrow { margin-left: auto; align-self: flex-start; color: #ddad91; font-size: calc(33 * var(--ui)); }
+  .hub-abyss-entry[data-still="true"], .menu .activity-wheel.wheel--still .activity-wheel__option[data-wheel-id="abyss"].wheel__card--on { animation: none; }
+  .poster__caption { position: absolute; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; gap: calc(10 * var(--ui)); padding: calc(55 * var(--ui)) calc(35 * var(--ui)) calc(32 * var(--ui)); background: linear-gradient(transparent, #120816e6); color: #ffe5d2; pointer-events: none; }
+  .poster__caption > strong { display: flex; align-items: center; gap: calc(18 * var(--ui)); font-size: calc(58 * var(--ui)); letter-spacing: .16em; }
+  .poster__caption > span { font-size: calc(23 * var(--ui)); letter-spacing: .1em; color: #d7b7c9; }
+  .poster__caption b { font-size: calc(21 * var(--ui)); letter-spacing: .06em; padding: .15em .4em; border: 1px solid #e8ac96; border-radius: 3px; background: #8e2544; }
+  @keyframes abyss-entry-breathe { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(1.1); } }
+  @media (prefers-reduced-motion: reduce) { .hub-abyss-entry, .menu .activity-wheel__option[data-wheel-id="abyss"].wheel__card--on { animation: none; } }
+}

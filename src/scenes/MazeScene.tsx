@@ -1,12 +1,10 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 
-import { cardById, cardDatabase } from '../data';
+import { cardById } from '../data';
 import { backgroundUrl, cardFaceUrl } from '../data/assets';
 import { createRng, seedFrom } from '../domain/battle/rng';
 import {
-  MAZE_EVENT_RARITY,
   MAZE_FLOOR_1,
-  applyMove,
   canMoveTo,
   exploredRatio,
   generateMaze,
@@ -14,17 +12,18 @@ import {
   mazeDeckSize,
   mazeRngFor,
   mazeRewardPreview,
+  mazeShopBatchKey,
   newMazeRun,
   previewStrength,
-  withShopState,
 } from '../domain/progression/maze';
 import type { MazeNode } from '../domain/progression/maze';
 import { activeDeckOf } from '../domain/progression/profile';
 import type { MazeRunState, ProfileState } from '../domain/progression/types';
-import type { ProfileStore } from '../state/createProfileStore';
+import type { EconomicResult, ProfileStore } from '../state/createProfileStore';
 import { pushToast } from '../state/toastStore';
 import { PlayerStatus } from '../ui/PlayerStatus';
 import { DesignStage } from '../ui/DesignStage';
+import { MazeNodeIcon } from '../ui/MazeNodeIcon';
 import {
   LEGEND_ORDER,
   MAZE_FOCUS,
@@ -43,18 +42,19 @@ import {
   withAlpha,
 } from './mazeLayout';
 import type { GridPoint } from './mazeLayout';
-import { mazeShopStock, planMazeLaunch, planMazePurchase } from './mazeFlow';
+import { mazeShopStock, mazeEventCards, planMazeEnter, planMazeMove, planMazeReset, planMazeLaunch, planMazePurchase, planMazeRefresh } from './mazeFlow';
+import { mazeProgressToken, mazeResetRemaining } from '../domain/progression/mazeProgress';
 import type { MazeLaunch, MazeShopSlot } from './mazeFlow';
 import type { RouteId } from '../app/routes';
 
 /**
- * 迷宫第一层。1:1 照旧版 `scenes/activity/maze_scene.py`：
+ * 世界树迷宫第一层。保留既有探索规则与倾斜地图：
  *
- * - 背景 `bg/activity`，标题「迷宫挑战·第一层」@8%、副标题 @13%，都在屏幕中线上；
+ * - 背景 `bg/activity`，标题「世界树迷宫·第一层」与副标题位于屏幕中线上；
  * - 地图是一张**倾斜的平面**：每个节点是一块带厚度的方片，
  *   连线在平面内，节点名字与玩家光球画在**屏幕空间**（跟着平面一起算投影）；
  * - 左上货币与等级、其下图例；左下「清空探索记录」、右下「返回活动大厅」；
- * - 右侧 (72%, 10%, 24% × 80%) 是详情栏（点中的节点 / 楼层商店）。
+ * - 右侧详情 / 商店共用可收起侧栏，默认收起，只有手动按钮控制可见性。
  *
  * ## 与旧版有意不同的三处
  *
@@ -68,7 +68,7 @@ import type { RouteId } from '../app/routes';
  *
  * 交互照旧版：**两次点击确认**——第一次点相邻节点看详情，再点同一个才出发；
  * 点到不可达的节点只是取消选中，不给提示（旧版也是这样）。
- * 到达后按节点类型分流：战斗节点直接开打，补给节点开楼层商店，入口什么都不做。
+ * 到达后按类型分流：战斗节点开打，补给节点准备货架但不弹出侧栏，入口不触发事件。
  */
 export interface MazeSceneProps {
   readonly profile: ProfileState;
@@ -101,22 +101,18 @@ const ORB = projectToScreen({ x: 0, y: 0, z: ORB_HEIGHT }, { x: 0, y: 0 });
 
 export function MazeScene({ profile, store, onNavigate, onLaunch }: MazeSceneProps) {
   const floorRun = profile.mazeRun?.floorKey === MAZE_FLOOR_1 ? profile.mazeRun : null;
-  const version = floorRun?.version ?? 1;
+  const [run, setRun] = useState<MazeRunState>(() => floorRun ?? newMazeRun(
+    generateMaze(mazeRngFor(MAZE_FLOOR_1, 1)), MAZE_FLOOR_1, 1,
+  ));
+  const version = run.version;
   const map = useMemo(() => generateMaze(mazeRngFor(MAZE_FLOOR_1, version)), [version]);
   const nodeById = useMemo(() => new Map(map.nodes.map((node) => [node.id, node])), [map]);
-
-  /**
-   * 屏内的 run 状态。
-   *
-   * **位置与探索以这里为准**（走一步就立刻改，不等 300ms 的防抖落盘），
-   * **货架售罄以存档为准**（购买是事务，落盘后 `mazeRun.shopByNode` 才是权威）——
-   * 两者在下面 `shopRun` 里拼起来。只用 `profile.mazeRun` 会让镜头滞后，
-   * 只用屏内状态会让刚买的东西还能再买一次。
-   */
-  const [run, setRun] = useState<MazeRunState>(
-    () => floorRun ?? newMazeRun(map, MAZE_FLOOR_1, version),
-  );
-  const shopRun: MazeRunState = floorRun ? { ...run, shopByNode: floorRun.shopByNode } : run;
+  const snapshot = useSyncExternalStore(store.subscribe, store.getSnapshot, store.getSnapshot);
+  const savedRun = snapshot.profile?.mazeRun ?? floorRun;
+  // 购买与刷新只更新 store；同一轮货架使用最新已落盘状态。
+  const shopRun: MazeRunState = savedRun?.floorKey === run.floorKey && savedRun.version === run.version
+    ? { ...run, shopByNode: { ...run.shopByNode, ...savedRun.shopByNode } }
+    : run;
 
   const [camera, setCamera] = useState<GridPoint>(() => {
     const node = nodeById.get(run.playerNodeId) ?? map.nodes[map.entryId];
@@ -127,27 +123,79 @@ export function MazeScene({ profile, store, onNavigate, onLaunch }: MazeScenePro
     readonly to: GridPoint;
     readonly targetId: number;
     readonly start: number;
+    readonly operationId: string;
+    readonly expectedToken: string;
   } | null>(null);
   const [selected, setSelected] = useState<number | null>(null);
   const [hovered, setHovered] = useState<number | null>(null);
-  const [shopNode, setShopNode] = useState<number | null>(null);
+  const [shopNode, setShopNode] = useState<number | null>(() =>
+    nodeById.get(run.playerNodeId)?.type === 'supply' ? run.playerNodeId : null,
+  );
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [buying, setBuying] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const economicLock = useRef(false);
+  const [saving, setSaving] = useState(true);
+  const [ready, setReady] = useState(false);
+  const [today, setToday] = useState(() => store.todayKey());
+  const busy = snapshot.busy || buying !== null || refreshing || saving || !ready;
   const launchSeq = useRef(0);
+  const mounted = useRef(true);
+  const initTicket = useRef(0);
+  const initialization = useRef<Promise<EconomicResult<{ run: MazeRunState; rewardCardIds: readonly string[] }>> | null>(null);
+  const activeProfile = snapshot.profile ?? profile;
+  const progress = activeProfile.mazeProgress;
+  const resetRemaining = mazeResetRemaining(progress, today);
 
   // `run.playerNodeId` 一定在图里（位置只由 `applyMove` 改，目标来自这张图）；
   // 落盘值被外部改坏时退回入口，别让整屏炸掉
   const playerNode = nodeById.get(run.playerNodeId) ?? map.nodes[map.entryId]!;
   const explored = useMemo(() => new Set(run.exploredNodeIds), [run.exploredNodeIds]);
-  const bossCleared = isMazeCleared(profile.settledBattleIds, run.floorKey, run.version);
+  const bossCleared = isMazeCleared(activeProfile.settledBattleIds, run.floorKey, run.version);
 
-  // 第一次进来时把初始 run 落盘（旧版进场景也会建那个 json）
-  useEffect(() => {
-    if (!floorRun) {
-      store.saveMazeRun(run);
+  const reportRewards = (cards: readonly string[]): void => {
+    for (const cardId of cards) pushToast(`探索保底获得：${cardById.get(cardId)?.name ?? cardId}`, 'info');
+  };
+  const restoreRun = (next: MazeRunState): void => {
+    const nextMap = generateMaze(mazeRngFor(next.floorKey, next.version));
+    setRun(next);
+    setCamera(projectNode(nextMap.nodes[next.playerNodeId]!.grid));
+    setSelected(null);
+    setHovered(null);
+    setShopNode(nextMap.nodes[next.playerNodeId]?.type === 'supply' ? next.playerNodeId : null);
+  };
+  const initialize = async (): Promise<void> => {
+    const ticket = ++initTicket.current;
+    setSaving(true);
+    // StrictMode effect重放共用同一笔提交，不重复初始化或补发。
+    initialization.current ??= store.commitEconomic(current => planMazeEnter({
+      profile: current, operationId: store.nextOperationId(),
+    }));
+    const result = await initialization.current;
+    if (!mounted.current || ticket !== initTicket.current) return;
+    if (result.ok) {
+      restoreRun(result.view.run);
+      reportRewards(result.view.rewardCardIds);
+      setReady(true);
+    } else {
+      initialization.current = null;
+      pushToast(result.message, 'error');
     }
-    // 只在挂载时做一次：之后每次移动都会自己写
+    setSaving(false);
+  };
+  useEffect(() => {
+    mounted.current = true;
+    void initialize();
+    return () => { mounted.current = false; };
+    // 首次进入使用受控事务，之后移动和重开各自原子保存。
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  useEffect(() => {
+    const update = (): void => setToday(store.todayKey());
+    const timer = window.setInterval(update, 30_000);
+    document.addEventListener('visibilitychange', update);
+    return () => { window.clearInterval(timer); document.removeEventListener('visibilitychange', update); };
+  }, [store]);
 
   /** 移动动画：线性插值、每帧把镜头拉到插值点（旧版 `update` 里就是这么做的）。 */
   useEffect(() => {
@@ -162,8 +210,7 @@ export function MazeScene({ profile, store, onNavigate, onLaunch }: MazeScenePro
         frame = requestAnimationFrame(step);
         return;
       }
-      setMove(null);
-      arrive(move.targetId);
+      void arrive(move.targetId, move.expectedToken, move.operationId);
     };
     frame = requestAnimationFrame(step);
     return () => cancelAnimationFrame(frame);
@@ -171,37 +218,46 @@ export function MazeScene({ profile, store, onNavigate, onLaunch }: MazeScenePro
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [move]);
 
-  /** 落地：改位置、并入探索集、写盘，然后按节点类型分流。 */
-  const arrive = (nodeId: number): void => {
-    const next = applyMove(map, run, nodeId);
-    const node = nodeById.get(nodeId);
-    if (node?.type === 'supply') {
-      const withShop = withShopState(next, nodeId);
-      setRun(withShop);
-      store.saveMazeRun(withShop);
-      setShopNode(nodeId);
-      return;
-    }
-    setRun(next);
-    store.saveMazeRun(next);
-    setSelected(null);
-    if (node && node.type !== 'entry') {
-      launchBattle(node, next);
+  /** 到达只提交一次：位置、探索计数和保底卡全部写入成功后才开战。 */
+  const arrive = async (nodeId: number, expectedToken: string, operationId: string): Promise<void> => {
+    if (economicLock.current || !mounted.current) return;
+    economicLock.current = true;
+    setSaving(true);
+    try {
+      const result = await store.commitEconomic(current => planMazeMove({
+        profile: current, nodeId, expectedToken, operationId,
+      }));
+      if (!mounted.current) return;
+      const currentProfile = store.getSnapshot().profile!;
+      if (!result.ok) {
+        if (currentProfile.mazeRun) restoreRun(currentProfile.mazeRun);
+        pushToast(result.message, 'error');
+        return;
+      }
+      restoreRun(result.view.run);
+      reportRewards(result.view.rewardCardIds);
+      const node = nodeById.get(nodeId);
+      if (node && node.type !== 'entry' && node.type !== 'supply') {
+        launchBattle(node, result.view.run, currentProfile);
+      }
+    } finally {
+      economicLock.current = false;
+      if (mounted.current) { setSaving(false); setMove(null); }
     }
   };
 
   /** 开打：把这一局的参数交给 `App`（与战役走同一条管道）。 */
-  const launchBattle = (node: MazeNode, currentRun: MazeRunState): void => {
-    if (node.type === 'boss' && isMazeCleared(profile.settledBattleIds, currentRun.floorKey, currentRun.version)) {
+  const launchBattle = (node: MazeNode, currentRun: MazeRunState, currentProfile: ProfileState): void => {
+    if (node.type === 'boss' && isMazeCleared(currentProfile.settledBattleIds, currentRun.floorKey, currentRun.version)) {
       pushToast('本层的 Boss 奖励已经领过，再打不会再发', 'info');
     }
     launchSeq.current += 1;
     const result = planMazeLaunch({
-      profile,
+      profile: currentProfile,
       run: currentRun,
       explored: exploredRatio(map, currentRun),
       node,
-      playerDeck: activeDeckOf(profile)?.cardIds ?? [],
+      playerDeck: activeDeckOf(currentProfile)?.cardIds ?? [],
       launchSeq: launchSeq.current,
     });
     if ('rejected' in result) {
@@ -215,16 +271,19 @@ export function MazeScene({ profile, store, onNavigate, onLaunch }: MazeScenePro
   };
 
   const clickNode = (nodeId: number): void => {
-    if (move) {
+    if (move || busy || economicLock.current || store.getSnapshot().busy) return;
+    if (nodeId === run.playerNodeId) {
+      setSelected(null);
+      if (playerNode.type === 'supply') setShopNode(nodeId);
       return;
     }
-    if (nodeId === run.playerNodeId || !canMoveTo(map, run.playerNodeId, nodeId)) {
-      // 旧版：点自己、点不可达节点都只是取消选中，不给提示
+    if (!canMoveTo(map, run.playerNodeId, nodeId)) {
       setSelected(null);
       return;
     }
     if (selected !== nodeId) {
       setSelected(nodeId);
+      setShopNode(null);
       return;
     }
     const target = nodeById.get(nodeId);
@@ -236,24 +295,39 @@ export function MazeScene({ profile, store, onNavigate, onLaunch }: MazeScenePro
       to: projectNode(target.grid),
       targetId: nodeId,
       start: performance.now(),
+      operationId: store.nextOperationId(),
+      expectedToken: mazeProgressToken(store.getSnapshot().profile!),
     });
   };
 
   /** 「清空探索记录」= 开新一轮（生成算法版本不变、`version + 1` 换一张图）。 */
-  const resetRun = (): void => {
-    const next = newMazeRun(generateMaze(mazeRngFor(MAZE_FLOOR_1, version + 1)), MAZE_FLOOR_1, version + 1);
-    setRun(next);
-    store.saveMazeRun(next);
-    setSelected(null);
-    setShopNode(null);
-    pushToast('已开新一轮，地图与探索记录都是新的', 'info');
+  const resetRun = async (): Promise<void> => {
+    if (move || busy || economicLock.current || store.getSnapshot().busy) return;
+    economicLock.current = true;
+    setSaving(true);
+    const operationId = store.nextOperationId();
+    const expectedToken = mazeProgressToken(store.getSnapshot().profile!);
+    try {
+      const result = await store.commitEconomic(current => planMazeReset({
+        profile: current, dayKey: store.todayKey(), expectedToken, operationId,
+      }));
+      if (!mounted.current) return;
+      setToday(store.todayKey());
+      if (!result.ok) { pushToast(result.message, 'error'); return; }
+      restoreRun(result.view.run);
+      reportRewards(result.view.rewardCardIds);
+      pushToast('已清空本轮探索，本周剩余 0/1；保底进度已保留', 'info');
+    } finally {
+      economicLock.current = false;
+      if (mounted.current) setSaving(false);
+    }
   };
 
   const buy = async (nodeId: number, slot: MazeShopSlot): Promise<void> => {
-    if (buying || slot.entry.soldOut) {
-      return;
-    }
+    if (move || busy || economicLock.current || store.getSnapshot().busy || slot.entry.soldOut) return;
+    economicLock.current = true;
     const operationId = store.nextOperationId();
+    const expectedBatch = mazeShopBatchKey(shopRun, nodeId);
     setBuying(slot.entry.entryId);
     try {
       const outcome = await store.commitEconomic((current) =>
@@ -261,6 +335,7 @@ export function MazeScene({ profile, store, onNavigate, onLaunch }: MazeScenePro
           profile: current,
           nodeId,
           entry: slot.entry,
+          expectedBatch,
           operationId,
           // 迷宫货架没有礼包（`kind` 恒为 `card`），这个随机源用不上，给一条确定的
           rng: createRng(seedFrom(operationId)),
@@ -270,7 +345,25 @@ export function MazeScene({ profile, store, onNavigate, onLaunch }: MazeScenePro
         pushToast(outcome.message, 'error');
       }
     } finally {
+      economicLock.current = false;
       setBuying(null);
+    }
+  };
+
+  const refresh = async (nodeId: number): Promise<void> => {
+    if (move || busy || economicLock.current || store.getSnapshot().busy) return;
+    economicLock.current = true;
+    setRefreshing(true);
+    const operationId = store.nextOperationId();
+    const expectedBatch = mazeShopBatchKey(shopRun, nodeId);
+    try {
+      const outcome = await store.commitEconomic((current) => planMazeRefresh({
+        profile: current, nodeId, expectedBatch, operationId,
+      }));
+      if (!outcome.ok) pushToast(outcome.message, 'error');
+    } finally {
+      economicLock.current = false;
+      setRefreshing(false);
     }
   };
 
@@ -282,11 +375,22 @@ export function MazeScene({ profile, store, onNavigate, onLaunch }: MazeScenePro
 
   return (
     <DesignStage backgroundUrl={backgroundUrl('bg/activity')}>
-      <div className="maze__status">
-        <PlayerStatus level={profile.level} currencies={profile.currencies} />
+      <div className="maze__left-rail">
+        <div className="maze__status">
+          <PlayerStatus level={activeProfile.level} currencies={activeProfile.currencies} />
+        </div>
+        <ul className="maze__legend" aria-label="图例">
+          {LEGEND_ORDER.map((type) => (
+            <li key={type}>
+              <span className="maze__legend-icon" style={{ color: NODE_STYLE[type].color }}><MazeNodeIcon type={type} /></span>
+              {NODE_STYLE[type].label}
+            </li>
+          ))}
+        </ul>
+        <EventShowcase />
       </div>
 
-      <h1 className="maze__title">迷宫挑战·第一层</h1>
+      <h1 className="maze__title">世界树迷宫·第一层</h1>
       <p className="maze__subtitle">
         点击相邻节点前进，再点一次确认；探索记录会自动保存
         {bossCleared && <b className="maze__cleared">本层已通关</b>}
@@ -354,7 +458,8 @@ export function MazeScene({ profile, store, onNavigate, onLaunch }: MazeScenePro
                 selected={selected === node.id}
                 hovered={hovered === node.id}
                 current={node.id === run.playerNodeId}
-                reachable={!move && canMoveTo(map, run.playerNodeId, node.id)}
+                reachable={!move && !busy && canMoveTo(map, run.playerNodeId, node.id)}
+                disabled={!!move || busy}
                 done={node.type === 'boss' && bossCleared}
                 onHover={setHovered}
                 onClick={clickNode}
@@ -387,19 +492,15 @@ export function MazeScene({ profile, store, onNavigate, onLaunch }: MazeScenePro
         </div>
       </div>
 
-      <ul className="maze__legend" aria-label="图例">
-        {LEGEND_ORDER.map((type) => (
-          <li key={type}>
-            <i style={{ background: withAlpha(NODE_STYLE[type].color, NODE_STYLE[type].alpha) }} />
-            {NODE_STYLE[type].label}
-          </li>
-        ))}
-      </ul>
-
-      <button type="button" className="btn maze__reset" onClick={resetRun}>
-        清空探索记录
+      <button type="button" className="btn maze__reset" disabled={!!move || busy || resetRemaining === 0}
+        title="每周一恢复1次，清空不影响活动卡保底进度" onClick={() => void resetRun()}>
+        清空探索记录 · 本周剩余 {resetRemaining}/1
+        <small>{resetRemaining === 0 ? '下周一恢复 · 保底进度保留' : '每周一次 · 保底进度保留'}</small>
       </button>
-      <button type="button" className="maze__back" onClick={() => onNavigate('activity')}>
+      {!ready && !saving && (
+        <button type="button" className="btn maze__retry" onClick={() => void initialize()}>重新载入迷宫</button>
+      )}
+      <button type="button" className="maze__back" disabled={!!move || snapshot.busy || saving || buying !== null || refreshing} onClick={() => onNavigate('activity')}>
         返回活动大厅
       </button>
 
@@ -408,23 +509,45 @@ export function MazeScene({ profile, store, onNavigate, onLaunch }: MazeScenePro
         {map.nodes.length} 个节点
       </p>
 
-      {shopNode === null ? (
-        <NodeDetail
-          node={selected === null ? null : (nodeById.get(selected) ?? null)}
-          explored={selected !== null && explored.has(selected)}
-          exploredRatioValue={exploredRatio(map, run)}
-        />
-      ) : (
-        <FloorShop
-          run={shopRun}
-          nodeId={shopNode}
-          buying={buying}
-          onBuy={(slot) => void buy(shopNode, slot)}
-          onClose={() => setShopNode(null)}
-        />
-      )}
+      <aside className="maze__pity" aria-label="活动卡保底">
+        <div className="maze__pity-heading">
+          <strong>活动卡保底</strong><span>{Math.min(progress.explorationCount, 100)} / 100</span>
+        </div>
+        <div className="maze__pity-bar" role="progressbar" aria-label="探索保底进度"
+          aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.min(progress.explorationCount, 100)}>
+          <span style={{ width: `${Math.min(progress.explorationCount, 100)}%` }} />
+        </div>
+        <p>每首次探索一格 +1，满100随机获得一张当期活动卡。</p>
+        <p>往返不计 · 跨周和清空保留</p>
+        {progress.explorationCount >= 100 && <p className="maze__pity-pending">已累计 {progress.explorationCount} 次，等待活动卡池恢复后补发。</p>}
+        {progress.lastRewardCardId && <p className="maze__pity-reward">最近获得：{cardById.get(progress.lastRewardCardId)?.name ?? progress.lastRewardCardId}</p>}
+      </aside>
 
-      <EventShowcase />
+      <button type="button" className="btn maze__sidebar-toggle"
+        aria-expanded={sidebarOpen} aria-controls="maze-sidebar"
+        onClick={() => setSidebarOpen((open) => !open)}>
+        {sidebarOpen ? '收起提示 ›' : shopNode !== null ? '‹ 打开商店' : '‹ 展开提示'}
+      </button>
+      <div id="maze-sidebar" className="maze__sidebar" hidden={!sidebarOpen}>
+        {sidebarOpen && (shopNode === null ? (
+          <NodeDetail
+            node={selected === null ? null : (nodeById.get(selected) ?? null)}
+            explored={selected !== null && explored.has(selected)}
+            exploredRatioValue={exploredRatio(map, run)}
+          />
+        ) : (
+          <FloorShop
+            run={shopRun}
+            nodeId={shopNode}
+            busy={busy || !!move}
+            refreshing={refreshing}
+            onBuy={(slot) => void buy(shopNode, slot)}
+            onRefresh={() => void refresh(shopNode)}
+            onClose={() => setSidebarOpen(false)}
+          />
+        ))}
+      </div>
+
     </DesignStage>
   );
 }
@@ -438,6 +561,7 @@ function MapTile({
   hovered,
   current,
   reachable,
+  disabled,
   done,
   onHover,
   onClick,
@@ -448,14 +572,9 @@ function MapTile({
   readonly selected: boolean;
   readonly hovered: boolean;
   readonly current: boolean;
-  /**
-   * 是不是「一步能到」。
-   *
-   * 旧版对可达节点**没有任何视觉区分**（只有连线可看，见 `mazeLayout` 的注释），
-   * 这里也一样不画高亮——但这个属性留着：浏览器用例要能确定地找到相邻节点，
-   * 否则只能靠反推地图生成结果，那种断言一改生成规则就碎。
-   */
+  /** 一步可达；样式和测试定位均使用此状态。 */
   readonly reachable: boolean;
+  readonly disabled: boolean;
   readonly done: boolean;
   readonly onHover: (id: number | null) => void;
   readonly onClick: (id: number) => void;
@@ -463,6 +582,8 @@ function MapTile({
   const style = NODE_STYLE[node.type];
   const front = frontFaceOf(style.color, style.alpha);
   const classes = ['maze__tile'];
+  if (explored) classes.push('maze__tile--explored');
+  if (reachable) classes.push('maze__tile--reachable');
   if (selected) {
     classes.push('maze__tile--selected');
   }
@@ -481,10 +602,13 @@ function MapTile({
       data-node-type={node.type}
       data-reachable={reachable ? 'true' : 'false'}
       data-current={current ? 'true' : 'false'}
-      aria-label={`${NODE_STYLE[node.type].label} 节点 #${node.id}`}
+      data-explored={explored ? 'true' : 'false'}
+      disabled={disabled}
+      aria-label={`${style.label} 节点 #${node.id} · ${explored ? '已探索' : '未探索'}${done ? ' · 已通关' : ''}`}
       style={{
         left: u(point.x),
         top: u(point.y),
+        ['--tile-accent' as string]: style.color,
         ['--tile-top' as string]: withAlpha(style.color, style.alpha),
         ['--tile-front' as string]: withAlpha(front.color, front.alpha),
       }}
@@ -497,6 +621,8 @@ function MapTile({
         {!explored && (
           <span className="maze__tile-veil" style={{ background: UNEXPLORED_VEIL }} aria-hidden="true" />
         )}
+        <span className="maze__tile-emblem"><MazeNodeIcon type={node.type} /></span>
+        {explored && <span className="maze__tile-complete" title="已探索"><MazeNodeIcon type="complete" /></span>}
         {done && <span className="maze__tile-done">已通关</span>}
       </span>
     </button>
@@ -526,7 +652,7 @@ function NodeDetail({
 
   return (
     <aside className="maze__detail" aria-label="节点详情" data-node-id={node.id}>
-      <h2 className="maze__detail-title">{style.label}</h2>
+      <h2 className="maze__detail-title"><MazeNodeIcon type={node.type} />{style.label}</h2>
       <p className="maze__detail-sub">节点 #{node.id}</p>
       <p className="maze__detail-line">
         类型：{style.label} · 状态：{explored ? '已探索' : '未探索'}
@@ -553,35 +679,46 @@ function NodeDetail({
   );
 }
 
-/** 楼层商店。旧版是单独一块屏（`floor_shop`）；这里做成同一屏的右侧面板。 */
+function priceText(price: MazeShopSlot['item']['price']): string {
+  return `${price.amount} ${price.currency === 'gold' ? '金币' : price.currency === 'crystal' ? '水晶' : '徽章'}`;
+}
+
+/** 楼层商店，与节点详情共用手动收展的侧栏。 */
 function FloorShop({
   run,
   nodeId,
-  buying,
+  busy,
+  refreshing,
   onBuy,
+  onRefresh,
   onClose,
 }: {
   readonly run: MazeRunState;
   readonly nodeId: number;
-  readonly buying: string | null;
+  readonly busy: boolean;
+  readonly refreshing: boolean;
   readonly onBuy: (slot: MazeShopSlot) => void;
+  readonly onRefresh: () => void;
   readonly onClose: () => void;
 }) {
   const stock = useMemo(() => mazeShopStock(run, nodeId), [run, nodeId]);
 
   return (
     <aside className="maze__detail maze__shop" aria-label="楼层商店" data-shop-node={nodeId}>
-      <h2 className="maze__detail-title">商店补给</h2>
-      <p className="maze__detail-sub">节点 #{nodeId}</p>
-      <p className="maze__detail-line">
-        这一个节点的货架是固定的（同一轮里进来看到的都是这批），售罄不会补货。
-      </p>
+      <h2 className="maze__detail-title"><MazeNodeIcon type="supply" />树荫商店</h2>
+      <p className="maze__detail-sub">补给点 #{nodeId} · 本批 {stock.length} 张卡牌</p>
+      <p className="maze__detail-line">每次刷新 3–5 张。八折 30% · 半价 15% · 1金币 5%，每张独立抽取，不叠加。</p>
+      <button type="button" className="btn maze__shop-refresh" disabled={busy} onClick={onRefresh}>
+        {refreshing ? '正在保存…' : '免费刷新'}
+      </button>
+      <p className="maze__shop-note">只有手动刷新才换货，离开后保留本批与售罄记录。</p>
       <ul className="maze__shop-list">
         {stock.map((slot) => {
           const card = cardById.get(slot.item.cardId);
           const face = cardFaceUrl(slot.item.cardId, 'thumbnail');
           return (
-            <li key={slot.entry.entryId} className="maze__shop-item" data-entry-id={slot.entry.entryId}>
+            <li key={slot.entry.entryId} className={`maze__shop-item${slot.entry.soldOut ? ' maze__shop-item--sold' : ''}`}
+              data-entry-id={slot.entry.entryId} data-discount={slot.item.discount}>
               <span
                 className="maze__shop-face"
                 data-card-id={slot.item.cardId}
@@ -591,17 +728,23 @@ function FloorShop({
               </span>
               <span className="maze__shop-info">
                 <b>{card?.name ?? slot.item.cardId}</b>
-                <em>{slot.item.label}</em>
+                <em>{slot.item.rarity} · {slot.item.label}</em>
+                {slot.item.discount !== 'none' && <>
+                  <span className={`maze__discount maze__discount--${slot.item.discount}`}>
+                    {slot.item.discount === 'twenty' ? '-20%' : slot.item.discount === 'half' ? '-50% · 半价' : '-99% · 1金币'}
+                  </span>
+                  <del className="maze__shop-original">{priceText(slot.item.originalPrice)}</del>
+                </>}
               </span>
               <button
                 type="button"
                 className="btn maze__shop-buy"
-                disabled={slot.entry.soldOut || buying !== null}
+                disabled={slot.entry.soldOut || busy}
                 onClick={() => onBuy(slot)}
               >
                 {slot.entry.soldOut
                   ? '已售罄'
-                  : `${slot.item.price.amount} ${slot.item.price.currency === 'gold' ? '金币' : slot.item.price.currency === 'crystal' ? '水晶' : '徽章'}`}
+                  : priceText(slot.item.price)}
               </button>
             </li>
           );
@@ -614,16 +757,9 @@ function FloorShop({
   );
 }
 
-/** 左下角的 `#elna` 卡展示位（旧版每 15 秒轮换一张）。悬停详情走全局的 `CardTipHost`。 */
+/** 图例下方的活动卡展示，每15秒轮换；与保底共用卡池，悬停详情走全局 CardTipHost。 */
 function EventShowcase() {
-  const cards = useMemo(
-    () =>
-      cardDatabase.definitions
-        .filter((card) => card.rarity === MAZE_EVENT_RARITY && card.status === 'complete')
-        .map((card) => card.cardId)
-        .sort(),
-    [],
-  );
+  const cards = useMemo(() => mazeEventCards(), []);
   const [index, setIndex] = useState(0);
 
   useEffect(() => {
@@ -640,8 +776,11 @@ function EventShowcase() {
     return null;
   }
   return (
-    <div className="maze__showcase" data-card-id={cardId} title="限时活动卡牌">
-      <img src={face} alt="" draggable={false} />
-    </div>
+    <section className="maze__showcase" aria-label="当期活动卡牌">
+      <h2>当期活动卡牌</h2>
+      <div className="maze__showcase-card" data-card-id={cardId}>
+        <img src={face} alt={cardById.get(cardId)?.name ?? cardId} draggable={false} />
+      </div>
+    </section>
   );
 }

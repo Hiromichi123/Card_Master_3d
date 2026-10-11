@@ -1,0 +1,125 @@
+.abyss-vortex {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.abyss-vortex__base {
+  position: absolute;
+  inset: 0;
+  opacity: 1;
+  transition: opacity var(--abyss-cloud-blend) ease-out;
+}
+
+/* ready只减弱大形体，持续旋转不因GPU首帧回调而消失。 */
+.abyss-vortex__base[data-softened="true"] { opacity: .68; }
+
+.abyss-vortex__image-plane {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.abyss-vortex__fallback-ring {
+  position: absolute;
+  left: var(--abyss-center-x);
+  top: var(--abyss-center-y);
+  width: var(--abyss-ring-width);
+  height: var(--abyss-ring-height);
+  transform: translate(-50%, -50%);
+  overflow: hidden;
+  mask-image: radial-gradient(ellipse closest-side, transparent var(--abyss-core-mask), #000 var(--abyss-core-edge), #000 84%, transparent 100%);
+  -webkit-mask-image: radial-gradient(ellipse closest-side, transparent var(--abyss-core-mask), #000 var(--abyss-core-edge), #000 84%, transparent 100%);
+}
+
+/* 只旋转原创渐变云片；不复制底图，也不对整屏做模糊或滤镜。 */
+.abyss-vortex__cloud {
+  position: absolute;
+  inset: 0;
+  opacity: .58;
+  background:
+    radial-gradient(ellipse 29% 12% at 30% 23%, #b7abc898, #57426680 46%, transparent 100%),
+    radial-gradient(ellipse 28% 14% at 71% 70%, #9b83ad98, #20162c99 55%, transparent 100%),
+    radial-gradient(ellipse 13% 30% at 17% 62%, #080510c2, #73568775 43%, transparent 100%),
+    radial-gradient(ellipse 14% 26% at 81% 34%, #b79dc082, #1e122988 55%, transparent 100%);
+  animation: abyss-cloud-orbit 38s linear infinite;
+}
+
+.abyss-vortex__cloud--1 {
+  inset: 4%;
+  opacity: .64;
+  animation-duration: 31s;
+  animation-delay: -11s;
+  animation-direction: reverse;
+}
+
+.abyss-vortex__cloud--2 {
+  inset: 10%;
+  opacity: .72;
+  animation-duration: 26s;
+  animation-delay: -19s;
+}
+
+.abyss-vortex__cloud--3 {
+  inset: 16%;
+  opacity: .78;
+  animation-duration: 21s;
+  animation-delay: -7s;
+  animation-direction: reverse;
+}
+
+.abyss-vortex[data-still="true"] .abyss-vortex__cloud,
+.abyss-vortex[data-active="false"] .abyss-vortex__cloud {
+  animation-play-state: paused;
+}
+
+.abyss-vortex[data-still="true"] .abyss-vortex__base { transition: none; }
+
+@keyframes abyss-cloud-orbit {
+  from { transform: rotate(0deg) scale(.94); }
+  50% { transform: rotate(180deg) scale(1.06); }
+  to { transform: rotate(360deg) scale(.94); }
+}
+
+.abyss-vortex__sparks {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  pointer-events: none;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.abyss-vortex__spark-orbit {
+  transform-box: view-box;
+  transform-origin: 50% 50%;
+  animation: abyss-spark-orbit 54s linear infinite;
+}
+
+.abyss-vortex__spark {
+  opacity: 0;
+  animation: abyss-spark-pulse var(--spark-period) linear var(--spark-delay) infinite both;
+}
+
+.abyss-vortex__spark-glow { stroke: #ffc83d; stroke-width: 3; stroke-opacity: .25; vector-effect: non-scaling-stroke; }
+.abyss-vortex__spark-core { stroke: #fff3a6; stroke-width: .75; stroke-opacity: .95; vector-effect: non-scaling-stroke; }
+
+.abyss-vortex[data-active="false"] .abyss-vortex__spark-orbit,
+.abyss-vortex[data-active="false"] .abyss-vortex__spark,
+.abyss-vortex[data-still="true"] .abyss-vortex__spark-orbit,
+.abyss-vortex[data-still="true"] .abyss-vortex__spark { animation-play-state: paused; }
+.abyss-vortex[data-still="true"] .abyss-vortex__sparks { display: none; }
+
+@keyframes abyss-spark-orbit { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+/* 周期的18%亮起一次，即540–900ms；错相延长余辉，不连续爆闪。 */
+@keyframes abyss-spark-pulse {
+  0%, 18%, 100% { opacity: 0; }
+  3% { opacity: .95; }
+  8% { opacity: .48; }
+  13% { opacity: .18; }
+}

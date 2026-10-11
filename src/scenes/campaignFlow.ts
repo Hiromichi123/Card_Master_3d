@@ -41,21 +41,12 @@ export interface ChapterInfo {
 }
 
 /**
- * 四章（三章十二关 + 空的第四章）。
- *
- * 章节海报用 `chapter_N_enter`（旧版 `chapter_config.py` 里就是这几张），
- * 关卡海报用 `N-M` ✓ 在 manifest 的 `poster` 下。
- *
- * **第 4 章「月之都」照样列在世界地图上**（2026-10-07 改）。旧版
- * `WORLD_CHAPTERS` 就一直有这一条：它 `stages` 是空的，海报与背景资源在旧项目里
- * **也不存在**（`assets/poster/` 只有 1–3 章、`assets/bg/` 同理），
- * 所以旧版画的是 `MapPoster` 的灰色占位块——不是「藏起来」。
- * 之前这里把它过滤掉了（清单当时的说法是「不构造新内容」），
- * 但那让地图与旧版对不上：旧版世界地图是四张海报，我们是三张。
- * 现在照旧版列出来，点进去是一张空章节地图（状态行仍然提示选关）。
+ * Six world chapters; the first three retain their twelve playable stages.
+ * The lunar island, ancient sea and central world tree have no playable stages.
+ * Poster and background IDs remain available for the existing chapter/stage views.
  */
 export function campaignChapters(): readonly ChapterInfo[] {
-  return stages.chapters.map((chapter) => ({
+  const chapters:ChapterInfo[]=stages.chapters.map((chapter) => ({
     id: chapter.id,
     name: chapter.name,
     posterId: `chapter_${chapter.id.split('_')[1] ?? '1'}_enter`,
@@ -71,6 +62,10 @@ export function campaignChapters(): readonly ChapterInfo[] {
       enemyDeck: decks.enemy[stage.id]?.cardIds ?? [],
     })),
   }));
+  return [...chapters,
+    {id:'chapter_5',name:'古海',posterId:'',backgroundType:'',stages:[]},
+    {id:'chapter_6',name:'世界树',posterId:'',backgroundType:'',stages:[]},
+  ];
 }
 
 /** 引擎要的定义表：只放这一局用得到的卡。 */

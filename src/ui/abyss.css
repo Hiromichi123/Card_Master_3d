@@ -1,0 +1,105 @@
+@layer controls {
+  .abyss-scene { position: fixed; inset: 0; z-index: 100; overflow: hidden; isolation: isolate; background: #000; color: #eee3e9; outline: none; }
+  .abyss-scene__previous, .abyss-scene__world, .abyss-scene__background, .abyss-scene__black, .abyss-scene__lightning, .abyss-scene__vignette { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+  .abyss-scene__previous { background-position: center; background-size: cover; }
+  .abyss-scene__world { visibility: hidden; }
+  .abyss-scene__world[data-visible="true"] { visibility: visible; }
+  .abyss-scene__background { object-fit: cover; object-position: center; }
+  .abyss-scene__vignette { background: radial-gradient(ellipse at center, transparent 30%, #02010765 100%); }
+  .abyss-scene__black { z-index: 2; background: #000; opacity: 1; }
+  .abyss-scene[data-phase="darkening"] .abyss-scene__black { animation: abyss-darken var(--abyss-darken-ms) ease-in-out forwards; }
+  .abyss-scene[data-phase="reveal"] .abyss-scene__black { animation: abyss-reveal var(--abyss-reveal-ms) ease-in-out forwards; }
+  .abyss-scene[data-visible="false"] * { animation-play-state: paused !important; }
+  .abyss-scene[data-phase="active"] .abyss-scene__black { opacity: 0; }
+  .abyss-scene__lightning { --flash: 0; z-index: 3; opacity: var(--flash); background: radial-gradient(ellipse at 52% 42%, #ecdcff66, #e8dbff8c 70%, #d7dbff77); mix-blend-mode: screen; }
+  .abyss-scene__lightning svg { width: 100%; height: 100%; filter: drop-shadow(0 0 7px #beabff) drop-shadow(0 0 20px #829be0); }
+  .abyss-scene__lightning path { stroke: #f3edff; stroke-width: 1.6; }
+  .abyss-scene__hud { position: absolute; inset: 0; z-index: 4; pointer-events: none; }
+  .abyss-scene button:disabled { opacity: .38; cursor: not-allowed; filter: grayscale(.8); }
+  .abyss-scene__hud > .abyss-scene__countdown { left: 50%; transform: translateX(-50%); animation: abyss-from-top .45s ease-out both; }
+  .abyss-home { position: absolute; left: 50%; top: 39%; transform: translateX(-50%); width: min(920px, 92vw); text-align: center; pointer-events: auto; }
+  .abyss-home h1 { margin: 0; font-size: clamp(34px, 5vw, 76px); font-weight: 500; letter-spacing: .4em; text-shadow: 0 0 36px #dd9ae466; }
+  .abyss-home__eyebrow { font-size: 12px; letter-spacing: .3em; color: #d4a5b9; }
+  .abyss-home > p { color: #c9b2c4; }
+  .abyss-home__buttons { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-top: 30px; }
+  .abyss-entrance { min-width: 0; }
+  .abyss-entrance[data-arrived="false"] { animation: abyss-button-rise var(--abyss-enter-duration) cubic-bezier(.22, .68, .25, 1) var(--abyss-enter-delay) both; pointer-events: none; }
+  .abyss-entrance[data-arrived="false"][data-still="true"] { animation-name: abyss-ui-fade; }
+  .abyss-home__buttons > .abyss-entrance > button { display: flex; width: 100%; height: 100%; min-height: 104px; padding: 20px 12px; flex-direction: column; justify-content: center; gap: 12px; border-color: #af718a88; background: linear-gradient(145deg, #3c1c35e0, #0c0b1be8); box-shadow: inset 0 0 25px #b961821a, 0 10px 25px #0008; }
+  .abyss-home__buttons > .abyss-entrance:first-child > button { border-color: #d497a6; }
+  .abyss-home > h1, .abyss-home > p, .abyss-scene__back { animation: abyss-ui-fade .65s ease-out both; }
+  @keyframes abyss-button-rise { from { opacity: 0; transform: translateY(100vh); transform: translateY(100dvh); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes abyss-ui-fade { from { opacity: 0; } to { opacity: 1; } }
+  .abyss-home__buttons strong { font-size: 20px; font-weight: 500; letter-spacing: .1em; }
+  .abyss-home__buttons small { font-size: 11px; color: #baa2b9; }
+  .abyss-note { font-size: 12px; color: #b9a5b5; line-height: 1.8; }
+  .abyss-run { position: absolute; inset: 128px 3% 28px; overflow: auto; pointer-events: auto; padding: 24px; border: 1px solid #82657c77; border-radius: 12px; background: #0f0a19e8; backdrop-filter: blur(14px); animation: abyss-from-bottom .45s ease-out both; }
+  .abyss-run__header { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; border-bottom: 1px solid #82657c55; padding-bottom: 16px; }
+  .abyss-run__header h1 { margin: 6px 0; font-size: 28px; }.abyss-run__header small { color: #a98da8; }
+  .abyss-run__header > button { margin-left: auto; }
+  .abyss-run__resources { display: flex; gap: 18px; align-items: center; flex-wrap: wrap; }
+  .abyss-run__resources > span { color: #f58a9b; font-size: 24px; letter-spacing: .15em; }
+  .abyss-run__resources > b { color: #e5c28c; }
+  [data-difficulty="hard"] { color: #cf9afa; }[data-difficulty="nightmare"] { color: #ff798c; }
+  .abyss-run h2 { font-size: 23px; font-weight: 500; }.abyss-run p { line-height: 1.7; }
+  .abyss-starters { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  .abyss-starters > section { border: 1px solid #82657c66; padding: 14px; border-radius: 8px; background: #1e1426aa; }
+  .abyss-starters h3 { margin-top: 0; }.abyss-starters > section > button { width: 100%; margin-top: 16px; }
+  .abyss-card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); gap: 12px; margin-top: 16px; }
+  .abyss-scene .abyss-card, .abyss-dialog .abyss-card { min-width: 0; padding: 0; text-align: left; overflow: hidden; border: 1px solid #8e728855; border-radius: 8px; background: #1b1523; color: #f0e1ec; }
+  .abyss-card[data-selected="true"] { outline: 2px solid #edbf9a; box-shadow: 0 0 20px #ca8d8f44; }
+  .abyss-card:focus-visible { outline: 2px solid #edbf9a; outline-offset: 3px; }
+  .abyss-card__image { aspect-ratio: 2/2.6; display: grid; place-items: center; background: #0a0710; }
+  .abyss-card__image img { width: 100%; height: 100%; object-fit: contain; }.abyss-card__image > span { font-size: 36px; color: #a48ab8; }
+  .abyss-card__copy { padding: 10px; }.abyss-card__copy small { display: block; font-size: 10px; color: #c3a4c0; }
+  .abyss-card__copy > strong { display: block; margin: 5px 0; font-size: 13px; }.abyss-card__copy p { font-size: 10px; color: #baa5be; margin: 7px 0 0; line-height: 1.5; overflow-wrap: anywhere; }
+  .abyss-card__stats { display: flex; gap: 7px; flex-wrap: wrap; font-size: 11px; font-variant-numeric: tabular-nums; }.abyss-card__stats b:first-child { color: #facb8e; }.abyss-card__stats b:nth-child(2) { color: #f092a0; }.abyss-card__stats b:last-child { color: #9ec2ec; }
+  .abyss-boons { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; margin: 24px 0; }
+  .abyss-scene .abyss-boon { padding: 0; overflow: hidden; text-align: left; border-color: #9c748b; }
+  .abyss-boon > span { display: flex; flex-direction: column; gap: 14px; padding: 24px; min-height: 158px; }.abyss-boon strong { font-size: 23px; }.abyss-boon small { font-size: 11px; letter-spacing: .1em; }
+  .abyss-boon__positive { background: linear-gradient(145deg, #28414b99, #15203088); color: #d0eee9; }.abyss-boon__negative { background: linear-gradient(145deg, #57243777, #20122488); color: #e5afbf; border-top: 1px solid #98687866; }
+  .abyss-boon > b { display: block; text-align: center; padding: 15px; font-weight: 500; }
+  .abyss-enemy, .abyss-contract { border: 1px solid #886b8755; padding: 16px; margin: 16px 0; background: #21142e88; border-radius: 8px; }.abyss-enemy p { margin: 8px 0; }
+  .abyss-enemy[data-difficulty="hard"] { border-color: #ac71d988; }.abyss-enemy[data-difficulty="nightmare"] { border-color: #e1698288; background: #3a122088; }
+  .abyss-run details > summary, .abyss-history summary { cursor: pointer; padding: 10px 0; }.abyss-run__deck { margin-top: 28px; border-top: 1px solid #82657c55; padding-top: 12px; }
+  .abyss-run__actions { display: flex; gap: 12px; flex-wrap: wrap; margin: 20px 0; }
+  .abyss-scene .abyss-primary { background: linear-gradient(110deg, #85405b, #402844); border-color: #d393a0; }
+  .abyss-growth { margin: 24px 0; padding: 20px; background: #28182eaa; border: 1px solid #a17d9266; border-radius: 8px; }
+  .abyss-growth__options { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }.abyss-growth__options > button { display: flex; flex-direction: column; gap: 12px; min-height: 110px; }.abyss-growth__options small { color: #bca7bd; font-size: 11px; }
+  .abyss-scene button[aria-pressed="true"] { border-color: #ecc3a1; background-color: #633951; }
+  .abyss-growth__target { margin-top: 18px; }.abyss-growth__target > .abyss-card { max-width: 190px; }
+  .abyss-notice, .abyss-storage-warning { position: absolute; z-index: 7; bottom: 8px; left: 50%; transform: translateX(-50%); padding: 10px 20px; margin: 0; border: 1px solid #b97b81; background: #351723f2; pointer-events: auto; font-size: 12px; max-width: 90%; }
+  .abyss-storage-warning { top: 105px; bottom: auto; background: #352717ed; border-color: #a28b64; padding: 3px 12px; }
+  .abyss-dialog { pointer-events: auto; color: #eadce8; border: 1px solid #ae849d; border-radius: 12px; padding: 24px; width: min(1120px, 88vw); max-height: 82vh; background: #130e1cf7; box-shadow: 0 25px 100px #000b; }
+  .abyss-dialog::backdrop { background: #06030bc7; backdrop-filter: blur(6px); }
+  .abyss-dialog > header { display: flex; align-items: center; justify-content: space-between; gap: 20px; }.abyss-dialog h2 { margin: 0; font-weight: 500; }.abyss-dialog p { line-height: 1.8; color: #c8b2c8; }
+  .abyss-tabs { display: flex; gap: 12px; margin: 22px 0; }.abyss-traits { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 18px; }
+  .abyss-traits article { padding: 24px 20px; background: linear-gradient(155deg, #38243f, #151521); border: 1px solid #8d718877; border-radius: 10px; min-height: 180px; }.abyss-traits article[data-known="true"] { border-color: #d1a789; box-shadow: inset 0 0 35px #b7986517; }.abyss-traits small,.abyss-traits footer { color: #baa0b4; font-size: 11px; }.abyss-traits h3 { font-size: 24px; font-weight: 500; }
+  .abyss-history > details { padding: 14px 18px; border: 1px solid #81697e77; border-radius: 8px; margin: 14px 0; background: #251b2d; }.abyss-history summary { display: flex; gap: 24px; align-items: center; flex-wrap: wrap; }.abyss-history summary strong { color: #e1c0ac; font-size: 24px; }.abyss-history time { margin-left: auto; font-size: 12px; color: #b9a4b8; }
+  .abyss-empty { padding: 50px; text-align: center; }
+  .abyss-battle { position: fixed; inset: 0; background: #100b17; z-index: 100; }.abyss-battle__effects { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); z-index: 12; max-width: 600px; color: #e5d3e3; background: #1a1025dc; padding: 10px 16px; border: 1px solid #9a6d9155; border-radius: 7px; font-size: 12px; }.abyss-battle__effects summary { cursor: pointer; }.abyss-battle__effects p { margin: 9px 0; }
+  .abyss-battle__result { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 15; padding: 32px; background: #180e23ed; color: #f0e0ea; text-align: center; border: 1px solid #c393a5; border-radius: 12px; min-width: min(400px, 85vw); }
+  .abyss-battle button { font: inherit; padding: 10px 18px; color: #f0dce7; border: 1px solid #a37594; border-radius: 5px; background: #3e2443; cursor: pointer; }.abyss-battle button:disabled { opacity: .4; cursor: not-allowed; }
+  .abyss-battle__save { position: absolute; bottom: 18px; left: 50%; transform: translateX(-50%); z-index: 20; color: #edd6e3; background: #281426ef; padding: 12px 20px; }.abyss-battle__save button { margin-left: 15px; }
+  .abyss-scene[data-still="true"] .abyss-home__buttons > .abyss-entrance > button, .abyss-scene[data-still="true"] .abyss-run, .abyss-scene[data-still="true"] .abyss-scene__countdown { animation: none; }
+  @keyframes abyss-from-top { from { opacity: 0; translate: 0 -45px; } to { opacity: 1; translate: 0 0; } }
+  @keyframes abyss-from-bottom { from { opacity: 0; translate: 0 55px; } to { opacity: 1; translate: 0 0; } }
+  @media (max-width: 850px) { .abyss-home { top: 30%; }.abyss-home__buttons { grid-template-columns: repeat(2, 1fr); }.abyss-starters { grid-template-columns: 1fr; }.abyss-boons { gap: 8px; }.abyss-boon > span { padding: 14px; }.abyss-run { padding: 16px; }.abyss-growth__options { grid-template-columns: 1fr; } }
+  @media (max-height: 620px) { .abyss-home { top: 25%; }.abyss-home h1 { font-size: 28px; }.abyss-home__buttons { margin-top: 12px; }.abyss-home__buttons > .abyss-entrance > button { min-height: 70px; padding: 10px; }.abyss-run { inset: 115px 2% 12px; } }
+  .abyss-scene__countdown { position: absolute; top: max(24px, env(safe-area-inset-top)); left: max(24px, env(safe-area-inset-left)); padding: 14px 18px; border-left: 2px solid #b85669; background: linear-gradient(90deg, #08060dcc, #08060d00); }
+  .abyss-scene__back { position: absolute; bottom: max(24px, env(safe-area-inset-bottom)); left: max(24px, env(safe-area-inset-left)); display: flex; gap: 12px; pointer-events: auto; }
+  .abyss-scene button { padding: 9px 18px; border: 1px solid #b28b9c75; border-radius: 5px; font: inherit; font-size: 14px; color: #e9dce5; background: #120c19b3; cursor: pointer; }
+  .abyss-scene button:hover { background: #382032dd; border-color: #d1a4b5; }
+  .abyss-scene button:focus-visible { outline: 2px solid #edb7c5; outline-offset: 4px; }
+  .abyss-scene__caption { position: absolute; bottom: 5%; right: 4%; margin: 0; font-size: clamp(24px, 3vw, 52px); letter-spacing: .28em; color: #e1cbd3b3; text-shadow: 0 2px 15px #000; text-align: right; }
+  .abyss-scene__caption span { display: block; margin-top: 10px; font-size: 12px; letter-spacing: .36em; color: #bba3b8a6; }
+  .abyss-scene__error { position: absolute; z-index: 5; top: 50%; left: 50%; transform: translate(-50%, -50%); width: min(460px, 88vw); padding: 30px; text-align: center; border: 1px solid #8e6078; background: #140d1b; border-radius: 12px; }
+  .abyss-scene__error h1 { font-size: 24px; }.abyss-scene__error p { line-height: 1.7; color: #c8b4c4; }.abyss-scene__error button { margin: 6px; }
+  .abyss-scene__sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .abyss-scene[data-still="true"] .abyss-scene__lightning { display: none; }
+  .abyss-scene[data-still="true"] .abyss-scene__hud { animation: none; }
+  .abyss-scene[data-still="true"] .abyss-home > h1, .abyss-scene[data-still="true"] .abyss-home > p, .abyss-scene[data-still="true"] .abyss-scene__back { animation-duration: .18s; }
+  @keyframes abyss-darken { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes abyss-reveal { from { opacity: 1; } to { opacity: 0; } }
+  @keyframes abyss-hud { from { opacity: 0; } to { opacity: 1; } }
+}

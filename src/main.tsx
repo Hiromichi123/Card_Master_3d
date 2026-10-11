@@ -2,6 +2,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 
 import { App } from './app/App';
+import './ui/numberFonts.css';
 import './ui/global.css';
 import './ui/theme.css';
 import './ui/buttons.css';

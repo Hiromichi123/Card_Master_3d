@@ -5,6 +5,7 @@ import { Spherical, Vector3, type PerspectiveCamera } from 'three';
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 
 import { useSettingsStore } from '../../state/settingsStore';
+import { useBattleVisuals } from './battleVisuals';
 import {
   fitCameraTo,
   getCameraMode,
@@ -44,8 +45,9 @@ export function CameraRig({ interactionLocked = false }: { interactionLocked?: b
   const controlsRef = useRef<OrbitControlsImpl>(null);
 
   const modeId = useSettingsStore((state) => state.cameraModeId);
-  const geometry = useSettingsStore((state) => state.tableTheme.geometry);
-  const themeId = useSettingsStore((state) => state.tableThemeId);
+  const {theme} = useBattleVisuals();
+  const geometry = theme.geometry;
+  const themeId = theme.id;
   /**
    * 上一次取景定下的距离，轨道的缩放范围以它为基准。
    *
@@ -82,8 +84,9 @@ export function CameraRig({ interactionLocked = false }: { interactionLocked?: b
       camera.position.copy(TARGET).add(unit);
       camera.lookAt(TARGET);
 
-      const radius = geometry === 'volcano' ? 8.95 : themeId === 'tournament' ? 8.5 : TABLE_RADIUS;
-      const distance = fitCameraTo(camera, TARGET, { radius }) * mode.zoom;
+      const radius = geometry === 'abyss' ? 9.6 : geometry === 'temple' ? 9.8 : geometry === 'volcano' ? 8.95 : themeId === 'tournament' ? 8.5 : TABLE_RADIUS;
+      const minHeight = geometry === 'temple' ? -5.35 : 0;
+      const distance = fitCameraTo(camera, TARGET, { radius, minHeight }) * mode.zoom;
       camera.position.copy(TARGET).addScaledVector(unit, distance);
       camera.lookAt(TARGET);
       camera.updateProjectionMatrix();

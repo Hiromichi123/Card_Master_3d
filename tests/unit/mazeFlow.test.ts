@@ -18,8 +18,10 @@ import type { BattleOutcome } from '../../src/domain/battle/types';
 import {
   MAZE_CHAPTER_ID,
   MAZE_FLOOR_1,
-  MAZE_SHOP,
   generateMaze,
+  mazeRngFor,
+  mazeShopBatchKey,
+  withShopState,
   newMazeRun,
   exploredRatio,
   rollStrength,
@@ -51,17 +53,6 @@ function freshProfile(): ProfileState {
     starterCardIds: starter,
     now: new Date('2026-10-06T00:00:00Z'),
   });
-}
-
-/** 一张带补给节点的图（补给节点的比例不高，换几个种子找一张）。 */
-function mapWithSupply() {
-  for (let index = 0; index < 24; index += 1) {
-    const map = generateMaze(createRng(seedFrom(`test:mazeFlow:supply:${index}`)));
-    if (map.nodes.some((node) => node.type === 'supply')) {
-      return map;
-    }
-  }
-  throw new Error('24 个种子里都没生成出补给节点，比例配置大概改了');
 }
 
 const map = generateMaze(createRng(seedFrom('test:mazeFlow')));
@@ -222,25 +213,30 @@ describe('迷宫结算：奖励与去重 id', () => {
 });
 
 describe('楼层商店', () => {
-  const supplyMap = mapWithSupply();
+  const supplyMap = generateMaze(mazeRngFor(MAZE_FLOOR_1, 1));
   const supplyNode = supplyMap.nodes.find((node) => node.type === 'supply')!;
-  const supplyRun = newMazeRun(supplyMap, MAZE_FLOOR_1, 1);
+  const supplyRun = withShopState({ ...newMazeRun(supplyMap, MAZE_FLOOR_1, 1), playerNodeId: supplyNode.id }, supplyNode.id);
   const stock = mazeShopStock(supplyRun, supplyNode.id);
+  const expectedBatch = mazeShopBatchKey(supplyRun, supplyNode.id);
+  const shopProfile = (): ProfileState => ({ ...freshProfile(), mazeRun: supplyRun, currencies: { gold: 100000, crystal: 100000, badge: 100000 } });
 
   it('同一个节点每次看到的货架都一样（种子固定）', () => {
     const first = mazeShopStock(supplyRun, supplyNode.id);
     const again = mazeShopStock(supplyRun, supplyNode.id);
     expect(again.map((slot) => slot.item.cardId)).toEqual(first.map((slot) => slot.item.cardId));
-    expect(first.length).toBe(MAZE_SHOP.cardCount);
+    expect(again).toEqual(first);
+    expect(first.length).toBeGreaterThanOrEqual(3);
+    expect(first.length).toBeLessThanOrEqual(5);
   });
 
   it('购买事务把售罄写进**这个节点**，不写每日货架', () => {
-    const profile = freshProfile();
-    // 活动位收水晶，新号没有；买普通位（测的是事务形状，不是货币种类）
+    const profile = shopProfile();
+    // 使用真实当前补给点，测事务形状而非货币种类。
     const slot = stock.find((candidate) => !candidate.item.isEvent)!;
     const planned = planMazePurchase({
       profile,
       nodeId: supplyNode.id,
+      expectedBatch,
       entry: slot.entry,
       operationId: 'op-maze-shop-1',
       rng: createRng(seedFrom('op-maze-shop-1')),
@@ -259,12 +255,13 @@ describe('楼层商店', () => {
   it('余额不足时拒绝（价格由配置给，不是现算的）', () => {
     const slot = stock.find((candidate) => !candidate.item.isEvent)!;
     const broke: ProfileState = {
-      ...freshProfile(),
-      currencies: { ...freshProfile().currencies, [slot.item.price.currency]: 0 },
+      ...shopProfile(),
+      currencies: { ...shopProfile().currencies, [slot.item.price.currency]: 0 },
     };
     const planned = planMazePurchase({
       profile: broke,
       nodeId: supplyNode.id,
+      expectedBatch,
       entry: slot.entry,
       operationId: 'op-maze-shop-2',
       rng: createRng(seedFrom('op-maze-shop-2')),
@@ -274,10 +271,12 @@ describe('楼层商店', () => {
 
   it('售罄后同一个 entryId 不再可买', () => {
     const slot = stock[0]!;
-    const soldOutEntry = { ...slot.entry, soldOut: true };
+    const soldRun = { ...supplyRun, shopByNode: { ...supplyRun.shopByNode, [String(supplyNode.id)]: { ...supplyRun.shopByNode[String(supplyNode.id)]!, soldOut: [slot.entry.entryId] } } };
+    const soldOutEntry = { ...slot.entry, soldOut: false };
     const planned = planMazePurchase({
-      profile: freshProfile(),
+      profile: { ...shopProfile(), mazeRun: soldRun },
       nodeId: supplyNode.id,
+      expectedBatch,
       entry: soldOutEntry,
       operationId: 'op-maze-shop-3',
       rng: createRng(seedFrom('op-maze-shop-3')),
@@ -290,16 +289,14 @@ describe('楼层商店', () => {
     for (const slot of stock) {
       expect(slot.item.price.amount).toBeGreaterThan(0);
       expect(slot.entry.price.amount).toBe(slot.item.price.amount);
+      expect(slot.item.price.currency).toBe(slot.item.discount === 'oneGold' ? 'gold' : slot.item.originalPrice.currency);
       if (slot.item.isEvent) {
-        expect(slot.item.price.currency).toBe('crystal');
+        expect(slot.item.originalPrice).toEqual({ currency: 'crystal', amount: 661 });
         continue;
       }
       const base = priceByRarity[slot.item.rarity];
-      // 普通位是折扣价：不低于配置的地板价、不高于价位表上的原价
-      expect(slot.item.price.amount).toBeGreaterThanOrEqual(MAZE_SHOP.minRegular);
-      if (base) {
-        expect(slot.item.price.amount).toBeLessThanOrEqual(base.amount);
-      }
+      if (base) expect(slot.item.originalPrice).toEqual(base);
+      expect(slot.item.price.amount).toBeLessThanOrEqual(slot.item.originalPrice.amount);
     }
   });
 });

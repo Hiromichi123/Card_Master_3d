@@ -44,7 +44,7 @@
 
   color-scheme: dark;
 
-  font-family: 'Microsoft YaHei', 'PingFang SC', 'Hiragino Sans GB',
+  font-family: 'Game Numerals', 'Microsoft YaHei', 'PingFang SC', 'Hiragino Sans GB',
 
     'Noto Sans CJK SC', 'Source Han Sans SC', system-ui, -apple-system, 'Segoe UI',
 
@@ -100,7 +100,7 @@ body {
 
 code {
 
-  font-family: 'Cascadia Mono', Consolas, 'Courier New', monospace;
+  font-family: 'Game Numerals', 'Cascadia Mono', Consolas, 'Courier New', monospace;
 
   font-size: 0.92em;
 
@@ -5870,7 +5870,7 @@ code {
 
   position: absolute; top: 108px; left: 50%; transform: translate(-50%, -50%);
 
-  font: 700 80px/1.15 'SimSun', 'Songti SC', serif; white-space: nowrap;
+  font: 700 80px/1.15 'Game Numerals', 'SimSun', 'Songti SC', serif; white-space: nowrap;
 
   color: #ffdabd; text-shadow: 2px 3px 3px #000, 0 0 35px #ffb16644;
 
@@ -6904,7 +6904,7 @@ code {
 
   margin: 0 0 6px;
 
-  font-family: 'SimSun', '宋体', 'Songti SC', 'Noto Serif CJK SC', serif;
+  font-family: 'Game Numerals', 'SimSun', '宋体', 'Songti SC', 'Noto Serif CJK SC', serif;
 
   font-size: 30px;
 
@@ -7308,7 +7308,7 @@ code {
 
 .gacha-complete__head { position: absolute; top: 16px; left: 50%; transform: translateX(-50%); text-align: center; color: #fff5d9; text-shadow: 0 2px 6px #382409, 0 0 18px #382409; }
 
-.gacha-complete__head h2 { margin: 0; font: 700 24px/1.2 'SimSun', serif; }
+.gacha-complete__head h2 { margin: 0; font: 700 24px/1.2 'Game Numerals', 'SimSun', serif; }
 
 .gacha-complete__head p { margin: 6px 0 0; font-size: 13px; white-space: nowrap; }
 
@@ -7460,8 +7460,32 @@ code {
   position: absolute;
   inset: 0;
   display: block;
-  background: var(--tile-top);
+  border: calc(3 * var(--ui)) solid var(--tile-accent);
+  border-radius: calc(14 * var(--ui));
+  background:
+    radial-gradient(ellipse at 50% 20%, #ffffff24, transparent 65%),
+    repeating-linear-gradient(135deg, #ffffff06 0 calc(2 * var(--ui)), transparent calc(2 * var(--ui)) calc(18 * var(--ui))),
+    linear-gradient(160deg, #162c30eb, #101827f5), var(--tile-top);
+  box-shadow: inset 0 0 0 calc(9 * var(--ui)) #07131b99, inset 0 0 calc(30 * var(--ui)) #0008;
 }
+
+.maze__icon { display: block; width: 100%; height: 100%; }
+.maze__tile-emblem {
+  position: absolute; inset: 20%; padding: calc(15 * var(--ui));
+  color: var(--tile-accent); border: calc(2 * var(--ui)) solid currentColor;
+  border-radius: 50%; background: #0c1426a8;
+  box-shadow: 0 0 calc(20 * var(--ui)) #0008;
+}
+.maze__tile-complete {
+  position: absolute; right: calc(8 * var(--ui)); top: calc(8 * var(--ui));
+  width: calc(46 * var(--ui)); height: calc(46 * var(--ui));
+  color: #baffd5; background: #174b35; border-radius: 50%;
+}
+.maze__tile--explored .maze__tile-top { box-shadow: inset 0 0 0 calc(9 * var(--ui)) #254a3833, 0 0 calc(16 * var(--ui)) #91dab325; }
+.maze__tile--reachable .maze__tile-top { border-color: #f8dfa5; }
+.maze__tile--current .maze__tile-top { outline: calc(4 * var(--ui)) solid #aaffc8; outline-offset: calc(8 * var(--ui)); }
+.maze__tile:disabled { cursor: default; }
+.maze__legend-icon { display: block; width: calc(40 * var(--ui)); height: calc(40 * var(--ui)); }
 
 .maze__tile-front {
   position: absolute;
@@ -7485,10 +7509,9 @@ code {
   position: absolute;
   left: 0;
   right: 0;
-  top: 50%;
-  transform: translateY(-50%);
+  bottom: calc(6 * var(--ui));
   text-align: center;
-  font-size: calc(30 * var(--ui));
+  font-size: calc(24 * var(--ui));
   color: #ffe9b0;
   text-shadow: 0 calc(2 * var(--ui)) calc(4 * var(--ui)) #000d;
 }
@@ -7556,14 +7579,19 @@ code {
   }
 }
 
-.maze__status {
+.maze__left-rail {
   position: absolute;
-  left: 4%;
+  left: calc(24 * var(--ui));
   top: 3%;
+  z-index: 25;
   display: flex;
-  align-items: center;
-  gap: calc(20 * var(--ui));
+  flex-direction: column;
+  align-items: flex-start;
+  gap: calc(28 * var(--ui));
+  pointer-events: none;
 }
+.maze__left-rail > * { pointer-events: auto; }
+.maze__status { display: flex; align-items: center; }
 
 .maze__title {
   position: absolute;
@@ -7594,9 +7622,6 @@ code {
 }
 
 .maze__legend {
-  position: absolute;
-  left: calc(24 * var(--ui));
-  top: 16%;
   margin: 0;
   padding: calc(14 * var(--ui)) calc(20 * var(--ui));
   list-style: none;
@@ -7622,11 +7647,27 @@ code {
 
 .maze__reset {
   position: absolute;
-  left: 8%;
-  top: 90%;
+  left: calc(24 * var(--ui));
+  top: 89%;
+  z-index: 25;
   font-size: calc(26 * var(--ui));
   padding: calc(14 * var(--ui)) calc(26 * var(--ui));
 }
+.maze__reset small { display: block; margin-top: calc(6 * var(--ui)); font-size: calc(20 * var(--ui)); color: #a9bfae; }
+.maze__retry { position: absolute; left: 42%; top: 80%; z-index: 30; font-size: calc(28 * var(--ui)); }
+
+.maze__pity {
+  position: absolute; right: calc(24 * var(--ui)); top: 3%; z-index: 25;
+  width: calc(600 * var(--ui)); max-height: calc(350 * var(--ui)); overflow-y: auto;
+  padding: calc(24 * var(--ui)); border: calc(2 * var(--ui)) solid #91b79d80;
+  border-radius: calc(16 * var(--ui)); background: #0c1e20ed; color: #dfebdd;
+}
+.maze__pity-heading { display: flex; justify-content: space-between; gap: calc(20 * var(--ui)); font-size: calc(30 * var(--ui)); color: #e5dbad; }
+.maze__pity-heading span { font-variant-numeric: tabular-nums; }
+.maze__pity-bar { height: calc(24 * var(--ui)); margin: calc(18 * var(--ui)) 0; overflow: hidden; border: 1px solid #78978380; border-radius: 999px; background: #030c0e; }
+.maze__pity-bar > span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #33877b, #a6d994 75%, #e9d28c); }
+.maze__pity p { margin: calc(8 * var(--ui)) 0 0; font-size: calc(21 * var(--ui)); line-height: 1.5; }
+.maze__pity .maze__pity-reward, .maze__pity .maze__pity-pending { color: #ebce82; }
 
 .maze__back {
   position: absolute;
@@ -7657,13 +7698,18 @@ code {
   color: #dbe4f7;
 }
 
-/* 右侧详情栏 / 楼层商店（旧版是 `PosterDetailPanel`，位置 (72%, 10%, 24%×80%)） */
+/* 整体侧栏仅由玩家手动展开，隐藏时不拦截地图点击。 */
+.maze__sidebar-toggle {
+  position: absolute; right: calc(24 * var(--ui)); top: 24%; z-index: 30;
+  font-size: calc(25 * var(--ui)); padding: calc(12 * var(--ui)) calc(22 * var(--ui));
+}
+.maze__sidebar { position: absolute; right: calc(24 * var(--ui)); top: 29%; width: 25%; height: 59%; z-index: 25; }
+.maze__sidebar[hidden] { display: none; }
 .maze__detail {
   position: absolute;
-  left: 72%;
-  top: 10%;
-  width: 24%;
-  height: 80%;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   padding: calc(26 * var(--ui));
   border: calc(3 * var(--ui)) solid rgba(161, 132, 84, 0.5);
   border-radius: calc(18 * var(--ui));
@@ -7672,7 +7718,9 @@ code {
   overflow-y: auto;
 }
 
+.maze__detail-title > .maze__icon { width: calc(48 * var(--ui)); height: calc(48 * var(--ui)); flex: none; }
 .maze__detail-title {
+  display: flex; align-items: center; gap: calc(14 * var(--ui));
   margin: 0;
   font-size: calc(40 * var(--ui));
   color: #ffe2a7;
@@ -7732,10 +7780,27 @@ code {
 }
 
 .maze__shop-item {
-  display: flex;
+  display: grid;
+  grid-template-columns: calc(108 * var(--ui)) minmax(0, 1fr) auto;
   align-items: center;
   gap: calc(14 * var(--ui));
+  padding: calc(16 * var(--ui));
+  border: 1px solid #ad97694d;
+  border-radius: calc(12 * var(--ui));
+  background: linear-gradient(125deg, #354c3b55, #0c182bcc);
 }
+.maze__shop-item--sold { opacity: .6; }
+.maze__shop-refresh { margin-top: calc(6 * var(--ui)); font-size: calc(24 * var(--ui)); }
+.maze__shop-note { margin: calc(12 * var(--ui)) 0; font-size: calc(20 * var(--ui)); line-height: 1.5; color: #a9bfae; }
+.maze__shop-original { color: #a7a4b4; font-size: calc(18 * var(--ui)); }
+.maze__discount {
+  align-self: flex-start; margin: calc(6 * var(--ui)) 0; padding: calc(3 * var(--ui)) calc(10 * var(--ui));
+  border: 1px solid #ffffff60; border-radius: calc(6 * var(--ui));
+  font-size: calc(20 * var(--ui)); font-weight: 800; white-space: nowrap;
+}
+.maze__discount--twenty { background: #7532ac; color: #fff0ff; box-shadow: 0 0 calc(12 * var(--ui)) #bd76ff44; }
+.maze__discount--half { background: #b52947; color: #fff2e8; box-shadow: 0 0 calc(12 * var(--ui)) #ff657944; }
+.maze__discount--oneGold { background: linear-gradient(110deg, #a53d97, #573caf 32%, #116b7a 60%, #776014); color: #fffbe0; border-color: #f4e3b9; text-shadow: 0 1px 2px #000; }
 
 .maze__shop-face {
   flex: none;
@@ -7781,13 +7846,12 @@ code {
   font-size: calc(22 * var(--ui));
 }
 
-/* 左下的活动卡展示位：悬停放大 1.5 倍，向上生长（`transform-origin: bottom`） */
-.maze__showcase {
-  position: absolute;
-  left: calc(30 * var(--ui));
-  bottom: calc(30 * var(--ui));
+/* 活动卡紧接图例；只向右下放大，不遮住图例或越出左边界。 */
+.maze__showcase { width: calc(200 * var(--ui)); }
+.maze__showcase h2 { margin: 0 0 calc(16 * var(--ui)); font-size: calc(24 * var(--ui)); font-weight: 500; color: #e5dbad; }
+.maze__showcase-card {
   width: calc(144 * var(--ui));
-  transform-origin: bottom center;
+  transform-origin: top left;
   transition: transform 160ms ease;
 }
 
@@ -7799,8 +7863,8 @@ code {
   box-shadow: 0 calc(6 * var(--ui)) calc(18 * var(--ui)) #000000a8;
 }
 
-.maze__showcase:hover {
-  transform: scale(1.5);
+.maze__showcase-card:hover {
+  transform: scale(1.35);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -7808,7 +7872,7 @@ code {
     animation: none;
   }
 
-  .maze__showcase {
+  .maze__showcase-card {
     transition: none;
   }
 }

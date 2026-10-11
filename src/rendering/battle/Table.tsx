@@ -16,6 +16,11 @@ import { hasWeather, WeatherLayer } from '../table/weather';
 import { LAYOUT } from './layout';
 import { MechaTable } from './MechaTable';
 import { VolcanoTable } from './VolcanoTable';
+import { HarvestTable } from './HarvestTable';
+import { MarbleTempleTable } from './MarbleTempleTable';
+import { SolarSystemStage } from './SolarSystemStage';
+import { IcefieldTable } from './IcefieldTable';
+import { AbyssTable } from './AbyssTable';
 
 /**
  * 战斗桌。
@@ -104,11 +109,29 @@ export interface TableProps {
 }
 
 export function Table(props: TableProps) {
+  if (props.theme.geometry === 'abyss') {
+    return <AbyssTable theme={props.theme} reduceMotion={props.reduceMotion ?? false} />;
+  }
   if (props.theme.geometry === 'mecha') {
     return <MechaTable theme={props.theme} quality={props.quality} reduceMotion={props.reduceMotion ?? false} />;
   }
   if (props.theme.geometry === 'volcano') {
     return <VolcanoTable theme={props.theme} quality={props.quality} reduceMotion={props.reduceMotion ?? false} />;
+  }
+  if (props.theme.geometry === 'harvest') {
+    return <HarvestTable theme={props.theme} quality={props.quality} reduceMotion={props.reduceMotion ?? false} />;
+  }
+  if (props.theme.geometry === 'temple') {
+    return <MarbleTempleTable theme={props.theme} quality={props.quality} reduceMotion={props.reduceMotion ?? false} />;
+  }
+  if (props.theme.geometry === 'solar') {
+    return <>
+      <ClassicTable {...props} />
+      <SolarSystemStage theme={props.theme} quality={props.quality} reduceMotion={props.reduceMotion ?? false} />
+    </>;
+  }
+  if (props.theme.geometry === 'icefield') {
+    return <IcefieldTable theme={props.theme} quality={props.quality} reduceMotion={props.reduceMotion ?? false} />;
   }
   return <ClassicTable {...props} />;
 }

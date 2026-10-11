@@ -28,7 +28,7 @@ function detectWebGL2(): Status {
   }
 }
 
-export function WebGLGuard({ children }: { children: ReactNode }) {
+export function WebGLGuard({ children, fallback }: { children: ReactNode; fallback?: ReactNode }) {
   const [status, setStatus] = useState<Status>('checking');
 
   useEffect(() => {
@@ -40,6 +40,7 @@ export function WebGLGuard({ children }: { children: ReactNode }) {
   }
 
   if (status === 'unavailable') {
+    if (fallback !== undefined) return <>{fallback}</>;
     return (
       <div className="app-error" role="alert">
         <h1>无法启动 3D 场景</h1>

@@ -19,13 +19,16 @@ import { useSettingsStore } from '../state/settingsStore';
  * 把偏移写成 CSS 变量（`--parallax-x/y`）而不是直接改 `transform`：
  * 背景元素的 `transform` 留给样式表（那里还有缩放），变量只承载「动了多少」。
  */
-export function useParallax(maxOffsetPx = 50, rate = 5): RefObject<HTMLDivElement | null> {
+export function useParallax(maxOffsetPx = 50, rate = 5, enabled = true): RefObject<HTMLDivElement | null> {
   const ref = useRef<HTMLDivElement | null>(null);
   const reduceMotion = useSettingsStore((state) => state.reduceMotion);
 
   useEffect(() => {
     const element = ref.current;
-    if (!element || reduceMotion) {
+    if (!element) return;
+    if (!enabled || reduceMotion) {
+      element.style.setProperty('--parallax-x', '0px');
+      element.style.setProperty('--parallax-y', '0px');
       return;
     }
 
@@ -81,7 +84,7 @@ export function useParallax(maxOffsetPx = 50, rate = 5): RefObject<HTMLDivElemen
         cancelAnimationFrame(raf);
       }
     };
-  }, [maxOffsetPx, rate, reduceMotion]);
+  }, [maxOffsetPx, rate, reduceMotion, enabled]);
 
   return ref;
 }

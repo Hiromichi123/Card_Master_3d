@@ -1,18 +1,17 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 
-import { cardById } from '../data';
+import { cardById, cardDatabase } from '../data';
 import { systemClock } from '../domain/progression/clock';
 import {
   ADD_REJECTION_NOTE,
   ADD_REJECTION_TEXT,
   DECK_LIMIT,
   clearDeck,
-  emptyDeck,
   removeCardAt,
 } from '../domain/progression/deck';
 import { addToDeck, deckEditorRows, deckSlots, deckSummary } from '../domain/progression/deckView';
-import { activeDeckOf } from '../domain/progression/profile';
-import { filterByRarity, ownedEntries, sortForCollection } from '../domain/progression/collection';
+import type { RouteId } from '../app/routes';
+import { collectionCompletion, filterByRarity, ownedEntries, sortForCollection } from '../domain/progression/collection';
 import type { Deck, ProfileState } from '../domain/progression/types';
 import type { ProfileStore } from '../state/createProfileStore';
 import { pushToast } from '../state/toastStore';
@@ -33,20 +32,22 @@ import '../ui/deckEditor.css';
  * 1. **点击加入 / 点击移出**，不是拖拽。旧版是拖拽，但 DOM 里把卡从滚动容器拖进槽位
  *    要做命中判定、自动滚动、触屏适配，收益只是手感；点击在触屏与键盘上一样能用，
  *    浏览器用例也能直接断「点一下加了几张」。
- * 2. **不设显式「保存卡组」按钮**。改动走 `store.saveDeck` 的防抖队列（既有设计），
- *    离开页面时 `flush()` 落盘。旧版要手点保存，中途退出就丢。
+ * 2. **改动自动保存**。三套普通配置与天梯配置分别保存，切页签不更改普通出战选择。
+ *    草稿放在 store 的会话状态，切页签或全局导航卸载都不会丢掉失败待写项。
  *
- * **草稿是乐观的**：`draft` 只在挂载时从当前出战卡组播种一次，之后以草稿为准渲染。
- * 若直接拿 `profile.decks` 当渲染源，点一下要等一次 IndexedDB 往返才看见变化——
- * 点击加卡的手感就废了。代价是「落盘失败时草稿不回滚」，这与 `saveDeck` 的既有语义一致
- * （它只 toast，不假装成功，也不回滚）。
+ * 页面读取草稿即时反馈；页内导航与设为出战使用 `flushDecks` 的真实结果，
+ * 保存失败留在当前页，并保留草稿供重试，不把旧存档当成已保存的新配置。
  */
 export interface DeckEditorSceneProps {
   readonly profile: ProfileState;
   readonly store: ProfileStore;
+  readonly initialDeckId?: string | undefined;
+  readonly onNavigate?: ((route: RouteId) => void) | undefined;
 }
 
-export function DeckEditorScene({ profile, store }: DeckEditorSceneProps) {
+export function DeckEditorScene({ profile: initialProfile, store, initialDeckId, onNavigate }: DeckEditorSceneProps) {
+  const snapshot = useSyncExternalStore(store.subscribe, store.getSnapshot, store.getSnapshot);
+  const profile = snapshot.profile ?? initialProfile;
   const rarityIndex = useRarityIndex();
   /*
     背景：旧版的组卡界面**没有**自己的背景图（`deck_builder_scene.py` 里没有背景），
@@ -56,28 +57,57 @@ export function DeckEditorScene({ profile, store }: DeckEditorSceneProps) {
   const parallaxRef = useParallax();
   const background = assetManifest.shared.menu['menu_bg']?.url ?? null;
 
-  /*
-    播种只做一次。**不能跟着 `profile` 变**：抽卡回来会带上新的库存与卡组，
-    若那时重新播种，玩家正在编辑的草稿会被冲掉。
-  */
-  const seededRef = useRef(false);
-  const [draft, setDraft] = useState<Deck | null>(() => activeDeckOf(profile));
+  const [selectedId, setSelectedId] = useState(() => {
+    const preferred = initialDeckId ?? profile.activeDeckId;
+    return preferred && profile.decks.some(deck => deck.id === preferred)
+      ? preferred : profile.normalDeckIds[0];
+  });
+  const draft = store.getDeckDraft(selectedId);
   const [rarity, setRarity] = useState<string | null>(null);
+  const [working, setWorking] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const actionLock = useRef(false);
+  const mounted = useRef(true);
+  const disabled = working || snapshot.busy;
+  const isLadder = selectedId === profile.ladder.deckId;
+  const tabs = [
+    ...profile.normalDeckIds.map((id, index) => ({ id, label: `卡组${index + 1}` })),
+    { id: profile.ladder.deckId, label: '天梯赛卡组' },
+  ];
+  const selectedLabel = tabs.find(tab => tab.id === selectedId)?.label ?? draft?.name ?? '卡组';
+  const extraDecks = profile.decks.filter(deck => !tabs.some(tab => tab.id === deck.id));
+  const saveError = actionError ?? snapshot.deckSaveError;
 
   useEffect(() => {
-    if (seededRef.current) {
-      return;
-    }
-    seededRef.current = true;
-    setDraft((current) => current ?? activeDeckOf(profile));
-  }, [profile]);
-
-  // 路由是挂载/卸载式的，cleanup 就是离场钩子：把排队中的卡组写入放出去
-  useEffect(() => {
+    mounted.current = true;
     return () => {
-      void store.flush();
+      mounted.current = false;
+      void store.flushDecks();
     };
   }, [store]);
+
+  const saveThen = async (action: 'retry' | 'activate' | RouteId): Promise<void> => {
+    if (actionLock.current || snapshot.busy || (action === 'activate' && isLadder)) return;
+    actionLock.current = true;
+    setWorking(true);
+    setActionError(null);
+    try {
+      const saved = await store.flushDecks();
+      if (!mounted.current) return;
+      if (!saved.ok) { setActionError(saved.message); return; }
+      if (action === 'activate') {
+        store.setActiveDeck(selectedId);
+        const activated = await store.flushDecks();
+        if (!mounted.current) return;
+        if (!activated.ok) setActionError(activated.message);
+      } else if (action !== 'retry') {
+        onNavigate?.(action);
+      }
+    } finally {
+      actionLock.current = false;
+      if (mounted.current) setWorking(false);
+    }
+  };
 
   const rarityOf = useMemo(
     () => (cardId: string) => cardById.get(cardId)?.rarity ?? null,
@@ -85,6 +115,7 @@ export function DeckEditorScene({ profile, store }: DeckEditorSceneProps) {
   );
 
   const owned = useMemo(() => ownedEntries(profile.inventory), [profile.inventory]);
+  const completion = useMemo(() => collectionCompletion(profile.inventory, cardDatabase.definitions), [profile.inventory]);
 
   const entries = useMemo(
     () =>
@@ -134,9 +165,10 @@ export function DeckEditorScene({ profile, store }: DeckEditorSceneProps) {
   /** 卡组满了：此时**每张**卡都不能加，逐卡角标就不必重复同一个理由。 */
   const isFull = draft !== null && draft.cardIds.length >= DECK_LIMIT;
 
-  /** 落盘 + 换草稿。两件事永远一起做，避免「界面变了但没存」。 */
+  /** 草稿按ID交给store，切页签不会覆盖另一套尚未落盘的修改。 */
   const commit = (next: Deck): void => {
-    setDraft(next);
+    if (disabled || actionLock.current) return;
+    setActionError(null);
     store.saveDeck(next);
   };
 
@@ -168,42 +200,12 @@ export function DeckEditorScene({ profile, store }: DeckEditorSceneProps) {
     commit(clearDeck(draft, systemClock()));
   };
 
-  /*
-    没有出战卡组时不让人编辑：改了也没有归属，保存下去会多出一份没人引用的卡组。
-    分两种：存档里还有卡组（`decks[0]`）就让人启用它；一份都没有才新建。
-  */
   if (!draft) {
-    const existing = profile.decks[0] ?? null;
     return (
       <div className="screen deckedit">
-        <header className="screen__head">
-          <div>
-            <h1 className="screen__title">配置</h1>
-            <p className="deckedit__lead">
-              {existing ? '当前没有选中出战卡组。' : '存档里还没有任何卡组。'}
-            </p>
-          </div>
-        </header>
-        <div className="deckedit__empty-actions">
-          <button
-            type="button"
-            className="btn btn--primary"
-            onClick={() => {
-              if (existing) {
-                store.setActiveDeck(existing.id);
-                setDraft(existing);
-                return;
-              }
-              const now = systemClock();
-              const created = emptyDeck(`deck-${now.getTime()}`, '出战卡组', now);
-              store.saveDeck(created);
-              store.setActiveDeck(created.id);
-              setDraft(created);
-            }}
-          >
-            {existing ? `启用「${existing.name}」` : '新建出战卡组'}
-          </button>
-        </div>
+        <h1 className="screen__title">配置</h1>
+        <p role="alert">当前卡组不存在，请切换到卡组1。</p>
+        <button type="button" className="btn" onClick={() => setSelectedId(profile.normalDeckIds[0])}>编辑卡组1</button>
       </div>
     );
   }
@@ -213,10 +215,45 @@ export function DeckEditorScene({ profile, store }: DeckEditorSceneProps) {
       <CrossfadeBackground url={background} className="menu__bg deckedit__bg" />
       <div className="menu__scrim" aria-hidden="true" />
 
-      <div className="deckedit__body">
-        <section className="deckedit__slots" aria-label="出战卡组">
+      <div className="deckedit__toolbar">
+        <div className="deckedit__tabs" role="tablist" aria-label="选择卡组">
+          {tabs.map(tab => (
+            <button key={tab.id} type="button" role="tab" className="deckedit__tab"
+              id={`deck-tab-${tab.id}`} aria-controls="deck-editor-panel" aria-selected={selectedId === tab.id}
+              data-deck-id={tab.id} disabled={disabled} onClick={() => setSelectedId(tab.id)}>
+              {tab.label}
+              {profile.activeDeckId === tab.id && <small>普通出战</small>}
+            </button>
+          ))}
+        </div>
+        {extraDecks.length > 0 && (
+          <label className="deckedit__other">其他已有卡组
+            <select aria-label="其他已有卡组" disabled={disabled}
+              value={extraDecks.some(deck => deck.id === selectedId) ? selectedId : ''}
+              onChange={event => { if (event.target.value) setSelectedId(event.target.value); }}>
+              <option value="">选择卡组</option>
+              {extraDecks.map(deck => <option key={deck.id} value={deck.id}>{deck.name}{profile.activeDeckId === deck.id ? '（普通出战）' : ''}</option>)}
+            </select>
+          </label>
+        )}
+        {onNavigate && <nav className="deckedit__nav" aria-label="配置页导航">
+          <button type="button" className="btn" data-action="battle-menu" disabled={disabled}
+            onClick={() => void saveThen('battlemenu')}>前往对战模式</button>
+          <button type="button" className="btn" data-action="ladder" disabled={disabled}
+            onClick={() => void saveThen('ladder')}>返回天梯赛</button>
+        </nav>}
+      </div>
+      <div className="deckedit__save" role="status" aria-live="polite">
+        <span>{working ? '正在保存…' : saveError ? `未保存：${saveError}` : snapshot.deckDirty
+          ? '修改待保存，切换卡组不会丢失草稿' : snapshot.storage === 'memory' ? '已保存到本次会话' : '所有配置已保存'}</span>
+        {(saveError || snapshot.deckDirty) && <button type="button" className="btn" data-action="retry-save" disabled={disabled}
+          onClick={() => void saveThen('retry')}>{saveError ? '重试保存' : '立即保存'}</button>}
+      </div>
+
+      <div className="deckedit__body" id="deck-editor-panel" role="tabpanel" aria-label={selectedLabel}>
+        <section className="deckedit__slots" aria-label="出战卡组" data-deck-id={selectedId}>
           <div className="deckedit__formation-title">
-            <h2 className="deckedit__heading">出战卡组</h2>
+            <h2 className="deckedit__heading">{selectedLabel}</h2>
             <span>{summary?.size ?? 0} / {DECK_LIMIT}</span>
           </div>
           <div className="deckedit__grid">
@@ -226,6 +263,7 @@ export function DeckEditorScene({ profile, store }: DeckEditorSceneProps) {
                   key={`${slot.index}-${slot.cardId}`}
                   cardId={slot.cardId}
                   size="md"
+                  disabled={disabled}
                   onClick={() => handleRemove(slot.index)}
                 />
               ) : (
@@ -242,20 +280,28 @@ export function DeckEditorScene({ profile, store }: DeckEditorSceneProps) {
         <div>
           <h1 className="screen__title">配置</h1>
           <p className="deckedit__lead">
-            {draft.name} ·{summary?.size ?? 0} / {DECK_LIMIT} 张 · 改动自动保存
+            {draft.name} ·{summary?.size ?? 0} / {DECK_LIMIT} 张 · {isLadder ? '天梯专用，不影响普通出战' : profile.activeDeckId === selectedId ? '当前普通出战' : '编辑不改变普通出战'}
           </p>
         </div>
         <div className="deckedit__actions">
+          {!isLadder && <button type="button" className="btn" data-action="activate"
+            disabled={disabled || profile.activeDeckId === selectedId}
+            onClick={() => void saveThen('activate')}>{profile.activeDeckId === selectedId ? '普通出战中' : '设为普通出战'}</button>}
           <button
             type="button"
             className="btn"
             onClick={handleClear}
-            disabled={draft.cardIds.length === 0}
+            disabled={disabled || draft.cardIds.length === 0}
           >
             清空卡组
           </button>
         </div>
       </header>
+
+      <p className="deckedit__completion" aria-label="卡牌拥有率"
+        title="完整卡库的不同卡种（含活动卡）；重复卡与筛选条件不影响拥有率">
+        拥有率 <strong>{(completion.ratio * 100).toFixed(2)}%</strong> · 已拥有 {completion.owned}/{completion.total} 种
+      </p>
 
       {/* 这个问题是**会真的发生**的：上阵的卡被融合/导入消耗掉之后就不在库存里了 */}
       {summary && summary.text.length > 0 && (
@@ -346,7 +392,7 @@ export function DeckEditorScene({ profile, store }: DeckEditorSceneProps) {
                       */
                       showCount
                       size="sm"
-                      disabled={blocked}
+                      disabled={disabled || blocked}
                       note={note}
                       onClick={() => handleAdd(entry.cardId)}
                     />

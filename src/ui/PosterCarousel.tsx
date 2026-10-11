@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import './abyssEntry.css';
 
 /**
  * 活动海报轮播。
@@ -20,6 +21,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
  */
 export interface PosterCarouselProps {
   readonly posters: readonly string[];
+  /** 可选文案，与图片数组由同一海报条目派生；无caption的旧海报不重复盖字。 */
+  readonly details?: readonly { readonly title: string; readonly caption?: string; readonly badge?: string }[];
   /** 每张停留多久（毫秒）。 */
   readonly intervalMs?: number;
   /** 单次滑动时长（毫秒）。 */
@@ -32,6 +35,7 @@ export interface PosterCarouselProps {
 
 export function PosterCarousel({
   posters,
+  details,
   intervalMs = 5000,
   durationMs = 700,
   onSelect,
@@ -109,6 +113,11 @@ export function PosterCarousel({
   const easing = progress * progress * (3 - 2 * progress);
   const current = posters[index] ?? '';
   const incoming = target === null ? current : (posters[target] ?? '');
+  const title = details?.[index]?.title ?? '活动';
+  const caption = (at: number) => {
+    const detail = details?.[at];
+    return detail?.caption ? <div className="poster__caption"><strong>{detail.title}{detail.badge && <b>{detail.badge}</b>}</strong><span>{detail.caption}</span></div> : null;
+  };
   /*
     **不在切换时位移必须是 0。**
     `progress` 在动画结束后停在 1，如果照旧算 `100%`，那一张图会一直停在屏幕外，
@@ -124,7 +133,8 @@ export function PosterCarousel({
       data-poster-index={index}
       role="button"
       tabIndex={0}
-      title="点击进入战役"
+      title={`点击进入${title}`}
+      aria-label={`海报：${title}`}
       onClick={() => onSelect?.(index)}
       onKeyDown={(event) => {
         if (event.key === 'Enter' || event.key === ' ') {
@@ -140,7 +150,7 @@ export function PosterCarousel({
             backgroundImage: current ? `url(${current})` : undefined,
             transform: `translateX(${-shift}%)`,
           }}
-        />
+        >{caption(index)}</div>
         {target !== null && (
           <div
             className="poster__art"
@@ -148,7 +158,7 @@ export function PosterCarousel({
               backgroundImage: incoming ? `url(${incoming})` : undefined,
               transform: `translateX(${direction * 100 - shift}%)`,
             }}
-          />
+          >{caption(target)}</div>
         )}
       </div>
       {/* 小圆点指示器：旧版没有，但没有它就看不出这是「一组」而不是一张图 */}

@@ -1,0 +1,13 @@
+{
+  "name": "card-master-3d-icon",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "只在改图标时用：把 icon.svg 转成 icon.ico。不参与游戏构建。",
+  "scripts": {
+    "build": "node make-ico.mjs"
+  },
+  "devDependencies": {
+    "sharp": "^0.34.0"
+  }
+}

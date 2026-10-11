@@ -7,6 +7,7 @@ import { Pile } from './Pile';
 import type { PileView } from './placements';
 import { useSettingsStore } from '../../state/settingsStore';
 import { CameraRig } from './CameraRig';
+import { useBattleVisuals } from './battleVisuals';
 import { SceneEnvironment } from './SceneEnvironment';
 import { SceneGround } from './SceneGround';
 import { TournamentSetting } from './TournamentSetting';
@@ -108,10 +109,8 @@ export function BattleBoard({
   dragActive = false,
   onCardPointerDown,
 }: BattleBoardProps) {
-  const theme = useSettingsStore((state) => state.tableTheme);
-  const quality = useSettingsStore((state) => state.quality);
-  const shadows = useSettingsStore((state) => state.profile.shadows);
-  const shadowMapSize = useSettingsStore((state) => state.profile.shadowMapSize);
+  const { theme, quality, profile } = useBattleVisuals();
+  const { shadows, shadowMapSize } = profile;
   const reduceMotion = useSettingsStore((state) => state.reduceMotion);
 
   return (
@@ -128,7 +127,7 @@ export function BattleBoard({
 
       {/* 棋盘之外的大圆桌：远端的边缘由雾化成背景色 */}
       {theme.id === 'tournament' ? <TournamentSetting quality={quality} />
-        : theme.geometry !== 'mecha' && theme.geometry !== 'volcano' && <SceneGround theme={theme} />}
+        : !theme.geometry && <SceneGround theme={theme} />}
 
       <Table
         theme={theme}

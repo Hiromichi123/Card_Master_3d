@@ -33,6 +33,14 @@ export function dayKeyOf(date: Date): string {
   return `${date.getFullYear()}${pad2(date.getMonth() + 1)}${pad2(date.getDate())}`;
 }
 
+/** 本地周一的日键；跨年仍以日期比较，不用 UTC 周号。 */
+export function weekKeyOf(dayKey: string): string | null {
+  const date = parseDayKey(dayKey);
+  if (!date) return null;
+  date.setDate(date.getDate() - (date.getDay() + 6) % 7);
+  return dayKeyOf(date);
+}
+
 /** 解析 `YYYYMMDD`。格式不对返回 `null`，不抛——它来自 URL 参数。 */
 export function parseDayKey(key: string): Date | null {
   if (!/^\d{8}$/.test(key)) {

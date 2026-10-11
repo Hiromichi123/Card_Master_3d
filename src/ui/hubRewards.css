@@ -1,0 +1,135 @@
+@layer control-defaults, legacy, theme, hub, controls;
+
+@layer hub {
+  .hub-menu .menu__status { z-index: 11; }
+  .hub-player { display: flex; align-items: center; gap: calc(24 * var(--ui)); }
+  .hub-player > .player { flex: 0 0 auto; }
+  .hub-rewards { display: flex; align-items: center; gap: calc(18 * var(--ui)); padding: 0; flex: 0 0 auto; }
+  .hub-rewards__entry {
+    --ui-flow-warm: transparent; --ui-flow-cool: transparent;
+    display: grid; place-items: center; gap: calc(5 * var(--ui));
+    min-width: 64px; width: calc(140 * var(--ui)); padding: calc(9 * var(--ui)) 0;
+    color: #fff1c7; border: 0; background: none; box-shadow: none;
+    cursor: pointer; font: inherit; text-align: center; text-shadow: 0 2px 5px #37210e99;
+  }
+  .hub-rewards__entry strong { font: 800 clamp(12px, calc(28 * var(--ui)), 22px)/1.4 'Game Numerals', 'SimSun', 'Songti SC', serif; letter-spacing: .06em; }
+  .hub-rewards__entry small { font-size: clamp(10px, calc(19 * var(--ui)), 15px); color: #dfd1aa; }
+  .hub-rewards__logo { position: relative; isolation: isolate; display: grid; place-items: center; width: clamp(38px, calc(86 * var(--ui)), 66px); aspect-ratio: 1; }
+  .hub-rewards__logo > svg { width: 88%; height: 88%; filter: drop-shadow(0 4px 2px #22130677) drop-shadow(0 0 8px #efbf6766); transition: transform .25s ease; }
+  .hub-rewards__entry:hover .hub-rewards__logo > svg { transform: translateY(-3px) scale(1.07); }
+  .hub-rewards__rays {
+    position: absolute; inset: -25%; z-index: -1; border-radius: 50%; pointer-events: none;
+    background: repeating-conic-gradient(from 0deg, transparent 0 12deg, #ffe5a477 14deg 18deg, transparent 21deg 30deg);
+    mask-image: radial-gradient(circle, transparent 4%, #000 25%, #0008 45%, transparent 69%);
+    animation: reward-rays 24s linear infinite; filter: blur(.4px);
+  }
+  .hub-rewards__entry--checkIn .hub-rewards__rays { background: repeating-conic-gradient(from 0deg, transparent 0 12deg, #bce6f58c 14deg 18deg, transparent 21deg 30deg); animation-direction: reverse; }
+  .hub-rewards__notice { position: absolute; top: 8%; right: 4%; width: 10px; height: 10px; border: 1px solid #ffeabd; border-radius: 50%; background: #df7756; box-shadow: 0 0 10px #ffd679; animation: reward-notice 2.4s ease-in-out infinite; }
+
+  .reward-overlay {
+    position: fixed; inset: 0; z-index: 75; display: grid; place-items: center;
+    padding: 18px; background: #11182152; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+    color: #eee2ca; font-family: 'Game Numerals', 'Microsoft YaHei', 'PingFang SC', sans-serif;
+    animation: reward-overlay-in .24s ease-out both;
+  }
+  .reward-rail {
+    --reward-step: clamp(144px, 11vw, 186px); --reward-gap: clamp(44px, 5vw, 78px);
+    --ui-control-fill: radial-gradient(ellipse at 25% 32%, #8b9ba31f, transparent 42%), radial-gradient(ellipse at 74% 69%, #a68b6026, transparent 44%), linear-gradient(108deg, #1b232af5, #3a3c3aef);
+    --ui-rim-gradient: linear-gradient(125deg, #dcc9a3, #776349 24%, #bfa476 51%, #655945 76%, #d4bc8d);
+    position: relative; isolation: isolate; width: min(1620px, 94vw); max-height: 90vh; overflow: auto;
+    padding: clamp(18px, 2vw, 32px) 0 18px; border: 1px solid #bfa476a6; border-radius: 18px;
+    background-image: radial-gradient(ellipse at 40% 0, #9da9ad18, transparent 65%),
+      repeating-linear-gradient(98deg, #f4e7cf04 0 1px, transparent 1px 4px),
+      linear-gradient(108deg, #1b232af5, #383d3eef 48%, #252c30f5);
+    box-shadow: inset 0 0 0 4px #171d2466, inset 0 0 0 5px #e6d1a526,
+      inset 0 1px #f4ead033, inset 0 -16px 40px #0003, 0 12px 0 -4px #101720d9, 0 28px 80px #0006;
+    animation: reward-rail-in .4s cubic-bezier(.18,.85,.25,1) both;
+    outline: none; text-shadow: none;
+  }
+  .reward-rail::before {
+    content: ''; position: absolute; inset: 9px; border: 1px solid #c4ad7d35; border-radius: 12px; z-index: -1; pointer-events: none;
+    background: url('/assets/ui/hub-grain.svg') repeat; mix-blend-mode: soft-light; opacity: .75;
+    mask-image: linear-gradient(90deg, #0005, transparent 30%, transparent 70%, #0005);
+  }
+  .reward-rail__header { display: flex; align-items: center; gap: 18px; padding: 0 clamp(22px, 3vw, 44px); }
+  .reward-rail__heading { display: flex; align-items: center; gap: 12px; }
+  .reward-rail__heading > svg { width: 52px; height: 52px; filter: drop-shadow(0 2px 1px #79532745); }
+  .reward-rail__eyebrow { font-size: 10px; letter-spacing: .3em; color: #b8b1a0; }
+  .reward-rail__heading h2 { margin: 0; color: #eee2ca; font: 900 clamp(20px, 2vw, 30px)/1.4 'Game Numerals', 'SimSun', 'Songti SC', serif; letter-spacing: .15em; }
+  .reward-rail__progress { margin-left: auto; font-size: 13px; white-space: nowrap; color: #b6b7b1; }
+  .reward-rail__progress b { font-size: 24px; color: #e4cba1; }
+  .reward-rail__description { margin: 10px 0 7px; padding: 0 clamp(22px, 3vw, 44px); font-size: 12px; color: #b6b7b1; }
+  .reward-rail__close { padding: 0; width: 34px; height: 34px; font: 26px/1 'Game Numerals', Georgia, serif; cursor: pointer; }
+  .reward-rail__viewport { position: relative; padding: 0 42px; }
+  .reward-rail__track { position: relative; overflow-x: auto; overflow-y: hidden; scrollbar-color: #a38c64 #202830; scrollbar-width: thin; cursor: grab; user-select: none; touch-action: pan-x; outline-color: #9f6b21; overscroll-behavior: contain; }
+  .reward-rail__track[data-dragging='true'] { cursor: grabbing; }
+  .reward-rail__track::-webkit-scrollbar { height: 6px; }
+  .reward-rail__track::-webkit-scrollbar-track { background: #11192266; }
+  .reward-rail__track::-webkit-scrollbar-thumb { background: linear-gradient(90deg, #bc9149, #e3b961, #bc9149); border-radius: 4px; }
+  .reward-rail__nodes { display: flex; width: max-content; gap: var(--reward-gap); padding: 22px 26px 22px; }
+  .reward-rail__arrow { position: absolute; z-index: 3; top: 44%; width: 30px; height: 54px; padding: 0; font: 40px/1 'Game Numerals', Georgia, serif; cursor: pointer; }
+  .reward-rail__arrow--left { left: 8px; } .reward-rail__arrow--right { right: 8px; }
+  .reward-node { position: relative; display: flex; flex-direction: column; align-items: center; flex: 0 0 var(--reward-step); width: var(--reward-step); gap: 10px; }
+  .reward-node__reward { height: 44px; width: 100%; display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; }
+  .reward-node__reward strong { color: #d7c5a5; font-size: 15px; }
+  .reward-node__reward small { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: pre; font-size: 11px; color: #a9aca6; }
+  .reward-node__square {
+    position: relative; display: grid; place-items: center; width: 112px; height: 112px;
+    border: 2px solid #8f805d88; border-radius: 5px; isolation: isolate;
+    background: radial-gradient(ellipse at 30% 20%, #d9e0db14, transparent 65%), linear-gradient(140deg, color-mix(in srgb, var(--reward-hue) 10%, #252e35), #1b232b);
+    box-shadow: inset 0 0 0 4px #222a30, inset 0 0 0 5px #b9a47b26, inset 0 1px #eee2ca2a, 0 4px 0 #101821aa;
+    transition: border-color .4s, box-shadow .4s, filter .4s;
+  }
+  .reward-node__square > svg { width: 72%; height: 72%; filter: saturate(.7) drop-shadow(0 2px 1px #51341735); opacity: .78; }
+  .reward-node__engraving { position: absolute; inset: 10px; z-index: -1; border: 1px solid #a57b3c3d; transform: rotate(45deg) scale(.66); pointer-events: none; }
+  .reward-node__square .tile { width: 61px; height: 86px; min-width: 0; min-height: 0; border-radius: 3px; opacity: .8; box-shadow: 0 4px 10px #6d461e40; }
+  .reward-node__square .tile img { width: 100%; height: 100%; object-fit: cover; }
+  .reward-node__check { position: absolute; bottom: -9px; right: -8px; display: grid; place-items: center; width: 25px; height: 25px; border-radius: 50%; border: 1px solid #ffeeae; background: #a18537; color: #fff4bf; box-shadow: 0 2px 5px #69502640; font-size: 17px; }
+  .reward-node__label { font-weight: 700; font-size: 15px; letter-spacing: .1em; color: #b7b6ab; }
+  .reward-node__claim { width: 108px; min-height: 32px; padding: 6px 9px; font: 700 12px/1.5 'Game Numerals', 'Microsoft YaHei', sans-serif; cursor: pointer; }
+  .reward-node__connector { position: absolute; top: 105px; right: calc(100% - (var(--reward-step) - 112px) / 2); width: calc(var(--reward-gap) + var(--reward-step) - 112px); height: 9px; padding: 3px 0; background: linear-gradient(#48505066, #161f2b99); box-shadow: inset 0 1px #bca77f33, inset 0 -1px #080f1899; pointer-events: none; }
+  .reward-node__connector > i { display: block; height: 3px; background: #8a7c583d; }
+  .reward-node__connector--lit { background: #bd9c5799; box-shadow: 0 0 10px #d4bc8d55, inset 0 1px #f0dfb899; }
+  .reward-node__connector--lit > i { background: linear-gradient(90deg, #ffe99e, #fff6cf, #f8d775); }
+  .reward-node--complete .reward-node__square { border-color: #dcc9a3; box-shadow: inset 0 0 0 4px #30383a, inset 0 0 0 5px #d4bc8d77, 0 4px 0 #101821, 0 0 16px #d4bc8d45; background: radial-gradient(ellipse at center, #bfa47620, #30383b); }
+  .reward-node--complete .reward-node__reward strong, .reward-node--complete .reward-node__label { color: #f0dfba; }
+  .reward-node--complete .reward-node__square > svg, .reward-node--complete .reward-node__square .tile { opacity: 1; filter: drop-shadow(0 3px 1px #51341735); }
+  .reward-node--ready .reward-node__square { animation: reward-node-breathe 3.2s ease-in-out infinite; }
+  .reward-node--claimed .reward-node__claim { opacity: .66; }
+  .reward-rail__footer { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 13px clamp(22px, 3vw, 44px) 0; font-size: 11px; color: #a9aca6; }
+  .reward-rail__message { color: #ddcba9; text-align: right; }
+
+  @keyframes reward-rays { to { transform: rotate(360deg); } }
+  @keyframes reward-notice { 50% { box-shadow: 0 0 18px #ffd679; filter: brightness(1.15); } }
+  @keyframes reward-node-breathe { 50% { box-shadow: inset 0 0 0 4px #343b3b, inset 0 0 0 5px #e5d3a6aa, 0 4px 0 #101821, 0 0 27px #d4bc8d70; } }
+  @keyframes reward-overlay-in { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes reward-rail-in { from { opacity: 0; transform: translateY(20px) scale(.98); } to { opacity: 1; transform: none; } }
+  .hub-rewards--still *, .reward-overlay--still, .reward-overlay--still * { animation: none; transition: none; }
+  @media (max-width: 620px) {
+    .reward-overlay { padding: 8px; }
+    .reward-rail { width: 98vw; --reward-step: 138px; --reward-gap: 40px; }
+    .reward-rail__header { gap: 8px; padding: 0 17px; }
+    .reward-rail__heading { gap: 5px; }
+    .reward-rail__heading > svg { width: 36px; height: 36px; }
+    .reward-rail__progress { font-size: 10px; }
+    .reward-rail__progress b { font-size: 18px; }
+    .reward-rail__viewport { padding: 0 30px; }
+    .reward-rail__arrow { width: 24px; }
+    .reward-rail__arrow--left { left: 3px; } .reward-rail__arrow--right { right: 3px; }
+    .reward-rail__footer { flex-direction: column; gap: 4px; text-align: center; }
+    .reward-rail__message { text-align: center; }
+  }
+  @media (prefers-reduced-motion: reduce) { .hub-rewards *, .reward-overlay, .reward-overlay * { animation: none; transition: none; } }
+}
+
+@layer controls {
+  /* Small lobby reward logos float freely; only actions inside the rail keep the shared bevel. */
+  .hub-rewards__entry, .hub-rewards__entry:hover:not(:disabled) { background: none; border: 0; box-shadow: none; animation: none; }
+  .hub-rewards__entry::before, .hub-rewards__entry::after { content: none; }
+  .reward-rail :is(.reward-rail__close, .reward-rail__arrow, .reward-node__claim) { color: #eee2ca; text-shadow: none; }
+  .reward-rail :is(.reward-rail__close, .reward-rail__arrow, .reward-node__claim):hover:not(:disabled) { color: #fff0cf; box-shadow: 0 0 13px #d4bc8d40; }
+  .reward-rail .reward-node__claim:disabled { color: #9c9e94; opacity: .68; cursor: default; }
+  .reward-node--ready .reward-node__claim { --ui-control-fill: radial-gradient(ellipse at 25% 32%, #c6b58a26, transparent 42%), radial-gradient(ellipse at 74% 69%, #a68b6033, transparent 44%), linear-gradient(108deg, #303a40, #4a4940); --ui-rim-opacity: 1; }
+  .reward-overlay--still button::before, .reward-overlay--still button::after { animation: none; }
+  @media (prefers-reduced-motion: reduce) { .reward-overlay button::before, .reward-overlay button::after { animation: none; } }
+}

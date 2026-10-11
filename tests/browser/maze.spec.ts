@@ -17,7 +17,7 @@ const DAY = '20240101';
 /** 演示存档：新号 5000 金币（`STARTING_CURRENCIES`）。 */
 const START_GOLD = 5000;
 
-/** 当前这一页 → 主菜单 → 选择对战模式 → 活动模式 → 活动大厅 → 迷宫挑战。 */
+/** 当前这一页 → 主菜单 → 选择对战模式 → 活动模式 → 活动大厅 → 世界树迷宫。 */
 async function goToMaze(page: Page): Promise<void> {
   await page.locator('.app-nav').getByRole('button', { name: '主菜单', exact: true }).click();
   await page.locator('.menu__columns').getByRole('button', { name: '进入战斗', exact: true }).click();
@@ -29,10 +29,10 @@ async function goToMaze(page: Page): Promise<void> {
     进入要点面板上的「进入」。迷宫是第一个模式，进来就是选中态，
     但仍按标题点一次——不假设默认下标，活动大厅以后还会加模式。
   */
-  await page.locator('.activity-wheel__option', { hasText: '迷宫挑战' }).click();
-  await expect(page.locator('.activity-detail__title')).toContainText('迷宫挑战');
+  await page.locator('.activity-wheel__option', { hasText: '世界树迷宫' }).click();
+  await expect(page.locator('.activity-detail__title')).toContainText('世界树迷宫');
   await page.locator('.activity-detail__enter').click();
-  await expect(page.locator('.maze__title')).toHaveText('迷宫挑战·第一层');
+  await expect(page.locator('.maze__title')).toHaveText('世界树迷宫·第一层');
 }
 
 /** 开一个干净存档再进迷宫。 */
@@ -84,10 +84,17 @@ test('进入迷宫：地图、图例与初始 run 落盘', async ({ page }) => {
     '商店补给',
   ]);
   await expect(page.locator('.maze__foot')).toContainText('已探索 1 /');
+  await expect(page.locator('.maze__sidebar-toggle')).toHaveAttribute('aria-expanded', 'false');
+  await expect(page.locator('.maze__detail')).toHaveCount(0);
+  await expect(page.locator('.maze__tile[data-current="true"] .maze__tile-complete')).toHaveCount(1);
 
   // 第一次进来就把 run 写下来（位置在入口，只探索了入口）
   await expectPersisted(page, (profile) => profile.mazeRun?.playerNodeId, 0);
   await expectPersisted(page, (profile) => profile.mazeRun?.version, 1);
+  await expectPersisted(page, (profile) => profile.mazeProgress.explorationCount, 0);
+  await expect(page.getByRole('progressbar', { name: '探索保底进度' })).toHaveAttribute('aria-valuenow', '0');
+  await expect(page.locator('.maze__left-rail > .maze__legend + .maze__showcase')).toBeVisible();
+  await expect(page.locator('.maze__reset')).toContainText('1/1');
 
   expect(problems, `场景出现问题：\n${problems.join('\n')}`).toEqual([]);
 });
@@ -100,8 +107,11 @@ test('走一格：点两次才出发，位置与探索记录落盘', async ({ pa
   test.skip((await target.count()) === 0, '这一版的地图上入口没有非战斗邻居');
   const targetId = await nodeIdOf(target);
 
-  // 第一次点：只把它选中，右侧出详情
+  // 第一次点只选中，不自动展开；手动按钮打开详情。
   await target.click();
+  await expect(page.locator('.maze__sidebar-toggle')).toHaveAttribute('aria-expanded', 'false');
+  await expect(page.locator('.maze__detail')).toHaveCount(0);
+  await page.locator('.maze__sidebar-toggle').click();
   await expect(page.locator('.maze__detail')).toHaveAttribute('data-node-id', String(targetId));
   await expect(page.locator('.maze__detail-sub')).toHaveText(`节点 #${targetId}`);
   await expect(page.locator('.maze__detail-list').first()).toBeVisible();
@@ -117,6 +127,8 @@ test('走一格：点两次才出发，位置与探索记录落盘', async ({ pa
     true,
   );
   await expectPersisted(page, (profile) => profile.mazeRun?.exploredNodeIds.length, 2);
+  await expectPersisted(page, (profile) => profile.mazeProgress.explorationCount, 1);
+  await expect(page.getByRole('progressbar', { name: '探索保底进度' })).toHaveAttribute('aria-valuenow', '1');
 
   /*
     刷新后还在这一格。
@@ -141,10 +153,15 @@ test('走到补给节点：开楼层商店，买了扣钱、售罄落在这个�
 
   await supply.click();
   await supply.click();
-  // 到达补给节点直接开货架（旧版是切到 floor_shop 那块屏）
+  await expectPersisted(page, (profile) => profile.mazeRun?.playerNodeId, nodeId);
+  // 到达补给只更新上下文，必须手动打开整个侧栏。
+  await expect(page.locator('.maze__sidebar-toggle')).toHaveAttribute('aria-expanded', 'false');
+  await expect(page.locator('.maze__shop')).toHaveCount(0);
+  await page.locator('.maze__sidebar-toggle').click();
   await expect(page.locator('.maze__shop')).toHaveAttribute('data-shop-node', String(nodeId));
   const items = page.locator('.maze__shop-item');
-  expect(await items.count()).toBeGreaterThan(0);
+  expect(await items.count()).toBeGreaterThanOrEqual(3);
+  expect(await items.count()).toBeLessThanOrEqual(5);
 
   /*
     买第一件收金币的（活动位收水晶，新号没有）。
@@ -171,7 +188,8 @@ test('走到补给节点：开楼层商店，买了扣钱、售罄落在这个�
 
   // 关掉面板回到地图
   await page.locator('.maze__shop-close').click();
-  await expect(page.locator('.maze__detail')).toBeVisible();
+  await expect(page.locator('.maze__detail')).toHaveCount(0);
+  await expect(page.locator('.maze__sidebar-toggle')).toHaveAttribute('aria-expanded', 'false');
 
   expect(problems, `场景出现问题：\n${problems.join('\n')}`).toEqual([]);
 });
@@ -207,7 +225,7 @@ test('战斗节点：到达就开打，结算落盘，返回地图', async ({ pa
 
   // 按钮上的文案是「返回地图」而不是战役那套
   await page.locator('.overlay').getByRole('button', { name: '返回地图' }).click();
-  await expect(page.locator('.maze__title')).toHaveText('迷宫挑战·第一层');
+  await expect(page.locator('.maze__title')).toHaveText('世界树迷宫·第一层');
   expect(await nodeIdOf(page.locator('.maze__tile[data-current="true"]'))).toBe(nodeId);
 
   expect(problems, `场景出现问题：\n${problems.join('\n')}`).toEqual([]);
@@ -226,9 +244,16 @@ test('清空探索记录：换一轮（version + 1），位置回到入口', asy
 
   await page.locator('.maze__reset').click();
   await expectPersisted(page, (profile) => profile.mazeRun?.version, 2);
+  await expectPersisted(page, (profile) => profile.mazeProgress.explorationCount, 1);
+  await expect(page.locator('.maze__reset')).toContainText('0/1');
+  await expect(page.locator('.maze__reset')).toBeDisabled();
+  await expect(page.getByRole('progressbar', { name: '探索保底进度' })).toHaveAttribute('aria-valuenow', '1');
   await expectPersisted(page, (profile) => profile.mazeRun?.playerNodeId, 0);
   await expectPersisted(page, (profile) => profile.mazeRun?.exploredNodeIds.length, 1);
   await expect(page.locator('.maze__foot')).toContainText('已探索 1 /');
+  await expect(page.locator('.maze__sidebar-toggle')).toHaveAttribute('aria-expanded', 'false');
+  await expect(page.locator('.maze__detail')).toHaveCount(0);
+  await expect(page.locator('.maze__tile[data-current="true"] .maze__tile-complete')).toHaveCount(1);
 
   expect(problems, `场景出现问题：\n${problems.join('\n')}`).toEqual([]);
 });

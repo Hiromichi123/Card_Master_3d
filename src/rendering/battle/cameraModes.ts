@@ -124,9 +124,10 @@ export function fitCameraTo(
      * 换来的是「悬停时牌顶不会超出画面上沿」——不值得。
      */
     height = 2.2,
+    minHeight = 0,
     margin = 1.08,
     iterations = 6,
-  }: { radius?: number; height?: number; margin?: number; iterations?: number } = {},
+  }: { radius?: number; height?: number; minHeight?: number; margin?: number; iterations?: number } = {},
 ): number {
   /*
     内容是平的，所以轮廓就是外接盒的四条竖棱的上下共 8 个角。
@@ -138,7 +139,7 @@ export function fitCameraTo(
   const corners: Vector3[] = [];
   for (const x of [target.x - radius, target.x + radius]) {
     for (const z of [target.z - radius, target.z + radius]) {
-      for (const y of [0, height]) {
+      for (const y of [minHeight, height]) {
         corners.push(new Vector3(x, y, z));
       }
     }

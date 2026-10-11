@@ -3,6 +3,7 @@ import { useRef, useState } from 'react';
 import { backgroundUrl } from '../data/assets';
 import { MenuChrome, MenuEntryButton } from '../ui/MenuChrome';
 import { PlayerStatus } from '../ui/PlayerStatus';
+import { AbyssCountdown } from '../ui/AbyssCountdown';
 import { SelectionWheel, type WheelItem } from '../ui/SelectionWheel';
 import { usePageWheel } from '../ui/usePageWheel';
 import { pushToast } from '../state/toastStore';
@@ -26,8 +27,7 @@ import type { RouteId } from '../app/routes';
  * 滚轮只管「选中」——换背景、换说明。进入要靠面板上的「进入」按钮。
  * 这与抽卡页一致（选卡池 ≠ 抽卡），也避免玩家滚过一页就误入迷宫。
  *
- * 三个旧模式（迷宫 / 深渊 / 协力）加两个新的（天梯赛 / 极难挑战）共五个，
- * 只有迷宫做完了；其余四个按既有约定：**给提示，不做成灰按钮**。
+ * 五个模式保留顺序；迷宫、天梯预览及深渊挑战可进入，协力/极难仍给未开放提示。
  */
 
 interface ActivityMode {
@@ -49,8 +49,8 @@ interface ActivityMode {
 const MODES: readonly ActivityMode[] = [
   {
     id: 'maze',
-    title: '迷宫挑战',
-    desc: '进入限时迷宫，连续挑战三个阶段首领，获得最终奖励。',
+    title: '世界树迷宫',
+    desc: '沿世界树的秘径探索第一层，挑战守卫与首领，在补给商店寻找特价卡牌。',
     schedule: '活动期间常驻开放',
     bgType: 'bg/activity_maze',
     route: 'maze',
@@ -58,10 +58,10 @@ const MODES: readonly ActivityMode[] = [
   {
     id: 'abyss',
     title: '深渊挑战',
-    desc: '携带自定义卡组车轮战挑战多层深渊，获取稀有奖励。',
-    schedule: '每周开放 3 个全新层级',
+    desc: '从三套六张卡组中选择，以三颗心深入深渊。接受正负契约，培养本轮独立卡牌；每层十战，击败噩梦后可结算或继续。',
+    schedule: 'UTC+8 每周一04:00 · 跨周保留进度，周奖励暂未开放',
     bgType: 'bg/activity_abyss',
-    route: null,
+    route: 'abyss',
   },
   {
     id: 'coop',
@@ -74,10 +74,10 @@ const MODES: readonly ActivityMode[] = [
   {
     id: 'ladder',
     title: '天梯赛',
-    desc: '与全服玩家排位对决，按胜场结算赛季排名与专属头像框。',
-    schedule: '赛季结算，每两周一轮',
+    desc: '配置独立天梯阵容，查看卡组强度与段位之路。单人匹配与2v2暂未开放。',
+    schedule: '段位与阵容预览开放 · 匹配敬请期待',
     bgType: 'bg/activity_ladder',
-    route: null,
+    route: 'ladder',
   },
   {
     id: 'extreme',
@@ -160,6 +160,7 @@ export function ActivityScene({ profile, onNavigate }: ActivitySceneProps) {
 
   return (
     <MenuChrome
+      className={mode.id === 'abyss' ? 'menu--activity-abyss' : ''}
       backgroundUrl={backgroundUrl(mode.bgType)}
       rootRef={pageRef}
       title="限时活动模式"
@@ -167,6 +168,7 @@ export function ActivityScene({ profile, onNavigate }: ActivitySceneProps) {
       subtitle="限时玩法与合作挑战在此汇集，完成目标可兑换限定卡牌奖励。"
       status={<PlayerStatus level={profile.level} currencies={profile.currencies} />}
     >
+      {mode.id === 'abyss' && <AbyssCountdown className="activity-abyss-countdown" />}
       <SelectionWheel
         variant="activity-wheel"
         ariaLabel="活动模式"
@@ -183,12 +185,14 @@ export function ActivityScene({ profile, onNavigate }: ActivitySceneProps) {
           ——那个组件的 tooltip 写死了「计划在 P6 阶段实现」，而这四个新模式
           并没有排在任何一个阶段上，用它等于说了一句不准确的话。
         */
-        renderBadge={(item) => (item.coming ? <span className="activity-wheel__soon">未开放</span> : null)}
+        renderBadge={(item) => item.id === 'abyss' ? <span className="abyss-new">NEW</span>
+          : item.coming ? <span className="activity-wheel__soon">未开放</span> : null}
       />
 
       <section className="activity-detail" aria-label="活动详情">
         <h2 className="activity-detail__title">
           {mode.title}
+          {mode.id === 'abyss' && <span className="abyss-new">NEW</span>}
           {mode.route === null && <span className="activity-detail__soon">未开放</span>}
         </h2>
         <p className="activity-detail__desc">{mode.desc}</p>

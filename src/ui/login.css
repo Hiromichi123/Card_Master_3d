@@ -18,7 +18,7 @@
   overflow: hidden;
   background: #000;
   color: #f1dfb4;
-  font-family: Georgia, 'Noto Serif SC', 'Songti SC', SimSun, serif;
+  font-family: 'Game Numerals', Georgia, 'Noto Serif SC', 'Songti SC', SimSun, serif;
 }
 .login-scene__world { position: absolute; inset: 0; pointer-events: none; }
 .login-scene__vignette {
@@ -32,7 +32,7 @@
   opacity: 1; transform: scale(1);
   transition: opacity 1.15s ease, transform 2.4s cubic-bezier(.2,.6,.2,1), filter 1.3s;
 }
-.login-title__eyebrow { font: 10px/1.5 Georgia, serif; letter-spacing: .65em; padding-left: .65em; color: #bd9c62; animation: login-letter-arrive 1.4s both; }
+.login-title__eyebrow { font: 10px/1.5 'Game Numerals', Georgia, serif; letter-spacing: .65em; padding-left: .65em; color: #bd9c62; animation: login-letter-arrive 1.4s both; }
 .login-title h1 {
   position: relative; margin: 26px 0 25px; text-align: center;
   font-size: clamp(42px, 6.5vw, 124px); font-weight: 600; line-height: 1.15;
@@ -56,7 +56,7 @@
 .login-start {
   display: inline-flex; align-items: center; justify-content: center; gap: 24px;
   margin: 0; padding: 18px 22px; min-height: 58px; border: 0; background: transparent;
-  font: 600 clamp(14px, 1.3vw, 20px)/1.5 'Songti SC', SimSun, serif;
+  font: 600 clamp(14px, 1.3vw, 20px)/1.5 'Game Numerals', 'Songti SC', SimSun, serif;
   color: #f4d691; letter-spacing: .24em; cursor: pointer;
   box-shadow: none; text-shadow: 0 0 14px #dcac6199;
   animation: login-prompt 2.8s ease-in-out infinite;
@@ -65,7 +65,7 @@
 .login-start:hover { color: #fff3cc; background: none; box-shadow: none; }
 .login-start:focus-visible { outline: 1px solid #dabc7d; outline-offset: 3px; }
 .login-start > i { width: 5px; height: 5px; transform: rotate(45deg); background: #cba563; box-shadow: 0 0 12px #e8c17866; }
-.login-start__loading { font: 10px/1.6 'Songti SC', SimSun, serif; color: #b59c6f; opacity: .65; letter-spacing: .5em; }
+.login-start__loading { font: 10px/1.6 'Game Numerals', 'Songti SC', SimSun, serif; color: #b59c6f; opacity: .65; letter-spacing: .5em; }
 .login-start__loading i { display: block; height: 1px; width: 85px; margin: 16px auto 0; background: linear-gradient(90deg, transparent, #d7b672, transparent); animation: login-prompt 2.5s infinite; }
 .login-form-stage { position: absolute; inset: 0; display: grid; place-items: center; perspective: 1300px; padding: 22px; box-sizing: border-box; }
 .login-form {
@@ -83,7 +83,7 @@
 .login-form::before, .login-form::after { content: ''; position: absolute; pointer-events: none; width: 48px; height: 9px; border-top: 2px solid #e6c784; top: 8px; }
 .login-form::before { left: 14px; border-left: 1px solid #e6c784; transform: skewX(-27deg); }
 .login-form::after { right: 14px; border-right: 1px solid #e6c784; transform: skewX(27deg); }
-.login-form__topline, .login-form__foot { display: flex; align-items: center; justify-content: center; gap: 12px; font: 8px/1.5 Georgia, serif; letter-spacing: .26em; color: #b69b69; }
+.login-form__topline, .login-form__foot { display: flex; align-items: center; justify-content: center; gap: 12px; font: 8px/1.5 'Game Numerals', Georgia, serif; letter-spacing: .26em; color: #b69b69; }
 .login-form__topline i, .login-form__foot i { flex: 1; height: 1px; background: linear-gradient(90deg, transparent, #b391514f); }
 .login-form__topline i:last-child, .login-form__foot i:last-child { transform: rotate(180deg); }
 .login-form__seal { position: relative; width: 56px; height: 56px; margin: 22px auto 10px; display: grid; place-items: center; }
@@ -91,26 +91,26 @@
 .login-form__seal i { inset: 1px; border: 1px solid #a88a492d; animation: login-seal 30s linear infinite; }
 .login-form__seal b { font-size: 25px; font-weight: 400; color: #efd394; text-shadow: 0 0 20px #d9b66077; }
 .login-form header { text-align: center; margin: 0 0 26px; }
-.login-form header p { font: 8px/1.4 Georgia, serif; letter-spacing: .35em; color: #96866b; margin: 12px 0 9px; }
-.login-form h2 { font: 700 25px/1.4 'Songti SC', SimSun, serif; letter-spacing: .13em; color: #eddaa9; margin: 0; }
+.login-form header p { font: 8px/1.4 'Game Numerals', Georgia, serif; letter-spacing: .35em; color: #96866b; margin: 12px 0 9px; }
+.login-form h2 { font: 700 25px/1.4 'Game Numerals', 'Songti SC', SimSun, serif; letter-spacing: .13em; color: #eddaa9; margin: 0; }
 .login-field { display: block; margin-top: 18px; }
 .login-field > span { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; color: #d4c29b; font-size: 12px; letter-spacing: .15em; }
-.login-field small { font: 8px Georgia, serif; color: #8c836e; letter-spacing: .18em; }
-.login-field input { display: block; width: 100%; height: 44px; padding: 9px 13px; box-sizing: border-box; border: 1px solid #91754380; border-radius: 5px; background: linear-gradient(100deg, #080e18cf, #23232680); color: #f4ead1; font: 15px/1.4 Georgia, 'Songti SC', SimSun, serif; outline: none; user-select: text; transition: border-color .2s, box-shadow .2s; }
+.login-field small { font: 8px 'Game Numerals', Georgia, serif; color: #8c836e; letter-spacing: .18em; }
+.login-field input { display: block; width: 100%; height: 44px; padding: 9px 13px; box-sizing: border-box; border: 1px solid #91754380; border-radius: 5px; background: linear-gradient(100deg, #080e18cf, #23232680); color: #f4ead1; font: 15px/1.4 'Game Numerals', Georgia, 'Songti SC', SimSun, serif; outline: none; user-select: text; transition: border-color .2s, box-shadow .2s; }
 .login-field input:focus { border-color: #d6b874; box-shadow: 0 0 0 3px #b68d391b, inset 0 0 20px #ad88440a; }
 .login-field input:disabled { opacity: .65; }
-.login-form__hint { margin: 13px 0 0; font: 10px/1.8 system-ui, sans-serif; color: #978d78; letter-spacing: .02em; }
+.login-form__hint { margin: 13px 0 0; font: 10px/1.8 'Game Numerals', system-ui, sans-serif; color: #978d78; letter-spacing: .02em; }
 .login-form__hint strong { color: #ccb889; font-weight: 500; }
-.login-feedback { min-height: 37px; box-sizing: border-box; padding: 11px 0 8px; font: 11px/1.6 system-ui, sans-serif; color: #cdbb93; }
+.login-feedback { min-height: 37px; box-sizing: border-box; padding: 11px 0 8px; font: 11px/1.6 'Game Numerals', system-ui, sans-serif; color: #cdbb93; }
 .login-feedback--error { color: #f2ab95; }
 .login-form__actions { display: grid; grid-template-columns: 1.2fr 1fr; gap: 14px; margin: 4px 0 23px; }
-.login-action { min-height: 44px; padding: 10px 15px; font: 700 15px/1.5 'Songti SC', SimSun, serif; letter-spacing: .16em; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+.login-action { min-height: 44px; padding: 10px 15px; font: 700 15px/1.5 'Game Numerals', 'Songti SC', SimSun, serif; letter-spacing: .16em; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
 .login-action.btn--primary { --ui-default: rgba(94, 65, 27, .82); --ui-flow-warm: rgba(236, 193, 106, .24); color: #f8e7bc; }
-.login-action > span { font: 16px Georgia, serif; color: #baa273; }
+.login-action > span { font: 16px 'Game Numerals', Georgia, serif; color: #baa273; }
 .login-action:focus-visible { outline: 2px solid #eed59b; outline-offset: 4px; }
 .login-action:disabled { cursor: wait; opacity: .65; }
 .login-form__foot { font-size: 7px; color: #887553; }
-.login-footer { position: absolute; left: 4vw; right: 4vw; bottom: 24px; display: flex; justify-content: space-between; pointer-events: none; font: 9px/1.5 Georgia, 'Songti SC', SimSun, serif; color: #a59477; letter-spacing: .2em; opacity: .55; transition: opacity .7s; }
+.login-footer { position: absolute; left: 4vw; right: 4vw; bottom: 24px; display: flex; justify-content: space-between; pointer-events: none; font: 9px/1.5 'Game Numerals', Georgia, 'Songti SC', SimSun, serif; color: #a59477; letter-spacing: .2em; opacity: .55; transition: opacity .7s; }
 .login-scene--departing .login-form { pointer-events: none; animation: login-form-depart .65s ease-in forwards; animation-play-state: running; }
 .login-scene--departing .login-brand, .login-scene--departing .login-footer { opacity: 0; }
 .login-scene--departing .login-scene__vignette { opacity: .35; transition: opacity .8s; }

@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 
 import type { SideId } from '../../domain/cards/types';
-import { useSettingsStore } from '../../state/settingsStore';
+import { useBattleVisuals } from './battleVisuals';
 import {
   BATTLE_CARD_SCALE,
   CARD_SIZE,
@@ -42,7 +42,7 @@ export function slotKey(side: string, zone: string, index: number): string {
 export function SlotMarkers({ placeable, targeted, onSlotClick }: Props) {
   const slots = useMemo(() => buildSlots(), []);
   // 槽位的三种状态色来自当前台面主题，换主题时整张桌子的配色一起变
-  const accent = useSettingsStore((state) => state.tableTheme.accent);
+  const {accent} = useBattleVisuals().theme;
   const colors = useMemo(
     () => ({
       base: `#${accent.slot.toString(16).padStart(6, '0')}`,

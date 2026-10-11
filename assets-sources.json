@@ -26,6 +26,16 @@
       "assets/cards 下未关联到 cardId 的散图（含中文名与空格名）"
     ]
   },
+  "projectProvided": [
+    {
+      "name": "深渊黑洞背景",
+      "source": "dist/assets/bg/activity_abyss_bg2.webp",
+      "destination": "public/assets/bg/activity_abyss_bg2.webp",
+      "marked": "user-designated-local-asset",
+      "license": "沿用用户指定本地素材；未另行核实外部授权",
+      "note": "2026-10-11按指定文件名接入，原图768×457，35540字节；不从网络下载。旋转云雾与闪电为本项目原创程序效果。"
+    }
+  ],
   "thirdParty": [
     {
       "name": "Poly Haven",

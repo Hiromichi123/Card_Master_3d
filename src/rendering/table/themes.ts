@@ -20,7 +20,7 @@ export interface TableTheme {
   readonly id: string;
   readonly name: string;
   /** Independent arena geometry; omitted themes retain the classic tiled table. */
-  readonly geometry?: 'mecha' | 'volcano';
+  readonly geometry?: 'mecha' | 'volcano' | 'harvest' | 'temple' | 'solar' | 'icefield' | 'abyss';
   /** 一句话描述，显示在切换器里。 */
   readonly blurb: string;
 
@@ -154,31 +154,33 @@ export const TABLE_THEMES: readonly TableTheme[] = [
   {
     id: 'marble',
     name: '大理石厅',
-    blurb: '美术馆天窗下的抛光石材。',
-    table: { color: 0x1a1d23, roughness: 0.55 },
-    background: 0x20242c,
-    fog: fog(0x20242c, 28, 78),
-    environmentIntensity: 0.38,
+    geometry: 'temple',
+    blurb: '宽阔希腊神庙中的白色大理石，中央喷泉向两侧水槽分流。',
+    table: { color: 0xd0d0c6, roughness: .24 },
+    background: 0xbfc5c5,
+    fog: fog(0xbfc5c5, 60, 210),
+    environmentIntensity: .48,
     mat: {
       light: {
-        kind: 'marble', color: 0xece8de, base: 0xf3efe6, vein: 0xb9b2a2,
-        roughness: 0.3, clearcoat: 0.35, clearcoatRoughness: 0.12, envMapIntensity: 0.55,
+        kind: 'marble', color: 0xf0f0e9, base: 0xf3f1e9, vein: 0xbfc3c0, scale: 7.2,
+        roughness: .33, clearcoat: .24, clearcoatRoughness: .2, envMapIntensity: .5,
       },
       dark: {
-        kind: 'marble', color: 0x3a3d45, base: 0x40444c, vein: 0x22252b,
-        roughness: 0.32, clearcoat: 0.35, clearcoatRoughness: 0.14, envMapIntensity: 0.55,
+        kind: 'marble', color: 0x151719, base: 0x191d1f, vein: 0x4b5052,
+        roughness: .3, clearcoat: .25, clearcoatRoughness: .18, envMapIntensity: .5,
       },
       frame: { kind: 'metal', color: 0x6b665a, roughness: 0.38, metalness: 0.85, envMapIntensity: 0.6 },
       inlay: 0xb9a97e,
     },
     accent: ACCENT_DEFAULT,
-    post: { bloom: 0.18, bloomThreshold: 0.8 },
+    post: { bloom: .15, bloomThreshold: 1.1 },
   },
 
   {
     id: 'obsidian',
-    name: '黑曜石',
-    blurb: '黑色玻璃与冷光。',
+    name: '太阳系',
+    geometry: 'solar',
+    blurb: '地球与火星轨道之间的悬浮战桌，太阳、行星与陨石带在星空中缓慢流转。',
     table: { color: 0x05070a, roughness: 0.4 },
     background: 0x07090d,
     fog: fog(0x07090d, 22, 68),
@@ -200,36 +202,17 @@ export const TABLE_THEMES: readonly TableTheme[] = [
   },
 
   {
-    id: 'grass',
-    name: '草原',
-    blurb: '修剪过的田野：光与影的格子，风从上面吹过。',
-    table: { color: 0x1b241b, roughness: 0.95 },
-    background: 0x2a3a2a,
-    fog: fog(0x2a3a2a, 24, 72),
-    environmentIntensity: 0.4,
-    mat: {
-      light: { kind: 'plain', color: 0x7fae6a, roughness: 0.95 },
-      dark: { kind: 'plain', color: 0x4f7d47, roughness: 0.95 },
-      frame: {
-        kind: 'wood', color: 0x584028, light: 0x6a4d31, dark: 0x46311d, rings: 12, roughness: 0.7,
-      },
-      inlay: 0xd6c395,
-    },
-    accent: { slot: 0x9db98c, placeable: 0xa9e86f, target: 0xffd166 },
-    post: { bloom: 0.12, bloomThreshold: 0.85 },
-  },
-
-  {
     id: 'wasteland',
-    name: '荒原',
-    blurb: '龟裂的黏土与浮尘；每一格都是不同的赭色。',
-    table: { color: 0x241f19, roughness: 0.95 },
-    background: 0x2e2820,
-    fog: fog(0x39301f, 22, 70),
+    name: '丰收',
+    geometry: 'harvest',
+    blurb: '八角石台与起伏麦田，微风吹起金色麦浪与细微花粉。',
+    table: { color: 0x777854, roughness: 1 },
+    background: 0xb1a581,
+    fog: fog(0xb1a581, 52, 140),
     environmentIntensity: 0.4,
     mat: {
-      light: { kind: 'plain', color: 0xcbae7c, roughness: 1 },
-      dark: { kind: 'plain', color: 0x9c7c50, roughness: 1 },
+      light: { kind: 'stone', color: 0x73785b, roughness: .94, envMapIntensity: .3 },
+      dark: { kind: 'stone', color: 0x41483b, roughness: .92, metalness: .02, envMapIntensity: .3 },
       frame: { kind: 'stone', color: 0x6b5c46, light: 0x7d6c53, dark: 0x574a38, roughness: 0.9 },
       inlay: 0xa08b64,
     },
@@ -239,20 +222,36 @@ export const TABLE_THEMES: readonly TableTheme[] = [
 
   {
     id: 'snow',
-    name: '雪原',
-    blurb: '缓慢落雪下的冻土；格子读起来像冰与板岩。',
-    table: { color: 0x1a2029, roughness: 0.85 },
-    background: 0x242c38,
-    fog: fog(0x39455a, 20, 68),
+    name: '冰原',
+    geometry: 'icefield',
+    blurb: '整面冰层与覆雪边缘，错落冰冠、霜纹和冷雾延伸至远方。',
+    table: { color: 0xa3bfcc, roughness: .88 },
+    background: 0x5e798e,
+    fog: fog(0x8ba5b7, 52, 140),
     environmentIntensity: 0.45,
     mat: {
-      light: { kind: 'plain', color: 0xe8eef7, roughness: 0.7 },
-      dark: { kind: 'plain', color: 0x9fb3c8, roughness: 0.75 },
+      light: { kind: 'marble', color: 0x85b7cc, base: 0x85b7cc, vein: 0xc8e0e8, scale: 4.7,
+        roughness: .34, clearcoat: .3, clearcoatRoughness: .24, metalness: .02, envMapIntensity: .36 },
+      dark: { kind: 'plain', color: 0x5b8ea7, roughness: .4 },
       frame: { kind: 'stone', color: 0x54637a, light: 0x647389, dark: 0x414f63, roughness: 0.6 },
       inlay: 0xdbe6f2,
     },
     accent: { slot: 0x9fb3c8, placeable: 0x7fd4ff, target: 0xffd166 },
-    post: { bloom: 0.25, bloomThreshold: 0.8 },
+    post: { bloom: .18, bloomThreshold: 1.12 },
+  },
+  {
+    id: 'abyss', name: '深渊', geometry: 'abyss',
+    blurb: '破裂黑曜石祭台悬于紫灰云旋之上，符文、残门与闪电环绕。固定最高画质。',
+    table: { color: 0x272332, roughness: .32 },
+    background: 0x090511, fog: fog(0x130a20, 54, 300), environmentIntensity: .4,
+    mat: {
+      light: { kind: 'stone', color: 0x332c40, roughness: .34, metalness: .26, clearcoat: .5, clearcoatRoughness: .19, envMapIntensity: .75 },
+      dark: { kind: 'stone', color: 0x24212d, roughness: .7, metalness: .12, envMapIntensity: .45 },
+      frame: { kind: 'metal', color: 0x534255, roughness: .32, metalness: .78, clearcoat: .24, envMapIntensity: .8 },
+      inlay: 0xa887d4,
+    },
+    accent: { slot: 0x9583af, placeable: 0x77deed, target: 0xf5bc7b },
+    post: { bloom: .36, bloomThreshold: 1.05 },
   },
 ];
 

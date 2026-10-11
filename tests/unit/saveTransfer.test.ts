@@ -10,6 +10,7 @@ import { describe, expect, it } from 'vitest';
 
 import { cardDatabase, slice } from '../../src/data';
 import { fixedClock } from '../../src/domain/progression/clock';
+import { emptyMazeProgress } from '../../src/domain/progression/mazeProgress';
 import { DEFAULT_SETTINGS, SAVE_SCHEMA_VERSION } from '../../src/domain/progression/types';
 import { detectSaveFormat, normalizeProfile, parseSaveJson } from '../../src/domain/progression/saveTransfer';
 import { ProfileStore } from '../../src/state/createProfileStore';
@@ -71,7 +72,7 @@ describe('parseSaveJson', () => {
 describe('normalizeProfile', () => {
   it('缺 settings 时补上默认值', () => {
     const result = normalizeProfile(
-      { schemaVersion: SAVE_SCHEMA_VERSION, inventory: {}, currencies: { gold: 10 } },
+      { schemaVersion: 3, inventory: {}, currencies: { gold: 10 }, mazeProgress: emptyMazeProgress() },
       normalizeCtx(),
     );
     expect(result.ok).toBe(true);
@@ -102,7 +103,8 @@ describe('normalizeProfile', () => {
   it('未知 cardId、非正计数、悬空 activeDeckId 都进 issues', () => {
     const result = normalizeProfile(
       {
-        schemaVersion: SAVE_SCHEMA_VERSION,
+        schemaVersion: 3,
+        mazeProgress: emptyMazeProgress(),
         inventory: { 'ZZZ_999': 2, 'OK_1': 0 },
         currencies: {},
         decks: [{ id: 'd1', name: 'D', cardIds: ['ZZZ_999'] }],

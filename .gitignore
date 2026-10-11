@@ -5,6 +5,16 @@ dist-ssr/
 *.tsbuildinfo
 .vite/
 
+# --- 离线版打包（packaging/）------------------------------------------------
+# dist 的副本、编译出的 exe、压缩包、图标资源对象都不入库：
+# exe 约 150 MB，而且完全可以由 build.sh 重新产出。
+# 注意 packaging/icon/icon.ico 和 icon.svg **要入库** —— 它们是源，不是产物。
+packaging/dist/
+packaging/*.exe
+packaging/*.zip
+packaging/*.syso
+packaging/icon/node_modules/
+
 # --- 测试与报告 -------------------------------------------------------------
 coverage/
 playwright-report/

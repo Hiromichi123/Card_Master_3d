@@ -7,6 +7,10 @@
  */
 
 import { DECK_LIMIT, DEFAULT_SETTINGS, SAVE_SCHEMA_VERSION } from './types';
+import { emptyRewards } from './rewardState';
+import { emptyAbyssState } from './abyssRun';
+import { initializeDeckSlots, isFixedDeck } from './deckSlots';
+import { emptyMazeProgress, hasMazeHistory, validateMazeState } from './mazeProgress';
 import type { Currencies, Deck, MazeRunState, ProfileState, SettingsState } from './types';
 
 /**
@@ -62,12 +66,15 @@ export function createInitialProfile(args: CreateProfileArgs): ProfileState {
     currencies: { ...STARTING_CURRENCIES },
     level: { level: 1, xp: 0, baseXp: 100, xpMultiplier: 1.2 },
     inventory,
-    decks: [deck],
+    ...initializeDeckSlots([deck], deck.id),
     activeDeckId: deck.id,
     gacha: { pullsByPool: {} },
     shop: { dayKey: args.dayKey, seed: 0, soldOut: [] },
     campaign: { clearedStages: [], currentChapterId: null },
+    rewards: emptyRewards(),
     mazeRun: null,
+    mazeProgress: emptyMazeProgress(),
+    abyss: emptyAbyssState(),
     settings: { ...DEFAULT_SETTINGS },
     settledBattleIds: [],
   };
@@ -93,9 +100,9 @@ export function withDeck(profile: ProfileState, deck: Deck): ProfileState {
   };
 }
 
-/** 删掉一个卡组。**当前出战卡组被删掉时把 `activeDeckId` 一并置空**，
- *  否则会留下一个指向不存在卡组的悬空引用。 */
+/** 固定四槽只允许清空；额外卡组可删除，当前普通出战被删时一并清引用。 */
 export function withoutDeck(profile: ProfileState, deckId: string): ProfileState {
+  if (isFixedDeck(profile, deckId) || !profile.decks.some(deck => deck.id === deckId)) return profile;
   return {
     ...profile,
     revision: profile.revision + 1,
@@ -105,18 +112,25 @@ export function withoutDeck(profile: ProfileState, deckId: string): ProfileState
 }
 
 export function withActiveDeck(profile: ProfileState, deckId: string | null): ProfileState {
+  if (deckId === profile.activeDeckId || (deckId !== null &&
+    (deckId === profile.ladder.deckId || !profile.decks.some(deck => deck.id === deckId)))) return profile;
   return { ...profile, revision: profile.revision + 1, activeDeckId: deckId };
 }
 
-/**
- * 写迷宫的 run 状态（走到哪、探索了哪些、每个补给节点的商店）。
- *
- * 与 `withSettings` / `withDeck` 同类：**非经济状态**，走防抖的浅更新通道，
- * 不进 `EconomyTransaction`——那个通道的拒绝语义是为「钱/卡不够」设计的，
- * 把「走到哪个格子」塞进去，会让「钱不够」连带把移动也回滚掉。
- */
+/** 兼容旧防抖调用：不得换轮、清空、移动或扩大探索。正式操作走经济事务。 */
 export function withMazeRun(profile: ProfileState, run: MazeRunState | null): ProfileState {
-  return { ...profile, revision: profile.revision + 1, mazeRun: run };
+  const current = profile.mazeRun;
+  if (!run) return profile;
+  if (!current) {
+    if (hasMazeHistory(profile.mazeProgress) || profile.settledBattleIds.some(id => id.startsWith('maze:'))
+      || run.version !== 1 || run.playerNodeId !== 0
+      || run.exploredNodeIds.length !== 1 || run.exploredNodeIds[0] !== 0
+      || Object.keys(run.shopByNode).length > 0
+      || !validateMazeState(run, profile.mazeProgress, profile.settledBattleIds)) return profile;
+    return { ...profile, revision: profile.revision + 1, mazeRun: run };
+  }
+  // 既有货架也不能经防抖重置；这条路径没有应覆盖的权威状态。
+  return profile;
 }
 
 /** 当前出战卡组；没有或指向已删除的卡组时返回 `null`。 */

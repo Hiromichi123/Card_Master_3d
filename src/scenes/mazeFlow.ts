@@ -3,6 +3,12 @@ import { buildCardPool } from '../domain/progression/gacha';
 import type { CardPoolIndex } from '../domain/progression/gacha';
 import {
   MAZE_CHAPTER_ID,
+  MAZE_EVENT_RARITY,
+  MAZE_FLOOR_1,
+  applyMove,
+  canMoveTo,
+  newMazeRun,
+  withShopState,
   buildMazeShop,
   generateMazeEnemyDeck,
   isMazeCleared,
@@ -12,6 +18,10 @@ import {
   mazeNodeBattleId,
   mazeReward,
   mazeShopSeed,
+  mazeShopBatchKey,
+  newMazeShopState,
+  generateMaze,
+  mazeRngFor,
   rollStrength,
 } from '../domain/progression/maze';
 import type { MazeNode, MazeNodeType, MazeShopItem } from '../domain/progression/maze';
@@ -23,7 +33,9 @@ import type { EconomyTransaction, MazeRunState, ProfileState } from '../domain/p
 import { createRng, seedFrom } from '../domain/battle/rng';
 import type { Rng } from '../domain/battle/rng';
 import type { BattleOutcome } from '../domain/battle/types';
-import type { Planned } from '../domain/progression/plan';
+import { reject, type Planned } from '../domain/progression/plan';
+import { mazeProgressToken, mazeResetRemaining, settleMazeGuarantees } from '../domain/progression/mazeProgress';
+import { weekKeyOf } from '../domain/progression/clock';
 
 /**
  * 迷宫的「选点 → 开战 → 结算 → 回地图」之间要拼的那几块。
@@ -64,6 +76,69 @@ export function mazePool(): CardPoolIndex {
 
 export function mazeCardsByRarity(): ReadonlyMap<string, readonly string[]> {
   return cardsByRarityCache;
+}
+
+export function mazeEventCards(): readonly string[] {
+  return cardsByRarityCache.get(MAZE_EVENT_RARITY) ?? [];
+}
+
+export interface MazeProgressView {
+  readonly run: MazeRunState;
+  readonly rewardCardIds: readonly string[];
+}
+
+function mazeUpdatePlan(
+  profile: ProfileState,
+  run: MazeRunState,
+  progress: ProfileState['mazeProgress'],
+  operationId: string,
+): Planned<MazeProgressView> {
+  const rewards = settleMazeGuarantees(progress, run, mazeEventCards());
+  return {
+    transaction: {
+      operationId, currencyDelta: {}, inventoryDelta: rewards.inventoryDelta,
+      mazeUpdate: { expectedToken: mazeProgressToken(profile), run, progress: rewards.progress },
+    },
+    view: { run, rewardCardIds: rewards.rewardCardIds },
+  };
+}
+
+/** 首次进入和空池恢复后的待发奖励，也经过同一次持久化。 */
+export function planMazeEnter(args: { profile: ProfileState; operationId: string }): Planned<MazeProgressView> {
+  const { profile, operationId } = args;
+  let run = profile.mazeRun ?? newMazeRun(generateMaze(mazeRngFor(MAZE_FLOOR_1, 1)), MAZE_FLOOR_1, 1);
+  const map = generateMaze(mazeRngFor(run.floorKey, run.version));
+  if (map.nodes[run.playerNodeId]?.type === 'supply') run = withShopState(run, run.playerNodeId);
+  return mazeUpdatePlan(profile, run, profile.mazeProgress, operationId);
+}
+
+export function planMazeMove(args: {
+  profile: ProfileState; nodeId: number; expectedToken: string; operationId: string;
+}): Planned<MazeProgressView> {
+  const { profile, nodeId, expectedToken, operationId } = args;
+  const run = profile.mazeRun;
+  if (!run || mazeProgressToken(profile) !== expectedToken) return reject('迷宫状态已变化，请重新选择格点');
+  const map = generateMaze(mazeRngFor(run.floorKey, run.version));
+  if (!canMoveTo(map, run.playerNodeId, nodeId)) return reject('只能探索相邻格点');
+  const firstVisit = nodeId !== map.entryId && !run.exploredNodeIds.includes(nodeId);
+  let next = applyMove(map, run, nodeId);
+  if (map.nodes[nodeId]?.type === 'supply') next = withShopState(next, nodeId);
+  const explorationCount = profile.mazeProgress.explorationCount + (firstVisit ? 1 : 0);
+  if (!Number.isSafeInteger(explorationCount)) return reject('探索累计超出可保存范围');
+  return mazeUpdatePlan(profile, next, { ...profile.mazeProgress, explorationCount }, operationId);
+}
+
+export function planMazeReset(args: {
+  profile: ProfileState; dayKey: string; expectedToken: string; operationId: string;
+}): Planned<MazeProgressView> {
+  const { profile, dayKey, expectedToken, operationId } = args;
+  const run = profile.mazeRun;
+  if (!run || mazeProgressToken(profile) !== expectedToken) return reject('迷宫状态已变化，请重新操作');
+  if (!mazeResetRemaining(profile.mazeProgress, dayKey)) return reject('本周清空次数已用完，下周一恢复');
+  const version = run.version + 1;
+  if (!Number.isSafeInteger(version)) return reject('迷宫轮次超出可保存范围');
+  const next = newMazeRun(generateMaze(mazeRngFor(run.floorKey, version)), run.floorKey, version);
+  return mazeUpdatePlan(profile, next, { ...profile.mazeProgress, lastResetWeek: weekKeyOf(dayKey)! }, operationId);
 }
 
 /** 节点名（详情栏、战斗标题与结算分类都用它）。 */
@@ -282,8 +357,9 @@ export function toShelfEntry(
   item: MazeShopItem,
   index: number,
   soldOut: readonly string[],
+  batchKey?: string,
 ): ShelfEntry {
-  const entryId = `${index}|${item.cardId}`;
+  const entryId = `${batchKey ? `${batchKey}|` : ''}${index}|${item.cardId}`;
   return {
     entryId,
     shelfKey: 'maze',
@@ -306,18 +382,51 @@ export interface MazeShopSlot {
 /**
  * 某个补给节点当前的货架。
  *
- * 货架本身由 `mazeShopSeed(floorKey, version, nodeId)` 固定（同一个节点每次进来
- * 看到的是同一批东西），售罄状态从 run 里读。
+ * 新货架读保存的seed；旧货架保持历史算法及entryId，直到主动刷新。
  */
 export function mazeShopStock(run: MazeRunState, nodeId: number): readonly MazeShopSlot[] {
-  const soldOut = run.shopByNode[String(nodeId)]?.soldOut ?? [];
+  const stored = run.shopByNode[String(nodeId)];
+  const state = stored ?? newMazeShopState(run, nodeId);
+  const legacy = stored !== undefined && stored.catalogVersion !== 2;
+  const stockRun = stored ? run : { ...run, shopByNode: { ...run.shopByNode, [String(nodeId)]: state } };
   const items = buildMazeShop({
-    rng: createRng(mazeShopSeed(run.floorKey, run.version, nodeId)),
+    rng: createRng(legacy ? mazeShopSeed(run.floorKey, run.version, nodeId) : state.seed),
     cardsByRarity: cardsByRarityCache,
     priceByRarity: shops.normalShop?.priceByRarity ?? {},
     fallbackPrice: shops.normalShop?.unknownRarityFallback ?? { currency: 'gold', amount: 1200 },
+    legacy,
   });
-  return items.map((item, index) => ({ item, entry: toShelfEntry(item, index, soldOut) }));
+  return items.map((item, index) => ({ item, entry: toShelfEntry(item, index, state.soldOut, legacy ? undefined : mazeShopBatchKey(stockRun, nodeId)) }));
+}
+
+/** 确认玩家仍在同一轮的当前补给点；不存在的/远程的/陈旧的货架都不能交易。 */
+function currentMazeShop(profile: ProfileState, nodeId: number, expectedBatch: string): MazeRunState | null {
+  const run = profile.mazeRun;
+  if (!run || run.playerNodeId !== nodeId || !run.shopByNode[String(nodeId)] || mazeShopBatchKey(run, nodeId) !== expectedBatch) return null;
+  const node = generateMaze(mazeRngFor(run.floorKey, run.version)).nodes[nodeId];
+  return node?.type === 'supply' ? run : null;
+}
+
+export function planMazeRefresh(args: {
+  readonly profile: ProfileState;
+  readonly nodeId: number;
+  readonly expectedBatch: string;
+  readonly operationId: string;
+}): Planned<{ readonly nodeId: number; readonly batchKey: string }> {
+  const run = currentMazeShop(args.profile, args.nodeId, args.expectedBatch);
+  if (!run) return reject('迷宫货架已变化，请重新打开商店');
+  const state = newMazeShopState(run, args.nodeId, (run.shopByNode[String(args.nodeId)]?.refreshCount ?? 0) + 1);
+  const next = { ...run, shopByNode: { ...run.shopByNode, [String(args.nodeId)]: state } };
+  return {
+    transaction: {
+      operationId: args.operationId,
+      currencyDelta: {},
+      inventoryDelta: {},
+      mazeShopExpected: { nodeId: args.nodeId, batchKey: args.expectedBatch },
+      mazeShopRefresh: { nodeId: String(args.nodeId), state },
+    },
+    view: { nodeId: args.nodeId, batchKey: mazeShopBatchKey(next, args.nodeId) },
+  };
 }
 
 /** 买一件楼层商店的商品：与商店屏同一条事务，售罄落到**这个节点**。 */
@@ -325,12 +434,17 @@ export function planMazePurchase(args: {
   readonly profile: ProfileState;
   readonly nodeId: number;
   readonly entry: ShelfEntry;
+  readonly expectedBatch: string;
   readonly operationId: string;
   readonly rng: Rng;
 }): Planned<PurchaseView> {
+  const run = currentMazeShop(args.profile, args.nodeId, args.expectedBatch);
+  if (!run) return reject('迷宫货架已变化，请重新打开商店');
+  const entry = mazeShopStock(run, args.nodeId).find(slot => slot.entry.entryId === args.entry.entryId)?.entry;
+  if (!entry) return reject('这件商品已不在当前货架');
   const planned = planPurchase({
     profile: args.profile,
-    entry: args.entry,
+    entry,
     operationId: args.operationId,
     cardsByRarity: cardsByRarityCache,
     rng: args.rng,
@@ -347,7 +461,8 @@ export function planMazePurchase(args: {
   return {
     transaction: {
       ...transaction,
-      mazeSoldOut: { nodeId: String(args.nodeId), entryIds: [args.entry.entryId] },
+      mazeShopExpected: { nodeId: args.nodeId, batchKey: args.expectedBatch },
+      mazeSoldOut: { nodeId: String(args.nodeId), entryIds: [entry.entryId] },
     },
     view: planned.view,
   };

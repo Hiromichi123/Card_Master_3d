@@ -489,7 +489,7 @@ export function EffectLabScene() {
 
           {/*
             背景与雾来自台面主题：木桌是暖褐的暗、霓虹是紫黑、
-            雪原是冷灰蓝。这两项一并换掉，整张桌子的气氛才会跟着主题走，
+            冰原是冷灰蓝。这两项一并换掉，整张桌子的气氛才会跟着主题走，
             而不是「桌子换了、空气没换」。
           */}
           <color attach="background" args={[theme.background]} />

@@ -9,10 +9,10 @@ import type { ThreeEvent } from '@react-three/fiber';
 import { isCooldownCard } from '../../domain/battle/turnActions';
 import { CooldownCardFace } from './CooldownCardFace';
 import { isSelfDestructCard } from '../../domain/cards/traits';
-import { CARD_BACK_URL, cardFaceUrl } from '../../data/assets';
+import { CARD_BACK_URL, cardFaceUrlForDefinition } from '../../data/assets';
 import { useManagedTexture } from '../../services/useManagedTexture';
 import type { TextureTier } from '../../services/AssetManager';
-import { useSettingsStore } from '../../state/settingsStore';
+import { useBattleVisuals } from '../battle/battleVisuals';
 import { easeInOutCubic } from '../anim/easings';
 import { damp, flipAngle } from '../anim/motion';
 import { Timeline } from '../anim/Timeline';
@@ -197,10 +197,10 @@ export function CardMesh({
   }, [interactive, dragging, statLayout, faceDown, card, onHoverChange]);
 
   // 纹理档跟随画质：低档用缩略图，减少核显上的显存与带宽压力
-  const cardTier = useSettingsStore((state) => state.profile.cardTier);
+  const {cardTier} = useBattleVisuals().profile;
   const faceUrl = useMemo(
-    () => cardFaceUrl(card.cardId, textureTier ?? cardTier),
-    [card.cardId, cardTier, textureTier],
+    () => cardFaceUrlForDefinition(card, textureTier ?? cardTier),
+    [card, cardTier, textureTier],
   );
   const faceTexture = useManagedTexture(faceUrl);
   const backTexture = useManagedTexture(CARD_BACK_URL);

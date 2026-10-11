@@ -1,0 +1,58 @@
+@layer control-defaults, legacy, theme, hub, controls;
+
+@layer hub {
+  .campaign-world {position:fixed;inset:0;width:100vw;height:100vh;--ui:min(100vw / 2880,100vh / 1800);}
+  .app-shell:has(.campaign-world) > .app-nav {position:relative;z-index:30;}
+  .campaign-world__canvas {position:absolute;inset:0;width:100%;height:100%;z-index:1;}
+  .campaign-world__canvas canvas {touch-action:none;outline:none;}
+  .campaign-world__header {position:absolute;left:32px;top:25px;z-index:8;pointer-events:none;max-width:70%;}
+  .campaign-world__header h1 {margin:0;color:#efdfb6;font-family:'Game Numerals', 'STSong','SimSun',serif;font-size:clamp(24px,3vw,50px);letter-spacing:.18em;text-shadow:0 2px 10px #000a;}
+  .campaign-world__header p {margin:10px 0 0;color:#d8ddda;font-size:clamp(12px,1.1vw,17px);text-shadow:0 1px 5px #000b;}
+  .campaign-world__return {position:absolute;z-index:8;left:32px;bottom:54px;padding:11px 23px;font-size:16px;}
+  .campaign-world__status {position:absolute;z-index:8;left:32px;right:32px;bottom:20px;display:flex;justify-content:space-between;gap:18px;color:#d2d7cd;font-size:13px;text-shadow:0 1px 5px #000b;pointer-events:none;}
+  .campaign-world__loading {display:flex;align-items:center;gap:10px;}
+  .campaign-world__loading .btn {pointer-events:auto;padding:4px 9px;font-size:12px;}
+  .campaign-world__drawer {
+    position:absolute;z-index:12;right:24px;top:12%;width:clamp(270px,23vw,390px);max-height:76%;
+    padding:27px;display:flex;flex-direction:column;gap:18px;overflow:auto;
+    color:#dfdfd2;border:1px solid #d2b77588;border-radius:13px;
+    background:radial-gradient(ellipse at 15% 20%,#719ca82b,transparent 50%),linear-gradient(145deg,#17282aed,#20252de8);
+    box-shadow:inset 0 0 0 1px #efd28f16,0 18px 40px #0005;backdrop-filter:blur(14px);
+    transform:translateX(calc(100% + 40px));opacity:0;visibility:hidden;pointer-events:none;
+    transition:transform .38s cubic-bezier(.2,.8,.2,1),opacity .25s,visibility 0s .38s;
+  }
+  .campaign-world__drawer--open {transform:translateX(0);opacity:1;visibility:visible;pointer-events:auto;transition-delay:0s;}
+  .campaign-world__drawer h2 {margin:0;color:#f1dfb4;font-family:'Game Numerals', 'STSong','SimSun',serif;font-size:31px;letter-spacing:.08em;}
+  .campaign-world__drawer p {margin:0;font-size:15px;line-height:1.8;}
+  .campaign-world__eyebrow {color:#d0b57b;font-size:12px;letter-spacing:.14em;}
+  .campaign-world__landscape {color:#c8d7cf;}
+  .campaign-world__drawer-note {color:#b8c7cb;}
+  .campaign-world__progress {height:4px;background:#bda5782d;border-radius:3px;overflow:hidden;}
+  .campaign-world__progress span {display:block;height:100%;background:linear-gradient(90deg,#8cba99,#e5ce8c);}
+  .campaign-world__rewards {margin:0;padding:0;list-style:none;display:grid;gap:12px;font-size:15px;}
+  .campaign-world__rewards li {display:flex;justify-content:space-between;gap:12px;padding-bottom:10px;border-bottom:1px solid #d8be8626;}
+  .campaign-world__done {color:#9ddcb6;font-size:13px;}
+  .campaign-world__drawer .btn {margin-top:10px;padding:12px 24px;}
+  .campaign-world__pin {
+    min-width:108px;padding:10px 17px;display:grid;gap:4px;place-items:center;
+    font-family:'Game Numerals', 'STSong','SimSun',serif;cursor:pointer;color:var(--region-color,#e5d7b3);
+    --ui-default:rgba(18,28,34,.84);--ui-control-bevel:8px;
+    --ui-flow-cool:color-mix(in srgb,var(--region-color,#e5d7b3) 18%,transparent);
+    box-shadow:0 8px 18px #0005;transition:transform .2s,filter .2s;pointer-events:auto;
+  }
+  .campaign-world__pin:hover {transform:translateY(-4px);filter:drop-shadow(0 0 6px #e6d29b66);}
+  .campaign-world__pin strong {font-size:19px;letter-spacing:.1em;white-space:nowrap;}
+  .campaign-world__pin small {font-size:12px;color:#d4d8d0;}
+  .campaign-world__pin-number {font:11px 'Game Numerals', Georgia,serif;letter-spacing:.12em;color:#ceb784;}
+  .campaign-world__pin--stage {min-width:110px;padding:9px 13px;}
+  .campaign-world__pin--stage strong {font-size:15px;letter-spacing:.03em;}
+  .campaign-world__pin--selected {--ui-rim-opacity:1;filter:drop-shadow(0 0 7px #e8cc9866);}
+  .campaign-world__markers {position:absolute;inset:0;z-index:7;pointer-events:none;overflow:hidden;}
+  .campaign-world__pin-wrap {position:absolute;left:0;top:0;visibility:hidden;pointer-events:none;will-change:transform;}
+}
+@media(max-width:650px){
+  .campaign-world__drawer {right:12px;width:min(290px,70vw);padding:18px;top:16%;}
+  .campaign-world__header {left:18px;top:18px;}.campaign-world__return {left:18px;bottom:64px;}
+  .campaign-world__status {left:18px;right:18px;font-size:11px;flex-wrap:wrap;}
+}
+@media(prefers-reduced-motion:reduce){.campaign-world__drawer,.campaign-world__pin{transition:none;}}

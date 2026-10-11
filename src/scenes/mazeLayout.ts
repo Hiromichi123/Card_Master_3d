@@ -75,7 +75,7 @@ export const NODE_STYLE: Readonly<
   Record<MazeNodeType, { readonly label: string; readonly color: string; readonly alpha: number }>
 > = {
   entry: { label: '入口', color: '#aaffc8', alpha: 230 },
-  normal: { label: '普通敌人', color: '#464b5a', alpha: 210 },
+  normal: { label: '普通敌人', color: '#718aa5', alpha: 225 },
   elite: { label: '精英敌人', color: '#be78ff', alpha: 215 },
   boss: { label: '楼层Boss', color: '#ff5a5a', alpha: 235 },
   supply: { label: '商店补给', color: '#ffd778', alpha: 220 },

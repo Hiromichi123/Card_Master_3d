@@ -4,7 +4,7 @@ import { PosterCarousel } from '../ui/PosterCarousel';
 import { PlayerStatus } from '../ui/PlayerStatus';
 import { pushToast } from '../state/toastStore';
 import { useSettingsStore } from '../state/settingsStore';
-import { menuPosters, POSTER_ROUTES } from './menuPosters';
+import { menuPosterEntries } from './menuPosters';
 import type { ProfileState } from '../domain/progression/types';
 import type { RouteId } from '../app/routes';
 
@@ -41,6 +41,12 @@ const ENTRIES: readonly Entry[] = [
     persistent: true,
   },
   {
+    label: '天梯赛',
+    hint: '段位与天梯卡组配置，单人和2v2匹配暂未开放',
+    glow: '#a990ef',
+    route: 'ladder',
+  },
+  {
     label: '局域网 卡组对战',
     hint: '旧版走联机房间；本版本不提供冒充联机的入口（PLAN 第 6 节）',
     glow: '#c84632',
@@ -64,7 +70,7 @@ const ENTRIES: readonly Entry[] = [
 export function BattleMenuScene({ profile, onNavigate }: BattleMenuSceneProps) {
   const reduceMotion = useSettingsStore((state) => state.reduceMotion);
   const background = assetManifest.shared.menu['battle_menu_bg']?.url ?? null;
-  const posters = menuPosters();
+  const posters = menuPosterEntries();
 
   return (
     <MenuChrome
@@ -80,8 +86,9 @@ export function BattleMenuScene({ profile, onNavigate }: BattleMenuSceneProps) {
         className="menu__columns"
         aria-label="对战模式"
         style={{
-          ['--cols-x' as string]: '75%',
-          ['--cols-y' as string]: '25%',
+          left: '70%',
+          top: '25%',
+          ['--row-gap' as string]: 36,
           /*
             **按钮比旧版的 300 宽**：旧版那 300 是按它自己的字号定的，
             而这里最长的标签「本地 任选对战（双人）」在 40 设计单位的字号下约 480。
@@ -113,8 +120,9 @@ export function BattleMenuScene({ profile, onNavigate }: BattleMenuSceneProps) {
       </nav>
 
       <PosterCarousel
-        posters={posters}
-        onSelect={(index) => onNavigate(POSTER_ROUTES[index] ?? 'campaign')}
+        posters={posters.map(entry => entry.url)}
+        details={posters}
+        onSelect={(index) => { const entry = posters[index]; if (entry) onNavigate(entry.route); }}
         still={reduceMotion}
       />
     </MenuChrome>

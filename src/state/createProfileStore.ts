@@ -20,6 +20,13 @@ import {
   type ApplyOutcome,
 } from '../domain/progression/economy';
 import { dayKeyOf, type Clock } from '../domain/progression/clock';
+import { migrateToCurrent } from '../domain/progression/migrations';
+import { normalizeRewards } from '../domain/progression/rewardState';
+import { validateMazeState } from '../domain/progression/mazeProgress';
+import { validateAbyssState } from '../domain/progression/abyssValidation';
+import { retireIncompatibleRun } from '../domain/progression/abyssRun';
+import { isFixedDeck, validDeckSlots } from '../domain/progression/deckSlots';
+import { SAVE_SCHEMA_VERSION } from '../domain/progression/types';
 import { activeDeckOf, createInitialProfile, withActiveDeck, withDeck, withMazeRun, withSettings, withoutDeck } from '../domain/progression/profile';
 import type { Planned } from '../domain/progression/plan';
 import type {
@@ -74,6 +81,9 @@ export type EconomicResult<TView> =
   | { readonly ok: true; readonly view: TView; readonly revision: number }
   | { readonly ok: false; readonly reason: 'rejected' | 'saveFailed'; readonly message: string };
 
+export type DeckFlushResult = { readonly ok: true } | { readonly ok: false; readonly message: string };
+type DeckPatch = { readonly seq: number; readonly deck: Deck | null };
+
 export interface ProfileSnapshot {
   readonly status: SaveStatus;
   readonly storage: StorageKind;
@@ -86,6 +96,13 @@ export interface ProfileSnapshot {
   readonly busy: boolean;
   /** 最近一次成功事务带回来的视图，供结算页/抽卡页读取。 */
   readonly lastResult: unknown;
+  readonly deckDirty: boolean;
+  readonly deckSaveError: string | null;
+  /**
+   * 读档时做过降级处理的说明（目前只有一种：卡库版本更新，在途深渊已按「放弃挑战」归档）。
+   * 界面**读一次就清**，见 `takeAbyssNotice`——它不是存档的一部分。
+   */
+  readonly abyssNotice: string | null;
 }
 
 export interface ProfileStoreDeps {
@@ -119,9 +136,12 @@ export class ProfileStore {
 
   private queue: Promise<unknown> = Promise.resolve();
   private pendingSettings: Partial<SettingsState> | null = null;
-  private pendingDeck: Deck | null = null;
-  private pendingDeleteDeckId: string | null = null;
-  private pendingActiveDeckId: string | null | undefined;
+  private readonly pendingDecks = new Map<string, DeckPatch>();
+  private pendingActiveDeck: { readonly seq: number; readonly id: string | null } | null = null;
+  private deckSeq = 0;
+  private readonly deckInFlight = new Map<string, number>();
+  private activeInFlight: number | null = null;
+  private replacing = false;
   /** `undefined` = 没有待写的迷宫状态（区别于「要写 null」）。 */
   private pendingMazeRun: MazeRunState | null | undefined;
   private timer: ReturnType<typeof setTimeout> | null = null;
@@ -139,6 +159,9 @@ export class ProfileStore {
       error: null,
       busy: false,
       lastResult: null,
+      deckDirty: false,
+      deckSaveError: null,
+      abyssNotice: null,
     };
   }
 
@@ -173,9 +196,45 @@ export class ProfileStore {
     return this.loadPromise;
   }
 
+  /**
+   * 取走读档降级提示，**读一次就清**：它是一次性的播报，不是存档的一部分。
+   * 由界面在壳子挂上之后调用（登录动画期间弹 toast 会被动画吃掉）。
+   */
+  takeAbyssNotice(): string | null {
+    const notice = this.snapshot.abyssNotice;
+    if (notice !== null) this.publish({ abyssNotice: null });
+    return notice;
+  }
+
   private async loadOnce(): Promise<void> {
+    let abyssNotice: string | null = null;
     try {
-      const stored = await this.deps.repository.load();
+      let stored = await this.deps.repository.load();
+      if (stored) {
+        if (stored.schemaVersion > SAVE_SCHEMA_VERSION) throw new Error('存档版本高于当前游戏版本');
+        const migrated = migrateToCurrent(stored, stored.schemaVersion);
+        if (!migrated.ok) throw new Error(migrated.message);
+        const current = migrated.value as ProfileState;
+        if (!Array.isArray(current.decks) || !validDeckSlots(current.decks, current.normalDeckIds, current.ladder, current.activeDeckId)) {
+          throw new Error('普通卡组槽位或天梯积分/卡组引用/奖励账本无效，无法安全读取');
+        }
+        let abyss = current.abyss;
+        if (!validateAbyssState(abyss, this.deps.contentVersion)) {
+          // 版本更新（加卡会改 contentVersion）会让在途 run 不可复现。**只降级这一种**：
+          // 归档成「放弃挑战」后继续读档，绝不因此把整份存档判成不可读、把玩家锁在登录页。
+          const retired = retireIncompatibleRun(abyss, this.deps.contentVersion, this.deps.clock());
+          if (!retired || !validateAbyssState(retired, this.deps.contentVersion)) {
+            throw new Error('深渊进度或历史无效，无法安全读取；未重置挑战或候选。');
+          }
+          abyss = retired;
+          abyssNotice = '上一轮深渊的卡库已更新，本轮已按「放弃挑战」归档，战绩见深渊记录。';
+        }
+        const maze = validateMazeState(current.mazeRun, current.mazeProgress, current.settledBattleIds);
+        if (!maze) throw new Error('迷宫探索记录与保底账本不完整，无法安全读取');
+        // 修好的那份**不立刻写盘**：与「新号不写盘」「rewards 就地归一」同一条纪律，
+        // 内存里已经是合法状态，第一次真正的写入会把它带下去；一直不写也只是下次再归档一遍。
+        stored = { ...current, rewards: normalizeRewards(current.rewards), mazeRun: maze.run, mazeProgress: maze.progress, abyss };
+      }
       const profile =
         stored ??
         createInitialProfile({
@@ -188,7 +247,7 @@ export class ProfileStore {
       this.profile = profile;
       // 新号**不立刻写盘**：玩家还没做任何事。
       // 第一次真正的写入由第一个动作触发，这样「存档到底写成功过没有」是可见的。
-      this.publish({ status: 'ready', profile, error: null });
+      this.publish({ status: 'ready', profile, error: null, abyssNotice });
     } catch (error) {
       this.publish({
         status: 'error',
@@ -294,30 +353,46 @@ export class ProfileStore {
   }
 
   saveDeck(deck: Deck): void {
-    this.pendingDeck = deck;
+    if (this.replacing) return;
+    this.pendingDecks.set(deck.id, { seq: ++this.deckSeq, deck });
+    this.publish({ deckDirty: true, deckSaveError: null });
     this.scheduleDebounce();
   }
 
-  /**
-   * 写迷宫 run 状态（走到哪 / 探索了哪些 / 每个节点的商店）。
-   *
-   * 与 `saveDeck` 同一条防抖合并队列：迷宫移动是低频操作，
-   * 丢了最坏回到上一次落盘的位置——不值得为它开一条悲观事务。
-   * 与结算不打架是既有机制保证的：`commitEconomic` 开头会 `flushDebounced()`，
-   * 待写的 run 先入队，结算读到的就是新位置。
-   */
+  getDeckDraft(deckId: string): Deck | null {
+    const pending = this.pendingDecks.get(deckId);
+    return pending ? pending.deck : this.profile?.decks.find(deck => deck.id === deckId) ?? null;
+  }
+
+  hasUnsavedDecks(): boolean {
+    return this.pendingDecks.size > 0 || this.pendingActiveDeck !== null;
+  }
+
+  /** 兼容旧调用，仅允许无历史入口初始化；真实探索/清空走经济事务。 */
   saveMazeRun(run: MazeRunState | null): void {
     this.pendingMazeRun = run;
     this.scheduleDebounce();
   }
 
   deleteDeck(deckId: string): void {
-    this.pendingDeleteDeckId = deckId;
+    if (this.replacing || !this.profile) return;
+    if (isFixedDeck(this.profile, deckId)) {
+      this.deps.onNotice?.('固定卡组不能删除，可以清空其中的卡牌', 'info');
+      return;
+    }
+    this.pendingDecks.set(deckId, { seq: ++this.deckSeq, deck: null });
+    this.publish({ deckDirty: true, deckSaveError: null });
     this.scheduleDebounce();
   }
 
   setActiveDeck(deckId: string | null): void {
-    this.pendingActiveDeckId = deckId;
+    if (this.replacing || !this.profile) return;
+    if (deckId !== null && (deckId === this.profile.ladder.deckId || !this.getDeckDraft(deckId))) {
+      this.deps.onNotice?.('只能将已有的普通卡组设为出战', 'info');
+      return;
+    }
+    this.pendingActiveDeck = { seq: ++this.deckSeq, id: deckId };
+    this.publish({ deckDirty: true, deckSaveError: null });
     this.scheduleDebounce();
   }
 
@@ -340,31 +415,70 @@ export class ProfileStore {
    */
   private flushDebounced(): void {
     const settings = this.pendingSettings;
-    const deck = this.pendingDeck;
-    const deleteId = this.pendingDeleteDeckId;
-    const activeId = this.pendingActiveDeckId;
     const mazeRun = this.pendingMazeRun;
     this.pendingSettings = null;
-    this.pendingDeck = null;
-    this.pendingDeleteDeckId = null;
-    this.pendingActiveDeckId = undefined;
     this.pendingMazeRun = undefined;
 
     if (settings) {
       void this.enqueue(() => this.persist((p) => withSettings(p, settings)));
     }
-    if (deck) {
-      void this.enqueue(() => this.persist((p) => withDeck(p, deck)));
-    }
-    if (deleteId) {
-      void this.enqueue(() => this.persist((p) => withoutDeck(p, deleteId)));
-    }
-    if (activeId !== undefined) {
-      void this.enqueue(() => this.persist((p) => withActiveDeck(p, activeId)));
-    }
+    this.queueDeckBatch();
     if (mazeRun !== undefined) {
       void this.enqueue(() => this.persist((p) => withMazeRun(p, mazeRun)));
     }
+  }
+
+  /** 卡组补丁按ID与版本确认；失败草稿留在store，卸载编辑页也不会丢。 */
+  private queueDeckBatch(): void {
+    const patches = [...this.pendingDecks].filter(([id, patch]) => this.deckInFlight.get(id) !== patch.seq);
+    const active = this.pendingActiveDeck?.seq !== this.activeInFlight ? this.pendingActiveDeck : null;
+    if (patches.length === 0 && !active) return;
+    for (const [id, patch] of patches) this.deckInFlight.set(id, patch.seq);
+    if (active) this.activeInFlight = active.seq;
+    void this.enqueue(async () => {
+      try {
+        const current = this.profile;
+        if (!current) throw new Error('存档还没加载完');
+        let next = current;
+        for (const [id, patch] of patches) next = patch.deck ? withDeck(next, patch.deck) : withoutDeck(next, id);
+        if (active) {
+          if (active.id !== null && (active.id === next.ladder.deckId || !next.decks.some(deck => deck.id === active.id))) {
+            throw new Error('出战卡组已经不存在，请重新选择');
+          }
+          next = withActiveDeck(next, active.id);
+        }
+        if (!validDeckSlots(next.decks, next.normalDeckIds, next.ladder, next.activeDeckId)) {
+          throw new Error('卡组槽位引用无效，未保存');
+        }
+        if (next !== current) {
+          // 多槽编辑是一批写入，也只占一个revision；队列内读最新资源账本。
+          next = { ...next, revision: current.revision + 1 };
+          await this.deps.repository.commit(next);
+          this.profile = next;
+        }
+        for (const [id, patch] of patches) {
+          if (this.pendingDecks.get(id)?.seq === patch.seq) this.pendingDecks.delete(id);
+        }
+        if (active && this.pendingActiveDeck?.seq === active.seq) this.pendingActiveDeck = null;
+        this.publish({ profile: this.profile, deckDirty: this.hasUnsavedDecks(), deckSaveError: null });
+      } catch (error) {
+        const message = `卡组保存失败：${error instanceof Error ? error.message : String(error)}`;
+        this.publish({ deckDirty: this.hasUnsavedDecks(), deckSaveError: message });
+        this.deps.onNotice?.(message, 'error');
+      } finally {
+        for (const [id, patch] of patches) {
+          if (this.deckInFlight.get(id) === patch.seq) this.deckInFlight.delete(id);
+        }
+        if (active && this.activeInFlight === active.seq) this.activeInFlight = null;
+      }
+    });
+  }
+
+  async flushDecks(): Promise<DeckFlushResult> {
+    await this.flush();
+    return this.hasUnsavedDecks()
+      ? { ok: false, message: this.snapshot.deckSaveError ?? '还有未保存的卡组改动，请重试' }
+      : { ok: true };
   }
 
   /** 等所有排队中的写入落盘。离开设置/组卡页时调用，**不挂 `beforeunload`**。 */
@@ -444,7 +558,8 @@ export class ProfileStore {
    * 已在其中，于是「导出 → 导入 → 再导出」逐字节幂等。
    */
   async exportProfile(): Promise<string | null> {
-    await this.flush();
+    const saved = await this.flushDecks();
+    if (!saved.ok) { this.deps.onNotice?.(saved.message, 'error'); return null; }
     const profile = this.profile;
     return profile ? JSON.stringify(profile, null, 2) : null;
   }
@@ -468,7 +583,8 @@ export class ProfileStore {
     if (!this.profile) {
       return { ok: false, reason: 'invalidShape', message: '存档还没加载完' };
     }
-    // 待写的设置/卡组先出去，别被导入覆盖，也别一直压在它后面
+    // 替换期间不接收新的卡组草稿；先完成旧批次，失败时禁止静默覆盖。
+    this.replacing = true;
     this.flushDebounced();
     this.publish({ busy: true });
 
@@ -477,6 +593,9 @@ export class ProfileStore {
         const current = this.profile;
         if (!current) {
           return { ok: false, reason: 'invalidShape', message: '存档还没加载完' };
+        }
+        if (this.hasUnsavedDecks()) {
+          return { ok: false, reason: 'saveFailed', message: '当前卡组尚未保存，请重试保存后再导入。' };
         }
         const plan = this.importPlan(files);
         if (!plan.ok) {
@@ -511,9 +630,11 @@ export class ProfileStore {
         if (!committed) {
           return { ok: false, reason: 'saveFailed', message: '写盘失败，原存档未改动。' };
         }
-        // 卡组单独一笔（防抖通道）：不扩 EconomyTransaction，界面已注明
+        // 卡组单独一笔，导入期间只有这条内部路径可以追加草稿。
         if (plan.legacy.deck) {
-          this.saveDeck(plan.legacy.deck);
+          this.pendingDecks.set(plan.legacy.deck.id, { seq: ++this.deckSeq, deck: plan.legacy.deck });
+          this.publish({ deckDirty: true, deckSaveError: null });
+          this.scheduleDebounce();
         }
         return { ok: true, format: plan.detected, revision: outcome.profile.revision };
       });
@@ -523,6 +644,7 @@ export class ProfileStore {
       }
       return result;
     } finally {
+      this.replacing = false;
       this.publish({ busy: false });
     }
   }
@@ -541,7 +663,9 @@ export class ProfileStore {
     this.profile = next;
     // 换了一份存档，会话级的幂等账本必须清掉
     this.appliedOperationIds.length = 0;
-    this.publish({ profile: next, lastResult: null });
+    this.pendingDecks.clear();
+    this.pendingActiveDeck = null;
+    this.publish({ profile: next, lastResult: null, deckDirty: false, deckSaveError: null });
     return true;
   }
 
@@ -671,17 +795,27 @@ export class ProfileStore {
 
   /** 测试与「重置存档」用。 */
   async resetProfile(): Promise<void> {
-    await this.deps.repository.clear();
-    const fresh = createInitialProfile({
-      contentVersion: this.deps.contentVersion,
-      dayKey: dayKeyOf(this.deps.clock()),
-      starterCardIds: this.deps.starterCardIds,
-      ownedCardIds: this.deps.ownedCardIds,
-      now: this.deps.clock(),
-    });
-    this.profile = fresh;
-    await this.deps.repository.commit(fresh);
-    this.publish({ profile: fresh, lastResult: null });
+    if (this.snapshot.busy) throw new Error('上一个操作还在处理中');
+    this.replacing = true;
+    this.flushDebounced();
+    this.publish({ busy: true });
+    try {
+      await this.enqueue(async () => {
+        if (this.hasUnsavedDecks()) throw new Error('当前卡组尚未保存，请重试保存后再重置');
+        const fresh = createInitialProfile({
+          contentVersion: this.deps.contentVersion,
+          dayKey: dayKeyOf(this.deps.clock()),
+          starterCardIds: this.deps.starterCardIds,
+          ownedCardIds: this.deps.ownedCardIds,
+          now: this.deps.clock(),
+        });
+        // 不先clear；新档写失败时旧档必须仍在。
+        if (!await this.replaceProfile(fresh)) throw new Error('重置存档保存失败');
+      });
+    } finally {
+      this.replacing = false;
+      this.publish({ busy: false });
+    }
   }
 
   dispose(): void {
@@ -697,4 +831,9 @@ const REJECT_TEXT: Record<ApplyOutcome['reason'] & string, string> = {
   insufficientFunds: '余额不足',
   insufficientCards: '卡牌不够',
   alreadySettled: '这一局已经结算过了',
+  alreadyClaimed: '这项奖励已经领取',
+  rewardUnavailable: '尚未满足这项奖励的领取条件',
+  mazeShopChanged: '迷宫货架已变化，请重新打开商店',
+  mazeStateChanged: '迷宫状态已变化，请重新操作',
+  abyssStateChanged: '深渊进度已变化或数据无效，请重新操作',
 };

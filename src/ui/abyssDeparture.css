@@ -1,0 +1,23 @@
+@layer controls {
+  .app-shell[data-abyss-departing] .menu__stage,
+  .app-shell[data-abyss-departing] > .app-nav {
+    animation: abyss-depart-foreground var(--abyss-depart-ms) ease-in-out both;
+    animation-play-state: var(--abyss-play-state, running);
+    pointer-events: none;
+  }
+  .abyss-departure {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    background: #000;
+    opacity: 0;
+    pointer-events: auto;
+  }
+  .abyss-departure[data-phase="darkening"] {
+    animation: abyss-depart-black var(--abyss-darken-ms) cubic-bezier(.45, 0, .55, 1) both;
+    animation-play-state: var(--abyss-play-state, running);
+  }
+  .abyss-departure[data-phase="handoff"] { opacity: 1; }
+  @keyframes abyss-depart-foreground { from { opacity: 1; } to { opacity: 0; } }
+  @keyframes abyss-depart-black { from { opacity: 0; } to { opacity: 1; } }
+}

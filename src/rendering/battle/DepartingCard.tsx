@@ -3,7 +3,8 @@ import { useFrame } from '@react-three/fiber';
 import { useEffect, useMemo, useRef } from 'react';
 import type { Group } from 'three';
 
-import { cardById } from '../../data';
+import type { DefinitionTable } from '../presentation/demoBattle';
+import { resolveBattleDefinition } from '../presentation/definitions';
 import { Timeline } from '../anim/Timeline';
 import { FLYING_CARD_LIFT } from '../anim/combatMotion';
 import { easeOutCubic } from '../anim/easings';
@@ -26,12 +27,12 @@ import { slotPosition } from './placements';
  * 它那一层的 position/rotation（悬停抬升、翻面），从外面动画不了它本身。
  * 父级变换与它自己的局部变换是叠加的，正好。
  */
-export function DepartingCard({ proxy }: { proxy: ProxyCard }) {
+export function DepartingCard({ proxy, definitions }: { proxy: ProxyCard; definitions?: DefinitionTable | undefined }) {
   const groupRef = useRef<Group>(null);
   const timelineRef = useRef<Timeline | null>(null);
   const progress = useRef(0);
 
-  const card = cardById.get(proxy.definitionId);
+  const card = resolveBattleDefinition(proxy.definitionId, definitions);
   const flyingLift = (proxy.flying ?? card?.rawTraits.includes('飞行')) ? FLYING_CARD_LIFT : 0;
   const base = useMemo(
     () => slotPosition(proxy.side, 'battle', proxy.slotIndex),

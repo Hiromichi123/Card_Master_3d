@@ -19,7 +19,10 @@ const LOADING: ProfileSnapshot = {
   profile: null,
   error: null,
   busy: false,
+  deckDirty: false,
+  deckSaveError: null,
   lastResult: null,
+  abyssNotice: null,
 };
 
 export function useProfileStore(store: ProfileStore | null): ProfileSnapshot {

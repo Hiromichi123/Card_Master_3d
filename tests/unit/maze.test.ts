@@ -41,6 +41,7 @@ import {
   mazeSeedFor,
   mazeShopKey,
   mazeShopSeed,
+  mazeShopOffer,
   newMazeRun,
   previewStrength,
   rollStrength,
@@ -344,19 +345,22 @@ describe('楼层商店', () => {
     return map;
   })();
 
-  const build = (seed: number, eventChance: number) =>
+  const build = (seed: number, eventChance: number, legacy = false) =>
     buildMazeShop({
       rng: createRng(seed),
       cardsByRarity,
       priceByRarity,
       fallbackPrice: fallback,
       eventChance,
+      legacy,
     });
 
-  it('固定三件，最多一张活动卡，普通位不重复', () => {
+  it('每批3–5件，最多一张活动卡，普通位不重复', () => {
     for (let seed = 0; seed < 20; seed += 1) {
       const items = build(seed, 0.5);
-      expect(items).toHaveLength(MAZE_SHOP.cardCount);
+      expect(items.length).toBeGreaterThanOrEqual(3);
+      expect(items.length).toBeLessThanOrEqual(5);
+      expect(build(seed, 0.5)).toEqual(items);
       expect(items.filter((item) => item.isEvent).length).toBeLessThanOrEqual(1);
       const regular = items.filter((item) => !item.isEvent);
       expect(new Set(regular.map((item) => item.cardId)).size).toBe(regular.length);
@@ -372,13 +376,14 @@ describe('楼层商店', () => {
     const items = build(3, 1);
     const event = items.find((item) => item.isEvent);
     expect(event).toBeDefined();
-    expect(event?.price).toEqual({ currency: 'crystal', amount: 661 });
+    expect(event?.originalPrice).toEqual({ currency: 'crystal', amount: 661 });
     // 绝不可能落到兜底价（旧版的缺陷就是落了兜底又被当成水晶）
     expect(event?.price.amount).toBeLessThan(1440);
   });
 
-  it('普通位按稀有度价目打折，且不低于下限', () => {
-    const items = build(5, 0);
+  it('旧货架仍固定3件，普通位85折及下限不变', () => {
+    const items = build(5, 0, true);
+    expect(items).toHaveLength(3);
     expect(items.every((item) => !item.isEvent)).toBe(true);
     for (const item of items) {
       const base = priceByRarity[item.rarity] ?? fallback;
@@ -388,6 +393,64 @@ describe('楼层商店', () => {
       );
       expect(item.price.amount).toBeGreaterThanOrEqual(MAZE_SHOP.minRegular);
     }
+  });
+
+  it.each([
+    [0, 'twenty', 529], [0.299999, 'twenty', 529],
+    [0.3, 'half', 331], [0.449999, 'half', 331],
+    [0.45, 'oneGold', 1], [0.499999, 'oneGold', 1],
+    [0.5, 'none', 661], [0.999999, 'none', 661],
+  ] as const)('优惠区间边界 %s → %s，币种和取整准确', (roll, discount, amount) => {
+    const offer = mazeShopOffer({ currency: 'crystal', amount: 661 }, roll);
+    expect(offer.discount).toBe(discount);
+    expect(offer.price).toEqual({ currency: discount === 'oneGold' ? 'gold' : 'crystal', amount });
+    expect(offer.originalPrice).toEqual({ currency: 'crystal', amount: 661 });
+  });
+
+  it('100个等距区间样本恰为30/15/5/50，四档互斥且覆盖全部区间', () => {
+    const counts = { twenty: 0, half: 0, oneGold: 0, none: 0 };
+    for (let i = 0; i < 100; i += 1) counts[mazeShopOffer({ currency: 'gold', amount: 1000 }, (i + 0.5) / 100).discount] += 1;
+    expect(counts).toEqual({ twenty: 30, half: 15, oneGold: 5, none: 50 });
+  });
+
+  it('新货架原价不再叠加85折，最低成交价为1', () => {
+    for (const item of build(5, 0)) {
+      expect(item.originalPrice).toEqual(priceByRarity[item.rarity] ?? fallback);
+      const roll = { none: 0.5, twenty: 0, half: 0.3, oneGold: 0.45 }[item.discount];
+      expect(item.price).toEqual(mazeShopOffer(item.originalPrice, roll).price);
+    }
+    expect(mazeShopOffer({ currency: 'badge', amount: 1 }, 0.3).price).toEqual({ currency: 'badge', amount: 1 });
+  });
+
+  it.each([3, 4, 5])('数量抽取可精确生成%s张，空池和不足卡池安全返回', count => {
+    const rng = { ...createRng(7), int: (lo: number, hi: number) => {
+      expect([lo, hi]).toEqual([3, 5]);
+      return count;
+    } };
+    const items = buildMazeShop({ rng, cardsByRarity, priceByRarity, fallbackPrice: fallback });
+    expect(items).toHaveLength(count);
+    expect(buildMazeShop({ rng: createRng(7), cardsByRarity: new Map(), priceByRarity, fallbackPrice: fallback })).toEqual([]);
+    const small = buildMazeShop({ rng: createRng(7), cardsByRarity: new Map([['D', ['only']]]), priceByRarity, fallbackPrice: fallback });
+    expect(small.map(item => item.cardId)).toEqual(['only']);
+  });
+
+  it('legacy随机顺序、卡牌及原报价冻结，不因新增数量或优惠抽取而偏移', () => {
+    const rng = {
+      ...createRng(1),
+      chance: () => true,
+      pick: <T>(items: readonly T[]) => items[0]!,
+      shuffle: <T>(items: T[]) => items,
+      next: () => { throw new Error('legacy不能额外抽取数量或优惠'); },
+      int: () => { throw new Error('legacy不能额外抽取数量或优惠'); },
+    };
+    const items = buildMazeShop({ rng, legacy: true,
+      cardsByRarity: new Map([[MAZE_EVENT_RARITY, ['event']], ['D', ['first', 'second']]]),
+      priceByRarity: { D: { currency: 'gold', amount: 690 } }, fallbackPrice: fallback });
+    expect(items.map(item => [item.cardId, item.price, item.discount])).toEqual([
+      ['event', { currency: 'crystal', amount: 661 }, 'none'],
+      ['first', { currency: 'gold', amount: 587 }, 'none'],
+      ['second', { currency: 'gold', amount: 587 }, 'none'],
+    ]);
   });
 
   it('商店种子与命名空间随楼层/run/节点变化，同一组稳定', () => {

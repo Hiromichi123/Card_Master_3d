@@ -1,4 +1,5 @@
 import type { TextureTier } from '../services/AssetManager';
+import type { CardDefinition } from '../domain/cards/types';
 
 import manifestJson from './assets.manifest.json';
 
@@ -43,6 +44,7 @@ interface Manifest {
 }
 
 const manifest = manifestJson as unknown as Manifest;
+const cardsByArtId = new Map(Object.values(manifest.cards).map((entry) => [entry.artId, entry]));
 
 /** 公共卡背。所有卡共用一张，不按稀有度各做一份。 */
 export const CARD_BACK_URL: string = manifest.shared.cardBack ?? '';
@@ -50,6 +52,14 @@ export const CARD_BACK_URL: string = manifest.shared.cardBack ?? '';
 /** 卡背贴图在卡牌本地坐标下的纵横比修正用（卡背图与卡面同尺寸）。 */
 export function cardFaceUrl(cardId: string, tier: TextureTier = 'battle'): string | null {
   return manifest.cards[cardId]?.face[tier]?.url ?? null;
+}
+
+/** 临时卡有独立规则ID，但仍引用原模板的artId，不把运行期ID拼进资源路径。 */
+export function cardFaceUrlForDefinition(
+  card: Pick<CardDefinition, 'cardId' | 'art'>,
+  tier: TextureTier = 'battle',
+): string | null {
+  return cardsByArtId.get(card.art.artId)?.face[tier]?.url ?? cardFaceUrl(card.cardId, tier);
 }
 
 /** 原画（未加边框的插画）。P4 重排卡框时使用。 */

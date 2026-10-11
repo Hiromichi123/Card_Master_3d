@@ -7,8 +7,8 @@
  * 不 import React——纯映射，出参直接喂给 `BattleBoard` 的 `placements`。
  */
 
-import { COOLDOWN_CARD, isCooldownCard } from '../../domain/battle/turnActions';
-import { cardById } from '../../data';
+import type { DefinitionTable } from '../presentation/demoBattle';
+import { resolveBattleDefinition } from '../presentation/definitions';
 import type { CardDefinition, SideId } from '../../domain/cards/types';
 import type { DisplayState } from '../presentation/displayState';
 import { statsOf } from '../presentation/displayState';
@@ -101,6 +101,7 @@ export interface BoardView {
 }
 
 export interface BuildBoardOptions {
+  readonly definitions?: DefinitionTable | undefined;
   readonly deckTotals?: Readonly<Record<SideId, number>> | undefined;
   /** 当前选中的卡（`instanceId`）。 */
   readonly selectedInstanceId?: string | null | undefined;
@@ -129,7 +130,7 @@ export function buildBoard(display: DisplayState, options: BuildBoardOptions = {
       if (!instanceId) {
         return;
       }
-      const placement = makePlacement(display, instanceId, {
+      const placement = makePlacement(display, instanceId, options.definitions, {
         position: slotPosition(side, 'battle', index),
         scale: BATTLE_CARD_SCALE,
         statLayout: 'battle',
@@ -143,7 +144,7 @@ export function buildBoard(display: DisplayState, options: BuildBoardOptions = {
       if (!instanceId) {
         return;
       }
-      const placement = makePlacement(display, instanceId, {
+      const placement = makePlacement(display, instanceId, options.definitions, {
         position: slotPosition(side, 'prep', index),
         scale: PREP_CARD_SCALE,
         statLayout: 'prep',
@@ -157,7 +158,7 @@ export function buildBoard(display: DisplayState, options: BuildBoardOptions = {
 
     zones.hand.forEach((instanceId, index) => {
       const hand = handCardTransform(index, zones.hand.length, side);
-      const placement = makePlacement(display, instanceId, {
+      const placement = makePlacement(display, instanceId, options.definitions, {
         position: hand.position,
         rotationY: hand.rotationY,
         rotationX: hand.rotationX,
@@ -192,18 +193,18 @@ export function buildBoard(display: DisplayState, options: BuildBoardOptions = {
     entries,
     placeable,
     targeted: new Set<string>(),
-    piles: buildPiles(display, options.deckTotals),
+    piles: buildPiles(display, options.deckTotals, options.definitions),
   };
 }
 
 /** 双方的牌堆与弃牌堆。牌堆盖着，弃牌堆露出最上面那张。 */
-function buildPiles(display: DisplayState, totals?: Readonly<Record<SideId, number>>): PileView[] {
+function buildPiles(display: DisplayState, totals?: Readonly<Record<SideId, number>>, definitions?: DefinitionTable): PileView[] {
   const piles: PileView[] = [];
   for (const side of SIDES) {
     const zones = display.zones[side];
     const topId = zones.discard[zones.discard.length - 1];
     const topIdentity = topId ? display.instances[topId] : undefined;
-    const topCard = topIdentity ? (cardById.get(topIdentity.definitionId) ?? null) : null;
+    const topCard = topIdentity ? (resolveBattleDefinition(topIdentity.definitionId, definitions) ?? null) : null;
 
     piles.push(
       { side, kind: 'deck', topCard: null, count: zones.deck.length, totalCount: totals?.[side] },
@@ -231,6 +232,7 @@ export function pilePlacement(pile: PileView): {
 function makePlacement(
   display: DisplayState,
   instanceId: string,
+  definitions: DefinitionTable | undefined,
   placement: {
     position: readonly [number, number, number];
     scale: number;
@@ -250,7 +252,7 @@ function makePlacement(
   if (!identity) {
     return null;
   }
-  const card: CardDefinition | undefined = isCooldownCard(identity.definitionId) ? COOLDOWN_CARD : cardById.get(identity.definitionId);
+  const card = resolveBattleDefinition(identity.definitionId, definitions);
   if (!card) {
     return null;
   }

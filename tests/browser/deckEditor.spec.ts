@@ -206,13 +206,13 @@ test('没有出战卡组时可以把它启用', async ({ page }) => {
 
   await ensurePersisted(page);
 
-  // `activeDeckOf` 为 null：界面不该让人编辑一份没有归属的草稿
+  // 没有普通active仍能编辑固定槽1，但需显式设为普通出战。
   await patchProfile(page, (profile) => ({ ...profile, activeDeckId: null }));
   await clickNav(page, '配置');
-  await expect(page.locator('.deckedit__empty-actions')).toBeVisible({ timeout: 30_000 });
-  await expect(page.locator('.deckedit__grid')).toHaveCount(0);
+  await expect(page.getByRole('tab', { name: '卡组1', exact: true })).toHaveAttribute('aria-selected', 'true');
+  await expect(page.locator('.deckedit__grid')).toBeVisible();
 
-  await page.getByRole('button', { name: /^启用/ }).click();
+  await page.getByRole('button', { name: '设为普通出战', exact: true }).click();
   await expect(page.locator('.deckedit__grid')).toBeVisible();
   expect(await slotIds(page)).toHaveLength(DECK_LIMIT);
   /*

@@ -4,7 +4,7 @@ import { lethalStrikeChance } from './tacticalTraits';
 /** Functional summaries shared by card hover surfaces; imported flavour text remains separate. */
 export function describeTraitFunction(skill: SkillSpec): string {
   const n = skill.param ?? (['explodeOnDeath', 'alignedDeathBlast'].includes(skill.family ?? '') ? 2 : 1);
-  if (skill.family === 'immunity') return '目前保留卡面与状态标记，技能伤害免疫尚未接入。';
+  if (skill.family === 'immunity') return '免受技能、反击及技能持续伤害；不挡普攻、真伤、自伤、直接击杀或负面状态。被当前对位沉默时失效。';
   if (skill.raw === '飞行') return '规避无对空的地面普攻；该普攻穿过自己命中本体。';
   const text: Record<string, string> = {
     fireball: `随机敌方受到 ${n} 点技能伤害。`, iceSeal: `随机敌方受到 ${n} 点技能伤害。`,

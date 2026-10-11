@@ -1,0 +1,21 @@
+@layer controls {
+  .abyss-preparation { background: #100b17; }
+  .abyss-preparation > .scene-viewport { position: absolute; inset: 0; }
+  .abyss-draft { position: absolute; z-index: 4; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(850px, 94vw, calc((100dvh - 150px) * 1.35)); padding: clamp(6px, 1.5vw, 18px); border: 1px solid #a8849b88; border-radius: 12px; background: #150d20c9; box-shadow: 0 16px 70px #0009; }
+  .abyss-draft__choices { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(5px, 1.7vw, 18px); }
+  .abyss-draft .abyss-draft__choice { min-width: 0; padding: clamp(4px, 1vw, 12px); background: #100b17ad; border: 1px solid #94748a77; }
+  .abyss-draft__choice > strong { display: block; font-size: clamp(12px, 1.4vw, 19px); font-weight: 500; padding-bottom: 8px; }
+  .abyss-draft__cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(3, auto); gap: clamp(3px, .6vw, 7px); }
+  .abyss-draft__cards img { display: block; width: 100%; aspect-ratio: 2/2.6; object-fit: contain; border-radius: 3px; background: #08060b; }
+  .abyss-draft footer { display: flex; justify-content: center; gap: 14px; margin-top: 14px; }
+  .abyss-draft footer button { white-space: nowrap; }
+  .abyss-preparation .abyss-run { inset: 12% 5% 10%; background: #110b19cf; backdrop-filter: blur(4px); }
+  .abyss-preparation .abyss-storage-warning { top: 8px; }
+  .abyss-preparation__collecting { position: absolute; bottom: 12%; left: 50%; transform: translateX(-50%); color: #efd8e5; background: #170e20bd; padding: 12px 20px; }
+  .abyss-preparation__fallback { position: absolute; z-index: 3; top: 7%; left: 5%; right: 5%; text-align: center; padding: 10px; background: #25162ee8; font-size: 12px; }
+  .abyss-collect { position: fixed; inset: 0; z-index: 6; pointer-events: none; }
+  .abyss-collect__card { position: absolute; transform-style: preserve-3d; will-change: transform; }
+  .abyss-collect__card img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; backface-visibility: hidden; }
+  .abyss-collect__back { transform: rotateY(180deg); }
+  @media (max-height: 400px) { .abyss-draft { width: min(94vw, calc((100dvh - 90px) * 1.35)); }.abyss-draft footer { margin-top: 5px; }.abyss-draft footer button { padding: 5px 10px; font-size: 11px; } }
+}

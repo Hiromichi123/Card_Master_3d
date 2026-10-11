@@ -5,17 +5,27 @@ import { assetManifest, cardArtUrl, cardFaceUrl } from '../data/assets';
 import { HubSideRail } from '../ui/HubSideRail';
 import { MenuChrome } from '../ui/MenuChrome';
 import { PlayerStatus } from '../ui/PlayerStatus';
+import { HubRewards } from '../ui/HubRewards';
+import { RankingButton } from '../ui/RankingButton';
+import { LeaderboardModal } from '../ui/LeaderboardModal';
+import { useProfileStore } from '../state/useProfileStore';
+import type { ProfileStore } from '../state/createProfileStore';
 import { PosterCarousel } from '../ui/PosterCarousel';
 import { HubLogoLayer, type HubLogoItem } from '../ui/HubLogoLayer';
 import { pushToast } from '../state/toastStore';
 import { useSettingsStore } from '../state/settingsStore';
-import { menuPosters, POSTER_ROUTES } from './menuPosters';
+import { menuPosterEntries } from './menuPosters';
+import { AbyssEntry } from '../ui/AbyssEntry';
 import type { ProfileState } from '../domain/progression/types';
 import type { RouteId } from '../app/routes';
 import '../ui/hubMenu.css';
 
 export interface HubSceneProps {
   readonly profile: ProfileState;
+  /** Static lobby previews can omit economy access. Runtime always passes the current player store. */
+  readonly store?: ProfileStore;
+  readonly busy?: boolean;
+  readonly playerName?: string;
   readonly onNavigate: (route: RouteId) => void;
   readonly onReset: () => void;
 }
@@ -39,7 +49,7 @@ const MAIN_ROWS: readonly (readonly HubEntry[])[] = [
     { id: 'event-shop', kind: 'market', color: '#c8bbcf', route: 'activityShop', label: '活动商店', hint: '活动卡牌与徽章', palette: 'violet' },
   ],
   [
-    { id: 'ranking', kind: 'ranking', color: '#dec184', route: null, label: '排行榜', hint: '排行榜暂未开放' },
+    { id: 'ranking', kind: 'ranking', color: '#dec184', route: null, label: '排行榜', hint: '天梯与收藏排行榜 · 本地演示榜' },
     { id: 'statistics', kind: 'statistics', color: '#a8c1c4', route: null, label: '统计数据', hint: '统计数据暂未开放' },
     { id: 'demo', kind: 'demo', color: '#b6b3e6', route: 'battle', label: '战斗演示', hint: '不影响存档的演示对局' },
   ],
@@ -53,7 +63,7 @@ const DOCK: readonly HubEntry[] = [
   { id: 'settings', kind: 'settings', color: '#d7b774', route: 'settings', label: '设置', hint: '画质、视角、音效与存档' },
   { id: 'reset', kind: 'reset', color: '#d7b774', route: null, label: '重置存档', hint: '清空卡牌、货币与关卡进度', reset: true },
 ];
-const LOGOS: readonly HubLogoItem[] = [...MAIN_ROWS.flat(), ...DOCK];
+const LOGOS: readonly HubLogoItem[] = [...MAIN_ROWS.flat(), ...DOCK].filter(entry => entry.id !== 'ranking');
 const MAIN_ART: Readonly<Record<string, string>> = {
   start: 'SSS_008', daily: 'A+_006', events: 'A+_002', 'event-shop': 'SS+_005',
   ranking: 'SSS_001', statistics: 'S_002', demo: 'SS_001',
@@ -71,11 +81,15 @@ const PALETTES: Record<Palette, { from: string; to: string }> = {
 };
 
 /** Lobby entry blocks and an equal-width dock share one transparent 3D logo layer. */
-export function HubScene({ profile, onNavigate, onReset }: HubSceneProps) {
+export function HubScene({ profile, store, busy = false, playerName = '当前玩家', onNavigate, onReset }: HubSceneProps) {
+  const snapshot = useProfileStore(store ?? null);
+  const current = snapshot.profile ?? profile;
+  const [rankingOpen, setRankingOpen] = useState(false);
   const still = useSettingsStore((state) => state.reduceMotion);
   const [activeId, setActiveId] = useState<string | null>(null);
   const anchors = useRef(new Map<string, HTMLSpanElement>());
   const background = assetManifest.shared.menu['menu_bg']?.url ?? null;
+  const posters = menuPosterEntries();
 
   const activate = (entry: HubEntry): void => {
     if (entry.reset) {
@@ -88,6 +102,9 @@ export function HubScene({ profile, onNavigate, onReset }: HubSceneProps) {
   };
   const clearActive = (id: string): void => setActiveId((previous) => previous === id ? null : previous);
   const button = (entry: HubEntry, dock: boolean) => {
+    if (entry.id === 'ranking') return <div key={entry.id} className="hub-button-shell">
+      <RankingButton onClick={() => setRankingOpen(true)} />
+    </div>;
     const palette = PALETTES[entry.palette ?? 'default'];
     const artId = MAIN_ART[entry.id];
     const art = artId ? cardArtUrl(artId) ?? cardFaceUrl(artId, 'battle') : null;
@@ -112,18 +129,23 @@ export function HubScene({ profile, onNavigate, onReset }: HubSceneProps) {
 
   return <MenuChrome className={`menu--hub hub-menu${still ? ' hub-menu--still' : ''}`}
     backgroundUrl={background} title={<HubWordmark />}
-    status={<PlayerStatus level={profile.level} currencies={profile.currencies} />}>
+    status={<div className="hub-player">
+      <PlayerStatus level={profile.level} currencies={profile.currencies} />
+      {store && <HubRewards profile={profile} store={store} busy={busy} />}
+    </div>}>
     <HubSideRail />
+    <AbyssEntry onClick={() => onNavigate('abyss')} />
     <nav className="hub-main" aria-label="主界面玩法">
       {MAIN_ROWS.map((row, index) => <div key={index} className={`hub-main__row hub-main__row--${index + 1}`}>
         {row.map((entry) => button(entry, false))}
       </div>)}
     </nav>
-    <PosterCarousel posters={menuPosters()} still={still}
-      onSelect={(index) => onNavigate(POSTER_ROUTES[index] ?? 'campaign')} />
+    <PosterCarousel posters={posters.map(entry => entry.url)} details={posters} still={still}
+      onSelect={(index) => { const entry = posters[index]; if (entry) onNavigate(entry.route); }} />
     <nav className="hub-dock" aria-label="底部导航">
       {DOCK.map((entry) => button(entry, true))}
     </nav>
     <HubLogoLayer items={LOGOS} anchors={anchors} activeId={activeId} still={still} />
+    {rankingOpen && <LeaderboardModal profile={current} playerName={playerName} onClose={() => setRankingOpen(false)} />}
   </MenuChrome>;
 }

@@ -28,13 +28,14 @@ test('主菜单「进入战斗」进的是选择对战模式（不是直接进�
   await menuEntry(page, '进入战斗').click();
   await expect(page.locator('.menu__title')).toHaveText('选择对战模式');
 
-  // 旧版 `battle_menu.py` 的六项，顺序一致
+  // 天梯赛紧接活动模式，其余入口顺序保持。
   const labels = await page
     .locator('.menu__entry')
     .evaluateAll((nodes) => nodes.map((node) => node.textContent?.trim() ?? ''));
   expect(labels).toEqual([
     '单人战役',
     '活动模式',
+    '天梯赛',
     '局域网 卡组对战',
     '局域网 任选对战',
     '本地 任选对战（双人）',
@@ -74,10 +75,10 @@ test('「活动模式」进的是活动大厅，活动商店在它里面', async
   const modes = await page
     .locator('.activity-wheel__option .wheel__name')
     .evaluateAll((nodes) => nodes.map((node) => node.textContent?.trim() ?? ''));
-  expect(modes).toEqual(['迷宫挑战', '深渊挑战', '协力突袭', '天梯赛', '极难挑战']);
+  expect(modes).toEqual(['世界树迷宫', '深渊挑战', '协力突袭', '天梯赛', '极难挑战']);
   // 只有迷宫做完了：它的轮盘项不带「未开放」标记
   await expect(page.locator('.activity-wheel__option').first().locator('.activity-wheel__soon')).toHaveCount(0);
-  await expect(page.locator('.activity-detail__title')).toContainText('迷宫挑战');
+  await expect(page.locator('.activity-detail__title')).toContainText('世界树迷宫');
 
   // 右侧三项按钮
   const entries = await page

@@ -5,12 +5,14 @@ import { CollectionScene } from '../scenes/CollectionScene';
 import { DeckEditorScene } from '../scenes/DeckEditorScene';
 import { EffectLabScene } from '../scenes/EffectLabScene';
 import { ActivityScene } from '../scenes/ActivityScene';
+import { AbyssScene } from '../scenes/AbyssScene';
 import { CampaignScene } from '../scenes/CampaignScene';
 import { BattleMenuScene } from '../scenes/BattleMenuScene';
 import { LocalBattleScene } from '../scenes/LocalBattleScene';
 import { GachaScene } from '../scenes/GachaScene';
 import { FusionScene } from '../scenes/FusionScene';
 import { MazeScene } from '../scenes/MazeScene';
+import { LadderScene } from '../scenes/LadderScene';
 import { ShopScene } from '../scenes/ShopScene';
 import { SettingsScene } from '../scenes/SettingsScene';
 import { HubScene } from '../scenes/HubScene';
@@ -24,6 +26,7 @@ import { attachSettingsPersistence, hydrateSettings } from '../state/settingsPer
 import { useSettingsStore } from '../state/settingsStore';
 import { audioEngine, unlockAudioOnFirstGesture } from '../services/audio/AudioEngine';
 import { SceneBackgroundProvider } from '../ui/SceneBackground';
+import { useAbyssDeparture } from '../ui/useAbyssDeparture';
 import { useProfileStore } from '../state/useProfileStore';
 import { PerfToggle } from '../ui/BattleSettings';
 import { AdminResources } from '../ui/AdminResources';
@@ -57,6 +60,7 @@ export function App() {
     return () => { delete document.documentElement.dataset.uiMotion; };
   }, [reduceUiMotion]);
   const [route, setRoute] = useState<RouteId>('hub');
+  const [deckInitialId, setDeckInitialId] = useState<string | undefined>(undefined);
   const [entered, setEntered] = useState(false);
   const [account, setAccount] = useState<LoginAccount | null>(null);
   const gameLayer = useRef<HTMLDivElement>(null);
@@ -107,8 +111,23 @@ export function App() {
     },
     [launch, store],
   );
-  // Scene UI switches immediately; background layers blend across route mounts.
-  const navigate = useCallback((next: RouteId) => { setRoute(next); }, []);
+  const [abyssPreDarkened, setAbyssPreDarkened] = useState(false);
+  const departure = useAbyssDeparture(reduceUiMotion, () => {
+    setAbyssPreDarkened(true);
+    setRoute('abyss');
+  });
+  // 深渊保留源屏至全黑；其余路由沿用即时切换。
+  const navigate = useCallback((next: RouteId) => {
+    if (departure.busy) return;
+    if (next === 'abyss' && route !== 'abyss') { departure.start(); return; }
+    if (next === 'deck') setDeckInitialId(undefined);
+    setAbyssPreDarkened(false);
+    setRoute(next);
+  }, [departure.busy, departure.start, route]);
+  const configureLadder = useCallback(() => {
+    setDeckInitialId(store?.getSnapshot().profile?.ladder.deckId);
+    setRoute('deck');
+  }, [store]);
 
   useEffect(() => {
     mounted.current = true;
@@ -183,18 +202,27 @@ export function App() {
     }
   }, [snapshot.fallbackReason]);
 
+  // 读档时被降级归档的在途深渊也要**看得见**，而且要等壳子挂上：
+  // 登录动画期间 `ToastHost` 还没挂载，那时弹出去的提示会被 3 秒计时器吃掉。
+  useEffect(() => {
+    if (!entered) return;
+    const notice = store?.takeAbyssNotice();
+    if (notice) pushToast(notice, 'info');
+  }, [entered, store]);
+
   return (
     <SceneBackgroundProvider>
     {!entered && <LoginScene onAuthenticated={authenticate} onReveal={revealLobby} onComplete={finishEntrance} />}
     <div ref={gameLayer} className={`app-shell${entered ? '' : ' app-shell--locked'}`}
-      inert={!entered} aria-hidden={!entered} tabIndex={-1}>
+      inert={!entered || departure.busy} aria-hidden={!entered} tabIndex={-1}
+      style={departure.style} data-abyss-departing={departure.busy ? departure.phase : undefined}>
       {store && <>
       {/*
         抬头可手动收起（2026-10-07）：3D 屏（战桌、实验台、抽卡）最想要的是纵向空间，
         而抬头在那些屏上只是「我现在不想切屏」。收起来只剩品牌与一个展开按钮，
         再点就回来——状态不进存档，刷新即恢复展开。
       */}
-      <nav className={navCollapsed ? 'app-nav app-nav--admin app-nav--collapsed' : 'app-nav app-nav--admin'} aria-label="admin 导航栏">
+      {route !== 'abyss' && <nav className={navCollapsed ? 'app-nav app-nav--admin app-nav--collapsed' : 'app-nav app-nav--admin'} aria-label="admin 导航栏">
         <span className="app-nav__brand">admin 导航栏</span>
         {!navCollapsed &&
           ROUTES.filter((item) => !['maze', 'draft'].includes(item.id)).map((item) => (
@@ -225,7 +253,7 @@ export function App() {
         >
           {navCollapsed ? '▾ 展开' : '▴ 收起'}
         </button>
-      </nav>
+      </nav>}
 
       <main className="app-main">
         {/* 错误边界包住场景，避免一个渲染错误把整个应用变成白屏 */}
@@ -233,6 +261,10 @@ export function App() {
           <Suspense fallback={<div className="app-loading">正在加载…</div>}>
             <Screen
               route={route}
+              abyssPreDarkened={abyssPreDarkened}
+              playerName={account?.username ?? '当前玩家'}
+              deckInitialId={deckInitialId}
+              onConfigureLadder={configureLadder}
               snapshot={snapshot}
               store={store}
               launch={launch}
@@ -261,17 +293,24 @@ export function App() {
         </ErrorBoundary>
       </main>
 
-      <ToastHost />
-      {/* 悬停卡牌详情：全应用挂一次，卡片只要带 `data-card-id` 就自动有 */}
-      <CardTipHost />
+      {route !== 'abyss' && !departure.busy && <>
+        <ToastHost />
+        {/* 深渊入场不保留旧提示层，确保黑幕覆盖整个窗口。 */}
+        <CardTipHost />
+      </>}
       </>}
     </div>
+    {departure.busy && <div className="abyss-departure" data-phase={departure.phase} style={departure.style} aria-hidden="true" />}
     </SceneBackgroundProvider>
   );
 }
 
 interface ScreenProps {
   readonly route: RouteId;
+  readonly abyssPreDarkened: boolean;
+  readonly playerName: string;
+  readonly deckInitialId: string | undefined;
+  readonly onConfigureLadder: () => void;
   readonly snapshot: ReturnType<typeof useProfileStore>;
   /**
    * 存档实例本身（不只是快照）。
@@ -298,6 +337,10 @@ interface ScreenProps {
  */
 function Screen({
   route,
+  abyssPreDarkened,
+  playerName,
+  deckInitialId,
+  onConfigureLadder,
   snapshot,
   store,
   launch,
@@ -340,7 +383,7 @@ function Screen({
 
   switch (route) {
     case 'hub':
-      return <HubScene profile={profile} onNavigate={onNavigate} onReset={onReset} />;
+      return <HubScene profile={profile} store={store} playerName={playerName} busy={snapshot.busy} onNavigate={onNavigate} onReset={onReset} />;
     case 'battle':
       return (
         <div className="scene-viewport">
@@ -379,7 +422,11 @@ function Screen({
     case 'collection':
       return <CollectionScene profile={profile} />;
     case 'deck':
-      return <DeckEditorScene profile={profile} store={store} />;
+      return <DeckEditorScene profile={profile} store={store} onNavigate={onNavigate}
+        {...(deckInitialId ? { initialDeckId: deckInitialId } : {})} />;
+    case 'ladder':
+      return <LadderScene profile={profile} store={store} playerName={playerName}
+        onNavigate={next => next === 'deck' ? onConfigureLadder() : onNavigate(next)} />;
     case 'shop':
       return (
         <ShopScene
@@ -406,9 +453,11 @@ function Screen({
       return <BattleMenuScene profile={profile} onNavigate={onNavigate} />;
     case 'activity':
       return <ActivityScene profile={profile} onNavigate={onNavigate} />;
+    case 'abyss':
+      return <AbyssScene store={store} onNavigate={onNavigate} preDarkened={abyssPreDarkened} />;
     case 'settings':
       return <SettingsScene profile={profile} store={store} onNavigate={onNavigate} />;
     default:
-      return <HubScene profile={profile} onNavigate={onNavigate} onReset={onReset} />;
+      return <HubScene profile={profile} store={store} playerName={playerName} busy={snapshot.busy} onNavigate={onNavigate} onReset={onReset} />;
   }
 }

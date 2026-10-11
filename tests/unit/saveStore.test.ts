@@ -89,7 +89,7 @@ describe('加载', () => {
     const { store } = await readyStore(repository);
 
     expect(store.getSnapshot().status).toBe('ready');
-    expect(profileOf(store).decks).toHaveLength(1);
+    expect(profileOf(store).decks).toHaveLength(4);
     // 玩家还没做任何事，不该产生一次写入——这样「写盘到底成功过没有」才是可观测的
     expect(repository.commitCount).toBe(0);
   });
@@ -272,12 +272,20 @@ describe('设置与卡组的合并保存', () => {
     expect(profileOf(store).settings.bloom).toBe(false);
   });
 
-  it('删掉出战卡组时会把 activeDeckId 一并置空', async () => {
+  it('四个固定槽不能删除；额外出战卡组删除时清active引用', async () => {
     const { store } = await readyStore();
     const deck = profileOf(store).decks[0]!;
     store.deleteDeck(deck.id);
     await store.flush();
-    expect(profileOf(store).decks).toHaveLength(0);
+    expect(profileOf(store).decks).toHaveLength(4);
+    expect(profileOf(store).activeDeckId).toBe(deck.id);
+    store.saveDeck({ ...deck, id: 'extra' });
+    store.setActiveDeck('extra');
+    await store.flush();
+    expect(profileOf(store).activeDeckId).toBe('extra');
+    store.deleteDeck('extra');
+    await store.flush();
+    expect(profileOf(store).decks).toHaveLength(4);
     expect(profileOf(store).activeDeckId).toBeNull();
   });
 });
@@ -299,11 +307,11 @@ describe('迷宫的 runState 写入', () => {
     floorKey,
     version,
     playerNodeId,
-    exploredNodeIds: [0, playerNodeId].sort((a, b) => a - b),
+    exploredNodeIds: [...new Set([0, playerNodeId])].sort((a, b) => a - b),
     shopByNode: {},
   });
 
-  it('防抖合并成一次写盘，落盘的是最后一次', async () => {
+  it('旧防抖不能直接写入已移动和扩大探索的run', async () => {
     // `commitCount` 只有内存实现有（生产实现没有这个计数器）
     const repository = new MemorySaveRepository();
     const { store } = await readyStore(repository);
@@ -313,11 +321,9 @@ describe('迷宫的 runState 写入', () => {
     store.saveMazeRun(makeRun('floor1', 1, 7));
     await store.flush();
 
-    expect(repository.commitCount - before).toBe(1);
-    expect(profileOf(store).mazeRun?.playerNodeId).toBe(7);
-    // 落盘的那一份也对得上
-    const stored = await repository.load();
-    expect(stored?.mazeRun?.playerNodeId).toBe(7);
+    expect(repository.commitCount - before).toBe(0);
+    expect(profileOf(store).mazeRun).toBeNull();
+    expect(await repository.load()).toBeNull();
   });
 
   it('写 run 不会把已经扣掉的货币写回去（队列内部才读当前 profile）', async () => {
@@ -335,18 +341,18 @@ describe('迷宫的 runState 写入', () => {
 
     const profile = profileOf(store);
     expect(profile.currencies.gold).toBe(goldBefore - 100);
-    // 移动也还在（经济事务用 `...profile` 展开，不碰 mazeRun）
-    expect(profile.mazeRun?.playerNodeId).toBe(5);
+    // 旧移动被拒绝，合法经济事务仍然完成。
+    expect(profile.mazeRun).toBeNull();
   });
 
-  it('清空 run：可以写回 null', async () => {
+  it('旧防抖不能清null绕过每周清空次数', async () => {
     const { store } = await readyStore();
-    store.saveMazeRun(makeRun('floor1', 1, 2));
+    store.saveMazeRun(makeRun('floor1', 1, 0));
     await store.flush();
     expect(profileOf(store).mazeRun).not.toBeNull();
 
     store.saveMazeRun(null);
     await store.flush();
-    expect(profileOf(store).mazeRun).toBeNull();
+    expect(profileOf(store).mazeRun?.playerNodeId).toBe(0);
   });
 });

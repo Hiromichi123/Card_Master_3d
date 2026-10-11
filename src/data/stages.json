@@ -122,7 +122,7 @@
     },
     {
       "id": "chapter_3",
-      "name": "神宫",
+      "name": "圣域",
       "posterId": "poster/chapter_3_enter",
       "bgType": "bg/chapter_3_map",
       "stages": [

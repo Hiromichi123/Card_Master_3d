@@ -49,6 +49,7 @@ export function CardTipHost() {
         if (showDOM(next)) return;
         const active = useCardTipStore.getState().target;
         if (active?.source === '3d' && active.ownerElement === next.target) moveCardTip(next.clientX, next.clientY);
+        else if (active?.card && next.target instanceof Node && active.ownerElement?.contains(next.target)) moveCardTip(next.clientX, next.clientY);
         else if (active) hideCardTip(active.ownerKey);
       });
     };

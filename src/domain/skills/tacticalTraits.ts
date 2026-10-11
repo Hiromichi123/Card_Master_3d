@@ -1,4 +1,4 @@
-import type { CardDefinition, CardInstance } from '../cards/types';
+import type { CardDefinition, CardInstance, SideId } from '../cards/types';
 import type { BattleState, BattleEventPayload } from '../battle/types';
 import { battleInstances, groupOf, hasFamily, isBattleActive, isSilenced } from './rules';
 import type { AttackState } from './rules';
@@ -9,6 +9,12 @@ export const SUMMON_TARGETS: Readonly<Record<string, string>> = {
   masterpiece: MASTERPIECE_CARD_ID, foxSpiritSummon: FOX_SPIRIT_CARD_ID,
 };
 export const lethalStrikeChance = (level:number):number => .20 - .10 * Math.pow(.5, Math.max(1,Math.trunc(level))-1);
+
+/** Both summon eligibility and creation must resolve the same side-local template. */
+export function resolveSummonDefinitionId(state: Pick<BattleState, 'summonDefinitions'>, owner: SideId,
+  definitionId: string): string {
+  return state.summonDefinitions?.[owner]?.[definitionId] ?? definitionId;
+}
 
 /** Include cards that can be summoned even when they are absent from both decks. */
 export function summonDefinitionIds(ids:readonly string[],lookup:(id:string)=>CardDefinition|undefined):string[] {

@@ -16,7 +16,8 @@ export interface BattleResultPanelProps {
   /** 「返回」按钮上的字（战役里是「返回战役」）。 */
   readonly backLabel?: string;
   readonly localMultiplayer?: boolean | undefined;
-  readonly onRematch: () => void;
+  readonly onRematch?: (() => void) | undefined;
+  readonly exitDisabled?: boolean | undefined;
   readonly onBackToMenu: () => void;
 }
 
@@ -36,6 +37,7 @@ export function BattleResultPanel({
   backLabel = '返回菜单',
   localMultiplayer = false,
   onRematch,
+  exitDisabled = false,
   onBackToMenu,
 }: BattleResultPanelProps) {
   const verdict =
@@ -81,10 +83,10 @@ export function BattleResultPanel({
         )}
 
         <div className="overlay__actions">
-          <button type="button" className="btn btn--primary" onClick={onRematch}>
+          {onRematch && <button type="button" className="btn btn--primary" disabled={exitDisabled} onClick={onRematch}>
             再来一局
-          </button>
-          <button type="button" className="btn" onClick={onBackToMenu}>
+          </button>}
+          <button type="button" className="btn" disabled={exitDisabled} onClick={onBackToMenu}>
             {backLabel}
           </button>
         </div>

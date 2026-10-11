@@ -130,7 +130,9 @@ export function MovingCard({
   });
 
   return (
-    <group ref={groupRef} onPointerDown={onPointerDown}>
+    // exactOptionalPropertyTypes 下不能把 undefined 显式传给可选属性，
+    // 而 three-fiber 的 group 不接受 undefined —— 所以未传时整个属性都不出现。
+    <group ref={groupRef} {...(onPointerDown ? { onPointerDown } : {})}>
       <CardMesh
         key={instanceId}
         attackKey={instanceId}

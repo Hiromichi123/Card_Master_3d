@@ -10,11 +10,14 @@ export interface BattleHudProps {
   readonly onAutoEnemyChange?: ((on: boolean) => void) | undefined;
   readonly onExit?: (() => void) | undefined;
   readonly onLeave?: (() => void) | undefined;
+  readonly leaveLabel?: string | undefined;
+  readonly exitDisabled?: boolean | undefined;
 }
 const sideName = (snapshot: BattleSnapshot, side: SideId): string => snapshot.localMultiplayer
   ? (side === 'player' ? '下方' : '上方') : (side === 'player' ? '我方' : '敌方');
 
-export function BattleHud({ snapshot, onEndTurn, onChoosePriority, onSkipPerformance, onAutoEnemyChange, onExit, onLeave }: BattleHudProps) {
+export function BattleHud({ snapshot, onEndTurn, onChoosePriority, onSkipPerformance, onAutoEnemyChange, onExit, onLeave,
+  leaveLabel = '返回对战菜单', exitDisabled = false }: BattleHudProps) {
   const priority = snapshot.phase === 'awaitingPriority';
   const response = snapshot.phase === 'awaitingResponse';
   const canAct = snapshot.inputOpen;
@@ -41,8 +44,8 @@ export function BattleHud({ snapshot, onEndTurn, onChoosePriority, onSkipPerform
         <BattleSettings />
         {snapshot.localMultiplayer && <button type="button" className="btn" aria-pressed={snapshot.autoEnemy}
           onClick={() => onAutoEnemyChange?.(!snapshot.autoEnemy)}>上方 AI：{snapshot.autoEnemy ? '开' : '关'}</button>}
-        {onExit && <button type="button" className="btn" onClick={onExit}>重新选卡</button>}
-        {onLeave && <button type="button" className="btn" onClick={onLeave}>返回对战菜单</button>}
+        {onExit && <button type="button" className="btn" disabled={exitDisabled} onClick={onExit}>重新选卡</button>}
+        {onLeave && <button type="button" className="btn" disabled={exitDisabled} onClick={onLeave}>{leaveLabel}</button>}
         <p className="hud__hint">{hintText(snapshot)}</p>
         <button type="button" className="btn" onClick={onSkipPerformance} disabled={canAct}>跳过演出</button>
       </div>

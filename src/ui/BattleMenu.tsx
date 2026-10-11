@@ -1,4 +1,5 @@
-import { cardById } from '../data';
+import type { DefinitionTable } from '../rendering/presentation/demoBattle';
+import { resolveBattleDefinition } from '../rendering/presentation/definitions';
 import { BattleSettings } from './BattleSettings';
 
 /**
@@ -16,6 +17,7 @@ export interface BattleMenuProps {
   readonly label: string;
   /** 我方牌组（战役用的是玩家当前的出战卡组）。 */
   readonly playerDeck: readonly string[];
+  readonly definitions?: DefinitionTable | undefined;
   readonly autoPlayer: boolean;
   readonly onAutoPlayerChange: (on: boolean) => void;
   readonly onStart: () => void;
@@ -24,6 +26,7 @@ export interface BattleMenuProps {
 export function BattleMenu({
   label,
   playerDeck,
+  definitions,
   autoPlayer,
   onAutoPlayerChange,
   onStart,
@@ -41,7 +44,7 @@ export function BattleMenu({
           <h2 className="overlay__deck-title">我方牌组 · {playerDeck.length} 张</h2>
           <ul className="overlay__deck-list">
             {playerDeck.map((cardId, index) => (
-              <li key={`${cardId}-${index}`}>{cardById.get(cardId)?.name ?? cardId}</li>
+              <li key={`${cardId}-${index}`}>{resolveBattleDefinition(cardId, definitions)?.name ?? cardId}</li>
             ))}
           </ul>
         </section>

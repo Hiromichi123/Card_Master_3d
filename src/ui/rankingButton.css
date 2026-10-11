@@ -1,0 +1,5 @@
+@layer controls {
+  .ranking-button__logo { width: 100%; height: 100%; filter: drop-shadow(0 4px 4px #0008); }
+  .ranking-button[data-still="true"], .ranking-button[data-still="true"] .art-button__image { transition: none; }
+  .ranking-button[data-still="true"]:hover, .ranking-button[data-still="true"]:focus-visible { transform: none; animation: none; }
+}

@@ -12,6 +12,7 @@ import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
+import { mazeShopBatchKey } from '../../src/domain/progression/maze';
 
 import {
   cardById,
@@ -23,7 +24,6 @@ import {
   stages,
 } from '../../src/data';
 import { createRng, seedFrom } from '../../src/domain/battle/rng';
-import { withMazeRun } from '../../src/domain/progression/profile';
 import type { BattleOutcome } from '../../src/domain/battle/types';
 import {
   addToInventory,
@@ -754,11 +754,12 @@ describe('迷宫商店的售罄落点', () => {
   };
 
   it('写进 mazeRun 的那个节点，而不是全局货架', () => {
-    const profile = withMazeRun(freshProfile(), run);
+    const profile = { ...freshProfile(), mazeRun: run };
     const outcome = applyEconomyTransaction(profile, {
       operationId: 'buy-maze-1',
       currencyDelta: { gold: -100 },
       inventoryDelta: {},
+      mazeShopExpected: { nodeId: 7, batchKey: mazeShopBatchKey(profile.mazeRun!, 7) },
       mazeSoldOut: { nodeId: '7', entryIds: ['maze:floor1:v1:n7|0|card'] },
     });
     expect(outcome.applied).toBe(true);
@@ -769,14 +770,16 @@ describe('迷宫商店的售罄落点', () => {
     expect(outcome.profile.shop.soldOut).toEqual([]);
   });
 
-  it('没有在跑迷宫时忽略这个字段，不会凭空造出一个 run', () => {
-    const outcome = applyEconomyTransaction(freshProfile(), {
+  it('没有在跑迷宫时拒绝整笔事务，不扣款也不凭空造出 run', () => {
+    const profile = freshProfile();
+    const outcome = applyEconomyTransaction(profile, {
       operationId: 'buy-maze-2',
       currencyDelta: { gold: -100 },
       inventoryDelta: {},
       mazeSoldOut: { nodeId: '7', entryIds: ['x'] },
     });
-    expect(outcome.applied).toBe(true);
+    expect(outcome.applied).toBe(false);
+    expect(outcome.profile).toBe(profile);
     expect(outcome.profile.mazeRun).toBeNull();
   });
 });

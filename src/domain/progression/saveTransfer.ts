@@ -14,6 +14,10 @@ import { createInitialProfile } from './profile';
 import { previewDeck, previewInventory, previewProfile } from './legacyImport';
 import type { ImportSources } from './legacyImport';
 import { migrateToCurrent } from './migrations';
+import { normalizeRewards } from './rewardState';
+import { validateMazeState } from './mazeProgress';
+import { validateAbyssState } from './abyssValidation';
+import { validDeckSlots, type LadderState, type NormalDeckIds } from './deckSlots';
 import {
   DECK_LIMIT,
   DEFAULT_SETTINGS,
@@ -169,6 +173,10 @@ export function normalizeProfile(raw: unknown, ctx: NormalizeContext): Normalize
     now: ctx.now,
   });
 
+  if (!validateAbyssState(source.abyss, ctx.contentVersion)) {
+    return { ok: false, reason: 'invalidShape', message: '深渊进度、候选或历史无效，或规则/卡库版本不兼容；无法导入，未清空现有进度。' };
+  }
+
   // 货币
   const rawCurrency = isRecord(source.currencies) ? source.currencies : {};
   const currencies = {
@@ -230,6 +238,18 @@ export function normalizeProfile(raw: unknown, ctx: NormalizeContext): Normalize
     activeDeckId = null;
   }
 
+  if ((version >= 4 && source.activeDeckId !== null && typeof source.activeDeckId !== 'string')
+    || !validDeckSlots(decks, source.normalDeckIds, source.ladder,
+      version >= 4 ? source.activeDeckId as string | null : activeDeckId)) {
+    return { ok: false, reason: 'invalidShape', message: '普通卡组槽位或天梯积分/卡组引用/奖励账本无效，无法导入。' };
+  }
+  const normalDeckIds = source.normalDeckIds as NormalDeckIds;
+  const rawLadder = source.ladder as LadderState;
+  const ladder: LadderState = {
+    points: rawLadder.points, deckId: rawLadder.deckId,
+    claimedTierFloors: [...rawLadder.claimedTierFloors],
+  };
+
   // 结算去重表
   const settledBattleIds = Array.isArray(source.settledBattleIds)
     ? source.settledBattleIds.filter((id): id is string => typeof id === 'string')
@@ -271,13 +291,18 @@ export function normalizeProfile(raw: unknown, ctx: NormalizeContext): Normalize
       }
     : base.campaign;
 
+  const maze = validateMazeState(source.mazeRun, source.mazeProgress, settledBattleIds);
+  if (!maze) {
+    return { ok: false, reason: 'invalidShape', message: '迷宫探索记录与保底账本缺失或无效，不能丢弃探索历史后导入。' };
+  }
+
   // 设置：逐字段兜底（`useSettingsStore.hydrateFromSave` 还会再兜一层）
   const settings = { ...DEFAULT_SETTINGS, ...(isRecord(source.settings) ? source.settings : {}) };
 
   // 顶层不认识的字段：`ProfileState` 是强类型的，不能把陌生键带进内存
   const KNOWN_KEYS = new Set([
     'schemaVersion', 'contentVersion', 'revision', 'currencies', 'level', 'inventory', 'decks',
-    'activeDeckId', 'gacha', 'shop', 'campaign', 'mazeRun', 'settings', 'settledBattleIds',
+    'activeDeckId', 'normalDeckIds', 'ladder', 'gacha', 'shop', 'campaign', 'rewards', 'mazeRun', 'mazeProgress', 'abyss', 'settings', 'settledBattleIds',
   ]);
   const unknownKeys = Object.keys(source).filter((key) => !KNOWN_KEYS.has(key));
   if (unknownKeys.length > 0) {
@@ -294,11 +319,16 @@ export function normalizeProfile(raw: unknown, ctx: NormalizeContext): Normalize
       level,
       inventory,
       decks,
+      normalDeckIds,
+      ladder,
       activeDeckId,
       gacha,
       shop,
       campaign,
-      mazeRun: null,
+      rewards: normalizeRewards(source.rewards),
+      mazeRun: maze.run,
+      mazeProgress: maze.progress,
+      abyss: source.abyss,
       settings,
       settledBattleIds,
     },

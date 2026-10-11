@@ -54,7 +54,7 @@ describe('战斗台面主题', () => {
 
   it('天气只挂在声明过的台面上，且不影响规则', () => {
     const weatherIds = Object.keys(TABLE_WEATHER);
-    expect(weatherIds.length).toBeGreaterThanOrEqual(4);
+    expect(weatherIds.length).toBeGreaterThanOrEqual(3);
     for (const id of weatherIds) {
       expect(
         TABLE_THEMES.some((theme) => theme.id === id),

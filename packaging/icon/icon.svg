@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="Card Master 3D">
+  <!--
+    Card Master 3D 应用图标。
+
+    设计约束是「16×16 也要认得出」，所以只有三个形：深底、金框、两张扇形叠卡，
+    加一枚四角星作为金色亮点。没有细碎纹样 —— 小尺寸下全都糊成一团。
+
+    配色取自 docs/UI_THEME.md 的体系：金边（ui-gold / ui-gold-bright）、
+    深蓝灰底、卡面米白。
+
+    重新生成 .ico 见同目录 make-ico.mjs。
+  -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0.3" y2="1">
+      <stop offset="0" stop-color="#1d2637"/>
+      <stop offset="1" stop-color="#080b12"/>
+    </linearGradient>
+
+    <!-- 金属金：亮 → 暗 → 亮的四段过渡，避免看起来像纯黄塑料 -->
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffeaa8"/>
+      <stop offset="0.33" stop-color="#d9a441"/>
+      <stop offset="0.62" stop-color="#8a5d16"/>
+      <stop offset="1" stop-color="#ffeaa8"/>
+    </linearGradient>
+
+    <linearGradient id="ivory" x1="0" y1="0" x2="0.35" y2="1">
+      <stop offset="0" stop-color="#fdf9ee"/>
+      <stop offset="1" stop-color="#c9bfa4"/>
+    </linearGradient>
+
+    <linearGradient id="slate" x1="0" y1="0" x2="0.35" y2="1">
+      <stop offset="0" stop-color="#414c63"/>
+      <stop offset="1" stop-color="#1c2230"/>
+    </linearGradient>
+  </defs>
+
+  <!-- 底座 -->
+  <rect width="256" height="256" rx="54" fill="url(#bg)"/>
+  <rect x="8" y="8" width="240" height="240" rx="47"
+        fill="none" stroke="url(#gold)" stroke-width="9"/>
+
+  <!-- 后一张：斜置暗卡 -->
+  <g transform="rotate(-14 115 129)">
+    <rect x="72" y="66" width="86" height="126" rx="13"
+          fill="url(#slate)" stroke="url(#gold)" stroke-width="6"/>
+  </g>
+
+  <!-- 前一张：正置卡，米白卡面 + 四角星徽记 -->
+  <g transform="rotate(9 151 129)">
+    <rect x="108" y="66" width="86" height="126" rx="13"
+          fill="url(#ivory)" stroke="url(#gold)" stroke-width="6"/>
+    <path d="M151 96 L157.4 128.6 L190 135 L157.4 141.4
+             L151 174 L144.6 141.4 L112 135 L144.6 128.6 Z"
+          fill="url(#gold)"/>
+  </g>
+</svg>

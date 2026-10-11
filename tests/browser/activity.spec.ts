@@ -12,7 +12,7 @@ import { collectProblems, openWithFreshSave } from './helpers';
 async function openActivity(page: Page): Promise<void> {
   await openWithFreshSave(page);
   await expect(page.locator('.menu__title')).toHaveText('Card Master 3D', { timeout: 30_000 });
-  await page.locator('.menu__columns').getByRole('button', { name: '进入战斗', exact: true }).click();
+  await page.locator('.hub-button--start').click();
   await expect(page.locator('.menu__title')).toHaveText('选择对战模式');
   await page.locator('.menu__columns').getByRole('button', { name: '活动模式', exact: true }).click();
   await expect(page.locator('.menu__title')).toHaveText('限时活动模式');
@@ -33,7 +33,7 @@ function detailTitle(page: Page) {
 test('滚轮在**页面任意位置**都生效（不必对准轮盘）', async ({ page }) => {
   const problems = collectProblems(page);
   await openActivity(page);
-  await expect(detailTitle(page)).toContainText('迷宫挑战');
+  await expect(detailTitle(page)).toContainText('世界树迷宫');
 
   // 指针挪到远离轮盘的一侧再滚——轮盘在设计框左侧约 120–740
   await page.mouse.move(1000, 900);
@@ -43,7 +43,7 @@ test('滚轮在**页面任意位置**都生效（不必对准轮盘）', async (
   // 两次滚动之间要留出冷却时间：`usePageWheel` 刻意不连发（见那个文件）
   await page.waitForTimeout(300);
   await page.mouse.wheel(0, -300);
-  await expect(detailTitle(page)).toContainText('迷宫挑战');
+  await expect(detailTitle(page)).toContainText('世界树迷宫');
 
   expect(problems).toEqual([]);
 });
@@ -61,6 +61,12 @@ test('点击滚轮项即切换，且背景跟着换', async ({ page }) => {
   await page.locator('.activity-wheel__option', { hasText: '天梯赛' }).click();
   await expect(detailTitle(page)).toContainText('天梯赛');
   await expect.poll(() => baseBackground(page)).toContain('activity_ladder_bg');
+  await expect(page.locator('.activity-detail__enter')).toHaveText('进入');
+  await page.locator('.activity-detail__enter').click();
+  await expect(page.locator('.ladder__header h1')).toHaveText('天梯赛');
+  await expect(page.locator('.ladder__match')).toHaveCount(2);
+  await expect(page.locator('.ladder__match').first()).toBeDisabled();
+  await expect(page.locator('.ladder__match').last()).toBeDisabled();
 
   expect(problems).toEqual([]);
 });
@@ -121,7 +127,7 @@ test('滚轮不遮挡玩家状态面板，且五个选项任何时候都不被�
     a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
 
   // 逐个选中一遍：任何一项为选中态时，五个选项都必须整整齐齐落在舞台内
-  for (const mode of ['迷宫挑战', '深渊挑战', '协力突袭', '天梯赛', '极难挑战']) {
+  for (const mode of ['世界树迷宫', '深渊挑战', '协力突袭', '天梯赛', '极难挑战']) {
     await page.locator('.activity-wheel__option', { hasText: mode }).click();
     const data = await measure();
     expect(data, `${mode}：量不到版式`).not.toBeNull();
@@ -155,12 +161,13 @@ test('迷宫：选中后点「进入」才进得去', async ({ page }) => {
 
   // 先切走再切回来，证明「进入」用的是**当前选中项**而不是默认项
   await page.locator('.activity-wheel__option', { hasText: '深渊挑战' }).click();
-  await expect(page.locator('.activity-detail__enter')).toHaveText('尚未开放');
-  await page.locator('.activity-wheel__option', { hasText: '迷宫挑战' }).click();
+  await expect(page.locator('.activity-detail__enter')).toHaveText('进入');
+  await expect(page.locator('.abyss-scene')).toHaveCount(0);
+  await page.locator('.activity-wheel__option', { hasText: '世界树迷宫' }).click();
   await expect(page.locator('.activity-detail__enter')).toHaveText('进入');
 
   await page.locator('.activity-detail__enter').click();
-  await expect(page.locator('.maze__title')).toHaveText('迷宫挑战·第一层');
+  await expect(page.locator('.maze__title')).toHaveText('世界树迷宫·第一层');
 
   expect(problems).toEqual([]);
 });

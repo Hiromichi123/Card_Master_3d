@@ -1,7 +1,7 @@
 import type { ThreeEvent } from '@react-three/fiber';
-import { Canvas } from '@react-three/fiber';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { PCFShadowMap } from 'three';
+import { BattleCanvas } from '../rendering/battle/BattleCanvas';
+import { BattleVisualContext, useBattleVisuals } from '../rendering/battle/battleVisuals';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 
 import type { CardDefinition, SideId } from '../domain/cards/types';
 import { BattleBoard } from '../rendering/battle/BattleBoard';
@@ -15,14 +15,12 @@ import { effectDirector } from '../rendering/effects/effectDirector';
 import { audioEngine } from '../services/audio/AudioEngine';
 import { EffectSystem } from '../rendering/effects/EffectSystem';
 import { PerfSampler } from '../rendering/PerfSampler';
-import { PostEffects } from '../rendering/postprocessing/PostEffects';
 import { DEMO_CONFIG, demoDefinitions } from '../rendering/presentation/demoBattle';
 import type { DefinitionTable } from '../rendering/presentation/demoBattle';
 import type { BattleConfig, BattleOutcome } from '../domain/battle/types';
 import type { SettlementView } from '../domain/progression/campaign';
 import { BattleSession } from '../rendering/presentation/session';
 import { useBattleSession } from '../rendering/presentation/useBattleSession';
-import { sceneFogArgs } from '../rendering/table/themes';
 import { useSettingsStore } from '../state/settingsStore';
 import { BattleHud } from '../ui/BattleHud';
 import { BattleMenu } from '../ui/BattleMenu';
@@ -49,6 +47,8 @@ import { WebGLGuard } from './WebGLGuard';
  * 而且和悬停框显示的是同一份内容（`V-CARD-6` 的悬停那一半仍然成立）。
  */
 export interface BattleSceneProps {
+  /** 独立模式只覆盖本次战斗的台面，退出后恢复玩家设置。 */
+  readonly tableThemeId?: string | undefined;
   /**
    * 这一局的配置。缺省是 P3 的固定演示对局（主菜单的「演示战斗」）。
    * 战役进来的每一关给的是 `planStageLaunch` 算出来的配置。
@@ -59,6 +59,13 @@ export interface BattleSceneProps {
   readonly settlement?: SettlementView | null;
   /** 首次进入结果态时回调一次——**结算的提交时机就在这一刻**。 */
   readonly onFinished?: ((outcome: BattleOutcome) => void) | undefined;
+  /** 规则终局同步报告，不等待结果演出；独立模式在这里提交存档。 */
+  readonly onOutcome?: ((outcome: BattleOutcome) => void) | undefined;
+  readonly allowRematch?: boolean | undefined;
+  /** 提供时替换默认战役/演示结果面板，仍等演出完成后显示。 */
+  readonly resultPanel?: ReactNode;
+  readonly exitDisabled?: boolean | undefined;
+  readonly leaveLabel?: string | undefined;
   /** 结果面板上的「返回」。缺省回演示菜单。 */
   readonly onExit?: (() => void) | undefined;
   /**
@@ -75,10 +82,16 @@ export interface BattleSceneProps {
 }
 
 export function BattleScene({
+  tableThemeId,
   config = DEMO_CONFIG,
   definitions,
   settlement = null,
   onFinished,
+  onOutcome,
+  allowRematch = true,
+  resultPanel,
+  exitDisabled = false,
+  leaveLabel,
   onExit,
   exitLabel,
   localMultiplayer = false,
@@ -86,10 +99,12 @@ export function BattleScene({
   autoStart = false,
   onLeave,
 }: BattleSceneProps = {}) {
-  const profile = useSettingsStore((state) => state.profile);
-  const theme = useSettingsStore((state) => state.tableTheme);
+  const visuals = useBattleVisuals(tableThemeId);
+  const {profile} = visuals;
   const showPerf = useSettingsStore((state) => state.showPerf);
 
+  const outcomeCallback = useRef(onOutcome);
+  outcomeCallback.current = onOutcome;
   const [session] = useState(
     () =>
       new BattleSession(config, definitions ?? demoDefinitions(), () => useSettingsStore.getState().presentationSpeed, {
@@ -101,7 +116,7 @@ export function BattleScene({
         },
         // 命中/死亡的音效由导演在演出节点回调；这里只把出口接上
         sound: (cue) => audioEngine.play(cue),
-      }, { localMultiplayer, autoEnemy }),
+      }, { localMultiplayer, autoEnemy, onOutcome: (outcome) => outcomeCallback.current?.(outcome) }),
   );
   const snapshot = useBattleSession(session);
   const [deckTotals] = useState(() => ({ player: config.playerDeck.length, enemy: config.enemyDeck.length }));
@@ -162,6 +177,7 @@ export function BattleScene({
   const view = useMemo(
     () => {
       const board = buildBoard(snapshot.display, {
+        definitions: session.authoritative.definitions,
         deckTotals,
         selectedInstanceId: snapshot.selectedInstanceId,
         playerCanPlay: canPlay,
@@ -186,7 +202,7 @@ export function BattleScene({
       };
     },
     [snapshot.display, snapshot.selectedInstanceId, canPlay, snapshot.playablePrepSlots, snapshot.playableBattleSlots,
-      snapshot.inputSide, snapshot.phase, snapshot.deployableInstanceIds, localMultiplayer, drag, deckTotals],
+      snapshot.inputSide, snapshot.phase, snapshot.deployableInstanceIds, localMultiplayer, drag, deckTotals, session],
   );
 
   const handleCardClick = useCallback(
@@ -215,19 +231,10 @@ export function BattleScene({
   );
 
   return (
+    <BattleVisualContext.Provider value={visuals}>
     <WebGLGuard>
       <div className="scene-viewport">
-        <Canvas
-          // flat = 关闭渲染器自带的色调映射。
-          // three 在渲染到屏幕时才应用色调映射，而挂了后处理链之后场景先渲到贴图上；
-          // 于是「开不开后处理」会得到两套影调——实测差 10.9%。
-          // 试过把 ACES 挂到后处理链尾，反而变成重复应用，反向差 23%。
-          // 目前的取舍是关掉它，两条路径一致（差 1.4%）。
-          flat
-          shadows={profile.shadows ? { type: PCFShadowMap } : false}
-          dpr={[1, profile.dprCap]}
-          camera={{ position: [0, 11, 9], fov: 45, near: 0.1, far: theme.geometry === 'mecha' ? 260 : 120 }}
-          gl={{ antialias: true, powerPreference: 'high-performance' }}
+        <BattleCanvas
           onPointerMissed={() => {
             if (drag || Date.now() < ignoreClickUntil.current) return;
             // 点空白处取消选中
@@ -268,20 +275,10 @@ export function BattleScene({
           />
 
           {snapshot.display.proxies.map((proxy) => (
-            <DepartingCard key={proxy.instanceId} proxy={proxy} />
+            <DepartingCard key={proxy.instanceId} proxy={proxy} definitions={session.authoritative.definitions} />
           ))}
 
-          {/*
-            背景与雾来自台面主题：木桌是暖褐的暗、霓虹是紫黑、
-            雪原是冷灰蓝。这两项一并换掉，整张桌子的气氛才会跟着主题走，
-            而不是「桌子换了、空气没换」。
-          */}
-          <color attach="background" args={[theme.background]} />
-          {/* 雾距离按本场景尺度换算，理由见 `sceneFogArgs` 的注释。 */}
-          <fog attach="fog" args={sceneFogArgs(theme.fog)} />
-
-          <PostEffects profile={profile} theme={theme} />
-        </Canvas>
+        </BattleCanvas>
 
         {snapshot.mode === 'battle' && (
           <BattleHud
@@ -290,8 +287,10 @@ export function BattleScene({
             onChoosePriority={(order) => session.choosePriority(order)}
             onSkipPerformance={() => session.skipPerformance()}
             onAutoEnemyChange={(on) => session.setAutoEnemy(on)}
-            {...(localMultiplayer && onExit ? { onExit } : {})}
-            {...(localMultiplayer && onLeave ? { onLeave } : {})}
+            exitDisabled={exitDisabled}
+            leaveLabel={leaveLabel}
+            {...(localMultiplayer && onExit ? { onExit: () => { if (!exitDisabled) onExit(); } } : {})}
+            {...(onLeave ? { onLeave: () => { if (!exitDisabled) onLeave(); } } : {})}
           />
         )}
 
@@ -301,13 +300,14 @@ export function BattleScene({
           <BattleMenu
             label={config.label ?? '对战'}
             playerDeck={config.playerDeck}
+            definitions={session.authoritative.definitions}
             autoPlayer={snapshot.autoPlayer}
             onAutoPlayerChange={(on) => session.setAutoPlayer(on)}
             onStart={() => session.start()}
           />
         )}
 
-        {snapshot.mode === 'result' && snapshot.outcome && (
+        {snapshot.mode === 'result' && snapshot.outcome && (resultPanel !== undefined ? resultPanel : (
           <BattleResultPanel
             outcome={snapshot.outcome}
             playerHp={snapshot.display.playerHp.player}
@@ -315,8 +315,10 @@ export function BattleScene({
             settlement={settlement}
             localMultiplayer={localMultiplayer}
             backLabel={exitLabel ?? (onExit ? '返回战役' : '返回菜单')}
-            onRematch={() => session.start()}
+            exitDisabled={exitDisabled}
+            onRematch={allowRematch ? () => { if (!exitDisabled) session.start(); } : undefined}
             onBackToMenu={() => {
+              if (exitDisabled) return;
               if (onExit) {
                 onExit();
                 return;
@@ -324,8 +326,9 @@ export function BattleScene({
               session.toMenu();
             }}
           />
-        )}
+        ))}
       </div>
     </WebGLGuard>
+    </BattleVisualContext.Provider>
   );
 }

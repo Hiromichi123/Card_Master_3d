@@ -23,7 +23,7 @@
  */
 
 import { DECK_LIMIT } from './types';
-import type { MazeRunState } from './types';
+import type { MazeRunState, MazeShopState } from './types';
 import { createRng, seedFrom } from '../battle/rng';
 import type { Rng } from '../battle/rng';
 import type { CardPoolIndex } from './gacha';
@@ -93,6 +93,8 @@ export const MAZE_EVENT_CARD_DROP: Readonly<Record<MazeNodeType, number>> = {
 };
 
 export const MAZE_SHOP = {
+  cardCountRange: [3, 5] as const,
+  /** 仅保留给已有旧货架，不能把新促销叠在85折上。 */
   cardCount: 3,
   /** 普通位折扣、活动位加价（旧版 `REGULAR_DISCOUNT` / `EVENT_PRICE_MULTIPLIER`）。 */
   regularDiscount: 0.85,
@@ -759,13 +761,27 @@ export function mazeRewardPreview(args: {
  * 楼层商店
  * ------------------------------------------------------------------------- */
 
+export type MazeShopDiscount = 'none' | 'twenty' | 'half' | 'oneGold';
+export type MazeShopPrice = { readonly currency: 'gold' | 'crystal' | 'badge'; readonly amount: number };
+
 export interface MazeShopItem {
   readonly cardId: string;
   readonly rarity: string;
   readonly isEvent: boolean;
   /** 「活动限定」/「迷宫补给」。 */
   readonly label: string;
-  readonly price: { readonly currency: 'gold' | 'crystal' | 'badge'; readonly amount: number };
+  readonly originalPrice: MazeShopPrice;
+  readonly discount: MazeShopDiscount;
+  readonly price: MazeShopPrice;
+}
+
+/** 每张卡一次互斥抽取；1金币是固定售价，不是原价乘0.01。 */
+export function mazeShopOffer(originalPrice: MazeShopPrice, roll: number): Pick<MazeShopItem, 'originalPrice' | 'discount' | 'price'> {
+  const discount: MazeShopDiscount = roll < 0.3 ? 'twenty' : roll < 0.45 ? 'half' : roll < 0.5 ? 'oneGold' : 'none';
+  const price: MazeShopPrice = discount === 'oneGold'
+    ? { currency: 'gold', amount: 1 }
+    : { currency: originalPrice.currency, amount: Math.max(1, Math.round(originalPrice.amount * (discount === 'twenty' ? 0.8 : discount === 'half' ? 0.5 : 1))) };
+  return { originalPrice, discount, price };
 }
 
 export function mazeShopSeed(floorKey: string, version: number, nodeId: number): number {
@@ -782,6 +798,7 @@ function shopPrice(
   isEvent: boolean,
   priceByRarity: Readonly<Record<string, { currency: string; amount: number }>>,
   fallback: { currency: string; amount: number },
+  legacy: boolean,
 ): MazeShopItem['price'] {
   // 活动卡优先查自己的价位（旧版这里落兜底 → 1440 水晶，见 MAZE_SHOP 的注释）
   const base = isEvent
@@ -790,12 +807,15 @@ function shopPrice(
   const currency = isEvent ? 'crystal' : (base.currency as 'gold' | 'crystal' | 'badge');
   const amount = isEvent
     ? Math.max(MAZE_SHOP.minEvent, Math.round(base.amount * MAZE_SHOP.eventMultiplier))
-    : Math.max(MAZE_SHOP.minRegular, Math.round(base.amount * MAZE_SHOP.regularDiscount));
+    : legacy
+      ? Math.max(MAZE_SHOP.minRegular, Math.round(base.amount * MAZE_SHOP.regularDiscount))
+      : Math.max(1, Math.round(base.amount));
   return { currency, amount };
 }
 
 /**
- * 某个补给节点的货架：**最多 1 张活动卡 + 2~3 张普通卡**，普通位不放回。
+ * 某个补给节点的货架：新版3–5张、最多1张活动卡，普通位不放回。
+ * legacy 必须保持旧随机调用顺序，旧档商品与售罄标识才能原样恢复。
  *
  * 普通位按稀有度权重抽——用「按权重展开候选池、洗牌、取前 N」实现，
  * 而不是「抽中了重抽」：后者既可能死循环，也会让靠前的卡统计上更容易出现。
@@ -807,8 +827,15 @@ export function buildMazeShop(args: {
   readonly fallbackPrice: { currency: string; amount: number };
   /** 活动卡是否上架的概率（旧版是「抽得到就占一格」）。 */
   readonly eventChance?: number;
+  readonly legacy?: boolean;
 }): readonly MazeShopItem[] {
   const items: MazeShopItem[] = [];
+  const legacy = args.legacy ?? false;
+  const count = legacy ? MAZE_SHOP.cardCount : args.rng.int(...MAZE_SHOP.cardCountRange);
+  const offer = (rarity: string, isEvent: boolean): Pick<MazeShopItem, 'originalPrice' | 'discount' | 'price'> => {
+    const originalPrice = shopPrice(rarity, isEvent, args.priceByRarity, args.fallbackPrice, legacy);
+    return legacy ? { originalPrice, discount: 'none', price: originalPrice } : mazeShopOffer(originalPrice, args.rng.next());
+  };
 
   const eventCards = args.cardsByRarity.get(MAZE_EVENT_RARITY) ?? [];
   const eventChance = args.eventChance ?? 0.5;
@@ -819,7 +846,7 @@ export function buildMazeShop(args: {
       rarity: MAZE_EVENT_RARITY,
       isEvent: true,
       label: '活动限定',
-      price: shopPrice(MAZE_EVENT_RARITY, true, args.priceByRarity, args.fallbackPrice),
+      ...offer(MAZE_EVENT_RARITY, true),
     });
   }
 
@@ -841,7 +868,7 @@ export function buildMazeShop(args: {
   const shuffled = args.rng.shuffle(pool);
   const taken = new Set<string>();
   for (const candidate of shuffled) {
-    if (items.length >= MAZE_SHOP.cardCount) {
+    if (items.length >= count) {
       break;
     }
     if (taken.has(candidate.cardId)) {
@@ -853,7 +880,7 @@ export function buildMazeShop(args: {
       rarity: candidate.rarity,
       isEvent: false,
       label: '迷宫补给',
-      price: shopPrice(candidate.rarity, false, args.priceByRarity, args.fallbackPrice),
+      ...offer(candidate.rarity, false),
     });
   }
   return items;
@@ -910,7 +937,22 @@ export function isMazeCleared(
   return settledBattleIds.includes(mazeBossBattleId(floorKey, version));
 }
 
-/** 这一层的商店状态（懒生成并固定：同一个节点的货架不会变）。 */
+/** 货架批次独立于profile.revision，改设置不会使购买请求过期。 */
+export function mazeShopBatchKey(run: MazeRunState, nodeId: number): string {
+  const state = run.shopByNode[String(nodeId)];
+  const key = mazeShopKey(run.floorKey, run.version, nodeId);
+  if (!state) return `${key}:new`;
+  return state.catalogVersion === 2
+    ? `${key}:c2:r${state.refreshCount ?? 0}:s${state.seed}`
+    : `${key}:legacy`;
+}
+
+export function newMazeShopState(run: MazeRunState, nodeId: number, refreshCount = 0): MazeShopState {
+  const dayKey = `${mazeShopKey(run.floorKey, run.version, nodeId)}:c2:r${refreshCount}`;
+  return { dayKey, seed: seedFrom(dayKey), soldOut: [], catalogVersion: 2, refreshCount };
+}
+
+/** 这一层的商店状态（懒生成，只有主动刷新才换批次）。 */
 export function withShopState(run: MazeRunState, nodeId: number): MazeRunState {
   const key = String(nodeId);
   if (run.shopByNode[key]) {
@@ -920,11 +962,7 @@ export function withShopState(run: MazeRunState, nodeId: number): MazeRunState {
     ...run,
     shopByNode: {
       ...run.shopByNode,
-      [key]: {
-        dayKey: mazeShopKey(run.floorKey, run.version, nodeId),
-        seed: mazeShopSeed(run.floorKey, run.version, nodeId),
-        soldOut: [],
-      },
+      [key]: newMazeShopState(run, nodeId),
     },
   };
 }

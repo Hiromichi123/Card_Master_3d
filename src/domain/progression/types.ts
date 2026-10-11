@@ -10,9 +10,11 @@
  */
 
 import type { CardRarity } from '../cards/types';
+import type { LadderState, NormalDeckIds } from './deckSlots';
+import type { AbyssState } from './abyssTypes';
 
 /** 存档格式版本。字段增删或语义变化时递增，并写迁移。 */
-export const SAVE_SCHEMA_VERSION = 1;
+export const SAVE_SCHEMA_VERSION = 6;
 
 /** 三种货币。旧版在 `ui/system_ui.py` 里以 golds/crystals/badges 保存。 */
 export interface Currencies {
@@ -64,6 +66,32 @@ export interface CampaignState {
   readonly currentChapterId: string | null;
 }
 
+/** 主界面奖励账本；与货币及库存一起持久化到当前玩家存档。 */
+export interface RewardsState {
+  readonly claimedStoryIds: readonly string[];
+  /** 累计签到日序与实际本地日期，每个日期至多出现一次，累计最多 30 日。 */
+  readonly checkIn: readonly { readonly day: number; readonly dayKey: string }[];
+}
+
+export type RewardClaim =
+  | { readonly kind: 'story'; readonly nodeId: string }
+  | { readonly kind: 'checkIn'; readonly day: number; readonly dayKey: string };
+
+/** 缺少版本字段的已生成货架沿用旧规则，主动刷新后才升级。 */
+export interface MazeShopState extends ShopDailyState {
+  readonly catalogVersion?: 2;
+  readonly refreshCount?: number;
+}
+
+/** 跨轮保留的探索保底与每周清空账本。 */
+export interface MazeProgressState {
+  /** 尚未兑换的探索次数；空活动池时可以超过 100。 */
+  readonly explorationCount: number;
+  readonly awardedCount: number;
+  readonly lastRewardCardId: string | null;
+  readonly lastResetWeek: string | null;
+}
+
 /** 迷宫 run 状态。旧版写 `data/activity/floor1.json`，新版只保留必要字段。 */
 export interface MazeRunState {
   readonly floorKey: string;
@@ -71,7 +99,7 @@ export interface MazeRunState {
   readonly playerNodeId: number;
   readonly exploredNodeIds: readonly number[];
   /** 每个补给节点已生成的商店状态，按 nodeId 索引。 */
-  readonly shopByNode: Record<string, ShopDailyState>;
+  readonly shopByNode: Record<string, MazeShopState>;
 }
 
 /**
@@ -139,11 +167,16 @@ export interface ProfileState {
   /** cardId → 拥有数量。统计（不同卡数、总张数）由此派生，不额外存储。 */
   readonly inventory: Record<string, number>;
   readonly decks: readonly Deck[];
+  readonly normalDeckIds: NormalDeckIds;
+  readonly ladder: LadderState;
   readonly activeDeckId: string | null;
   readonly gacha: GachaState;
   readonly shop: ShopDailyState;
   readonly campaign: CampaignState;
+  readonly rewards: RewardsState;
   readonly mazeRun: MazeRunState | null;
+  readonly mazeProgress: MazeProgressState;
+  readonly abyss: AbyssState;
   readonly settings: SettingsState;
   /**
    * 已经结算过的战斗 ID。用于胜负奖励去重，
@@ -159,6 +192,8 @@ export interface ProfileState {
 export interface EconomyTransaction {
   /** 幂等键；同一个 operationId 重复提交不得重复生效。 */
   readonly operationId: string;
+  /** 深渊独立事务，不能夹带任何主模式资源/奖励变化。 */
+  readonly abyssUpdate?: { readonly expectedToken: string; readonly state: AbyssState };
   readonly currencyDelta: Partial<Currencies>;
   /** cardId → 数量变化，正数为获得。 */
   readonly inventoryDelta: Record<string, number>;
@@ -166,14 +201,17 @@ export interface EconomyTransaction {
   readonly soldOutAdditions?: readonly string[];
   /** 登记为已结算的战斗 ID。 */
   readonly settleBattleId?: string;
+  /** 剧情/签到领取记录与资源发放必须在同一次事务生效。 */
+  readonly rewardClaim?: RewardClaim;
+  /** 天梯固定槽和门槛限定奖励归属，持久去重独立于剧情/签到账本。 */
+  readonly ladderRewardClaim?: { readonly floor: number; readonly deckId: string };
   /**
    * 经验变化量。
    *
    * 加这两个字段是为了让「通关 1-1 = 金币 + 经验 + 可能的卡 + 通关记录」
    * 真的能是**一次事务**——少了经验与通关，这条硬约束就做不到。
    *
-   * 事务**从不落盘**（落盘的只有 `ProfileState`），所以这是纯追加的改动，
-   * `SAVE_SCHEMA_VERSION` 保持 1、不需要迁移。
+   * 事务本身不落盘（落盘的只有 `ProfileState`）；新增事务字段不单独改变存档版本。
    */
   readonly xpDelta?: number;
   /** 标记为已通关的关卡 ID。 */
@@ -185,9 +223,24 @@ export interface EconomyTransaction {
    * 而迷宫商店属于「某一次 run 的某个节点」——写进全局会让每一轮 run 的
    * 售罄标识永久累积、作废之后也清不掉。
    */
+  readonly mazeUpdate?: {
+    readonly expectedToken: string;
+    readonly run: MazeRunState;
+    readonly progress: MazeProgressState;
+  };
   readonly mazeSoldOut?: {
     readonly nodeId: string;
     readonly entryIds: readonly string[];
+  };
+  /** 购买/刷新都以当前节点的这一批为前置条件，过期事务不能落到别轮。 */
+  readonly mazeShopExpected?: {
+    readonly nodeId: number;
+    readonly batchKey: string;
+  };
+  /** 零费用刷新与货架替换在同一次持久化中提交。 */
+  readonly mazeShopRefresh?: {
+    readonly nodeId: string;
+    readonly state: MazeShopState;
   };
 }
 

@@ -24,6 +24,10 @@ export type RouteId =
   | 'localBattle'
   /** 限时活动模式（活动大厅）。旧版 `activity/activity_scene.py`。 */
   | 'activity'
+  /** 深渊：独立牌库、培养与逐层肉鸽挑战。 */
+  | 'abyss'
+  /** 天梯段位与独立阵容预览；匹配暂未开放。 */
+  | 'ladder'
   /** 迷宫第一层。旧版 `activity/maze_scene.py`，从活动大厅的第一张卡进。 */
   | 'maze'
   /** 活动商店。与『商店』同一块屏、不同货架，从活动大厅进。 */

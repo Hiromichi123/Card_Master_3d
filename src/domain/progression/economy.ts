@@ -14,9 +14,15 @@
 
 import type { Currencies } from './types';
 import { grantXp } from './levels';
+import { mazeShopBatchKey } from './maze';
+import { mazeProgressToken } from './mazeProgress';
+import { canCheckIn, STORY_NODE_PATTERN } from './rewardState';
+import { LADDER_REWARDS } from './ladderRewards';
+import { abyssStateToken } from './abyssRun';
+import { validateAbyssState } from './abyssValidation';
 import type { EconomyTransaction, ProfileState } from './types';
 
-export type RejectReason = 'insufficientFunds' | 'insufficientCards' | 'alreadySettled';
+export type RejectReason = 'insufficientFunds' | 'insufficientCards' | 'alreadySettled' | 'alreadyClaimed' | 'rewardUnavailable' | 'mazeShopChanged' | 'mazeStateChanged' | 'abyssStateChanged';
 
 export interface ApplyOutcome {
   /** 折叠后的存档。被拒时**就是传入的那一份**（同一个引用）。 */
@@ -79,9 +85,78 @@ export function applyEconomyTransaction(
     levelsGained: 0,
   });
 
+  if (tx.abyssUpdate) {
+    const update = tx.abyssUpdate;
+    if (update.expectedToken !== abyssStateToken(profile) || update.state.revision !== profile.abyss.revision + 1
+      || Object.keys(tx.currencyDelta).length > 0 || Object.keys(tx.inventoryDelta).length > 0
+      || tx.rewardClaim || tx.ladderRewardClaim || tx.settleBattleId || tx.clearStageId || tx.xpDelta !== undefined
+      || tx.soldOutAdditions || tx.mazeUpdate || tx.mazeSoldOut || tx.mazeShopExpected || tx.mazeShopRefresh
+      || !validateAbyssState(update.state)) return unchanged('abyssStateChanged');
+    return { profile: { ...profile, revision: profile.revision + 1, abyss: update.state }, applied: true, levelsGained: 0 };
+  }
+
   // 1. 持久去重：同一局只能结算一次。刷新、重渲染、来回切路由都走这一条
   if (tx.settleBattleId && profile.settledBattleIds.includes(tx.settleBattleId)) {
     return unchanged('alreadySettled');
+  }
+
+  // 奖励持久去重：领取记录与资源在一次整档写入中提交。
+  const claim = tx.rewardClaim;
+  if (claim?.kind === 'story') {
+    if (profile.rewards.claimedStoryIds.includes(claim.nodeId)) return unchanged('alreadyClaimed');
+    if (!STORY_NODE_PATTERN.test(claim.nodeId) || !profile.campaign.clearedStages.includes(claim.nodeId)) {
+      return unchanged('rewardUnavailable');
+    }
+  } else if (claim?.kind === 'checkIn') {
+    if (profile.rewards.checkIn.some(record => record.day === claim.day || record.dayKey === claim.dayKey)) {
+      return unchanged('alreadyClaimed');
+    }
+    if (!canCheckIn(profile.rewards, claim.day, claim.dayKey)) return unchanged('rewardUnavailable');
+  }
+  const rewards = claim?.kind === 'story'
+    ? { ...profile.rewards, claimedStoryIds: [...profile.rewards.claimedStoryIds, claim.nodeId] }
+    : claim?.kind === 'checkIn'
+      ? { ...profile.rewards, checkIn: [...profile.rewards.checkIn, { day: claim.day, dayKey: claim.dayKey }] }
+      : profile.rewards;
+
+  const ladderClaim = tx.ladderRewardClaim;
+  if (ladderClaim) {
+    if (profile.ladder.claimedTierFloors.includes(ladderClaim.floor)) return unchanged('alreadyClaimed');
+    const reward = LADDER_REWARDS.find(item => item.floor === ladderClaim.floor);
+    const amounts = Object.values(tx.inventoryDelta);
+    if (!reward || profile.ladder.points < reward.floor || ladderClaim.deckId !== profile.ladder.deckId
+      || tx.currencyDelta.crystal !== reward.crystals || (tx.currencyDelta.gold ?? 0) !== 0
+      || (tx.currencyDelta.badge ?? 0) !== 0
+      || amounts.some(count => !Number.isSafeInteger(count) || count <= 0)
+      || amounts.reduce((sum, count) => sum + count, 0) !== reward.count
+      || tx.rewardClaim || tx.settleBattleId || tx.clearStageId || tx.xpDelta
+      || tx.soldOutAdditions || tx.mazeUpdate || tx.mazeSoldOut || tx.mazeShopRefresh || tx.mazeShopExpected) {
+      return unchanged('rewardUnavailable');
+    }
+  }
+  const ladder = ladderClaim ? {
+    ...profile.ladder,
+    claimedTierFloors: [...profile.ladder.claimedTierFloors, ladderClaim.floor].sort((a, b) => a - b),
+  } : profile.ladder;
+
+  if (tx.mazeUpdate && (tx.mazeUpdate.expectedToken !== mazeProgressToken(profile)
+    || tx.mazeSoldOut || tx.mazeShopRefresh || tx.mazeShopExpected)) {
+    return unchanged('mazeStateChanged');
+  }
+
+  // 迷宫事务必须仍指向原批次，且不能对售罄条目再次扣钱发卡。
+  if (tx.mazeSoldOut || tx.mazeShopRefresh || tx.mazeShopExpected) {
+    const expected = tx.mazeShopExpected;
+    const run = profile.mazeRun;
+    const state = expected && run?.shopByNode[String(expected.nodeId)];
+    if (!expected || !run || !state || run.playerNodeId !== expected.nodeId
+      || mazeShopBatchKey(run, expected.nodeId) !== expected.batchKey
+      || (tx.mazeSoldOut && tx.mazeShopRefresh)
+      || (tx.mazeSoldOut && (tx.mazeSoldOut.nodeId !== String(expected.nodeId)
+        || tx.mazeSoldOut.entryIds.some(id => state.soldOut.includes(id))))
+      || (tx.mazeShopRefresh && tx.mazeShopRefresh.nodeId !== String(expected.nodeId))) {
+      return unchanged('mazeShopChanged');
+    }
   }
 
   // 2. 余额与库存
@@ -110,39 +185,24 @@ export function applyEconomyTransaction(
     ? [...new Set([...profile.shop.soldOut, ...tx.soldOutAdditions])]
     : profile.shop.soldOut;
 
-  /*
-    迷宫楼层商店的售罄：写进**这一轮 run 的那个节点**，不是全局货架。
-    `mazeRun` 为 null（没在跑迷宫）时忽略——不该因为一笔带了这个字段的事务
-    就凭空造出一个 run。
-  */
-  const mazeRun =
-    tx.mazeSoldOut && profile.mazeRun
-      ? {
-          ...profile.mazeRun,
-          shopByNode: {
-            ...profile.mazeRun.shopByNode,
-            [tx.mazeSoldOut.nodeId]: {
-              ...(profile.mazeRun.shopByNode[tx.mazeSoldOut.nodeId] ?? {
-                dayKey: '',
-                seed: 0,
-                soldOut: [],
-              }),
-              soldOut: [
-                ...new Set([
-                  ...(profile.mazeRun.shopByNode[tx.mazeSoldOut.nodeId]?.soldOut ?? []),
-                  ...tx.mazeSoldOut.entryIds,
-                ]),
-              ],
-            },
-          },
-        }
-      : profile.mazeRun;
+  // 已通过批次前置校验，不补造seed=0的货架，也不碰每日货架。
+  let mazeRun = tx.mazeUpdate?.run ?? profile.mazeRun;
+  if (mazeRun && tx.mazeSoldOut) {
+    const { nodeId, entryIds } = tx.mazeSoldOut;
+    const state = mazeRun.shopByNode[nodeId]!;
+    mazeRun = { ...mazeRun, shopByNode: { ...mazeRun.shopByNode, [nodeId]: { ...state, soldOut: [...new Set([...state.soldOut, ...entryIds])] } } };
+  } else if (mazeRun && tx.mazeShopRefresh) {
+    const { nodeId, state } = tx.mazeShopRefresh;
+    mazeRun = { ...mazeRun, shopByNode: { ...mazeRun.shopByNode, [nodeId]: state } };
+  }
 
   return {
     profile: {
       ...profile,
       revision: profile.revision + 1,
       currencies,
+      rewards,
+      ladder,
       inventory: addToInventory(profile.inventory, tx.inventoryDelta),
       level: trained ? trained.level : profile.level,
       campaign: {
@@ -156,6 +216,7 @@ export function applyEconomyTransaction(
       },
       shop: { ...profile.shop, soldOut },
       mazeRun,
+      mazeProgress: tx.mazeUpdate?.progress ?? profile.mazeProgress,
       settledBattleIds: tx.settleBattleId
         ? [...profile.settledBattleIds, tx.settleBattleId]
         : profile.settledBattleIds,

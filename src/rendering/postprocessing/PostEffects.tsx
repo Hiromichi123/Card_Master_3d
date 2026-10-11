@@ -41,7 +41,7 @@ export function PostEffects({ profile, theme }: PostEffectsProps) {
   }
 
   return (
-    <EffectComposer multisampling={0}>
+    <EffectComposer multisampling={theme.geometry === 'abyss' ? 4 : 0}>
       <Bloom
         intensity={intensity}
         luminanceThreshold={threshold}

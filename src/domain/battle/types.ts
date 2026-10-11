@@ -58,6 +58,9 @@ export const DEFAULT_BATTLE_RULES: BattleRules = {
   turnLimit: 200,
 };
 
+/** 原召唤模板到本阵营局部定义的映射；未登记的模板沿用原ID。 */
+export type SummonDefinitionMap = Readonly<Partial<Record<SideId, Readonly<Record<string, string>>>>>;
+
 /** 一局的输入。牌组用 cardId 表达，不使用图片路径。 */
 export interface BattleConfig {
   readonly seed: number;
@@ -65,6 +68,7 @@ export interface BattleConfig {
   readonly playerDeck: readonly string[];
   /** 敌方牌组。 */
   readonly enemyDeck: readonly string[];
+  readonly summonDefinitions?: SummonDefinitionMap;
   readonly rules?: Partial<BattleRules>;
   /** 关卡标识，仅用于奖励与日志，不参与规则。 */
   readonly stageId?: string;
@@ -116,6 +120,7 @@ export interface BattleState {
    * 引擎就是自包含的：不需要外部再传一份数据库，也能完整重放一局。
    */
   readonly definitions: Readonly<Record<string, CardDefinition>>;
+  readonly summonDefinitions?: SummonDefinitionMap;
   readonly seed: number;
   /** RNG 的内部状态；规则随机与粒子随机完全分开（PLAN 第 4.2 节）。 */
   rng: RngState;

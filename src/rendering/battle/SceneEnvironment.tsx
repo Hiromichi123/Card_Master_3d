@@ -21,17 +21,21 @@ import type { TableTheme } from '../table/themes';
  * 换主题换的是场地氛围，不是重新打一次光。
  */
 
-let cachedEnvironment: Texture | null = null;
+const environments = new WeakMap<WebGLRenderer, Texture>();
+let environmentGenerated = false;
 
 function getRoomEnvironment(gl: WebGLRenderer): Texture {
-  if (!cachedEnvironment) {
-    const pmrem = new PMREMGenerator(gl);
-    // 第二个参数是 sigma，越小越锐。0.04 保留一点柔化，避免反射里出现硬边。
-    const target = pmrem.fromScene(new RoomEnvironment(), 0.04);
-    cachedEnvironment = target.texture;
-    pmrem.dispose();
-  }
-  return cachedEnvironment;
+  const cached = environments.get(gl);
+  if (cached) return cached;
+  const pmrem = new PMREMGenerator(gl);
+  const room = new RoomEnvironment();
+  // Framebuffers belong to one renderer; prep → battle must generate its own environment.
+  const target = pmrem.fromScene(room, 0.04);
+  environments.set(gl, target.texture);
+  environmentGenerated = true;
+  room.dispose();
+  pmrem.dispose();
+  return target.texture;
 }
 
 export interface SceneEnvironmentProps {
@@ -51,6 +55,7 @@ export function SceneEnvironment({ theme, shadows, shadowMapSize }: SceneEnviron
   const gl = useThree((state) => state.gl);
   const scene = useThree((state) => state.scene);
   const tournament = theme.id === 'tournament';
+  const abyss = theme.geometry === 'abyss';
 
   useEffect(() => {
     scene.environment = getRoomEnvironment(gl);
@@ -69,8 +74,8 @@ export function SceneEnvironment({ theme, shadows, shadowMapSize }: SceneEnviron
       {/* 主光：唯一投影的光源。用平行光而不是聚光，阴影视锥就是一个盒子，
           整张桌子都在里面，不用为每张台面重算视锥。 */}
       <directionalLight
-        color={tournament ? 0xffecd0 : theme.geometry === 'mecha' ? 0xf8fcff : 0xfff4e6}
-        intensity={tournament ? .85 : 1.35}
+        color={abyss ? 0xeee7ff : tournament ? 0xffecd0 : theme.geometry === 'mecha' ? 0xf8fcff : 0xfff4e6}
+        intensity={abyss ? 1.1 : tournament ? .85 : 1.35}
         position={[-11, 20, 9]}
         castShadow={shadows}
         shadow-mapSize-width={shadowMapSize}
@@ -90,18 +95,18 @@ export function SceneEnvironment({ theme, shadows, shadowMapSize }: SceneEnviron
       />
 
       {/* 补光：对侧、偏冷、不投影。把暗部从背景里托起来。 */}
-      <directionalLight color={0xbcd4ff} intensity={tournament ? .22 : .5} position={[13, 9, -11]} />
+      <directionalLight color={abyss ? 0xbab8ee : 0xbcd4ff} intensity={abyss ? .34 : tournament ? .22 : .5} position={[13, 9, -11]} />
 
       {/* 轮廓光：低位后方，把主体边缘从背景里分出来。
           力度要克制——推猛了会把靠近镜头的一侧打出一条白边。 */}
-      <pointLight color={theme.geometry === 'mecha' ? 0x87d5e4 : 0xffd9a0} intensity={14} distance={70} decay={2} position={[-4, 6, -19]} />
+      <pointLight color={abyss ? 0xb28ae6 : theme.geometry === 'mecha' ? 0x87d5e4 : 0xffd9a0} intensity={14} distance={70} decay={2} position={[-4, 6, -19]} />
 
-      <ambientLight color={tournament ? 0xffecd8 : 0xffffff} intensity={tournament ? .16 : .1} />
+      <ambientLight color={abyss ? 0xcab4e2 : tournament ? 0xffecd8 : 0xffffff} intensity={abyss ? .14 : tournament ? .16 : .1} />
     </>
   );
 }
 
 /** 供测试与调试查询环境贴图是否已生成。 */
 export function hasSceneEnvironment(): boolean {
-  return cachedEnvironment !== null;
+  return environmentGenerated;
 }

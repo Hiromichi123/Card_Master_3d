@@ -87,7 +87,7 @@
   }
   .hub-button__copy { display: flex; flex-direction: column; gap: calc(12 * var(--ui)); min-width: 0; }
   .hub-button__copy strong {
-    font-family: 'SimSun', 'Songti SC', 'Noto Serif CJK SC', serif;
+    font-family: 'Game Numerals', 'SimSun', 'Songti SC', 'Noto Serif CJK SC', serif;
     font-size: calc(48 * var(--ui)); font-weight: 900; line-height: 1.2;
     letter-spacing: .06em; white-space: nowrap;
   }

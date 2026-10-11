@@ -1,7 +1,6 @@
 import type {
   CardDefinition,
   CardInstance,
-  CombatStateGroup,
   SideId,
 } from '../cards/types';
 import {
@@ -18,7 +17,7 @@ import {
   type SkillContext,
 } from '../skills/rules';
 
-import { SUMMON_TARGETS, lethalStrikeChance, canPhysicallyHit, physicalDefender, consumeConcealment } from '../skills/tacticalTraits';
+import { SUMMON_TARGETS, resolveSummonDefinitionId, lethalStrikeChance, canPhysicallyHit, physicalDefender, consumeConcealment } from '../skills/tacticalTraits';
 import { syncFlightState, syncBerserk, rememberBerserkBase } from '../skills/passiveTraits';
 import { attackTick, grantAttackStatus, triggerAttackStatuses, clearAttackStatuses } from '../skills/attackStatuses';
 import { createRng, type Rng } from './rng';
@@ -89,6 +88,7 @@ export function createBattle(
   const state: BattleState = {
     rules,
     definitions: { ...definitions, [COOLDOWN_CARD_ID]: COOLDOWN_CARD },
+    ...(config.summonDefinitions ? { summonDefinitions: structuredClone(config.summonDefinitions) } : {}),
     seed: config.seed,
     rng: rng.snapshot(),
     turnNumber: 1,
@@ -341,8 +341,14 @@ class Resolver {
    * `resolveAttack` 里跑过了）。圣盾挂的就是 ON_DAMAGED，不告诉它一声就会减两次——
    * 一次在 `resolveAttack`，一次在这里。
    */
-  damage(target: CardInstance, amount: number, onDamagedRan = false): number {
+  damage(target: CardInstance, amount: number, source: DamageSource = 'skill', onDamagedRan = false): number {
     const group = groupOf(this.state, target);
+    if ((source === 'skill' || source === 'counter') && hasFamily(this.state, target, 'immunity') &&
+      !isSilenced(this.state, target.owner, target.slotIndex)) {
+      this.emit({ type: 'DamageApplied', side: group.owner, instanceId: target.instanceId,
+        amount: 0, hpBefore: group.hp, hpAfter: group.hp, source });
+      return 0;
+    }
     /*
       圣盾：**技能**伤害也吃减伤（防御只管普通攻击——它就挂在 ON_DAMAGED 上，
       而那条路只有 `resolveAttack` 会走）。
@@ -378,7 +384,7 @@ class Resolver {
       amount: dealt,
       hpBefore: before,
       hpAfter: group.hp,
-      source: onDamagedRan ? 'normalAttack' : 'skill',
+      source,
     });
     return dealt;
   }
@@ -439,7 +445,8 @@ class Resolver {
   }
 
   /** Summon a fresh definition directly into an empty friendly battle slot; never consumes a deck card. */
-  summon(source: CardInstance, definitionId: string): void {
+  summon(source: CardInstance, originalDefinitionId: string): void {
+    const definitionId = resolveSummonDefinitionId(this.state, source.owner, originalDefinitionId);
     const zones = this.state.zones[source.owner];
     const slot = zones.battle.indexOf(null);
     const definition = this.state.definitions[definitionId];
@@ -579,7 +586,8 @@ function triggerSkills(
 
     if (skill.family === 'devour'  && state.zones[opponentOf(instance.owner)].discard.length === 0) continue;
     const summonTarget = SUMMON_TARGETS[skill.family];
-    if (summonTarget && (!state.definitions[summonTarget] || !state.zones[instance.owner].battle.includes(null))) continue;
+    if (summonTarget && (!state.definitions[resolveSummonDefinitionId(state, instance.owner, summonTarget)] ||
+      !state.zones[instance.owner].battle.includes(null))) continue;
     if (skill.family === 'alignedDeathBlast') {
       const id = state.zones[opponentOf(instance.owner)].battle[deathSlot ?? instance.slotIndex];
       const target = id ? state.instances[id] : undefined;
@@ -639,7 +647,7 @@ function triggerSkills(
       param: skill.param ?? (['explodeOnDeath', 'alignedDeathBlast'].includes(skill.family) ? 2 : 1), attack, deathSlot,
       emit: (event) => resolver.emit(event),
       damage: (target, amount, source: DamageSource) => source === 'trueDamage' || source === 'collapse'
-        ? resolver.trueDamage(target, amount, source) : resolver.damage(target, amount),
+        ? resolver.trueDamage(target, amount, source) : resolver.damage(target, amount, source),
       heal: (target, amount) => resolver.heal(target, amount),
       drainAlly: (donor, amount) => resolver.transferLife(instance, donor, amount),
       damagePlayer: (side, amount, source) => resolver.damagePlayer(side, amount, source),
@@ -704,7 +712,7 @@ function resolvePhysicalHit(resolver: Resolver, state: BattleState, attacker: Ca
       triggerSkills(resolver, state, defender, 'ON_DAMAGED', attack, null);
     }
     const targetHpBefore = groupOf(state, defender).hp;
-    attack.dealt = resolver.damage(defender, attack.damage, true);
+    attack.dealt = resolver.damage(defender, attack.damage, 'normalAttack', true);
     if (!secondary) returnAttackOverflow(resolver, state, attacker, attack, targetHpBefore);
     if (attack.dealt > 0 && !isSilenced(state, defender.owner, slot)) {
       triggerSkills(resolver, state, defender, 'AFTER_DAMAGED', attack, null);
@@ -832,7 +840,7 @@ function resolveAttack(
     }
     // 已经跑过 ON_DAMAGED（防御/闪避/圣盾都在那一步），别再让它跑一遍
     const targetHpBefore = groupOf(state, defender).hp;
-    const dealt = resolver.damage(defender, attack.damage, true);
+    const dealt = resolver.damage(defender, attack.damage, 'normalAttack', true);
     attack.dealt = dealt;
     returnAttackOverflow(resolver, state, attacker, attack, targetHpBefore);
   } else {
