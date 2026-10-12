@@ -49,7 +49,7 @@ const MAIN_ROWS: readonly (readonly HubEntry[])[] = [
     { id: 'event-shop', kind: 'market', color: '#c8bbcf', route: 'activityShop', label: '活动商店', hint: '活动卡牌与徽章', palette: 'violet' },
   ],
   [
-    { id: 'ranking', kind: 'ranking', color: '#dec184', route: null, label: '排行榜', hint: '天梯与收藏排行榜 · 本地演示榜' },
+    { id: 'ranking', kind: 'ranking', color: '#dec184', route: null, label: '排行榜', hint: '天梯、收藏与深渊排行榜 · 本地演示榜' },
     { id: 'statistics', kind: 'statistics', color: '#a8c1c4', route: null, label: '统计数据', hint: '统计数据暂未开放' },
     { id: 'demo', kind: 'demo', color: '#b6b3e6', route: 'battle', label: '战斗演示', hint: '不影响存档的演示对局' },
   ],
@@ -129,12 +129,11 @@ export function HubScene({ profile, store, busy = false, playerName = '当前玩
 
   return <MenuChrome className={`menu--hub hub-menu${still ? ' hub-menu--still' : ''}`}
     backgroundUrl={background} title={<HubWordmark />}
-    status={<div className="hub-player">
+    status={<div className="hub-player-stack"><div className="hub-player">
       <PlayerStatus level={profile.level} currencies={profile.currencies} />
       {store && <HubRewards profile={profile} store={store} busy={busy} />}
-    </div>}>
+    </div><AbyssEntry onClick={() => onNavigate('abyss')} /></div>}>
     <HubSideRail />
-    <AbyssEntry onClick={() => onNavigate('abyss')} />
     <nav className="hub-main" aria-label="主界面玩法">
       {MAIN_ROWS.map((row, index) => <div key={index} className={`hub-main__row hub-main__row--${index + 1}`}>
         {row.map((entry) => button(entry, false))}

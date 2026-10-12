@@ -16,6 +16,7 @@ import manifestJson from './assets.manifest.json';
 
 interface FaceEntry {
   readonly url: string;
+  readonly sourceSize?: readonly [number, number];
   readonly size: readonly [number, number];
   readonly bytes: number;
 }
@@ -60,6 +61,12 @@ export function cardFaceUrlForDefinition(
   tier: TextureTier = 'battle',
 ): string | null {
   return cardsByArtId.get(card.art.artId)?.face[tier]?.url ?? cardFaceUrl(card.cardId, tier);
+}
+
+/** Coordinate system in which the original cardmaker baked its name. */
+export function cardFaceBakeSize(card: Pick<CardDefinition, 'cardId' | 'art'>, tier: TextureTier): readonly [number, number] {
+  const entry = cardsByArtId.get(card.art.artId) ?? manifest.cards[card.cardId];
+  return entry?.face[tier]?.sourceSize ?? [720, 1080];
 }
 
 /** 原画（未加边框的插画）。P4 重排卡框时使用。 */

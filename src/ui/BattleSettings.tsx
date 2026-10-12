@@ -1,3 +1,4 @@
+import { AiSettingsControls } from './AiSettingsControls';
 import { useState } from 'react';
 
 import { useBattleVisuals } from '../rendering/battle/battleVisuals';
@@ -18,7 +19,7 @@ import { useSettingsStore, type PresentationSpeed } from '../state/settingsStore
  * - **战斗中**默认收起成一行「战斗设置」——战桌是主角，不该被一排控件挡住。
  *
  * 无论放在哪，读写的都是同一个 store：切场景不会「调了又变回去」。
- * `V-FX-5` / `V-WORLD-5`：这里的每一项都只影响表现，不得改变战斗结果。
+ * `V-FX-5` / `V-WORLD-5`：画面设置只影响表现；人机设置控制 AI 选出的合法命令。
  */
 
 const QUALITY_ORDER: QualityTier[] = ['low', 'medium', 'high'];
@@ -44,6 +45,8 @@ export interface BattleSettingsProps {
 export function BattleSettings({ defaultOpen = false, columns = 1 }: BattleSettingsProps) {
   const [open, setOpen] = useState(defaultOpen);
 
+  const skipTurnEnd = useSettingsStore(state => state.skipTurnEnd);
+  const setSkipTurnEnd = useSettingsStore(state => state.setSkipTurnEnd);
   const visuals = useBattleVisuals();
   const quality = visuals.quality;
   const fixedQuality = visuals.theme.geometry === 'abyss';
@@ -146,6 +149,11 @@ export function BattleSettings({ defaultOpen = false, columns = 1 }: BattleSetti
             </span>
           </label>
 
+          <label className="battle-settings__group battle-settings__group--check" title="普通出牌、冷却牌和部署均不可用时，等待1秒自动完成；不替你部署成熟卡">
+            <input type="checkbox" checked={skipTurnEnd} onChange={event => setSkipTurnEnd(event.target.checked)} />
+            跳过回合结束
+          </label>
+          <AiSettingsControls />
           <label className="battle-settings__group battle-settings__group--check" title="镜头震动（不影响战斗结果）">
             <input
               type="checkbox"

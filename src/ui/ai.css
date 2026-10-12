@@ -1,0 +1,14 @@
+.battle-settings__model {
+  grid-column: 1 / -1;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+  max-width: 340px;
+}
+.battle-settings__model > label { display: flex; flex-direction: column; gap: 6px; max-width: 100%; }
+.battle-settings__model small { line-height: 1.5; overflow-wrap: anywhere; }
+.hud__actions .battle-settings__body { max-height: min(58vh, 480px); overflow-y: auto; }
+.ai-debug { width: min(340px, 80vw); max-height: 38vh; overflow-y: auto; font-size: 11px; padding: 8px 10px; }
+.ai-debug summary { cursor: pointer; color: var(--text); }
+.ai-debug ol { padding-left: 20px; overflow-wrap: anywhere; }
+.ai-debug small { display: block; line-height: 1.5; margin-top: 6px; }

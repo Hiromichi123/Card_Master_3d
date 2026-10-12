@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { CardDefinition } from '../../src/domain/cards/types';
-import { chooseCommand } from '../../src/domain/battle/ai';
+import { chooseBaselineCommand as chooseCommand } from '../../src/domain/battle/baselineAi';
 import {
   applyCommand,
   createBattle,

@@ -25,6 +25,8 @@ import { resetCardLife } from './cardLifecycle';
 import { ENEMY_CARD_ATTACK_FAMILIES } from '../skills/targetRequirements';
 import { COOLDOWN_CARD, COOLDOWN_CARD_ID, isCooldownCard, inputSideOf, readyCardIds, insertionSlots } from './turnActions';
 import { isSelfDestructCard } from '../cards/traits';
+import { syncAutoEvolution, finishAutoEvolutionTurn } from './autoEvolution';
+import { grantConcealment, grantSilence, expireSilences, timedSilenceActive, canReceiveConcealment } from '../skills/statusTraits';
 import {
   DEFAULT_BATTLE_RULES,
   type BattleConfig,
@@ -54,8 +56,8 @@ import {
  *
  * 顺序基线（`docs/rules.md` 第 2 节）：
  *
- *   主场出牌/手动部署 → 自身技能与整排攻击 → 可选客场部署 → 换边
- *   → 双方 CD 递减/新主场抽牌 → 有成熟客场卡则主场选抢先 → 下一行动窗口。
+ *   换边 → 双方 CD 递减/新主场抽牌 → 有成熟客场卡则先客场部署
+ *   → 主场出牌/手动部署 → 自身技能与整排攻击 → 下一次换边。
  *   当前规则总文档：docs/GAME_RULES.md；旧版考据保留在 docs/rules.md。
  */
 
@@ -98,7 +100,7 @@ export function createBattle(
     priority: null,
     hostAttacked: false,
     phase: 'awaitingPlay',
-    hp: { player: rules.baseHp, enemy: rules.baseHp },
+    hp: { player: rules.baseHpBySide?.player ?? rules.baseHp, enemy: rules.baseHpBySide?.enemy ?? rules.baseHp },
     zones: { player: emptyZones(rules), enemy: emptyZones(rules) },
     instances: {},
     groups: {},
@@ -106,6 +108,7 @@ export function createBattle(
     copyUsedThisTurn: { player: false, enemy: false },
     nextEventSeq: 1,
     outcome: null,
+    autoEvolution: null,
     stateHistory: [],
   };
 
@@ -166,6 +169,7 @@ export function createBattle(
   }
 
   grantCooldownCard(state, opponentOf(startingSide));
+  syncAutoEvolution(state);
   state.rng = rng.snapshot();
   return state;
 }
@@ -230,11 +234,11 @@ export function hasLegalPlay(state: BattleState, side: SideId): boolean {
 
 export function validateCommand(state: BattleState, command: Command): CommandValidation {
   if (state.outcome) return { ok: false, reason: 'battleEnded' };
+  if (command.kind === 'concede') return { ok: true };
   if (state.phase === 'resolving' || state.phase === 'ended') return { ok: false, reason: 'wrongPhase' };
   if (command.side !== inputSideOf(state)) return { ok: false, reason: 'notYourTurn' };
-  if (command.kind === 'concede') return { ok: true };
-  if (command.kind === 'choosePriority') return state.phase === 'awaitingPriority'
-    ? { ok: true } : { ok: false, reason: 'wrongPhase' };
+  // Legacy command retained for old tooling; action order is now fixed.
+  if (command.kind === 'choosePriority') return { ok: false, reason: 'wrongPhase' };
   if (state.phase === 'awaitingPriority') return { ok: false, reason: 'wrongPhase' };
   if (command.kind === 'endTurn') return { ok: true };
   const zones = state.zones[command.side];
@@ -331,7 +335,7 @@ class Resolver {
       const instance = this.state.instances[event.instanceId];
       if (instance) activateUnyielding(this, this.state, instance);
     }
-    if (['DamageApplied', 'Healed', 'CardMoved', 'FormationShuffled', 'SlotCompacted'].includes(event.type)) syncFlightState(this, this.state);
+    if (['DamageApplied', 'Healed', 'CardMoved', 'FormationShuffled', 'SlotCompacted', 'SilenceApplied', 'SilenceExpired'].includes(event.type)) syncFlightState(this, this.state);
   }
 
   /**
@@ -444,6 +448,18 @@ class Resolver {
     return healed;
   }
 
+  /** Direct removal: no damage hooks, deployment cast, death skills, revival or shared-group kill. */
+  crushWaiting(target:CardInstance,source:CardInstance):void {
+    if(target.zone!=='prep')return;
+    const zones=this.state.zones[target.owner],slot=zones.prep.indexOf(target.instanceId);
+    if(slot<0)return;
+    this.emit({type:'WaitingCardCrushed',side:target.owner,instanceId:target.instanceId,casterId:source.instanceId});
+    zones.prep[slot]=null;target.zone='discard';target.slotIndex=-1;
+    if(!zones.discard.includes(target.instanceId))zones.discard.push(target.instanceId);
+    this.emit({type:'CardMoved',side:target.owner,instanceId:target.instanceId,from:'prep',to:'discard',slotIndex:-1});
+    resetCardLife(this.state,target,event=>this.emit(event));
+  }
+
   /** Summon a fresh definition directly into an empty friendly battle slot; never consumes a deck card. */
   summon(source: CardInstance, originalDefinitionId: string): void {
     const definitionId = resolveSummonDefinitionId(this.state, source.owner, originalDefinitionId);
@@ -519,6 +535,8 @@ class Resolver {
         skillImmune: definition.rawTraits.includes('免疫'),
         silenced: false,
         grantedDodge: source.marks.grantedDodge ?? 0,
+        grantedConcealment:source.marks.grantedConcealment??false,
+        ...(source.marks.silenceUntil!==undefined?{silenceUntil:source.marks.silenceUntil}:{}),
       },
     };
     zones.battle[slot] = instanceId;
@@ -557,6 +575,7 @@ function triggerSkills(
     return;
   }
 
+  if(scope!=='selfDestruct'&&((trigger!=='ON_DEATH'&&isSilenced(state,instance.owner,instance.slotIndex))||timedSilenceActive(state,instance)))return;
   const skills = [...definition.skills];
   const giftedDodge = instance.marks.grantedDodge ?? 0;
   const hasDodge = skills.some((skill) => skill.family === 'dodge' &&
@@ -571,10 +590,17 @@ function triggerSkills(
     if (scope === 'effects' && skill.family === 'selfDestruct') continue;
     if (scope === 'selfDestruct' && skill.family !== 'selfDestruct') continue;
     const rule = SKILL_RULES[skill.family];
-    if (!rule || rule.trigger !== trigger) continue;
+    if (!rule || (rule.trigger !== trigger&&!rule.additionalTriggers?.includes(trigger))) continue;
     if (skill.family === 'splash' && (onlyFamily !== 'splash' || !attack?.hitCard)) continue;
     if (skill.family === 'criticalCollapse' && (onlyFamily !== 'criticalCollapse' || (attack?.overflow ?? 0) <= 0)) continue;
-    if (trigger !== 'ON_DEATH' && (instance.zone !== 'battle' || !isBattleActive(state, instance))) break;
+    if(scope!=='selfDestruct'&&((trigger!=='ON_DEATH'&&isSilenced(state,instance.owner,instance.slotIndex))||timedSilenceActive(state,instance)))break;
+    const thornRetaliation=skill.family==='thornArmor'&&trigger==='AFTER_TARGETED_ATTACK';
+    if(trigger!=='ON_DEATH'&&instance.zone!=='battle')break;
+    if(trigger!=='ON_DEATH'&&!isBattleActive(state,instance)&&!thornRetaliation)continue;
+    if(skill.family==='thornArmor'&&trigger==='AFTER_TARGETED_ATTACK'&&(!attack||attack.dodged||(attack.rawAtk??attack.damage)<=0))continue;
+    if(skill.family==='grantConcealment'&&((skill.param??1)<=0||!battleInstances(state,instance.owner).some(({instance:card})=>!card.marks.deploymentCast&&canReceiveConcealment(state,card))))continue;
+    if(skill.family==='groupSilence'&&(skill.param??1)<=0)continue;
+    if(skill.family==='crushWaiting'&&!state.zones[opponentOf(instance.owner)].prep.some(id=>{const card=id?state.instances[id]:undefined;const d=card?state.definitions[card.definitionId]:undefined;return !!d&&isSelfDestructCard(d);} ))continue;
 
     if (ENEMY_CARD_ATTACK_FAMILIES.has(skill.family) &&
       !battleInstances(state, opponentOf(instance.owner)).some(({ instance: target }) => isBattleActive(state, target))) continue;
@@ -644,6 +670,7 @@ function triggerSkills(
       state, rng: resolver.rng, owner,
       self: reflector ? { ...instance, owner } : instance,
       ...(reflector && instance.zone === 'battle' && isBattleActive(state, instance) ? { reflectedTarget: instance } : {}),
+      trigger,
       param: skill.param ?? (['explodeOnDeath', 'alignedDeathBlast'].includes(skill.family) ? 2 : 1), attack, deathSlot,
       emit: (event) => resolver.emit(event),
       damage: (target, amount, source: DamageSource) => source === 'trueDamage' || source === 'collapse'
@@ -664,6 +691,9 @@ function triggerSkills(
       },
       grantAttackStatus: (target, kind, level) => grantAttackStatus(resolver, state, target,
         reflector ?? instance, kind, level, skill.family !== 'poisonCloud'),
+      grantConcealment:target=>grantConcealment(resolver,state,target,instance),
+      grantSilence:(target,turns)=>grantSilence(resolver,state,target,reflector??instance,turns),
+      crushWaitingCard:target=>resolver.crushWaiting(target,reflector??instance),
       grantDodge: (target, level) => {
         target.marks.grantedDodge = Math.max(target.marks.grantedDodge ?? 0, level);
         resolver.emit({ type: 'DodgeGranted', side: target.owner, instanceId: target.instanceId,
@@ -701,7 +731,7 @@ function resolvePhysicalHit(resolver: Resolver, state: BattleState, attacker: Ca
     guardId: defender.instanceId, protectedId: intended.instanceId, attackerId: attacker.instanceId });
   const slot = defender.slotIndex;
   const attack: AttackState = { attacker, defenderSlot: slot, damage: amount,
-    armorBreak: 0, dodged: false, dealt: 0 };
+    armorBreak: 0, dodged: false, dealt: 0, rawAtk:amount };
   if (!secondary) resolver.emit({ type: 'AttackDeclared', side: attacker.owner, attackerId: attacker.instanceId,
     targetInstanceId: defender.instanceId, targetSlot: slot });
   const redirected = !canPhysicallyHit(state, attacker, defender);
@@ -756,12 +786,13 @@ function resolveAttack(
   };
 
   // 沉默：对位带「沉默」时，攻击者的技能整份不触发（BBS:1321-1324）
-  const silenced = isSilenced(state, side, attackerSlot);
+  let silenced = isSilenced(state, side, attackerSlot);
   if (!silenced) {
     triggerSkills(resolver, state, attacker, 'BEFORE_ATTACK', attack, null);
   }
 
   // Healing/other attack modifiers before the lunge must immediately update its actual damage.
+  silenced=isSilenced(state,side,attackerSlot); // A reflected group silence takes effect within this very action.
   attack.damage = group.atk;
   const currentDefenderId = state.zones[other].battle[attackerSlot];
   defender = currentDefenderId ? state.instances[currentDefenderId] ?? null : null;
@@ -886,7 +917,7 @@ function resolveAttack(
 
 function activateUnyielding(resolver: Resolver, state: BattleState, instance: CardInstance): void {
   const group = groupOf(state, instance);
-  if (instance.zone !== 'battle' || group.deathHandled || group.unyielding?.used || !hasFamily(state, instance, 'unyielding')) return;
+  if (timedSilenceActive(state,instance) || instance.zone !== 'battle' || group.deathHandled || group.unyielding?.used || !hasFamily(state, instance, 'unyielding')) return;
   // Only host action turns advance this deadline; response deployment is not an extra turn.
   const expiresAfterTurn = state.turnIndex + (state.currentSide === group.owner ? 2 : 1);
   group.unyielding = { active: true, used: true, expiresAfterTurn };
@@ -1049,6 +1080,7 @@ function emitCooldownReset(
 function reviveIfAble(resolver: Resolver, state: BattleState, instance: CardInstance, traits: readonly string[]): boolean {
   const side = instance.owner;
   const zones = state.zones[side];
+  if(timedSilenceActive(state,instance))return false;
   if (traits.includes('不死')) {
     instance.zone = 'hand';
     zones.hand.push(instance.instanceId);
@@ -1165,6 +1197,7 @@ function tickCooldowns(resolver: Resolver, state: BattleState): void {
 }
 
 function concludeIfEnded(resolver: Resolver, state: BattleState): boolean {
+  if (state.outcome) return true;
   const outcome = checkOutcome(state);
   if (!outcome) return false;
   state.outcome = outcome;
@@ -1180,6 +1213,7 @@ function openResponse(resolver: Resolver, state: BattleState): void {
 
 /** Current host alone performs one skill/attack row. */
 function resolveHostRow(resolver: Resolver, state: BattleState): void {
+  const wasAutomatic = !!state.autoEvolution;
   state.phase = 'resolving';
   const side = state.currentSide;
   const turnHolders = [...battleInstances(state, side)];
@@ -1203,17 +1237,20 @@ function resolveHostRow(resolver: Resolver, state: BattleState): void {
     if (concludeIfEnded(resolver, state)) return;
   }
   for (const card of Object.values(state.instances)) clearAttackStatuses(resolver, state, card, true);
+  expireSilences(resolver,state);
   expireUnyielding(resolver, state);
   removeDead(resolver, state);
   compactRow(resolver, state, 'player');
   compactRow(resolver, state, 'enemy');
   state.hostAttacked = true;
-  concludeIfEnded(resolver, state);
+  if (concludeIfEnded(resolver, state)) return;
+  if (wasAutomatic) finishAutoEvolutionTurn(state, event => resolver.emit(event));
+  else syncAutoEvolution(state, event => resolver.emit(event));
 }
 
 function nextHostTurn(resolver: Resolver, state: BattleState): void {
   if (concludeIfEnded(resolver, state)) return;
-  if (state.rules.turnLimit > 0 && state.turnIndex >= state.rules.turnLimit * 2) {
+  if (!state.autoEvolution && state.rules.turnLimit > 0 && state.turnIndex >= state.rules.turnLimit * 2) {
     state.outcome = { kind: 'draw', reason: 'turnLimit' };
     state.phase = 'ended';
     resolver.emit({ type: 'BattleEnded', outcome: state.outcome });
@@ -1235,7 +1272,8 @@ function nextHostTurn(resolver: Resolver, state: BattleState): void {
     if (id) resolver.emit({ type: 'CardDrawn', side: state.currentSide, instanceId: id, fromDeckIndex: 0 });
   }
   const guest = opponentOf(state.currentSide);
-  state.phase = readyCardIds(state, guest).length > 0 ? 'awaitingPriority' : 'awaitingPlay';
+  if (readyCardIds(state, guest).length > 0) openResponse(resolver, state);
+  else state.phase = 'awaitingPlay';
 }
 
 function endTurn(resolver: Resolver, state: BattleState): void {
@@ -1244,15 +1282,14 @@ function endTurn(resolver: Resolver, state: BattleState): void {
     else state.phase = 'awaitingPlay';
     return;
   }
-  if (state.cardsPlayedThisTurn === 0) {
+  if (state.cardsPlayedThisTurn === 0 && !state.autoEvolution) {
     const id = grantCooldownCard(state, state.currentSide);
     resolver.emit({ type: 'CooldownCardGranted', side: state.currentSide, instanceId: id, reason: 'skip' });
   }
   resolveHostRow(resolver, state);
   if (state.outcome) return;
-  // First priority guarantees a response even if the attack made room on a full guest row.
-  if (state.priority === 'first' && readyCardIds(state, opponentOf(state.currentSide)).length > 0) openResponse(resolver, state);
-  else nextHostTurn(resolver, state);
+  // The guest already had its sole deployment window before this host action.
+  nextHostTurn(resolver, state);
 }
 
 /** Insert one ready card, retaining the relative order of every existing unit. */
@@ -1318,21 +1355,20 @@ export function applyCommand(state: BattleState, command: Command): Resolution {
 
   const working = cloneState(state);
   const resolver = new Resolver(working);
+  syncAutoEvolution(working, event => resolver.emit(event));
 
   if (command.kind === 'concede') {
     const outcome: BattleOutcome = {
       kind: 'win',
       winner: opponentOf(command.side),
-      reason: 'noCardsRemaining',
+      reason: 'conceded',
     };
     working.outcome = outcome;
     working.phase = 'ended';
     resolver.emit({ type: 'BattleEnded', outcome });
   } else if (command.kind === 'choosePriority') {
-    working.priority = command.order;
-    resolver.emit({ type: 'PriorityChosen', side: command.side, order: command.order });
-    if (command.order === 'last') openResponse(resolver, working);
-    else working.phase = 'awaitingPlay';
+    // Unreachable for new commands: validation rejects the removed priority choice.
+    openResponse(resolver, working);
   } else if (command.kind === 'deployCard') {
     deployCard(resolver, working, command.side, command.instanceId, command.battleSlot);
   } else if (command.kind === 'useCooldownCard') {
@@ -1373,6 +1409,7 @@ export function applyCommand(state: BattleState, command: Command): Resolution {
   }
 
   syncFlightState(resolver, working);
+  syncAutoEvolution(working, event => resolver.emit(event));
   working.rng = resolver.rng.snapshot();
 
   return {
@@ -1391,6 +1428,7 @@ export function applyCommand(state: BattleState, command: Command): Resolution {
 export function stateFingerprint(state: BattleState): string {
   return JSON.stringify({
     currentSide: state.currentSide, phase: state.phase, priority: state.priority, hostAttacked: state.hostAttacked,
+    grantedTraits:Object.values(state.instances).filter(card=>card.zone==='battle').map(card=>[card.instanceId,card.marks.grantedConcealment??false,(card.marks.silenceUntil??state.turnIndex-1)-state.turnIndex]),
     concealment: Object.values(state.instances).filter((card) => card.zone === 'battle' && hasFamily(state, card, 'concealment'))
       .map((card) => [card.instanceId, card.marks.concealmentUsed ?? false]),
     flying: Object.values(state.instances).filter((card) => card.zone === 'battle').map((card) => [card.instanceId, card.flying]),
@@ -1399,6 +1437,7 @@ export function stateFingerprint(state: BattleState): string {
         [s.kind, s.level, s.atkLoss, s.expiresAt - attackTick(state),
           s.atkRestores?.map((debt) => [debt.amount, debt.expiresAt - attackTick(state)])])]),
     hp: state.hp,
+    autoEvolution: state.autoEvolution ?? null,
     zones: state.zones,
     groups: Object.values(state.groups)
       .map((group) => [group.groupId, group.hp, group.atk, group.berserkBaseAtk ?? null, group.berserkBonus ?? 0, group.unyielding?.active ?? false,

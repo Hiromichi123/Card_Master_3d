@@ -14,6 +14,7 @@ import { TournamentSetting } from './TournamentSetting';
 import { SlotMarkers } from './SlotMarkers';
 import type { SlotZone } from './layout';
 import { Table } from './Table';
+import { useSharedBattleSurface } from './SharedBattleSurfaceContext';
 
 /**
  * 一张卡在桌面上的位置与朝向。由上层（P3 的 `BattleState` 映射）产生。
@@ -28,6 +29,7 @@ export interface CardPlacement {
   readonly position: readonly [number, number, number];
   readonly rotationY?: number | undefined;
   readonly rotationX?: number | undefined;
+  readonly rotationZ?: number | undefined;
   readonly faceDown?: boolean | undefined;
   readonly interactive?: boolean | undefined;
   /** 卡牌整体缩放（准备区的卡比战斗区小一圈）。 */
@@ -74,6 +76,9 @@ export interface CardPlacement {
  * 避免卡面在动画过程中忽明忽暗。
  */
 export interface BattleBoardProps {
+  readonly surface?: boolean;
+  readonly cameraRig?: boolean;
+  readonly showSlotMarkers?: boolean;
   /** 可放置槽位键集合，由上层传入。 */
   readonly placeable?: ReadonlySet<string> | undefined;
   readonly targeted?: ReadonlySet<string> | undefined;
@@ -107,15 +112,20 @@ export function BattleBoard({
   onSlotClick,
   piles,
   dragActive = false,
+  cameraRig = true,
+  surface,
+  showSlotMarkers = true,
   onCardPointerDown,
 }: BattleBoardProps) {
+  const shared = useSharedBattleSurface();
+  const includeSurface = surface ?? !shared;
   const { theme, quality, profile } = useBattleVisuals();
   const { shadows, shadowMapSize } = profile;
   const reduceMotion = useSettingsStore((state) => state.reduceMotion);
 
   return (
     <>
-      <CameraRig interactionLocked={dragActive} />
+      {cameraRig && <CameraRig interactionLocked={dragActive} />}
 
       {/*
         环境与灯光移植自棋盘项目：一盏投影主光 + 冷色补光 + 轮廓光 + 极低环境光，
@@ -123,19 +133,19 @@ export function BattleBoard({
         没有环境贴图时 clearcoat 与 envMapIntensity 基本不起作用，
         木头和大理石会长得一样平。
       */}
-      <SceneEnvironment theme={theme} shadows={shadows} shadowMapSize={shadowMapSize} />
+      {includeSurface && <SceneEnvironment theme={theme} shadows={shadows} shadowMapSize={shadowMapSize} />}
 
       {/* 棋盘之外的大圆桌：远端的边缘由雾化成背景色 */}
-      {theme.id === 'tournament' ? <TournamentSetting quality={quality} />
-        : !theme.geometry && <SceneGround theme={theme} />}
+      {includeSurface && (theme.id === 'tournament' ? <TournamentSetting quality={quality} />
+        : !theme.geometry && <SceneGround theme={theme} />)}
 
-      <Table
+      {includeSurface && <Table
         theme={theme}
         quality={quality}
         weatherId={theme.id}
         reduceMotion={reduceMotion}
-      />
-      <SlotMarkers placeable={placeable} targeted={targeted} onSlotClick={onSlotClick} />
+      />}
+      {showSlotMarkers && <SlotMarkers placeable={placeable} targeted={targeted} onSlotClick={onSlotClick} />}
 
       {piles?.map((pile) => <Pile key={`${pile.side}-${pile.kind}`} pile={pile} mecha={theme.geometry === 'mecha'} />)}
 
@@ -148,6 +158,7 @@ export function BattleBoard({
           spawn={placement.spawn}
           rotationY={placement.rotationY}
           rotationX={placement.rotationX}
+          rotationZ={placement.rotationZ}
           faceDown={placement.faceDown}
           interactive={placement.interactive}
           scale={placement.scale}

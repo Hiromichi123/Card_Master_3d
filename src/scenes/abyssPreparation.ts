@@ -7,7 +7,7 @@ export const ABYSS_COLLECT_STAGGER_MS = 70;
 export const ABYSS_COLLECT_TOTAL_MS = ABYSS_COLLECT_MS + 5 * ABYSS_COLLECT_STAGGER_MS;
 
 export function isAbyssPreparation(run: AbyssRun | null | undefined): boolean {
-  return !!run && ['starterDraft', 'boonChoice', 'battleReady', 'inBattle'].includes(run.stage.kind);
+  return !!run; // Every live/remembered run remains on its table until Save & Exit.
 }
 
 /** 返回CSS像素坐标，不乘DPR；使用正式战斗同一牌堆位置。 */

@@ -1,23 +1,47 @@
 import { createRng, seedFrom } from '../battle/rng';
 import type { Rng } from '../battle/rng';
-import { RARITY_TO_LEVEL, type CardDefinition, type CardRarity } from '../cards/types';
+import { RARITY_TO_LEVEL, STANDARD_RARITIES, type CardDefinition, type CardRarity } from '../cards/types';
 import { SKILL_RULES } from '../skills/rules';
 import type { SkillSpec } from '../skills/types';
+import { describeTraitFunction } from '../skills/traitDescriptions';
+import { ABYSS_GRADE_INFO, abyssEffectGrade, abyssGrowthGrade, type AbyssGrade } from './abyssGrades';
 import type { AbyssBoonPair, AbyssCard, AbyssDifficulty, AbyssEffect, AbyssEncounter, AbyssGrowthOffer, AbyssGrowthOption, AbyssRun, AbyssStarterChoice } from './abyssTypes';
 
 export const ABYSS_RULES_VERSION = 1 as const;
 export const ABYSS_DECK_LIMIT = 12;
+export const ABYSS_MAX_FLOOR = Math.floor(Number.MAX_SAFE_INTEGER / 1000);
 export const ABYSS_STAT_LIMIT = 999;
+/** Legacy save ceiling; new cultivation has one slot without discarding older cards. */
 export const ABYSS_TRAIT_LIMIT = 4;
-export const ABYSS_TRAINING_PRICE = 25;
-export const ABYSS_RECRUIT_PRICE = 30;
-export const ABYSS_WIN_COINS = { normal: 30, hard: 50, nightmare: 100 } as const;
+export const ABYSS_CULTIVATED_TRAIT_LIMIT = 1;
+export const ABYSS_ERASE_TRAIT_PRICE = 15;
+export const ABYSS_TRAINING_PRICE = 5;
+export const ABYSS_RECRUIT_PRICE = 5;
+export const ABYSS_WIN_COINS = { normal: 15, hard: 30, nightmare: 60 } as const;
+export const ABYSS_REWARD_DRAWS = { normal: 1, hard: 2, nightmare: 3 } as const;
+export function abyssPurchasePrice(run: AbyssRun, purchase: 'recruit' | 'trait' | 'training'): number {
+  const count = purchase === 'recruit' ? run.recruitPurchases ?? 0 : run.traitPurchases ?? 0;
+  return Math.min(purchase === 'recruit' ? 50 : 30, 5 * (Math.min(10, count) + 1));
+}
+export function abyssBaseHp(battle: Pick<AbyssEncounter, 'floor' | 'encounter'>): { player: number; enemy: number } {
+  const completed = (battle.floor - 1) * 10 + battle.encounter - 1;
+  return { player: 20 + completed * 2, enemy: 20 + completed * 4 };
+}
 export const ABYSS_DIFFICULTY_NAMES = { normal: '常规', hard: '高难', nightmare: '噩梦 Boss' } as const;
 
 const trait = (raw: string, family: string, param: number | null = 1): SkillSpec => ({ raw, family, param, resolution: 'implemented', matchKind: 'full' });
+/** Curated implemented families only; legacy level-one entries are retained. */
+const levels = (name: string, family: string, values: readonly number[] = [1, 2, 3]): SkillSpec[] => values.map(n => trait(`${name}${n}`, family, n));
 export const ABYSS_GROWTH_TRAITS: readonly SkillSpec[] = [
-  trait('火球1', 'fireball'), trait('防御1', 'defense'), trait('恢复1', 'selfHeal'),
-  trait('吸血1', 'vampire'), trait('反击1', 'counter'), trait('加速1', 'haste'), trait('对空', 'antiAir', null),
+  ...levels('火球', 'fireball'), ...levels('冰封', 'iceSeal'), ...levels('闪电', 'lightning'),
+  ...levels('斩击', 'slash'), ...levels('毒雾', 'poisonCloud'),
+  ...levels('防御', 'defense'), ...levels('闪避', 'dodge'), ...levels('恢复', 'selfHeal'),
+  ...levels('吸血', 'vampire'), ...levels('反击', 'counter'), ...levels('加速', 'haste'),
+  ...levels('燃烧', 'burning', [1, 2]), ...levels('剧毒', 'venom', [1, 2]),
+  trait('对空', 'antiAir', null), trait('隐匿', 'concealment', null), trait('先攻', 'firstStrike', null),
+  ...levels('群体火球', 'groupFireball', [1, 2]), ...levels('群体治疗', 'groupHeal', [1, 2]),
+  ...levels('群体延迟', 'groupDelay', [1, 2]),
+  trait('法术反弹', 'spellReflect', null), trait('不屈', 'unyielding', null),
 ];
 const immunity = trait('免疫', 'immunity', null);
 const effect = (id: string, name: string, description: string, polarity: 'positive' | 'negative', atk = 0, hp = 0, cd = 0, traits: readonly SkillSpec[] = []): AbyssEffect => ({
@@ -31,7 +55,50 @@ export const ABYSS_EFFECTS: readonly AbyssEffect[] = [
   effect('frailty', '脆弱', '本战己方全部单位 HP −1，最低1。', 'negative', 0, -1),
   effect('weakness', '衰弱', '本战己方全部单位 ATK −1，最低0。', 'negative', -1),
   effect('delay', '迟滞', '本战己方全部单位 CD +1。', 'negative', 0, 0, 1),
+  ...[2, 3].flatMap(n => [
+    effect(`might-${n}`, `战意 +${n}`, `本战己方全部单位 ATK +${n}。`, 'positive', n),
+    effect(`vitality-${n}`, `坚韧 +${n}`, `本战己方全部单位 HP +${n}。`, 'positive', 0, n),
+    effect(`swiftness-${n}`, `迅捷 ${n}`, `本战己方全部单位 CD −${n}，最低0。`, 'positive', 0, 0, -n),
+    effect(`frailty-${n}`, `脆弱 ${n}`, `本战己方全部单位 HP −${n}，最低1。`, 'negative', 0, -n),
+    effect(`weakness-${n}`, `衰弱 ${n}`, `本战己方全部单位 ATK −${n}，最低0。`, 'negative', -n),
+    effect(`delay-${n}`, `迟滞 ${n}`, `本战己方全部单位 CD +${n}。`, 'negative', 0, 0, n),
+  ]),
+  ...ABYSS_GROWTH_TRAITS.map(skill => effect(`ability-${skill.family}-${skill.param ?? 0}`, skill.raw,
+    `本战己方全部单位获得${skill.raw}：${describeTraitFunction(skill)}`, 'positive', 0, 0, 0, [skill])),
 ];
+
+/** Old identifiers remain valid. New discoveries are recorded at their actual tier. */
+export function abyssEffectDiscoveryIds(value: AbyssEffect): string[] {
+  const same = ABYSS_EFFECTS.filter(item => item.polarity === value.polarity
+    && item.modifier.atk === value.modifier.atk && item.modifier.hp === value.modifier.hp && item.modifier.cd === value.modifier.cd
+    && item.modifier.traits.length === value.modifier.traits.length
+    && item.modifier.traits.every((skill, index) => skill.family === value.modifier.traits[index]?.family && skill.param === value.modifier.traits[index]?.param));
+  return [...new Set([value.id, ...same.map(item => item.id)])];
+}
+
+function weightedChoices<T>(items: readonly T[], count: number, rng: Rng, gradeOf: (item: T) => AbyssGrade, keyOf: (item: T) => string): T[] {
+  let pool = [...items];
+  const choices: T[] = [];
+  while (pool.length && choices.length < count) {
+    let roll = rng.next() * pool.reduce((sum, item) => sum + ABYSS_GRADE_INFO[gradeOf(item)].weight, 0);
+    let chosen = pool[pool.length - 1]!;
+    for (const item of pool) { roll -= ABYSS_GRADE_INFO[gradeOf(item)].weight; if (roll < 0) { chosen = item; break; } }
+    choices.push(chosen);
+    const key = keyOf(chosen);
+    pool = pool.filter(item => keyOf(item) !== key);
+  }
+  return choices;
+}
+function growthKey(option: AbyssGrowthOption): string { return option.kind === 'trait' ? `trait:${option.trait.family}` : option.kind; }
+function effectKey(value: AbyssEffect): string { return value.modifier.traits.length ? `trait:${value.modifier.traits[0]!.family}` : value.id.replace(/-\d+$/, ''); }
+function canBenefit(run: AbyssRun, value: AbyssEffect): boolean {
+  const m = value.modifier;
+  return run.cards.some(card => (m.atk > 0 && card.definition.atk < ABYSS_STAT_LIMIT) || (m.hp > 0 && card.definition.hp < ABYSS_STAT_LIMIT)
+    || (m.cd < 0 && card.definition.cd > 0) || m.traits.some(skill => {
+      const same = card.definition.skills.filter(existing => existing.family === skill.family);
+      return !same.length || skill.param !== null && same.every(existing => (existing.param ?? 1) < skill.param!);
+    }));
+}
 
 export function abyssDifficulty(encounter: number): AbyssDifficulty {
   return encounter === 10 ? 'nightmare' : encounter % 3 === 0 ? 'hard' : 'normal';
@@ -89,23 +156,28 @@ export function abyssStarterChoices(runId: string, seed: number, definitions: re
 
 export function scaleAbyssEffect(base: AbyssEffect, strength: number): AbyssEffect {
   const modifier = base.modifier;
-  const scaled = { atk: modifier.atk * strength, hp: modifier.hp * strength, cd: modifier.cd * strength, traits: modifier.traits };
-  const text = scaled.traits.length ? base.description : `本战己方全部单位${scaled.atk ? ` ATK ${scaled.atk > 0 ? '+' : ''}${scaled.atk}` : ''}${scaled.hp ? ` HP ${scaled.hp > 0 ? '+' : ''}${scaled.hp}` : ''}${scaled.cd ? ` CD ${scaled.cd > 0 ? '+' : ''}${scaled.cd}` : ''}（ATK/CD最低0，HP最低1）。`;
+  const traits = modifier.traits.map(skill => {
+    if (skill.param === null || strength === 1) return skill;
+    const param = Math.min(9999, skill.param * strength);
+    return { ...skill, param, raw: skill.raw.replace(/\d+$/, String(param)) };
+  });
+  const scaled = { atk: modifier.atk * strength, hp: modifier.hp * strength, cd: modifier.cd * strength, traits };
+  const text = scaled.traits.length ? `本战己方全部单位获得${scaled.traits.map(skill => `${skill.raw}：${describeTraitFunction(skill)}`).join('；')}` : `本战己方全部单位${scaled.atk ? ` ATK ${scaled.atk > 0 ? '+' : ''}${scaled.atk}` : ''}${scaled.hp ? ` HP ${scaled.hp > 0 ? '+' : ''}${scaled.hp}` : ''}${scaled.cd ? ` CD ${scaled.cd > 0 ? '+' : ''}${scaled.cd}` : ''}（ATK/CD最低0，HP最低1）。`;
   return { ...base, strength, description: text, modifier: scaled };
 }
 
 function boonPairs(run: AbyssRun): readonly AbyssBoonPair[] {
   const rng = createRng(seedFrom(`${run.seed}:boons:${run.floor}:${run.encounter}`));
-  const positives = ABYSS_EFFECTS.filter(item => item.polarity === 'positive' && (item.id !== 'swiftness' || run.cards.some(card => card.definition.cd > 0)));
+  const positives = ABYSS_EFFECTS.filter(item => item.polarity === 'positive' && canBenefit(run, item));
   const negatives = ABYSS_EFFECTS.filter(item => item.polarity === 'negative'
-    && (item.id !== 'weakness' || run.cards.some(card => card.definition.atk > 0))
-    && (item.id !== 'frailty' || run.cards.some(card => card.definition.hp > 1)));
+    && (!item.id.startsWith('weakness') || run.cards.some(card => card.definition.atk > 0))
+    && (!item.id.startsWith('frailty') || run.cards.some(card => card.definition.hp > 1)));
   const candidates: AbyssBoonPair[] = [];
   for (const positive of positives) for (const negative of negatives) {
-    if ((positive.id === 'might' && negative.id === 'weakness') || (positive.id === 'vitality' && negative.id === 'frailty') || (positive.id === 'swiftness' && negative.id === 'delay')) continue;
+    if (!positive.modifier.traits.length && positive.modifier.atk + negative.modifier.atk === 0 && positive.modifier.hp + negative.modifier.hp === 0 && positive.modifier.cd + negative.modifier.cd === 0) continue;
     candidates.push({ id: `${positive.id}:${negative.id}`, positive, negative });
   }
-  return rng.shuffle(candidates).slice(0, 3);
+  return weightedChoices(candidates, 3, rng, pair => abyssEffectGrade(pair.positive), pair => effectKey(pair.positive));
 }
 
 export function makeAbyssEncounter(run: AbyssRun, definitions: readonly CardDefinition[]): AbyssEncounter {
@@ -128,38 +200,77 @@ export function makeAbyssEncounter(run: AbyssRun, definitions: readonly CardDefi
   };
 }
 
-export function abyssGrowthTargets(cards: readonly AbyssCard[], option: AbyssGrowthOption): readonly AbyssCard[] {
+export function abyssGrowthTargets(cards: readonly AbyssCard[], option: AbyssGrowthOption, crystals = 0): readonly AbyssCard[] {
   switch (option.kind) {
     case 'atk': return cards.filter(card => card.definition.atk < ABYSS_STAT_LIMIT);
     case 'hp': return cards.filter(card => card.definition.hp < ABYSS_STAT_LIMIT);
     case 'cd': return cards.filter(card => card.definition.cd > 0);
     case 'remove': return cards.length > 1 ? cards : [];
-    case 'trait': return cards.filter(card => card.addedTraits.length < ABYSS_TRAIT_LIMIT && !card.definition.skills.some(skill => skill.family === option.trait.family));
+    case 'trait': return cards.filter(card => !card.baseDefinition.skills.some(skill => skill.family === option.trait.family)
+      && (card.addedTraits.length === 0 || crystals > 0)
+      && !(card.addedTraits.length === 1 && card.addedTraits[0]!.raw === option.trait.raw));
+    case 'crystal': return [];
     case 'recruit': return cards.length >= ABYSS_DECK_LIMIT ? cards : [];
   }
 }
 
-function recruitCard(run: AbyssRun, serial: number, index: number, definitions: readonly CardDefinition[]): AbyssCard {
-  const rng = createRng(seedFrom(`${run.seed}:recruit:${run.floor}:${run.encounter}:${serial}:${index}`));
+/** Expected level of each paid candidate, interpolated between the four chapter milestones. */
+export function abyssRecruitLevel(run: Pick<AbyssRun, 'floor' | 'encounter'>): number {
+  const step = Math.max(0, (run.floor - 1) * 10 + run.encounter - 1);
+  if (step <= 9) return 5 - step * 2 / 9;
+  if (step <= 19) return 3 - (step - 9) * 1.5 / 10;
+  return Math.max(0, 1.5 - (step - 19) * 1.5 / 10);
+}
+
+/** Smooth rarity distribution; its expectation matches the table level, not a card stat. */
+export function abyssRecruitDistribution(run: Pick<AbyssRun, 'floor' | 'encounter'>, definitions: readonly CardDefinition[]) {
   const pool = definitions.filter(isAbyssTemplate);
-  const rare = Math.min(4, Math.floor((run.floor - 1) / 2));
-  const table: readonly (readonly [CardRarity, number])[] = [ ['D', Math.max(0, 10 - rare * 5)], ['C', Math.max(5, 40 - rare * 10)], ['C+', 30], ['B', 15 + rare * 5], ['B+', 5 + rare * 5], ['A', rare * 5], ['A+', rare * 2] ];
-  const available = table.filter(([rarity, weight]) => weight > 0 && pool.some(card => card.rarity === rarity));
-  if (!available.length) throw new Error('深渊招募卡池没有合法卡牌。');
-  let roll = rng.next() * available.reduce((sum, entry) => sum + entry[1], 0);
-  let rarity = available[available.length - 1]![0];
-  for (const item of available) { roll -= item[1]; if (roll < 0) { rarity = item[0]; break; } }
-  return makeAbyssCard(chooseTemplate(pool, [rarity], rng, new Set()), `${run.id}/recruit/${run.floor}/${run.encounter}/${serial}/${index}`);
+  const available = STANDARD_RARITIES.filter(rarity => pool.some(card => card.rarity === rarity))
+    .map(rarity => ({ rarity, level: RARITY_TO_LEVEL[rarity] }));
+  if (!available.length) throw new Error('深渊招募卡池没有合法普通卡牌。');
+  const minimum = Math.min(...available.map(item => item.level)), maximum = Math.max(...available.map(item => item.level));
+  const target = Math.max(minimum, Math.min(maximum, abyssRecruitLevel(run)));
+  if (target === minimum || target === maximum) return available.filter(item => item.level === target).map(item => ({ ...item, weight: 1 }));
+  const weights = (tilt: number) => {
+    const logs = available.map(item => { const d = item.level - target; return -d * d / (2 * .65 * .65) + tilt * d; });
+    const peak = Math.max(...logs), raw = logs.map(log => Math.exp(log - peak));
+    const total = raw.reduce((sum, value) => sum + value, 0);
+    return raw.map(value => value / total);
+  };
+  let low = -64, high = 64;
+  for (let i = 0; i < 64; i++) {
+    const middle = (low + high) / 2, values = weights(middle);
+    const mean = available.reduce((sum, item, index) => sum + item.level * values[index]!, 0);
+    if (mean < target) low = middle; else high = middle;
+  }
+  const probabilities = weights((low + high) / 2);
+  return available.map((item, index) => ({ ...item, weight: probabilities[index]! }));
+}
+
+function recruitCard(run: AbyssRun, serial: number, index: number, definitions: readonly CardDefinition[], used = new Set<string>()): AbyssCard {
+  const rng = createRng(seedFrom(`${run.seed}:recruit:${run.floor}:${run.encounter}:${serial}:${index}`));
+  const pool = definitions.filter(isAbyssTemplate), table = abyssRecruitDistribution(run, definitions);
+  let roll = rng.next(), rarity = table[table.length - 1]!.rarity;
+  for (const item of table) { roll -= item.weight; if (roll < 0) { rarity = item.rarity; break; } }
+  return makeAbyssCard(chooseTemplate(pool, [rarity], rng, used), `${run.id}/recruit/${run.floor}/${run.encounter}/${serial}/${index}`);
 }
 
 export function makeAbyssGrowthOffer(run: AbyssRun, source: AbyssGrowthOffer['source'], serial: number, definitions: readonly CardDefinition[]): AbyssGrowthOffer {
   const id = `${run.id}/offer/${run.floor}/${run.encounter}/${serial}`;
-  if (source === 'recruit') return { id, source, options: [{ kind: 'recruit', label: '招募新卡', card: recruitCard(run, serial, 0, definitions) }] };
+  if (source === 'recruit') {
+    const used = new Set<string>();
+    return { id, source, options: Array.from({ length: 3 }, (_, index) => ({ kind: 'recruit' as const, label: '选择新卡', card: recruitCard(run, serial, index, definitions, used) })) };
+  }
   const rng = createRng(seedFrom(`${run.seed}:growth:${run.floor}:${run.encounter}:${serial}`));
-  const upgrades: AbyssGrowthOption[] = [ { kind: 'atk', label: '攻击 +1' }, { kind: 'hp', label: '生命 +2' }, { kind: 'cd', label: '冷却 −1' }, { kind: 'remove', label: '删除一张卡' }, ...ABYSS_GROWTH_TRAITS.map(item => ({ kind: 'trait' as const, label: `赋予 ${item.raw}`, trait: item })) ];
-  const choices = upgrades.filter(option => abyssGrowthTargets(run.cards, option).length > 0);
-  choices.push({ kind: 'recruit', label: '招募新卡', card: recruitCard(run, serial, 0, definitions) });
-  const options = rng.shuffle(choices).slice(0, 3);
-  while (options.length < 3) options.push({ kind: 'recruit', label: '招募新卡', card: recruitCard(run, serial, options.length, definitions) });
+  const upgrades: AbyssGrowthOption[] = [
+    ...[1, 2, 3].flatMap((amount): AbyssGrowthOption[] => [
+      { kind: 'atk', amount, label: `攻击 +${amount}` }, { kind: 'hp', amount, label: `生命 +${amount}` }, { kind: 'cd', amount, label: `冷却 −${amount}` },
+    ]), { kind: 'remove', label: '删除一张卡' },
+    ...ABYSS_GROWTH_TRAITS.map(item => ({ kind: 'trait' as const, label: `赋予 ${item.raw}`, trait: item })),
+  ];
+  const choices = upgrades.filter(option => abyssGrowthTargets(run.cards, option, run.crystals ?? 0).length > 0);
+  choices.push({ kind: 'crystal', label: '深渊结晶 +1' });
+  // Free rewards and paid cultivation share one pool; recruiting remains separate.
+  const options = weightedChoices(choices, 3, rng, abyssGrowthGrade, growthKey);
   return { id, source, options };
 }

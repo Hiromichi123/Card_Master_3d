@@ -9,6 +9,7 @@
  * - 胜负奖励通过 `battleId` 去重，刷新或从结算页返回都不能重复领取。
  */
 
+import type { AiDifficulty, AiStyle, AiPolicy } from '../battle/ai/types';
 import type { CardRarity } from '../cards/types';
 import type { LadderState, NormalDeckIds } from './deckSlots';
 import type { AbyssState } from './abyssTypes';
@@ -103,7 +104,7 @@ export interface MazeRunState {
 }
 
 /**
- * 展示与操作设置。这些**不参与规则计算**，改变它们不得改变战斗结果。
+ * 展示与操作设置。画质和演出不参与规则计算；AI 偏好只改变提交的命令，不改变引擎规则。
  *
  * **运行期以 `useSettingsStore`（zustand）为准，这里是它的持久化镜像。**
  * 启动时 `settingsPersistence.hydrateSettings` 把这一份灌进 zustand，
@@ -114,6 +115,9 @@ export interface MazeRunState {
  * 玩家调过某一项之后两者就不再相等，界面显示「自定义」。详见 `state/settingsStore.ts`。
  */
 export interface SettingsState {
+  readonly aiDifficulty?: AiDifficulty;
+  readonly aiStyle?: AiStyle;
+  readonly aiPolicy?: AiPolicy;
   readonly quality: 'low' | 'medium' | 'high';
   readonly dprCap: number;
   readonly particleBudget: 'low' | 'medium' | 'high';
@@ -135,9 +139,12 @@ export interface SettingsState {
   readonly reduceMotion: boolean;
   /** 性能读数条（开发用）。 */
   readonly showPerf: boolean;
+  /** Automatically finish an actionless human deployment window after one second. */
+  readonly skipTurnEnd?: boolean;
 }
 
 export const DEFAULT_SETTINGS: SettingsState = {
+  aiDifficulty: 'normal', aiStyle: 'balanced', aiPolicy: 'heuristic',
   quality: 'medium',
   // 与 `QUALITY_PROFILES.medium.dprCap` 对齐（该字段长期没人消费，曾与预设不一致）
   dprCap: 1.5,
@@ -151,6 +158,7 @@ export const DEFAULT_SETTINGS: SettingsState = {
   cameraModeId: '',
   reduceMotion: false,
   showPerf: false,
+  skipTurnEnd: false,
 };
 
 /**
@@ -193,6 +201,9 @@ export interface EconomyTransaction {
   /** 幂等键；同一个 operationId 重复提交不得重复生效。 */
   readonly operationId: string;
   /** 深渊独立事务，不能夹带任何主模式资源/奖励变化。 */
+  readonly abyssReward?: { readonly kind: 'completion'; readonly runId: string }
+    | { readonly kind: 'pack'; readonly claimId: string; readonly indices: readonly number[] }
+    | { readonly kind: 'weekly'; readonly weekKey: string; readonly milestone: number };
   readonly abyssUpdate?: { readonly expectedToken: string; readonly state: AbyssState };
   readonly currencyDelta: Partial<Currencies>;
   /** cardId → 数量变化，正数为获得。 */

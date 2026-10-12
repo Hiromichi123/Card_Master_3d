@@ -7,7 +7,7 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { chooseCommand } from '../../src/domain/battle/ai';
+import { chooseBaselineCommand as chooseCommand } from '../../src/domain/battle/baselineAi';
 import { applyCommand, createBattle } from '../../src/domain/battle/engine';
 import { createRng } from '../../src/domain/battle/rng';
 import type {

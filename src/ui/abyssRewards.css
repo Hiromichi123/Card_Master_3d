@@ -1,0 +1,8 @@
+.abyss-reward-dialog { width:min(1120px,94vw); background:linear-gradient(120deg,#19142cec,#343046e8 45%,#151225ed); border-color:#bca57b; box-shadow:0 0 0 3px #aa82de20,0 32px 100px #090412c0; }
+.abyss-reward-dialog .abyss-trait-deck__grid { grid-template-columns:repeat(5,minmax(0,1fr)); gap:12px; }
+.abyss-reward-dialog .abyss-trait-card__anchor { min-height:180px; }
+.abyss-weekly-actions { display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin:16px 0; }
+.abyss-weekly-actions button,.abyss-reward-dialog>.abyss-primary { padding:12px; background:linear-gradient(130deg,#554369,#241e38);border:1px solid #ba92dd;color:#f6e6ff;box-shadow:inset 0 -3px 8px #b473ce35; }
+.abyss-reward-receipt { position:absolute;top:110px;right:3%;z-index:31;margin:4px 0;color:#e8c592;pointer-events:none; }
+.abyss-board-abandon { color:#e2b6d2; }
+@media(max-width:650px) { .abyss-reward-dialog .abyss-trait-deck__grid,.abyss-weekly-actions{gap:4px;} .abyss-reward-dialog .abyss-trait-card__anchor{min-height:115px;} .abyss-reward-dialog .abyss-trait-card strong{font-size:12px;} .abyss-reward-dialog .abyss-trait-card__description{display:none;} .abyss-weekly-actions button{padding:8px 2px;font-size:11px;} }

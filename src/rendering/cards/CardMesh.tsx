@@ -1,6 +1,6 @@
 import { ANIMATION_DURATION_SCALE } from '../anim/timing';
 import { useFrame } from '@react-three/fiber';
-import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import type { Group, MeshStandardMaterial } from 'three';
 
 import type { AttackStatusKind, CardDefinition } from '../../domain/cards/types';
@@ -9,7 +9,8 @@ import type { ThreeEvent } from '@react-three/fiber';
 import { isCooldownCard } from '../../domain/battle/turnActions';
 import { CooldownCardFace } from './CooldownCardFace';
 import { isSelfDestructCard } from '../../domain/cards/traits';
-import { CARD_BACK_URL, cardFaceUrlForDefinition } from '../../data/assets';
+import { useAbyssCardFace } from './useAbyssCardFace';
+import { CARD_BACK_URL } from '../../data/assets';
 import { useManagedTexture } from '../../services/useManagedTexture';
 import type { TextureTier } from '../../services/AssetManager';
 import { useBattleVisuals } from '../battle/battleVisuals';
@@ -65,6 +66,7 @@ export interface CardMeshProps {
   readonly position: readonly [number, number, number];
   readonly rotationY?: number | undefined;
   readonly rotationX?: number | undefined;
+  readonly rotationZ?: number | undefined;
   /** 是否盖着。变化时会播放翻面动画。 */
   readonly faceDown?: boolean | undefined;
   /**
@@ -141,6 +143,7 @@ export function CardMesh({
   position,
   rotationY = 0,
   rotationX = -Math.PI / 2,
+  rotationZ = 0,
   faceDown = false,
   flipControl,
   selected = false,
@@ -198,10 +201,7 @@ export function CardMesh({
 
   // 纹理档跟随画质：低档用缩略图，减少核显上的显存与带宽压力
   const {cardTier} = useBattleVisuals().profile;
-  const faceUrl = useMemo(
-    () => cardFaceUrlForDefinition(card, textureTier ?? cardTier),
-    [card, cardTier, textureTier],
-  );
+  const faceUrl = useAbyssCardFace(card, textureTier ?? cardTier);
   const faceTexture = useManagedTexture(faceUrl);
   const backTexture = useManagedTexture(CARD_BACK_URL);
 
@@ -298,6 +298,7 @@ export function CardMesh({
    */
   const rotXRef = useRef(rotationX);
   const rotYRef = useRef(rotationY);
+  const rotZRef = useRef(rotationZ);
 
   useFrame((_, delta) => {
     attackTimeline.current?.update(Math.min(delta, 0.05));
@@ -332,6 +333,7 @@ export function CardMesh({
 
     rotXRef.current = damp(rotXRef.current, rotationX, ROT_DAMPING, delta);
     rotYRef.current = damp(rotYRef.current, rotationY, ROT_DAMPING, delta);
+    rotZRef.current = damp(rotZRef.current, rotationZ, ROT_DAMPING, delta);
 
     group.scale.setScalar(scale * scaleRef.current);
     group.position.y = position[1] + liftRef.current;
@@ -339,6 +341,7 @@ export function CardMesh({
     group.rotation.x = rotXRef.current + tiltRef.current;
     // 翻面绕自身长轴，与倾角叠加；欧拉顺序 XYZ 决定它先转、再躺平
     group.rotation.y = rotYRef.current + flipAngle(flipRef.current);
+    group.rotation.z = rotZRef.current;
   });
 
   const showTip = (event: ThreeEvent<PointerEvent>): void => {
@@ -388,7 +391,7 @@ export function CardMesh({
     <group
       ref={groupRef}
       position={[position[0], position[1], position[2]]}
-      rotation={[rotationX, rotationY, 0]}
+      rotation={[rotationX, rotationY, rotationZ]}
       scale={scale}
     >
       <mesh geometry={bodyGeometry} castShadow receiveShadow>

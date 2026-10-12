@@ -2,6 +2,9 @@ import { create } from 'zustand';
 import type { AttackStatusKind, CardDefinition } from '../domain/cards/types';
 
 export interface CardTipDetails {
+  readonly theme?: 'abyss' | undefined;
+  readonly effect?: { readonly name: string; readonly description: string; readonly color: string;
+    readonly meta: string; readonly footer?: string } | undefined;
   readonly ownerKey?: string | undefined;
   readonly ownerElement?: Element | undefined;
   readonly source?: 'dom' | '3d' | undefined;

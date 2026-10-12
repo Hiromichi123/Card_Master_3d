@@ -1,5 +1,5 @@
 {
-  "contentVersion": "de6770c73d05",
+  "contentVersion": "90d97d69d2ab",
   "source": "assets/outputs/*/cards.json",
   "definitions": [
     {
@@ -3441,7 +3441,6 @@
       "cd": 5,
       "rawTraits": [
         "闪电3",
-        "加速3",
         "加速3"
       ],
       "skills": [
@@ -3449,13 +3448,6 @@
           "raw": "闪电3",
           "resolution": "implemented",
           "family": "lightning",
-          "param": 3,
-          "matchKind": "full"
-        },
-        {
-          "raw": "加速3",
-          "resolution": "implemented",
-          "family": "haste",
           "param": 3,
           "matchKind": "full"
         },
@@ -10522,10 +10514,12 @@
       "skills": [
         {
           "raw": "隐匿赋予",
-          "resolution": "ambiguous",
-          "family": null,
-          "param": null,
-          "note": "未在 trait-overlay.json 中登记"
+          "resolution": "implemented",
+          "family": "grantConcealment",
+          "param": 1,
+          "note": "已在3D战斗引擎实现",
+          "matchKind": "full",
+          "evidence": "3D 用户指定机制；docs/TRAIT_EXPANSION.md"
         },
         {
           "raw": "自毁",
@@ -10807,10 +10801,12 @@
       "skills": [
         {
           "raw": "刺甲2",
-          "resolution": "ambiguous",
-          "family": null,
-          "param": null,
-          "note": "未在 trait-overlay.json 中登记"
+          "resolution": "implemented",
+          "family": "thornArmor",
+          "param": 2,
+          "note": "已在3D战斗引擎实现",
+          "matchKind": "full",
+          "evidence": "3D 用户指定机制；docs/TRAIT_EXPANSION.md"
         },
         {
           "raw": "吸血1",
@@ -10842,10 +10838,12 @@
       "skills": [
         {
           "raw": "群体沉默1",
-          "resolution": "ambiguous",
-          "family": null,
-          "param": null,
-          "note": "未在 trait-overlay.json 中登记"
+          "resolution": "implemented",
+          "family": "groupSilence",
+          "param": 1,
+          "note": "已在3D战斗引擎实现",
+          "matchKind": "full",
+          "evidence": "3D 用户指定机制；docs/TRAIT_EXPANSION.md"
         },
         {
           "raw": "自毁",
@@ -10939,6 +10937,229 @@
       "status": "complete",
       "art": {
         "artId": "card/s/021",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "SSS_016",
+      "rarity": "SSS",
+      "name": "虹 色 螺 旋",
+      "level": 0,
+      "atk": 3,
+      "hp": 6,
+      "cd": 5,
+      "rawTraits": [
+        "粉碎"
+      ],
+      "skills": [
+        {
+          "raw": "粉碎",
+          "resolution": "implemented",
+          "family": "crushWaiting",
+          "param": null,
+          "note": "已在3D战斗引擎实现",
+          "matchKind": "exact",
+          "evidence": "3D 用户指定机制；docs/TRAIT_EXPANSION.md"
+        }
+      ],
+      "description": "",
+      "status": "complete",
+      "art": {
+        "artId": "card/sss/016",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "SSS_017",
+      "rarity": "SSS",
+      "name": "玉 龙 仙",
+      "level": 0,
+      "atk": 0,
+      "hp": 5,
+      "cd": 5,
+      "rawTraits": [
+        "闪电3",
+        "抽卡5",
+        "飞行"
+      ],
+      "skills": [
+        {
+          "raw": "闪电3",
+          "resolution": "implemented",
+          "family": "lightning",
+          "param": 3,
+          "matchKind": "full"
+        },
+        {
+          "raw": "抽卡5",
+          "resolution": "implemented",
+          "family": "drawCard",
+          "param": 5,
+          "matchKind": "full"
+        },
+        {
+          "raw": "飞行",
+          "resolution": "scene-rule",
+          "family": null,
+          "param": null,
+          "note": "战斗场景规则，非技能族"
+        }
+      ],
+      "description": "",
+      "status": "complete",
+      "art": {
+        "artId": "card/sss/017",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "S+_021",
+      "rarity": "S+",
+      "name": "龙 焰",
+      "level": 1.5,
+      "atk": 3,
+      "hp": 5,
+      "cd": 7,
+      "rawTraits": [],
+      "skills": [],
+      "description": "",
+      "status": "complete",
+      "art": {
+        "artId": "card/s-plus/021",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "S_022",
+      "rarity": "S",
+      "name": "屠 龙 者 铠 甲",
+      "level": 2,
+      "atk": 4,
+      "hp": 3,
+      "cd": 6,
+      "rawTraits": [
+        "防御2",
+        "爆裂2"
+      ],
+      "skills": [
+        {
+          "raw": "防御2",
+          "resolution": "implemented",
+          "family": "defense",
+          "param": 2,
+          "matchKind": "full"
+        },
+        {
+          "raw": "爆裂2",
+          "resolution": "ambiguous",
+          "family": null,
+          "param": null,
+          "note": "未在 trait-overlay.json 中登记"
+        }
+      ],
+      "description": "",
+      "status": "complete",
+      "art": {
+        "artId": "card/s/022",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "S_023",
+      "rarity": "S",
+      "name": "魔 导 双 人",
+      "level": 2,
+      "atk": 0,
+      "hp": 6,
+      "cd": 5,
+      "rawTraits": [
+        "斩击1",
+        "冰封2"
+      ],
+      "skills": [
+        {
+          "raw": "斩击1",
+          "resolution": "unimplemented",
+          "family": null,
+          "param": null,
+          "evidence": "全项目 .py 无该字符串",
+          "note": "无实现。"
+        },
+        {
+          "raw": "冰封2",
+          "resolution": "implemented",
+          "family": "iceSeal",
+          "param": 2,
+          "matchKind": "full"
+        }
+      ],
+      "description": "",
+      "status": "complete",
+      "art": {
+        "artId": "card/s/023",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "B+_030",
+      "rarity": "B+",
+      "name": "斯 科 贝·梦 魇",
+      "level": 3.5,
+      "atk": 2,
+      "hp": 5,
+      "cd": 3,
+      "rawTraits": [
+        "飞行",
+        "斩击1"
+      ],
+      "skills": [
+        {
+          "raw": "飞行",
+          "resolution": "scene-rule",
+          "family": null,
+          "param": null,
+          "note": "战斗场景规则，非技能族"
+        },
+        {
+          "raw": "斩击1",
+          "resolution": "unimplemented",
+          "family": null,
+          "param": null,
+          "evidence": "全项目 .py 无该字符串",
+          "note": "无实现。"
+        }
+      ],
+      "description": "",
+      "status": "complete",
+      "art": {
+        "artId": "card/b-plus/030",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "B+_031",
+      "rarity": "B+",
+      "name": "出 征",
+      "level": 3.5,
+      "atk": 2,
+      "hp": 6,
+      "cd": 4,
+      "rawTraits": [
+        "防御2"
+      ],
+      "skills": [
+        {
+          "raw": "防御2",
+          "resolution": "implemented",
+          "family": "defense",
+          "param": 2,
+          "matchKind": "full"
+        }
+      ],
+      "description": "",
+      "status": "complete",
+      "art": {
+        "artId": "card/b-plus/031",
         "sourcePresent": true
       }
     }

@@ -103,6 +103,7 @@ export const FAMILY_TO_EFFECT: Record<string, EffectTemplateId> = {
   groupInspire: 'buff',
   curse: 'curse',
   instantDeath: 'instantDeath',
+  grantConcealment:'flow',groupSilence:'silence',crushWaiting:'deathBurst',thornArmor:'shield',
   grantDodge: 'armorBreak',
   spellReflect: 'shield',
   directDamage: 'normalAttack',
@@ -137,6 +138,7 @@ export const FAMILY_TO_EFFECT: Record<string, EffectTemplateId> = {
 export const FAMILY_TINT: Record<string, string> = {
   venom: '#49a82b', poisonCloud: '#49a82b', bleeding: '#a51b34', grievousWound: '#480919',
   holyShield: '#ffd77a',
+  grantConcealment:'#dbc9ff',thornArmor:'#b3d7ec',
   grantDodge: '#ffd77a',
   spellReflect: '#c5ecff',
   instantDeath: '#120e18',

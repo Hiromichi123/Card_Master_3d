@@ -193,18 +193,22 @@ export function buildBeats(resolution: Resolution, deps: DirectorDeps): Beat[] {
       : slashHit !== undefined ? slashHit
       : event.type === 'AttackStatusApplied' ? (event.animate === false ? 0 : statusAppliedHit(event.kind))
       : event.type === 'AttackStatusTriggered' ? statusTriggeredHit(event.kind)
-      : ['ConcealmentUsed', 'VanguardIntercepted', 'DiscardDevoured'].includes(event.type) || event.type === 'AttackStatusExpired' || event.type === 'FlightChanged' || (event.type === 'StatChanged' && event.cause === 'berserk') ? 0
+      : ['SilenceExpired', 'ConcealmentUsed', 'VanguardIntercepted', 'DiscardDevoured'].includes(event.type) || event.type === 'AttackStatusExpired' || event.type === 'FlightChanged' || (event.type === 'StatChanged' && event.cause === 'berserk') ? 0
       : event.type === 'UnyieldingChanged' ? 0
       : event.type === 'LifeTransferred' ? 0.42
       : event.type === 'FormationShuffled' ? 0.3
       : event.type === 'AttackDeclared' ? (event.attackKind && event.attackKind !== 'siege' ? RANGED_HIT_SECONDS : ATTACK_OUT_SECONDS)
-      : event.type === 'SkillTriggered' && ['concealment', 'firstStrike', 'vanguard', 'devour', 'masterpiece', 'foxSpiritSummon', 'antiAir', 'groupGround', 'siege', 'berserk', 'severeFrost', 'burning', 'venom', 'bleeding', 'grievousWound', 'splash', 'groupDelay', 'ranged', 'directDamage', 'groupPhysicalDamage', 'selfDestruct', 'sacrifice', 'unyielding'].includes(event.family ?? '') ? 0
+      : event.type === 'SkillTriggered' && ['grantConcealment', 'groupSilence', 'crushWaiting', 'concealment', 'firstStrike', 'vanguard', 'devour', 'masterpiece', 'foxSpiritSummon', 'antiAir', 'groupGround', 'siege', 'berserk', 'severeFrost', 'burning', 'venom', 'bleeding', 'grievousWound', 'splash', 'groupDelay', 'ranged', 'directDamage', 'groupPhysicalDamage', 'selfDestruct', 'sacrifice', 'unyielding'].includes(event.family ?? '') ? 0
       : event.type === 'SkillTriggered' && ['piercing', 'groupPiercing'].includes(event.family ?? '') ? RANGED_HIT_SECONDS
       : event.type === 'SkillTriggered' && event.family === 'poisonCloud' ? .42
+      : event.type === 'ConcealmentGranted' ? 0.3
+      : event.type === 'SilenceApplied' ? 0.25
+      : event.type === 'WaitingCardCrushed' ? 0.35
+      : event.type === 'SkillTriggered' && event.family === 'thornArmor' ? (event.trigger==='AFTER_TARGETED_ATTACK'?0:0.15)
       : event.type === 'SkillTriggered' && event.family === 'grantDodge' ? 0.3
       : ((event.type === 'SkillTriggered' || event.type === 'SpellReflected') && ['explodeOnDeath', 'alignedDeathBlast'].includes(event.family ?? '')) ? DEATH_BOMBARD_HIT_SECONDS
       : (event.type === 'SkillTriggered' || event.type === 'SpellReflected') && ['bombard', 'groupBombard'].includes(event.family ?? '') ? BOMBARD_HIT_SECONDS
-      : event.type === 'SpellReflected' && ['severeFrost', 'burning', 'venom', 'bleeding', 'grievousWound', 'groupDelay'].includes(event.family) ? 0
+      : event.type === 'SpellReflected' && ['groupSilence', 'crushWaiting', 'severeFrost', 'burning', 'venom', 'bleeding', 'grievousWound', 'groupDelay'].includes(event.family) ? 0
       : event.type === 'SpellReflected' ? (event.family === 'lightning' || event.family === 'groupLightning' ? 0.26 : 0.42)
       : event.type === 'SkillTriggered' && event.family === 'counter' ? ATTACK_OUT_SECONDS
       : EVENT_BEAT[event.type] ?? DEFAULT_BEAT;

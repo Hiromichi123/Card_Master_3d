@@ -1,6 +1,6 @@
 {
   "name": "card-master-3d",
-  "version": "3.0.0",
+  "version": "3.1.0",
   "private": true,
   "type": "module",
   "description": "Card Master 3D — 3D 战桌、实体卡牌与立体技能特效卡牌游戏",
@@ -13,7 +13,13 @@
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "ai:schema": "node scripts/ai/run.mjs schema",
+    "ai:evaluate": "node scripts/ai/run.mjs evaluate",
+    "ai:generate": "node scripts/ai/run.mjs generate",
+    "ai:tune": "node scripts/ai/run.mjs tune",
+    "ai:serve": "node scripts/ai/run.mjs serve",
+    "ai:train-small": "python scripts/ai/train_small.py"
   },
   "dependencies": {
     "@react-three/drei": "10.7.9",

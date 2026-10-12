@@ -162,14 +162,14 @@ export function buildBoard(display: DisplayState, options: BuildBoardOptions = {
         position: hand.position,
         rotationY: hand.rotationY,
         rotationX: hand.rotationX,
+        rotationZ: hand.rotationZ,
         scale: HAND_CARD_SCALE,
         statLayout: 'hand',
         hoverTip: side === 'player' || (options.localHands === true && side === inputSide),
         interactive: side === inputSide && options.playerCanPlay === true && options.handPlayable !== false,
         /*
-          敌方手牌**不翻面**：翻面之后牌背朝着相机、牌面朝下趴在桌上，
-          而镜像过来的倾角本该让牌面朝天。去掉翻面，牌就是「面朝上、
-          朝对面那人倾」的自然姿态。
+          手牌朝各自持有方倾斜，远端卡面局部旋转半周，保证敌方视角的
+          上下方向正确；不以翻面或朝向玩家代替方向修正。
 
           代价是让对手的手牌内容露了出来——这是实机确认过的取舍。
           数值与全息显式关掉：至少不把攻防一并亮给玩家。
@@ -239,6 +239,7 @@ function makePlacement(
     statLayout: StatLayout;
     rotationY?: number | undefined;
     rotationX?: number | undefined;
+    rotationZ?: number | undefined;
     faceDown?: boolean | undefined;
     interactive?: boolean | undefined;
     /** 不给就按「正面朝上就显示」推。对手手牌要显式关掉。 */
@@ -267,6 +268,7 @@ function makePlacement(
     spawn: display.spawns[instanceId],
     rotationY: placement.rotationY ?? undefined,
     rotationX: placement.rotationX ?? CARD_FLAT_ROTATION_X,
+    rotationZ: placement.rotationZ ?? 0,
     faceDown,
     ready: placement.ready,
     hoverTip: placement.hoverTip,

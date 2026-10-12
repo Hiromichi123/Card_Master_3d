@@ -109,7 +109,7 @@ export function targetsOf(context: EffectContext): TargetRef[] {
     if (
       next.type === 'DamageApplied' ||
       next.type === 'Healed' ||
-      next.type === 'StatChanged' || next.type === 'DodgeGranted' || next.type === 'AttackStatusApplied' || next.type === 'CooldownChanged'
+      next.type === 'StatChanged' || next.type === 'ConcealmentGranted' || next.type === 'SilenceApplied' || next.type === 'WaitingCardCrushed' || next.type === 'DodgeGranted' || next.type === 'AttackStatusApplied' || next.type === 'CooldownChanged'
     ) {
       targets.push({ instanceId: next.instanceId, side: next.side });
     } else if (next.type === 'PlayerHpChanged') {
@@ -155,6 +155,11 @@ export function effectRequestFor(
 ): EffectPlayRequest | null {
   switch (event.type) {
     case 'SkillTriggered': {
+      if(event.family==='thornArmor'){
+        if(event.trigger==='AFTER_TARGETED_ATTACK')return null;
+        const point=context.cardFacePointOf?.(event.instanceId)??impactPointOf(context.worldPointOf(event.instanceId));
+        return {template:'shield',family:'thornArmor',from:point,to:point,color:'#b3d7ec',intensity:event.param??1};
+      }
       const deathCast = ['explodeOnDeath', 'alignedDeathBlast'].includes(event.family ?? '');
       if (deathCast) {
         for (let i = context.index - 1; i >= 0; i--) {
@@ -165,7 +170,7 @@ export function effectRequestFor(
           }
         }
       }
-      if (['concealment', 'firstStrike', 'vanguard', 'devour', 'masterpiece', 'foxSpiritSummon', 'antiAir', 'groupGround', 'siege', 'berserk', 'severeFrost', 'burning', 'venom', 'bleeding', 'grievousWound', 'splash', 'groupDelay', 'ranged', 'directDamage', 'groupPhysicalDamage', 'selfDestruct', 'sacrifice', 'unyielding'].includes(event.family ?? '')) return null;
+      if (['grantConcealment', 'groupSilence', 'crushWaiting', 'concealment', 'firstStrike', 'vanguard', 'devour', 'masterpiece', 'foxSpiritSummon', 'antiAir', 'groupGround', 'siege', 'berserk', 'severeFrost', 'burning', 'venom', 'bleeding', 'grievousWound', 'splash', 'groupDelay', 'ranged', 'directDamage', 'groupPhysicalDamage', 'selfDestruct', 'sacrifice', 'unyielding'].includes(event.family ?? '')) return null;
       const template = event.family ? FAMILY_TO_EFFECT[event.family] : undefined;
       if (!template) {
         return null;
@@ -198,7 +203,7 @@ export function effectRequestFor(
     }
 
     case 'SpellReflected': {
-      if (['severeFrost', 'burning', 'venom', 'bleeding', 'grievousWound', 'groupDelay'].includes(event.family)) return null;
+      if (['groupSilence', 'crushWaiting', 'severeFrost', 'burning', 'venom', 'bleeding', 'grievousWound', 'groupDelay'].includes(event.family)) return null;
       const template = event.family === 'explodeOnDeath' ? 'groupBombard' : event.family === 'alignedDeathBlast' ? 'bombard' : FAMILY_TO_EFFECT[event.family];
       if (!template) return null;
       const resolvedTargets = targetsOf(context);
@@ -222,6 +227,11 @@ export function effectRequestFor(
       const point = context.cardFacePointOf?.(event.instanceId) ?? impactPointOf(context.worldPointOf(event.instanceId));
       return { template: templates[event.kind], from: point, to: point, intensity: event.level };
     }
+    case 'ConcealmentGranted': return {template:'flow',family:'grantConcealment',color:'#dbc9ff',
+      from:impactPointOf(context.worldPointOf(event.sourceInstanceId)),to:context.cardFacePointOf?.(event.instanceId)??impactPointOf(context.worldPointOf(event.instanceId)),intensity:1};
+    case 'SilenceApplied': {const point=context.cardFacePointOf?.(event.instanceId)??impactPointOf(context.worldPointOf(event.instanceId));return {template:'silence',from:point,to:point,intensity:1};}
+    case 'WaitingCardCrushed': {const point=impactPointOf(context.worldPointOf(event.instanceId));return {template:'deathBurst',from:point,to:point,intensity:1};}
+    case 'SilenceExpired': return null;
     case 'ConcealmentUsed':
     case 'VanguardIntercepted':
     case 'DiscardDevoured': return null;
@@ -357,6 +367,10 @@ export function logLineFor(event: BattleEvent, nameOf: (id: string) => string): 
       return `${nameOf(event.instanceId)} 进入准备区`;
     case 'CardDeployed':
       return `${nameOf(event.instanceId)} 上场`;
+    case 'ConcealmentGranted': return `${nameOf(event.instanceId)} 获得一次隐匿（持续至消耗或离场）`;
+    case 'SilenceApplied': return `${nameOf(event.instanceId)} 被沉默${event.turns}个自身回合`;
+    case 'SilenceExpired': return `${nameOf(event.instanceId)} 的沉默结束`;
+    case 'WaitingCardCrushed': return `${nameOf(event.casterId)} 粉碎了等待区的 ${nameOf(event.instanceId)}`;
     case 'SkillTriggered':
       return `${nameOf(event.instanceId)} 触发 ${event.raw}`;
     case 'SpellReflected':
@@ -393,6 +407,10 @@ export function logLineFor(event: BattleEvent, nameOf: (id: string) => string): 
       return `${nameOf(event.instanceId)} 阵亡`;
     case 'TurnEnded':
       return event.nextSide === 'player' ? '轮到我方' : '轮到敌方';
+    case 'AutoEvolutionChanged':
+      return event.active
+        ? `残局自动演进 ${event.completedTurns}/${event.limit}`
+        : '出现普通手牌或等待卡，恢复正常操作';
     case 'BattleEnded':
       return event.outcome.kind === 'win'
         ? `${event.outcome.winner === 'player' ? '我方' : '敌方'}获胜`

@@ -24,6 +24,8 @@ import { migrateToCurrent } from '../domain/progression/migrations';
 import { normalizeRewards } from '../domain/progression/rewardState';
 import { validateMazeState } from '../domain/progression/mazeProgress';
 import { validateAbyssState } from '../domain/progression/abyssValidation';
+import { withAbyssBest } from '../domain/progression/abyssRanking';
+import { withAbyssRarities } from '../domain/progression/abyssRarity';
 import { retireIncompatibleRun } from '../domain/progression/abyssRun';
 import { isFixedDeck, validDeckSlots } from '../domain/progression/deckSlots';
 import { SAVE_SCHEMA_VERSION } from '../domain/progression/types';
@@ -229,6 +231,7 @@ export class ProfileStore {
           abyss = retired;
           abyssNotice = '上一轮深渊的卡库已更新，本轮已按「放弃挑战」归档，战绩见深渊记录。';
         }
+        abyss = withAbyssBest(withAbyssRarities(abyss));
         const maze = validateMazeState(current.mazeRun, current.mazeProgress, current.settledBattleIds);
         if (!maze) throw new Error('迷宫探索记录与保底账本不完整，无法安全读取');
         // 修好的那份**不立刻写盘**：与「新号不写盘」「rewards 就地归一」同一条纪律，

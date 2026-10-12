@@ -12,10 +12,11 @@ import { ABYSS_LOAD_TIMEOUT_MS, ABYSS_LIGHTNING_INTERVAL_MS, abyssFlashIntensity
   ABYSS_DARKEN_MS, ABYSS_BLACK_MS, ABYSS_REVEAL_MS, ABYSS_REVEAL_FLASH_DELAY_MS,
 } from '../../src/scenes/abyssPresentation';
 
+vi.mock('../../src/scenes/AbyssTableSurface', () => ({ AbyssTableSurfaceProvider: ({ children }: { children: import('react').ReactNode }) => children }));
 const vortex = vi.hoisted(() => ({ props: {} as Record<string, unknown> }));
 vi.mock('../../src/rendering/abyss/AbyssVortex', () => ({ AbyssVortex: (props: Record<string, unknown>) => { vortex.props = props; return null; } }));
 vi.mock('../../src/ui/AbyssCountdown', () => ({ AbyssCountdown: () => createElement('div', null, '结算倒计时') }));
-vi.mock('../../src/scenes/AbyssBattleScene', () => ({ AbyssBattleScene: () => null }));
+vi.mock('../../src/scenes/AbyssBattleScene', () => ({ AbyssBattleScene: () => null, AbyssSettlement: () => null }));
 vi.mock('../../src/scenes/AbyssPreparationScene', () => ({ AbyssPreparationScene: ({ onHome }: { onHome: () => void }) =>
   createElement('div', { className: 'abyss-preparation' }, createElement('button', { onClick: onHome }, '返回深渊大厅')) }));
 vi.mock('../../src/ui/CardTipHost', () => ({ CardTipHost: () => null }));

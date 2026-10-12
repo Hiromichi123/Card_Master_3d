@@ -135,6 +135,8 @@ export interface CardDefinition {
 
 /** 卡面资源引用。只存 ID，不存路径。 */
 export interface CardArtRef {
+  /** Cultivated Abyss-only title overlay; artId still points at the untouched original face. */
+  readonly abyssTitle?: { readonly sourceRarity: CardRarity; readonly sourceLevel: number };
   /** 资源 manifest 中的键，例如 `card/A_001`。 */
   readonly artId: string;
   /** 是否已确认源 PNG 存在（导入期核对，不做运行时探测）。 */
@@ -194,6 +196,10 @@ export interface AttackAffliction {
 }
 
 export interface CardMarks {
+  /** One granted concealment charge, consumed by a physical card hit and cleared on departure. */
+  grantedConcealment?: boolean;
+  /** Timed silence expires after this complete recipient host action. */
+  silenceUntil?: number;
   concealmentUsed?: boolean;
   /** Removed from the discard zone by devour; not available to soulReturn. */
   devoured?: boolean;

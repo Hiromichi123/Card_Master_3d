@@ -20,6 +20,18 @@ export function readyCardIds(state: BattleState, side: SideId): string[] {
   return state.zones[side].prep.filter((id): id is string =>
     id !== null && (state.instances[id]?.cd ?? 1) <= 0);
 }
+/** Excludes ending/skipping: only actions which can actually change cards count. */
+export function hasUsableBattleAction(state: BattleState): boolean {
+  if (state.outcome || !['awaitingPlay', 'awaitingResponse'].includes(state.phase)) return false;
+  const side = inputSideOf(state), zones = state.zones[side];
+  if (insertionSlots(state, side).length && readyCardIds(state, side).length) return true;
+  if (state.phase !== 'awaitingPlay') return false;
+  if (state.cardsPlayedThisTurn < state.rules.cardsPerTurn && zones.prep.includes(null)
+    && zones.hand.some(id => !isCooldownCard(state.instances[id]?.definitionId ?? ''))) return true;
+  return zones.hand.some(id => isCooldownCard(state.instances[id]?.definitionId ?? ''))
+    && zones.prep.some(id => id !== null && (state.instances[id]?.cd ?? 0) > 0);
+}
+
 export function insertionSlots(state: BattleState, side: SideId): number[] {
   const count = state.zones[side].battle.filter(Boolean).length;
   return count < state.rules.battleSlots ? Array.from({ length: count + 1 }, (_, i) => i) : [];

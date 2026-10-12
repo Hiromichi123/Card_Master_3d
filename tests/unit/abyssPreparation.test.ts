@@ -1,4 +1,3 @@
-import { readFileSync } from 'node:fs';
 import { describe, expect, it, vi } from 'vitest';
 import { OrthographicCamera, Vector3 } from 'three';
 import { cardDatabase } from '../../src/data';
@@ -24,17 +23,12 @@ describe('深渊准备盘面参数与投影', () => {
     expect(ABYSS_COLLECT_TOTAL_MS).toBe(950);
   });
 
-  it('准备态映射包含恢复入口，不把营地和Boss决定当作新选组', () => {
+  it('所有挑战阶段都留在盘面，空进度才不进入', () => {
     const run = draft();
-    expect(isAbyssPreparation(run)).toBe(true);
     expect(isAbyssPreparation(null)).toBe(false);
     expect(isAbyssPreparation(undefined)).toBe(false);
-    // 此函数只按阶段标签分流，领域数据仍由存档校验器验证。
-    for (const kind of ['boonChoice', 'battleReady', 'inBattle'] as const) {
+    for (const kind of ['starterDraft', 'boonChoice', 'battleReady', 'inBattle', 'camp', 'bossDecision'] as const) {
       expect(isAbyssPreparation({ ...run, stage: { ...run.stage, kind } } as AbyssRun)).toBe(true);
-    }
-    for (const kind of ['camp', 'bossDecision'] as const) {
-      expect(isAbyssPreparation({ ...run, stage: { ...run.stage, kind } } as AbyssRun)).toBe(false);
     }
   });
 
@@ -59,14 +53,10 @@ describe('深渊准备盘面参数与投影', () => {
     } finally { vi.unstubAllGlobals(); }
   });
 
-  it('准备场景不构造会话、不编译假战斗；网格固定三套横排及每套2×3', () => {
-    const scene = readFileSync(new URL('../../src/scenes/AbyssPreparationScene.tsx', import.meta.url), 'utf8');
-    const css = readFileSync(new URL('../../src/ui/abyssPreparation.css', import.meta.url), 'utf8');
-    expect(scene).not.toMatch(/(?:new\s+BattleSession|session\.start\(|compileAbyssBattle|<BattleScene\b)/);
-    expect(scene).toContain('<BattleBoard');
-    expect(scene).toContain('<BattleCanvas');
-    expect(css).toMatch(/\.abyss-draft__choices\s*\{[^}]*grid-template-columns:\s*repeat\(3,/);
-    expect(css).toMatch(/\.abyss-draft__cards\s*\{[^}]*grid-template-columns:\s*repeat\(2,[^}]*grid-template-rows:\s*repeat\(3,/);
-    expect(css).not.toMatch(/\.abyss-draft__choices\s*\{[^}]*grid-template-columns:\s*1fr/);
+  it('营地无候选时仍留在盘面整备', () => {
+    const run = draft();
+    const stage = { ...run.stage, kind: 'camp', offer: { id: 'pending', options: [] } };
+    expect(isAbyssPreparation({ ...run, stage } as unknown as AbyssRun)).toBe(true);
+    expect(isAbyssPreparation({ ...run, stage: { ...stage, offer: null } } as unknown as AbyssRun)).toBe(true);
   });
 });

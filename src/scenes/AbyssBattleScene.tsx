@@ -3,46 +3,33 @@ import type { BattleOutcome } from '../domain/battle/types';
 import type { AbyssEncounter, AbyssRun } from '../domain/progression/abyssTypes';
 import { abyssStateToken, planAbyssAction } from '../domain/progression/abyssRun';
 import type { ProfileStore } from '../state/createProfileStore';
+import { AbyssTraitCards } from '../ui/AbyssTraitCards';
+import { abyssEffectGrade, abyssEffectLevel } from '../domain/progression/abyssGrades';
 import { BattleScene } from './BattleScene';
 import { compileAbyssBattle } from './abyssBattle';
+import { useForegroundTimeout } from '../ui/useForegroundTimeout';
+import { useSharedBattleSurface } from '../rendering/battle/SharedBattleSurfaceContext';
 
-/** 挂载期间冻结开场快照；保存战果不提前卸载正在播放的战斗。 */
-export function AbyssBattleScene({ run, battle, store, onReturn }: {
-  readonly run: AbyssRun;
-  readonly battle: AbyssEncounter;
-  readonly store: ProfileStore;
-  readonly onReturn: () => void;
+/** Keep the battle immutable through its final animation, then clear the table for settlement. */
+export function AbyssBattleScene({ run, battle, store: _store, onReturn, onRules }: {
+  readonly run: AbyssRun; readonly battle: AbyssEncounter; readonly store: ProfileStore;
+  readonly onReturn: (outcome?: BattleOutcome) => void;
+  readonly onRules?: (() => void) | undefined;
 }) {
+  const sharedSurface = useSharedBattleSurface();
+  const [departing, setDeparting] = useState<BattleOutcome | null>(null);
   const [compiled] = useState(() => compileAbyssBattle(run, battle));
-  const [status, setStatus] = useState<'playing' | 'saving' | 'saved' | 'failed'>('playing');
-  const [error, setError] = useState('');
-  const [outcome, setOutcome] = useState<BattleOutcome | null>(null);
-  const result = useRef<BattleOutcome | null>(null);
-  const saving = useRef(false);
-  const saved = useRef(false);
-  const alive = useRef(true);
-  useEffect(() => { alive.current = true; return () => { alive.current = false; }; }, []);
-  const persist = useCallback(async () => {
-    if (!result.current || saving.current || saved.current) return;
-    saving.current = true;
-    setStatus('saving'); setError('');
-    const current = store.getSnapshot().profile;
-    if (!current) { saving.current = false; setStatus('failed'); setError('存档尚未就绪'); return; }
-    const action = { kind: 'settle' as const, expectedToken: abyssStateToken(current), battleId: battle.battleId, outcome: result.current };
-    const response = await store.commitEconomic(profile => planAbyssAction(profile, action, Date.now()));
-    saving.current = false;
-    if (response.ok) saved.current = true;
-    if (!alive.current) return;
-    setStatus(response.ok ? 'saved' : 'failed');
-    if (!response.ok) setError(response.message);
-  }, [battle.battleId, store]);
-  const finish = useCallback((value: BattleOutcome) => {
-    if (result.current) return;
-    result.current = value; setOutcome(value); void persist();
-  }, [persist]);
+  const result = useRef<BattleOutcome | null>(null), returned = useRef(false);
+  const finish = useCallback((value: BattleOutcome) => { if (!result.current) result.current = value; }, []);
+  const returnForSettlement = useCallback((value: BattleOutcome) => {
+    if (returned.current) return;
+    returned.current = true;
+    setDeparting(result.current ?? value);
+  }, [onReturn]);
+  useForegroundTimeout(!!departing, 450, () => { if (departing) onReturn(departing); });
   const leave = useCallback(() => {
-    if (result.current && !saved.current) return;
-    if (saved.current || window.confirm('离开后保留深渊进度；继续时会从同一敌人、同一增益的本战开场重新挑战。确定返回？')) onReturn();
+    if (result.current) return; // The completed animation owns the handoff.
+    if (window.confirm('离开后保留深渊进度；继续时从同一敌人、同一契约的本战开场重新挑战。确定返回？')) onReturn();
   }, [onReturn]);
   useEffect(() => {
     const keyboard = (event: KeyboardEvent) => {
@@ -53,23 +40,65 @@ export function AbyssBattleScene({ run, battle, store, onReturn }: {
     return () => document.removeEventListener('keydown', keyboard);
   }, [leave]);
   const pair = battle.boonChoices[battle.selectedBoon ?? -1];
-  return <div className="abyss-battle">
-    <BattleScene tableThemeId="abyss" config={compiled.config} definitions={compiled.definitions} autoStart allowRematch={false}
-      onOutcome={finish} onLeave={leave} onExit={leave} leaveLabel="返回深渊" exitLabel="返回深渊"
-      exitDisabled={status === 'saving' || status === 'failed'}
+  const [effectsOpen, setEffectsOpen] = useState(false);
+  return <div className="abyss-battle" data-shared={!!sharedSurface} data-ending={!!departing}>
+    {onRules && <button className="abyss-battle__rules" type="button" onClick={onRules}>规则讲解</button>}
+    <BattleScene clearing={!!departing} tableThemeId="abyss" config={compiled.config} definitions={compiled.definitions} autoStart allowRematch={false}
+      onOutcome={finish} onFinished={returnForSettlement} onLeave={leave} onExit={leave}
+      leaveLabel="返回深渊" exitLabel="返回深渊"
       resultPanel={<section className="abyss-battle__result" aria-label="深渊战果">
-        <h2>{outcome?.kind === 'win' && outcome.winner === 'player' ? '胜利 · 营地已开启' : outcome?.kind === 'draw' ? '平局' : '挑战失败'}</h2>
-        <p>{status === 'saving' ? '正在保存战果，请稍候…' : status === 'saved' ? '生命、深渊币与培养机会已保存。' : '战果尚未保存，不能离开或重打。'}</p>
-        {error && <p role="alert">{error}</p>}
-        {status === 'failed' && <button type="button" onClick={() => { void persist(); }}>重试保存</button>}
-        <button type="button" disabled={status !== 'saved'} onClick={onReturn}>返回深渊</button>
+        <h2>清空盘面并结算…</h2>
+        <button type="button" onClick={() => { if (result.current) returnForSettlement(result.current); }}>前往奖励盘面</button>
       </section>} />
-    <details className="abyss-battle__effects"><summary>本战特性 · {battle.floor}-{battle.encounter}</summary>
-      <p>己方正面：{pair?.positive.description}</p><p>绑定负面：{pair?.negative.description}</p>
-      <p>敌方：{battle.enemyEffect.description}</p><small>仅本战有效，包含召唤与复活单位，不写回培养牌库。</small>
+    <details className="abyss-battle__effects" onToggle={event => setEffectsOpen(event.currentTarget.open)}>
+      <summary>本战特性 · {battle.floor}-{battle.encounter}</summary>
+      {effectsOpen && <AbyssTraitCards items={[
+        ...(pair ? [pair.positive, pair.negative] : []), battle.enemyEffect,
+      ].map((effect, index) => ({ id: `${index}:${effect.id}`, name: effect.name,
+        description: effect.description, tone: effect.polarity, icon: effect.modifier.traits[0]?.family ?? effect.id.split('-')[0]!, grade: abyssEffectGrade(effect), level: abyssEffectLevel(effect),
+        footer: index === 2 ? '敌方全体 · 本战有效' : '己方全体 · 本战有效' }))} />}
     </details>
-    {(status === 'saving' || status === 'failed') && <div className="abyss-battle__save" role="status">
-      {status === 'saving' ? '保存战果中…' : <>{error}<button type="button" onClick={() => { void persist(); }}>重试保存</button></>}
-    </div>}
   </div>;
+}
+
+/** Mounted over a cleared reward table after the final battle animation. */
+export function AbyssSettlement({ store, battleId, outcome, onSaved }: {
+  readonly store: ProfileStore; readonly battleId: string; readonly outcome: BattleOutcome; readonly onSaved: () => void;
+}) {
+  const [status, setStatus] = useState<'waiting' | 'saving' | 'failed'>('waiting');
+  const [error, setError] = useState('');
+  const saving = useRef(false), saved = useRef(false), alive = useRef(true);
+  const latestSaved = useRef(onSaved); latestSaved.current = onSaved;
+  const persist = useCallback(async () => {
+    if (saving.current || saved.current) return;
+    const current = store.getSnapshot().profile;
+    if (!current) { setStatus('failed'); setError('存档尚未就绪'); return; }
+    // If already persisted during a prior mount, do not grant the reward again.
+    if (current.abyss.run?.lastSettledBattleId === battleId
+      || current.abyss.history.some(entry => `${entry.runId}/battle/${entry.floor}/${entry.encounter}` === battleId)) {
+      saved.current = true; latestSaved.current(); return;
+    }
+    saving.current = true; setStatus('saving'); setError('');
+    const action = { kind: 'settle' as const, expectedToken: abyssStateToken(current), battleId, outcome };
+    const response = await store.commitEconomic(profile => planAbyssAction(profile, action, Date.now()));
+    saving.current = false;
+    if (response.ok) saved.current = true;
+    if (!alive.current) return;
+    if (response.ok) latestSaved.current();
+    else { setStatus('failed'); setError(response.message); }
+  }, [store, battleId, outcome]);
+  useEffect(() => {
+    alive.current = true;
+    let second = 0;
+    // Paint the cleared table first, including in reduced-motion mode.
+    const first = requestAnimationFrame(() => { second = requestAnimationFrame(() => { void persist(); }); });
+    return () => { alive.current = false; cancelAnimationFrame(first); cancelAnimationFrame(second); };
+  }, [persist]);
+  return <section className="abyss-settlement" aria-label="盘面战果结算" aria-busy={status !== 'failed'}>
+    <small>第 {battleId.split('/').slice(-2).join('-')} 战 · 深渊盘面</small>
+    <h1>{outcome.kind === 'win' && outcome.winner === 'player' ? '胜利' : outcome.kind === 'draw' ? '平局' : '挑战失利'}</h1>
+    <p role="status">{status === 'waiting' ? '正在清理盘面…' : status === 'saving' ? '结算深渊币与本局奖励…' : '战果未保存，请重试'}</p>
+    {error && <p role="alert">{error}</p>}
+    {status === 'failed' && <button type="button" onClick={() => { void persist(); }}>重试结算</button>}
+  </section>;
 }

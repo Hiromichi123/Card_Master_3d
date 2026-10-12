@@ -1,4 +1,9 @@
+import { cardDatabase } from '../data';
+import { AiWorkerClient } from '../services/ai/AiWorkerClient';
+import { useAiModelStore } from '../state/aiModelStore';
+import { normalizeAiSettings } from '../domain/battle/ai/types';
 import type { ThreeEvent } from '@react-three/fiber';
+import { BattleActorExit } from '../rendering/battle/BattleActorExit';
 import { BattleCanvas } from '../rendering/battle/BattleCanvas';
 import { BattleVisualContext, useBattleVisuals } from '../rendering/battle/battleVisuals';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
@@ -47,6 +52,7 @@ import { WebGLGuard } from './WebGLGuard';
  * 而且和悬停框显示的是同一份内容（`V-CARD-6` 的悬停那一半仍然成立）。
  */
 export interface BattleSceneProps {
+  readonly clearing?: boolean;
   /** 独立模式只覆盖本次战斗的台面，退出后恢复玩家设置。 */
   readonly tableThemeId?: string | undefined;
   /**
@@ -83,6 +89,7 @@ export interface BattleSceneProps {
 
 export function BattleScene({
   tableThemeId,
+  clearing = false,
   config = DEMO_CONFIG,
   definitions,
   settlement = null,
@@ -116,9 +123,22 @@ export function BattleScene({
         },
         // 命中/死亡的音效由导演在演出节点回调；这里只把出口接上
         sound: (cue) => audioEngine.play(cue),
-      }, { localMultiplayer, autoEnemy, onOutcome: (outcome) => outcomeCallback.current?.(outcome) }),
+      }, { localMultiplayer, autoEnemy, onOutcome: (outcome) => outcomeCallback.current?.(outcome),
+        aiDriver:new AiWorkerClient(), aiCatalogue:cardDatabase.definitions,
+        readAiSettings:()=>{const s=useSettingsStore.getState();return normalizeAiSettings({difficulty:s.aiDifficulty,style:s.aiStyle,policy:s.aiPolicy});},
+        readAiModel:()=>useAiModelStore.getState().model,
+        readSkipTurnEnd:()=>useSettingsStore.getState().skipTurnEnd,
+      }),
   );
   const snapshot = useBattleSession(session);
+  useEffect(()=>{
+    const settings=useSettingsStore.subscribe((next,prev)=>{
+      if(next.skipTurnEnd!==prev.skipTurnEnd)session.refreshTurnPreferences();
+      if(next.aiDifficulty!==prev.aiDifficulty||next.aiStyle!==prev.aiStyle||next.aiPolicy!==prev.aiPolicy)session.refreshAiPreferences();
+    });
+    const model=useAiModelStore.subscribe((next,prev)=>{if(next.model!==prev.model)session.refreshAiPreferences();});
+    return ()=>{settings();model();};
+  },[session]);
   const [deckTotals] = useState(() => ({ player: config.playerDeck.length, enemy: config.enemyDeck.length }));
   useEffect(() => {
     if (autoStart && session.getSnapshot().runId === 0) session.start();
@@ -140,7 +160,7 @@ export function BattleScene({
     }
   }, [snapshot.mode, snapshot.outcome, onFinished]);
 
-  useEffect(() => () => session.dispose(), [session]);
+  useEffect(() => {session.resume();return () => session.dispose();}, [session]);
 
   /** 开一场新局就播一次发牌动画；播完自己收掉。 */
   const [dealing, setDealing] = useState(false);
@@ -241,6 +261,7 @@ export function BattleScene({
             session.select(null);
           }}
         >
+          <BattleActorExit clearing={clearing}>
           {/*
             所有靠 useFrame 跑的系统组件都必须排在 <PostEffects> **之前**。
             实测：@react-three/postprocessing 的 EffectComposer 一旦挂载，
@@ -278,13 +299,14 @@ export function BattleScene({
             <DepartingCard key={proxy.instanceId} proxy={proxy} definitions={session.authoritative.definitions} />
           ))}
 
+          </BattleActorExit>
         </BattleCanvas>
 
         {snapshot.mode === 'battle' && (
           <BattleHud
             snapshot={snapshot}
             onEndTurn={() => session.endTurn()}
-            onChoosePriority={(order) => session.choosePriority(order)}
+            onConcede={(side) => session.concede(side)}
             onSkipPerformance={() => session.skipPerformance()}
             onAutoEnemyChange={(on) => session.setAutoEnemy(on)}
             exitDisabled={exitDisabled}

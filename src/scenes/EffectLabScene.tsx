@@ -95,6 +95,10 @@ const TEMPLATE_LABELS: { id: EffectTemplateId; label: string; family?: string }[
   { id: 'flow', label: '至高之作 · 召唤流光', family: 'masterpiece' },
   { id: 'flow', label: '召唤狐灵 · 召唤流光', family: 'foxSpiritSummon' },
   { id: 'deathBombard', label: '爆裂n · 对位炮击', family: 'alignedDeathBlast' },
+  { id: 'flow', label: '隐匿赋予', family: 'grantConcealment' },
+  { id: 'silence', label: '全体沉默', family: 'groupSilence' },
+  { id: 'shield', label: '刺甲', family: 'thornArmor' },
+  { id: 'deathBurst', label: '粉碎', family: 'crushWaiting' },
   { id: 'armorBreak', label: '闪避赋予', family: 'grantDodge' },
   { id: 'shield', label: '法术反弹', family: 'spellReflect' },
   { id: 'normalAttack', label: '伤害n', family: 'directDamage' },
@@ -260,7 +264,7 @@ export function EffectLabScene() {
     () =>
       [...new Set([...slice.cards.map((entry) => entry.cardId),
         ...cardDatabase.definitions.filter((card) => card.skills.some((skill) =>
-          ['ranged', 'piercing', 'bombard', 'groupBombard', 'explodeOnDeath', 'instantDeath', 'spellReflect', 'grantDodge', 'directDamage', 'groupPhysicalDamage', 'slash', 'groupSlash', 'swordDance', 'groupSwordDance', 'sacrifice', 'execute', 'teleport', 'groupPiercing', 'criticalCollapse', 'unyielding', 'concealment', 'firstStrike', 'devour', 'masterpiece', 'foxSpiritSummon', 'alignedDeathBlast', 'vanguard', 'lethalStrike', 'antiAir', 'groupGround', 'siege', 'berserk', 'splash', 'groupDelay', 'severeFrost', 'burning', 'venom', 'bleeding', 'grievousWound', 'poisonCloud'].includes(skill.family ?? ''))).map((card) => card.cardId)])]
+          ['grantConcealment', 'groupSilence', 'thornArmor', 'crushWaiting', 'ranged', 'piercing', 'bombard', 'groupBombard', 'explodeOnDeath', 'instantDeath', 'spellReflect', 'grantDodge', 'directDamage', 'groupPhysicalDamage', 'slash', 'groupSlash', 'swordDance', 'groupSwordDance', 'sacrifice', 'execute', 'teleport', 'groupPiercing', 'criticalCollapse', 'unyielding', 'concealment', 'firstStrike', 'devour', 'masterpiece', 'foxSpiritSummon', 'alignedDeathBlast', 'vanguard', 'lethalStrike', 'antiAir', 'groupGround', 'siege', 'berserk', 'splash', 'groupDelay', 'severeFrost', 'burning', 'venom', 'bleeding', 'grievousWound', 'poisonCloud'].includes(skill.family ?? ''))).map((card) => card.cardId)])]
         .map((id) => cardById.get(id))
         .filter((card): card is CardDefinition => card !== undefined),
     [],

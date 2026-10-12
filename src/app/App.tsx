@@ -454,7 +454,7 @@ function Screen({
     case 'activity':
       return <ActivityScene profile={profile} onNavigate={onNavigate} />;
     case 'abyss':
-      return <AbyssScene store={store} onNavigate={onNavigate} preDarkened={abyssPreDarkened} />;
+      return <AbyssScene store={store} playerName={playerName} onNavigate={onNavigate} preDarkened={abyssPreDarkened} />;
     case 'settings':
       return <SettingsScene profile={profile} store={store} onNavigate={onNavigate} />;
     default:

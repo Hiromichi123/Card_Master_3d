@@ -2,6 +2,7 @@ import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { cardDatabase } from '../data';
 import { leaderboardEntries, leaderboardPage, type LeaderboardKind } from '../domain/progression/leaderboard';
+import { abyssClearedLabel } from '../domain/progression/abyssRanking';
 import { ladderTier } from '../domain/progression/ladder';
 import type { ProfileState } from '../domain/progression/types';
 import './leaderboard.css';
@@ -9,16 +10,17 @@ import './leaderboard.css';
 export interface LeaderboardModalProps {
   readonly profile: ProfileState;
   readonly playerName?: string;
+  readonly initialKind?: LeaderboardKind;
   readonly onClose: () => void;
 }
 
-const TABS = [{ id: 'ladder', label: '天梯榜' }, { id: 'collection', label: '收藏榜' }] as const;
+const TABS = [{ id: 'ladder', label: '天梯榜' }, { id: 'collection', label: '收藏榜' }, { id: 'abyss', label: '深渊榜' }] as const;
 
-export function LeaderboardModal({ profile, playerName = '当前玩家', onClose }: LeaderboardModalProps) {
+export function LeaderboardModal({ profile, playerName = '当前玩家', initialKind = 'ladder', onClose }: LeaderboardModalProps) {
   const dialog = useRef<HTMLDialogElement>(null);
   const backdropPress = useRef(false);
   const id = useId();
-  const [kind, setKind] = useState<LeaderboardKind>('ladder');
+  const [kind, setKind] = useState<LeaderboardKind>(initialKind);
   const [requestedPage, setRequestedPage] = useState(1);
   const entries = useMemo(() => leaderboardEntries(profile, cardDatabase.definitions, playerName), [profile, playerName]);
   const result = useMemo(() => leaderboardPage(entries, kind, requestedPage), [entries, kind, requestedPage]);
@@ -69,20 +71,20 @@ export function LeaderboardModal({ profile, playerName = '当前玩家', onClose
       </div>
       <div className="leaderboard__content" id={`${id}-panel`} role="tabpanel" aria-labelledby={`${id}-${kind}`} tabIndex={0}>
         <table className="leaderboard__table">
-          <caption className="leaderboard__caption">{kind === 'ladder' ? '天梯积分降序，积分相同按固定账号编号排列' : '收藏拥有率降序，按完整卡库不同卡种计算，重复卡不增加比例'}</caption>
+          <caption className="leaderboard__caption">{kind === 'ladder' ? '天梯积分降序，积分相同按固定账号编号排列' : kind === 'collection' ? '收藏拥有率降序，按完整卡库不同卡种计算，重复卡不增加比例' : '最高通关进度降序，同进度按该轮胜场降序，最后按固定账号编号排列'}</caption>
           <thead><tr><th scope="col">排名</th><th scope="col">账号</th>
-            <th scope="col">{kind === 'ladder' ? '段位' : '已拥有 / 卡库'}</th>
-            <th scope="col">{kind === 'ladder' ? '积分' : '拥有率'}</th></tr></thead>
+            <th scope="col">{kind === 'ladder' ? '段位' : kind === 'abyss' ? '最高通关' : '已拥有 / 卡库'}</th>
+            <th scope="col">{kind === 'ladder' ? '积分' : kind === 'abyss' ? '该轮胜场' : '拥有率'}</th></tr></thead>
           <tbody>{result.rows.map(entry => <tr key={entry.id} data-self={entry.isSelf} data-entry-id={entry.id}>
             <td><span className="leaderboard__rank" data-podium={entry.rank <= 3}>{entry.rank <= 3 ? '✦ ' : ''}{entry.rank}</span></td>
             <th scope="row"><span className="leaderboard__name">{entry.name}</span><small>{entry.isSelf ? '我' : '虚拟'}</small></th>
-            <td>{kind === 'ladder' ? ladderTier(entry.points).title : `${entry.owned} / ${entry.total}`}</td>
-            <td className="leaderboard__value">{kind === 'ladder' ? entry.points : `${(entry.ratio * 100).toFixed(2)}%`}</td>
+            <td>{kind === 'ladder' ? ladderTier(entry.points).title : kind === 'abyss' ? abyssClearedLabel(entry.abyssCleared ?? 0) : `${entry.owned} / ${entry.total}`}</td>
+            <td className="leaderboard__value">{kind === 'ladder' ? entry.points : kind === 'abyss' ? entry.abyssWins ?? 0 : `${(entry.ratio * 100).toFixed(2)}%`}</td>
           </tr>)}</tbody>
         </table>
       </div>
       <footer className="leaderboard__footer">
-        <p>{kind === 'collection' ? '仅统计完整卡库的不同卡种，含活动卡；重复卡不增加拥有率。' : '匹配暂未开放；虚拟账号仅用于本地排行榜展示。'}</p>
+        <p>{kind === 'collection' ? '仅统计完整卡库的不同卡种，含活动卡；重复卡不增加拥有率。' : kind === 'abyss' ? '本人最佳战绩永久保存；旧存档按能够确认的已通关进度补录。虚拟账号用于本地展示。' : '匹配暂未开放；虚拟账号仅用于本地排行榜展示。'}</p>
         <nav aria-label="排行榜分页">
           <button type="button" disabled={result.page <= 1} onClick={() => setRequestedPage(result.page - 1)}>上一页</button>
           <span>{result.page} / {result.pages}</span>

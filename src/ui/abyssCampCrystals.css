@@ -1,0 +1,44 @@
+@layer controls {
+  .abyss-choice-scene .abyss-camp-nav.abyss-camp-crystals,
+  .abyss-run .abyss-camp-nav.abyss-camp-crystals {
+    position:absolute;z-index:32;left:50%;right:auto;bottom:max(12px,env(safe-area-inset-bottom));transform:translateX(-50%);
+    width:min(720px,88vw);display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;
+    padding:0;border:0;background:transparent;box-shadow:none;pointer-events:none;
+  }
+  .abyss-camp-crystals>.abyss-home-crystals { position:absolute;inset:-12px -10px 24px;z-index:0;pointer-events:none; }
+  .abyss-camp-crystals>.abyss-home-crystals>div { width:100%;height:100%; }
+  .abyss-choice-scene .abyss-camp-nav.abyss-camp-crystals>button.abyss-camp-crystals__option,
+  .abyss-run .abyss-camp-nav.abyss-camp-crystals>button.abyss-camp-crystals__option {
+    position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:4px;
+    min-height:0;height:auto;width:100%;padding:0 2px;overflow:visible;isolation:auto;border:0;border-radius:0;background:transparent;
+    box-shadow:none;filter:none;translate:none;animation:none;pointer-events:auto;transition:none;color:#ead2a2;
+  }
+  .abyss-camp-crystals__anchor { display:block;width:100%;height:clamp(100px,14vh,138px); }
+  .abyss-camp-crystals__option>strong { position:absolute;top:calc(clamp(100px,14vh,138px) / 2 - 10px);left:0;right:0;
+    text-align:center;font:bold 18px SimSun,serif;color:#edce91;letter-spacing:.04em;text-shadow:0 2px 5px #150b20; }
+  .abyss-camp-crystals[data-crystals-ready="true"] .abyss-camp-crystals__option>strong {
+    width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip-path:inset(50%);white-space:nowrap;
+  }
+  .abyss-camp-crystals__option>small { display:block;min-height:24px;max-width:160px;color:#ceb7da;line-height:1.5;font-size:11px;text-align:center; }
+  .abyss-camp-crystals__option:first-of-type>small { color:#dca5b8; }
+  .abyss-choice-scene .abyss-camp-nav.abyss-camp-crystals>button:is(:hover,:active,:focus-visible,:disabled),
+  .abyss-run .abyss-camp-nav.abyss-camp-crystals>button:is(:hover,:active,:focus-visible,:disabled) {
+    border:0;outline:0;background:transparent;box-shadow:none;filter:none;translate:none;opacity:1;
+  }
+  .abyss-camp-crystals__option:disabled>small { opacity:.4; }
+  .abyss-camp-crystals__option:disabled>strong { opacity:.45; }
+  .abyss-camp-crystals__option:focus-visible>small,.abyss-camp-crystals__option[aria-pressed="true"]>small { color:#f0d49c;text-decoration:underline;text-underline-offset:3px; }
+  .abyss-choice-scene .abyss-camp-nav.abyss-camp-crystals>button::before,
+  .abyss-choice-scene .abyss-camp-nav.abyss-camp-crystals>button::after,
+  .abyss-run .abyss-camp-nav.abyss-camp-crystals>button::before,
+  .abyss-run .abyss-camp-nav.abyss-camp-crystals>button::after { display:none;content:none; }
+  @media(max-width:700px), (max-height:650px) {
+    .abyss-choice-scene .abyss-camp-nav.abyss-camp-crystals,.abyss-run .abyss-camp-nav.abyss-camp-crystals { width:min(640px,94vw);gap:4px;bottom:8px; }
+    .abyss-camp-crystals__anchor { height:96px; }
+    .abyss-camp-crystals__option>strong { top:38px;font-size:15px; }
+    .abyss-camp-crystals__option>small { font-size:10px;min-height:20px; }
+  }
+}
+@layer controls {
+  .abyss-choice-scene:not([data-transition="none"]) .abyss-camp-nav.abyss-camp-crystals>button { pointer-events:none; }
+}

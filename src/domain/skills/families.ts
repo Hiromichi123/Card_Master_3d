@@ -194,6 +194,10 @@ export const SKILL_FAMILIES = [
   { id: 'masterpiece', sourceName: '至高之作', category: 'copy', hasParam: false, purity: 'scene', summary: '上场时在己方第一个空战斗槽召唤独立的 A+_006 蒸汽艺术，满场跳过' },
   { id: 'vanguard', sourceName: '先锋', category: 'special', hasParam: false, purity: 'declarative', summary: '在场且 HP>0 时优先替友方承受可命中的普通攻击，多先锋按槽位择一，不递归转移' },
   { id: 'lethalStrike', sourceName: '必杀n', category: 'special', hasParam: true, purity: 'scene', summary: '攻击前以 20%−10%×0.5^(n−1) 概率直接击杀对位，成功时播放即死动画' },
+  {id:'grantConcealment',sourceName:'隐匿赋予n',category:'buff',hasParam:true,purity:'pure',summary:'攻击前随机给至多n张不同在场友方各赋予一次隐匿，持续至消耗或离场'},
+  {id:'groupSilence',sourceName:'全体沉默n',category:'special',hasParam:true,purity:'pure',summary:'攻击前令当前敌方全体在场卡沉默n个完整自身回合，期限不随换位或施法者离场取消'},
+  {id:'thornArmor',sourceName:'刺甲n',category:'afterAttack',hasParam:true,purity:'pure',summary:'受到普攻时获得防御n，实际命中后反伤n；完全减免也反伤，闪避或隐匿不反伤'},
+  {id:'crushWaiting',sourceName:'粉碎',category:'deckPrep',hasParam:false,purity:'pure',summary:'攻击前清除敌方等待区全部自毁卡，直接入弃牌并重置，不触发任何特性'},
 ] as const satisfies readonly SkillFamily[];
 
 export type SkillFamilyId = (typeof SKILL_FAMILIES)[number]['id'];
@@ -216,7 +220,7 @@ export const LEGACY_FAMILY_COUNT = 35;
  * 所以它不再是 35——两个数不一样是**预期**，不是漂移。
  * 新加族时把它加进这个数组，`EXPECTED_FAMILY_COUNT` 会跟着走。
  */
-export const EXTRA_FAMILY_IDS = ['holyShield', 'ranged', 'piercing', 'directDamage', 'instantDeath', 'spellReflect', 'grantDodge', 'groupPhysicalDamage', 'slash', 'groupSlash', 'swordDance', 'groupSwordDance', 'sacrifice', 'execute', 'teleport', 'groupPiercing', 'criticalCollapse', 'unyielding', 'splash', 'groupDelay', 'severeFrost', 'burning', 'venom', 'bleeding', 'grievousWound', 'poisonCloud', 'antiAir', 'groupGround', 'siege', 'concealment', 'firstStrike', 'devour', 'masterpiece', 'vanguard', 'lethalStrike', 'alignedDeathBlast', 'foxSpiritSummon'] as const;
+export const EXTRA_FAMILY_IDS = ['holyShield', 'ranged', 'piercing', 'directDamage', 'instantDeath', 'spellReflect', 'grantDodge', 'groupPhysicalDamage', 'slash', 'groupSlash', 'swordDance', 'groupSwordDance', 'sacrifice', 'execute', 'teleport', 'groupPiercing', 'criticalCollapse', 'unyielding', 'splash', 'groupDelay', 'severeFrost', 'burning', 'venom', 'bleeding', 'grievousWound', 'poisonCloud', 'antiAir', 'groupGround', 'siege', 'concealment', 'firstStrike', 'devour', 'masterpiece', 'vanguard', 'lethalStrike', 'alignedDeathBlast', 'foxSpiritSummon', 'grantConcealment', 'groupSilence', 'thornArmor', 'crushWaiting'] as const;
 
 /** 表里应有的族数。 */
 export const EXPECTED_FAMILY_COUNT = LEGACY_FAMILY_COUNT + EXTRA_FAMILY_IDS.length;

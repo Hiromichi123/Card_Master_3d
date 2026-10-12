@@ -19,6 +19,7 @@ import { mazeProgressToken } from './mazeProgress';
 import { canCheckIn, STORY_NODE_PATTERN } from './rewardState';
 import { LADDER_REWARDS } from './ladderRewards';
 import { abyssStateToken } from './abyssRun';
+import { validAbyssRewardTransaction } from './abyssRewards';
 import { validateAbyssState } from './abyssValidation';
 import type { EconomyTransaction, ProfileState } from './types';
 
@@ -88,12 +89,18 @@ export function applyEconomyTransaction(
   if (tx.abyssUpdate) {
     const update = tx.abyssUpdate;
     if (update.expectedToken !== abyssStateToken(profile) || update.state.revision !== profile.abyss.revision + 1
-      || Object.keys(tx.currencyDelta).length > 0 || Object.keys(tx.inventoryDelta).length > 0
+      || !validateAbyssState(update.state) || !validAbyssRewardTransaction(profile.abyss, update.state, tx)
       || tx.rewardClaim || tx.ladderRewardClaim || tx.settleBattleId || tx.clearStageId || tx.xpDelta !== undefined
       || tx.soldOutAdditions || tx.mazeUpdate || tx.mazeSoldOut || tx.mazeShopExpected || tx.mazeShopRefresh
-      || !validateAbyssState(update.state)) return unchanged('abyssStateChanged');
-    return { profile: { ...profile, revision: profile.revision + 1, abyss: update.state }, applied: true, levelsGained: 0 };
+      ) return unchanged('abyssStateChanged');
+    const currencies = Object.keys(tx.currencyDelta).length === 0 ? profile.currencies : { ...profile.currencies, gold: profile.currencies.gold + (tx.currencyDelta.gold ?? 0), crystal: profile.currencies.crystal + (tx.currencyDelta.crystal ?? 0) };
+    const inventory = Object.keys(tx.inventoryDelta).length === 0 ? profile.inventory : addToInventory(profile.inventory, tx.inventoryDelta);
+    if (!Object.values(currencies).every(n => Number.isSafeInteger(n) && n >= 0)
+      || !Object.values(inventory).every(n => Number.isSafeInteger(n) && n > 0)) return unchanged('abyssStateChanged');
+    return { profile: { ...profile, revision: profile.revision + 1, abyss: update.state, currencies, inventory }, applied: true, levelsGained: 0 };
   }
+
+  if (tx.abyssReward) return unchanged('abyssStateChanged');
 
   // 1. 持久去重：同一局只能结算一次。刷新、重渲染、来回切路由都走这一条
   if (tx.settleBattleId && profile.settledBattleIds.includes(tx.settleBattleId)) {

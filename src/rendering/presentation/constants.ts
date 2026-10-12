@@ -36,6 +36,7 @@ export const EVENT_BEAT: Partial<Record<BattleEvent['type'], number>> = {
   SlotCompacted: 0.12,
   CooldownChanged: 0.1,
   TurnEnded: 0.24,
+  AutoEvolutionChanged: 0,
   BattleEnded: 0.2,
 };
 

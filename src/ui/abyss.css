@@ -87,7 +87,7 @@
   @media (max-width: 850px) { .abyss-home { top: 30%; }.abyss-home__buttons { grid-template-columns: repeat(2, 1fr); }.abyss-starters { grid-template-columns: 1fr; }.abyss-boons { gap: 8px; }.abyss-boon > span { padding: 14px; }.abyss-run { padding: 16px; }.abyss-growth__options { grid-template-columns: 1fr; } }
   @media (max-height: 620px) { .abyss-home { top: 25%; }.abyss-home h1 { font-size: 28px; }.abyss-home__buttons { margin-top: 12px; }.abyss-home__buttons > .abyss-entrance > button { min-height: 70px; padding: 10px; }.abyss-run { inset: 115px 2% 12px; } }
   .abyss-scene__countdown { position: absolute; top: max(24px, env(safe-area-inset-top)); left: max(24px, env(safe-area-inset-left)); padding: 14px 18px; border-left: 2px solid #b85669; background: linear-gradient(90deg, #08060dcc, #08060d00); }
-  .abyss-scene__back { position: absolute; bottom: max(24px, env(safe-area-inset-bottom)); left: max(24px, env(safe-area-inset-left)); display: flex; gap: 12px; pointer-events: auto; }
+  .abyss-scene__back { position: absolute; bottom: max(24px, env(safe-area-inset-bottom)); left: max(24px, env(safe-area-inset-left)); display: flex; flex-wrap: wrap; max-width: calc(100% - 48px); gap: 12px; pointer-events: auto; }
   .abyss-scene button { padding: 9px 18px; border: 1px solid #b28b9c75; border-radius: 5px; font: inherit; font-size: 14px; color: #e9dce5; background: #120c19b3; cursor: pointer; }
   .abyss-scene button:hover { background: #382032dd; border-color: #d1a4b5; }
   .abyss-scene button:focus-visible { outline: 2px solid #edb7c5; outline-offset: 4px; }

@@ -21,7 +21,9 @@ export function withModernTraits(original: CardDefinition): CardDefinition {
   const skills = card.skills.map((skill): SkillSpec => {
     let family: string | null = null;
     let param: number | null = null;
-    if (/^溅射(?:\d+)?$/.test(skill.raw)) family = 'splash';
+    if(skill.raw==='粉碎')family='crushWaiting';
+    else if(skill.raw==='隐匿赋予'){family='grantConcealment';param=1;}
+    else if (/^溅射(?:\d+)?$/.test(skill.raw)) family = 'splash';
     else if (skill.raw === '隐匿') family = 'concealment';
     else if (skill.raw === '先攻') family = 'firstStrike';
     else if (skill.raw === '吞噬') family = 'devour';
@@ -39,9 +41,9 @@ export function withModernTraits(original: CardDefinition): CardDefinition {
     else if (skill.raw === '临点坍缩') family = 'criticalCollapse';
     else if (skill.raw === '不屈') family = 'unyielding';
     else {
-      const match = /^(伤害|群体伤害|即死|闪避赋予|贯穿|斩击|群体斩击|剑舞|群体剑舞|献祭|群体贯穿|群体延迟|严霜|燃烧|剧毒|流血|重伤|毒雾|必杀)(\d+)$/.exec(skill.raw);
+      const match = /^(伤害|群体伤害|即死|闪避赋予|贯穿|斩击|群体斩击|剑舞|群体剑舞|献祭|群体贯穿|群体延迟|严霜|燃烧|剧毒|流血|重伤|毒雾|必杀|隐匿赋予|全体沉默|群体沉默|刺甲)(\d+)$/.exec(skill.raw);
       if (match) {
-        family = ({ 伤害: 'directDamage', 群体伤害: 'groupPhysicalDamage', 即死: 'instantDeath', 闪避赋予: 'grantDodge', 贯穿: 'piercing', 斩击: 'slash', 群体斩击: 'groupSlash', 剑舞: 'swordDance', 群体剑舞: 'groupSwordDance', 献祭: 'sacrifice', 群体贯穿: 'groupPiercing', 群体延迟: 'groupDelay', 严霜: 'severeFrost', 燃烧: 'burning', 剧毒: 'venom', 流血: 'bleeding', 重伤: 'grievousWound', 毒雾: 'poisonCloud', 必杀: 'lethalStrike' } as Record<string, string>)[match[1]!] ?? null;
+        family = ({ 隐匿赋予:'grantConcealment',全体沉默:'groupSilence',群体沉默:'groupSilence',刺甲:'thornArmor',伤害: 'directDamage', 群体伤害: 'groupPhysicalDamage', 即死: 'instantDeath', 闪避赋予: 'grantDodge', 贯穿: 'piercing', 斩击: 'slash', 群体斩击: 'groupSlash', 剑舞: 'swordDance', 群体剑舞: 'groupSwordDance', 献祭: 'sacrifice', 群体贯穿: 'groupPiercing', 群体延迟: 'groupDelay', 严霜: 'severeFrost', 燃烧: 'burning', 剧毒: 'venom', 流血: 'bleeding', 重伤: 'grievousWound', 毒雾: 'poisonCloud', 必杀: 'lethalStrike' } as Record<string, string>)[match[1]!] ?? null;
         param = Number(match[2]);
       } else {
         const groupSlash = /^群体斩(\d+)击$/.exec(skill.raw);

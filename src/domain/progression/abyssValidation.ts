@@ -1,8 +1,11 @@
+import { validAbyssRewardLedgers } from './abyssRewards';
 import { cardById, cardDatabase } from '../../data';
 import { seedFrom } from '../battle/rng';
 import { RARITY_TO_LEVEL, type CardDefinition } from '../cards/types';
 import { SKILL_RULES } from '../skills/rules';
-import { ABYSS_EFFECTS, ABYSS_GROWTH_TRAITS, ABYSS_RULES_VERSION, ABYSS_STAT_LIMIT, ABYSS_TRAIT_LIMIT, abyssDifficulty, abyssGrowthTargets, scaleAbyssEffect } from './abyssRules';
+import { ABYSS_EFFECTS, ABYSS_GROWTH_TRAITS, ABYSS_MAX_FLOOR, ABYSS_RULES_VERSION, ABYSS_STAT_LIMIT, ABYSS_TRAIT_LIMIT, abyssDifficulty, abyssGrowthTargets, scaleAbyssEffect } from './abyssRules';
+import { abyssRarityReduction, abyssStatRarityReduction, withAbyssRarity } from './abyssRarity';
+import { abyssGrowthAmount, abyssTraitDiscoveryId } from './abyssGrades';
 import type { AbyssCard, AbyssEffect, AbyssEncounter, AbyssGrowthOffer, AbyssGrowthOption, AbyssRun, AbyssState } from './abyssTypes';
 
 const record = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -40,7 +43,7 @@ function validCard(value: unknown): value is AbyssCard {
   const def = value.definition;
   const base = value.baseDefinition;
   if (def.cardId !== value.instanceId || base.cardId !== value.baseCardId
-    || def.name !== base.name || def.rarity !== base.rarity || def.art.artId !== base.art.artId || def.level !== base.level) return false;
+    || def.name !== base.name || def.art.artId !== base.art.artId) return false;
   if (!integer(value.upgrades.atk, 0, ABYSS_STAT_LIMIT) || !integer(value.upgrades.hp, 0, ABYSS_STAT_LIMIT) || !integer(value.upgrades.cd, -99, 0)
     || !value.addedTraits.every(item => ABYSS_GROWTH_TRAITS.some(expected => traitMatches(item, expected)))) return false;
   const added = value.addedTraits as { family: string; raw: string; param: number | null }[];
@@ -49,6 +52,20 @@ function validCard(value: unknown): value is AbyssCard {
     || def.skills.length !== base.skills.length + added.length) return false;
   if (!base.skills.every((item, index) => item.raw === def.skills[index]?.raw && item.family === def.skills[index]?.family && item.param === def.skills[index]?.param)
     || !added.every((item, index) => traitMatches(def.skills[base.skills.length + index], item))) return false;
+  if (value.rarityReduction === undefined) {
+    // Old snapshots remain readable; the action/view adapter derives their cultivated rarity.
+    return def.rarity === base.rarity && def.level === base.level && def.art.abyssTitle === undefined;
+  }
+  const card = value as unknown as AbyssCard;
+  const reduction = value.rarityReduction;
+  if (typeof reduction !== 'number' || !Number.isFinite(reduction) || reduction < abyssRarityReduction(card)
+    || !Number.isSafeInteger(reduction * 2) || reduction > abyssStatRarityReduction(card) + ABYSS_TRAIT_LIMIT * 2) return false;
+  const expected = withAbyssRarity(card).definition;
+  if (def.rarity !== expected.rarity || def.level !== expected.level) return false;
+  if (expected.rarity !== base.rarity) {
+    const title = def.art.abyssTitle;
+    if (!record(title) || title.sourceRarity !== base.rarity || title.sourceLevel !== base.level) return false;
+  } else if (def.art.abyssTitle !== undefined) return false;
   return true;
 }
 
@@ -81,32 +98,47 @@ function validBattle(value: unknown, run: AbyssRun): value is AbyssEncounter {
 }
 
 function validOffer(value: unknown, run: AbyssRun, serial: number): value is AbyssGrowthOffer {
-  if (!record(value) || value.id !== `${run.id}/offer/${run.floor}/${run.encounter}/${serial}` || !['free', 'training', 'recruit'].includes(String(value.source))
-    || !Array.isArray(value.options) || value.options.length !== (value.source === 'recruit' ? 1 : 3)) return false;
+  if (!record(value) || value.id !== `${run.id}/offer/${run.floor}/${run.encounter}/${serial}` || !['free', 'training', 'recruit', 'trait'].includes(String(value.source))
+    || !Array.isArray(value.options) || (value.options.length < 1 || value.options.length > 3)) return false;
+  // Preserve the old single-card offer, but every new recruit draw has three candidates.
+  if (value.source === 'recruit' && ![1, 3].includes(value.options.length)) return false;
+  if (value.paidPrice !== undefined && !integer(value.paidPrice, 5, 50)) return false;
   const keys: string[] = [];
   for (const option of value.options) {
     if (!record(option) || !text(option.label)) return false;
-    if (['atk', 'hp', 'cd', 'remove'].includes(String(option.kind))) keys.push(String(option.kind));
+    if (['atk', 'hp', 'cd'].includes(String(option.kind))) {
+      if (option.amount !== undefined && !integer(option.amount, 1, 3)) return false;
+      keys.push(`${option.kind}:${abyssGrowthAmount(option as unknown as AbyssGrowthOption)}`);
+    } else if (option.kind === 'crystal') {
+      if (option.amount !== undefined) return false;
+      keys.push('crystal');
+    } else if (option.kind === 'remove') {
+      if (option.amount !== undefined) return false;
+      keys.push('remove');
+    }
     else if (option.kind === 'trait' && ABYSS_GROWTH_TRAITS.some(item => traitMatches(option.trait, item))) keys.push(`trait:${String((option.trait as { family: string }).family)}`);
     else if (option.kind === 'recruit' && validCard(option.card)) {
       const recruit = option.card;
       if (!recruit.instanceId.startsWith(`${run.id}/recruit/${run.floor}/${run.encounter}/${serial}/`) || run.cards.some(card => card.instanceId === recruit.instanceId)) return false;
       keys.push(recruit.instanceId);
     } else return false;
-    if (option.kind !== 'recruit' && abyssGrowthTargets(run.cards, option as unknown as AbyssGrowthOption).length === 0) return false;
+    // Older paid offers may contain traits whose slots are now occupied; preserve the saved candidates.
+    if (option.kind !== 'recruit' && option.kind !== 'trait' && option.kind !== 'crystal' && abyssGrowthTargets(run.cards, option as unknown as AbyssGrowthOption).length === 0) return false;
   }
-  return unique(keys) && (value.source !== 'recruit' || (value.options[0] as { kind: string }).kind === 'recruit');
+  return unique(keys) && (value.source !== 'recruit' || value.options.every(option => record(option) && option.kind === 'recruit'));
 }
 
 function validRun(value: unknown, contentVersion: string): value is AbyssRun {
   if (!record(value) || !text(value.id) || !integer(value.revision, 1) || !integer(value.seed, 0, 0xffffffff)
     || value.rulesVersion !== ABYSS_RULES_VERSION || value.contentVersion !== contentVersion || !date(value.startedAt)
-    || !integer(value.floor, 1, 10000) || !integer(value.encounter, 1, 10) || !integer(value.lives, 1, 3)
+    || !integer(value.floor, 1, ABYSS_MAX_FLOOR) || !integer(value.encounter, 1, 10) || !integer(value.lives, 1, 3)
     || !integer(value.coins) || !integer(value.earnedCoins) || value.coins > value.earnedCoins
     || !integer(value.wins) || !integer(value.losses, 0, 2) || value.lives !== 3 - value.losses
     || !record(value.stage) || !validCards(value.cards, value.stage.kind === 'starterDraft' ? 0 : 1)) return false;
+  if (![value.crystals, value.recruitPurchases, value.traitPurchases].every(item => item === undefined || integer(item))) return false;
   const run = value as unknown as AbyssRun;
   const completedBefore = (run.floor - 1) * 10 + run.encounter - 1;
+  if (run.highestCleared !== undefined && !integer(run.highestCleared, run.wins, completedBefore + 1)) return false;
   const stage = value.stage;
   if (stage.kind === 'starterDraft') {
     if (run.floor !== 1 || run.encounter !== 1 || run.cards.length !== 0 || run.wins !== 0 || run.losses !== 0 || run.coins !== 0 || run.earnedCoins !== 0 || run.lastSettledBattleId !== null
@@ -132,7 +164,7 @@ function validRun(value: unknown, contentVersion: string): value is AbyssRun {
   if (stage.kind === 'bossDecision') return run.encounter === 10 && stage.battle.difficulty === 'nightmare';
   if (stage.kind === 'camp') {
     if (!['win', 'loss', 'draw'].includes(String(stage.result)) || !integer(stage.freeRemaining, 0, 3) || !integer(stage.offerSerial)
-      || (stage.result !== 'win' && (stage.freeRemaining !== 0 || run.encounter === 10))) return false;
+      || (stage.result !== 'win' && run.encounter === 10)) return false;
     if (stage.offer === null) return stage.freeRemaining === 0;
     if (!validOffer(stage.offer, run, stage.offerSerial)) return false;
     return (stage.freeRemaining > 0) === (stage.offer.source === 'free');
@@ -142,18 +174,23 @@ function validRun(value: unknown, contentVersion: string): value is AbyssRun {
 
 /** 自动加载和导入共用：新版本坏进度拒绝，绝不补造新候选或奖励账本。 */
 export function validateAbyssState(value: unknown, contentVersion = cardDatabase.contentVersion): value is AbyssState {
+  const known = new Set([...ABYSS_EFFECTS.map(item => item.id), ...ABYSS_GROWTH_TRAITS.map(item => `trait:${item.family}`), ...ABYSS_GROWTH_TRAITS.map(abyssTraitDiscoveryId)]);
   if (!record(value) || !integer(value.revision) || !Array.isArray(value.history) || value.history.length > 10
-    || !Array.isArray(value.knownEffectIds) || value.knownEffectIds.length > ABYSS_EFFECTS.length + ABYSS_GROWTH_TRAITS.length) return false;
-  const known = new Set([...ABYSS_EFFECTS.map(item => item.id), ...ABYSS_GROWTH_TRAITS.map(item => `trait:${item.family}`)]);
+    || !Array.isArray(value.knownEffectIds) || value.knownEffectIds.length > known.size) return false;
+  if (!validAbyssRewardLedgers(value)) return false;
   if (!value.knownEffectIds.every(id => typeof id === 'string' && known.has(id)) || !unique(value.knownEffectIds as string[])) return false;
+  if (value.best !== undefined && value.best !== null && (!record(value.best) || !integer(value.best.cleared, 1, ABYSS_MAX_FLOOR * 10)
+    || !integer(value.best.wins, 1, value.best.cleared) || !text(value.best.runId) || !date(value.best.achievedAt))) return false;
   if (value.run !== null && !validRun(value.run, contentVersion)) return false;
   for (const entry of value.history) {
     if (!record(entry) || !text(entry.runId) || !date(entry.startedAt) || !date(entry.endedAt) || Date.parse(entry.endedAt) < Date.parse(entry.startedAt)
-      || !['settled', 'defeated', 'abandoned'].includes(String(entry.reason)) || !integer(entry.floor, 1, 10000) || !integer(entry.encounter, 1, 10)
+      || !['settled', 'defeated', 'abandoned'].includes(String(entry.reason)) || !integer(entry.floor, 1, ABYSS_MAX_FLOOR) || !integer(entry.encounter, 1, 10)
       || !integer(entry.wins) || !integer(entry.losses, 0, 3) || !integer(entry.coins) || !integer(entry.earnedCoins) || entry.coins > entry.earnedCoins
       || !validCards(entry.cards, entry.reason === 'abandoned' ? 0 : 1) || !entry.cards.every(card => card.instanceId.startsWith(`${entry.runId}/`))) return false;
-    if (entry.reason === 'settled' && entry.encounter !== 10) return false;
+    if (entry.reason === 'settled' && entry.encounter !== 10 && entry.floor < 4) return false;
   }
+  if (value.history.some(entry => ![entry.crystals, entry.recruitPurchases, entry.traitPurchases, entry.highestCleared]
+    .every(item => item === undefined || integer(item)))) return false;
   const ids = value.history.map(entry => String(entry.runId));
   return unique(ids) && (value.run === null || !ids.includes((value.run as AbyssRun).id));
 }

@@ -1,8 +1,9 @@
 import type { CardDefinition } from '../cards/types';
+import { abyssBestOf } from './abyssRanking';
 import { collectionCompletion } from './collection';
 import type { ProfileState } from './types';
 
-export type LeaderboardKind = 'ladder' | 'collection';
+export type LeaderboardKind = 'ladder' | 'collection' | 'abyss';
 export interface LeaderboardEntry {
   readonly id: string;
   readonly name: string;
@@ -11,6 +12,8 @@ export interface LeaderboardEntry {
   readonly total: number;
   readonly ratio: number;
   readonly isSelf: boolean;
+  readonly abyssCleared?: number;
+  readonly abyssWins?: number;
 }
 export const LEADERBOARD_PAGE_SIZE = 100;
 
@@ -44,16 +47,20 @@ export function leaderboardEntries(
   playerName = '当前玩家',
 ): readonly LeaderboardEntry[] {
   const completion = collectionCompletion(profile.inventory, definitions);
-  const demos = LEADERBOARD_DEMOS.map(demo => {
+  const demos = LEADERBOARD_DEMOS.map((demo, index) => {
     const owned = Math.floor(completion.total * demo.collectionBasisPoints / 10_000);
     return { id: demo.id, name: demo.name, points: demo.points, owned, total: completion.total,
-      ratio: completion.total ? owned / completion.total : 0, isSelf: false };
+      ratio: completion.total ? owned / completion.total : 0, isSelf: false,
+      abyssCleared: 65 - index * 3, abyssWins: 65 - index * 3 - index % 3 };
   });
-  return [...demos, { id: 'self', name: playerName, points: profile.ladder.points, ...completion, isSelf: true }];
+  const best = abyssBestOf(profile.abyss);
+  return [...demos, { id: 'self', name: playerName, points: profile.ladder.points, ...completion, isSelf: true,
+    abyssCleared: best?.cleared ?? 0, abyssWins: best?.wins ?? 0 }];
 }
 
 export function sortLeaderboard(entries: readonly LeaderboardEntry[], kind: LeaderboardKind): readonly LeaderboardEntry[] {
-  return [...entries].sort((a, b) => (kind === 'ladder' ? b.points - a.points : b.ratio - a.ratio)
+  return [...entries].sort((a, b) => (kind === 'ladder' ? b.points - a.points : kind === 'collection' ? b.ratio - a.ratio
+    : (b.abyssCleared ?? 0) - (a.abyssCleared ?? 0) || (b.abyssWins ?? 0) - (a.abyssWins ?? 0))
     || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
 }
 

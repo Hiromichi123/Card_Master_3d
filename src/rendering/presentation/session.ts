@@ -15,9 +15,13 @@
  */
 
 import { resolveBattleDefinition } from './definitions';
-import { chooseCommand } from '../../domain/battle/ai';
-import { applyCommand, createBattle, hasLegalPlay } from '../../domain/battle/engine';
-import { inputSideOf, insertionSlots, isCooldownCard, readyCardIds } from '../../domain/battle/turnActions';
+import { observeForAi } from '../../domain/battle/ai/observation';
+import { decideAi, quickDecision } from '../../domain/battle/ai/search';
+import { normalizeAiSettings, type AiSettings, type AiModel, type AiDecision } from '../../domain/battle/ai/types';
+import type { AiDriver } from '../../services/ai/AiWorkerClient';
+import { applyCommand, createBattle, hasLegalPlay, validateCommand } from '../../domain/battle/engine';
+import { AUTO_EVOLUTION_LIMIT, autoEvolutionCommand } from '../../domain/battle/autoEvolution';
+import { hasUsableBattleAction, inputSideOf, insertionSlots, isCooldownCard, readyCardIds } from '../../domain/battle/turnActions';
 import { createRng, type Rng } from '../../domain/battle/rng';
 import type {
   BattleConfig,
@@ -26,7 +30,7 @@ import type {
   BattleState,
   Command,
 } from '../../domain/battle/types';
-import type { SideId } from '../../domain/cards/types';
+import type { SideId, CardDefinition } from '../../domain/cards/types';
 import type { PresentationSpeed } from '../../state/settingsStore';
 import type { SlotZone } from '../battle/layout';
 import { handPointOf, slotPosition } from '../battle/placements';
@@ -78,6 +82,7 @@ export interface BattleSnapshot {
   readonly cardLimit: number;
   /** 本体生命上限。血量条按它取比例。 */
   readonly baseHp: number;
+  readonly baseHpBySide?: Readonly<Record<SideId, number>>;
   /**
    * 玩家这回合还有没有合法的出牌。
    *
@@ -91,14 +96,27 @@ export interface BattleSnapshot {
   /** 最近几条演出日志。 */
   readonly log: readonly string[];
   readonly autoPlayer: boolean;
+  readonly autoEvolutionActive: boolean;
+  readonly autoEvolutionTurns: number;
+  readonly autoEvolutionLimit: number;
   /** 第几局。开新局会 +1，用来重播开场的发牌动画。 */
   readonly runId: number;
   readonly localMultiplayer: boolean;
   readonly autoEnemy: boolean;
   readonly currentHasLegalPlay: boolean;
+  readonly autoTurnEndPending?: boolean;
+  readonly aiOptions: AiSettings;
+  readonly aiBusy: boolean;
+  readonly lastAiDecision: AiDecision | null;
+  readonly aiHistory: readonly AiDecision[];
 }
 
 export interface SessionControl {
+  readonly aiDriver?: AiDriver;
+  readonly aiCatalogue?: readonly CardDefinition[];
+  readonly readAiSettings?: () => AiSettings;
+  readonly readSkipTurnEnd?: () => boolean;
+  readonly readAiModel?: () => AiModel | null;
   /** 规则已得出终局，尚未等待表现层；持久化入口不应依赖动画完成。 */
   readonly onOutcome?: ((outcome: BattleOutcome) => void) | undefined;
   readonly localMultiplayer?: boolean | undefined;
@@ -134,7 +152,19 @@ export class BattleSession {
   private needsAdvance = false;
   /** 同理：AI 的那一手也要等这一帧的时间轴更新彻底走完再发。 */
   private pendingAiAction = false;
+  private pendingAutoEvolution = false;
+  private idleActionSeconds = 0;
 
+  private readonly aiDriver: AiDriver | undefined;
+  private readonly aiCatalogue: readonly CardDefinition[];
+  private readonly readAiSettings: (() => AiSettings) | undefined;
+  private readonly readSkipTurnEnd: (() => boolean) | undefined;
+  private readonly readAiModel: (() => AiModel | null) | undefined;
+  private aiEpoch = 0;
+  private aiBusy = false;
+  private aiReady: AiDecision | null = null;
+  private lastAiDecision: AiDecision | null = null;
+  private aiHistory: AiDecision[] = [];
   private aiRng: Rng;
   private snapshot: BattleSnapshot;
 
@@ -145,6 +175,11 @@ export class BattleSession {
     private readonly effects: SessionEffects,
     control: SessionControl = {},
   ) {
+    this.aiDriver = control.aiDriver;
+    this.aiCatalogue = control.aiCatalogue ?? [];
+    this.readAiSettings = control.readAiSettings;
+    this.readSkipTurnEnd = control.readSkipTurnEnd;
+    this.readAiModel = control.readAiModel;
     this.localMultiplayer = control.localMultiplayer ?? false;
     this.onOutcome = control.onOutcome;
     this.autoEnemy = control.autoEnemy ?? true;
@@ -229,15 +264,21 @@ export class BattleSession {
       cardsPlayedThisTurn: this.state.cardsPlayedThisTurn,
       cardLimit: rules.cardsPerTurn,
       baseHp: rules.baseHp,
+      baseHpBySide: rules.baseHpBySide ?? { player: rules.baseHp, enemy: rules.baseHp },
       playerHasLegalPlay: hasLegalPlay(this.state, 'player'),
       outcome: this.state.outcome,
       selectedInstanceId: this.selectedInstanceId,
       playablePrepSlots: this.playablePrepSlots(),
       log: this.log,
       autoPlayer: this.autoPlayer,
+      autoEvolutionActive: !!this.state.autoEvolution,
+      autoEvolutionTurns: this.state.autoEvolution?.completedTurns ?? 0,
+      autoEvolutionLimit: this.state.autoEvolution?.limit ?? AUTO_EVOLUTION_LIMIT,
       localMultiplayer: this.localMultiplayer,
       autoEnemy: this.autoEnemy,
       currentHasLegalPlay: hasLegalPlay(this.state, inputSideOf(this.state)),
+      autoTurnEndPending: this.shouldAutoEndTurn(),
+      aiOptions:this.aiOptions(), aiBusy:this.aiBusy, lastAiDecision:this.lastAiDecision, aiHistory:this.aiHistory,
       runId: this.runId,
     };
   }
@@ -261,6 +302,9 @@ export class BattleSession {
 
   /** 开一局（也是「再来一局」）。 */
   start(): void {
+    this.cancelAi();
+    this.lastAiDecision=null;this.aiHistory=[];
+    this.idleActionSeconds = 0;
     this.director.reset();
     this.state = createBattle({ ...this.config, seed: (this.config.seed + this.runId * 0x9e3779b9) >>> 0 }, this.definitions);
     // 注意是**灌进同一个显示状态对象**：导演在构造时就按引用拿住了它
@@ -283,6 +327,7 @@ export class BattleSession {
     this.selectedInstanceId = null;
     this.needsAdvance = false;
     this.pendingAiAction = false;
+    this.pendingAutoEvolution = false;
     this.log.length = 0;
     const first = this.localMultiplayer ? (this.state.startingSide === 'player' ? '下方' : '上方')
       : (this.state.startingSide === 'player' ? '我方' : '敌方');
@@ -297,6 +342,8 @@ export class BattleSession {
   }
 
   toMenu(): void {
+    this.cancelAi();this.needsAdvance=false;this.pendingAutoEvolution=false;
+    this.idleActionSeconds = 0;
     this.mode = 'menu';
     this.inputOpen = false;
     this.director.cancel();
@@ -304,6 +351,8 @@ export class BattleSession {
   }
 
   setAutoPlayer(on: boolean): void {
+    const wasBusy=this.aiBusy;this.cancelAi();
+    if(wasBusy)this.pendingAiAction=true;
     this.autoPlayer = on;
     if (this.mode === 'battle' && !this.director.isPerforming) {
       this.selectedInstanceId = null;
@@ -315,6 +364,8 @@ export class BattleSession {
 
   setAutoEnemy(on: boolean): void {
     if (!this.localMultiplayer) return;
+    const wasBusy=this.aiBusy;this.cancelAi();
+    if(wasBusy)this.pendingAiAction=true;
     this.autoEnemy = on;
     if (inputSideOf(this.state) === 'enemy') {
       this.selectedInstanceId = null;
@@ -327,6 +378,7 @@ export class BattleSession {
   }
 
   private isHumanTurn(): boolean {
+    if (this.state.autoEvolution) return false;
     return inputSideOf(this.state) === 'player'
       ? !this.autoPlayer
       : this.localMultiplayer && !this.autoEnemy;
@@ -408,9 +460,31 @@ export class BattleSession {
     this.submit({ kind: 'endTurn', side: inputSideOf(this.state) });
   }
 
+  /** Concession uses committed rules, even while their animation is still playing. */
+  concede(side: SideId = 'player'): void {
+    if (this.mode !== 'battle' || this.state.outcome) return;
+    this.cancelAi();
+    this.pendingAutoEvolution = false;
+    this.needsAdvance = false;
+    this.selectedInstanceId = null;
+    this.inputOpen = false;
+    this.director.cancel();
+    this.submit({ kind: 'concede', side });
+  }
+
   /** 手动跳过当前演出。 */
   skipPerformance(): void {
     this.director.skip();
+  }
+
+  /** Countdown uses real frame time, independently of animation speed/skip. */
+  private shouldAutoEndTurn(): boolean {
+    return !!this.readSkipTurnEnd?.() && this.canAct() && !hasUsableBattleAction(this.state);
+  }
+
+  refreshTurnPreferences(): void {
+    this.idleActionSeconds = 0;
+    this.publish();
   }
 
   private canAct(): boolean {
@@ -427,6 +501,7 @@ export class BattleSession {
       this.publish();
       return;
     }
+    this.idleActionSeconds = 0;
     this.state = resolution.finalState;
     // 分身/复活会凭空造出实例，先把身份补上，后面解析世界坐标才找得到它们
     syncIdentities(this.display, this.state);
@@ -441,10 +516,23 @@ export class BattleSession {
 
   /** 演出播完之后：开下一个输入，或者让 AI 走。 */
   private advance(): void {
+    if(this.mode!=='battle')return;
     if (this.state.outcome) {
       this.mode = 'result';
       this.inputOpen = false;
       this.publish();
+      return;
+    }
+
+    if (this.state.autoEvolution) {
+      this.cancelAi();
+      this.pendingAutoEvolution = false;
+      this.selectedInstanceId = null;
+      this.inputOpen = false;
+      this.publish();
+      this.director.performWait(AI_THINK_SECONDS, () => {
+        if (this.mode === 'battle') this.pendingAutoEvolution = true;
+      });
       return;
     }
 
@@ -458,7 +546,7 @@ export class BattleSession {
         只置一个标志，由 tick 的末尾发出去。
       */
       this.director.performWait(AI_THINK_SECONDS, () => {
-        this.pendingAiAction = true;
+        if(this.mode==='battle')this.pendingAiAction = true;
       });
       return;
     }
@@ -476,19 +564,75 @@ export class BattleSession {
 
     this.director.tick(delta);
 
+    if (this.shouldAutoEndTurn()) {
+      this.idleActionSeconds += Number.isFinite(delta) ? Math.max(0, delta) : 0;
+      if (this.idleActionSeconds >= 1) {
+        this.idleActionSeconds = 0;
+        this.endTurn();
+        return;
+      }
+    } else this.idleActionSeconds = 0;
+
+    if (this.pendingAutoEvolution) {
+      this.pendingAutoEvolution = false;
+      if (this.mode === 'battle' && !this.state.outcome) {
+        if (this.state.autoEvolution) this.submit(autoEvolutionCommand(this.state));
+        else this.advance();
+      }
+      return;
+    }
+
     // 时间轴已经整个更新完，现在再开新演出才是安全的
-    if (this.pendingAiAction) {
-      this.pendingAiAction = false;
-      // The upper AI can be disabled during its wait without submitting a stale action.
-      if (this.isHumanTurn()) this.advance();
-      else this.submit(chooseCommand(this.state, this.aiRng));
+    if (this.pendingAiAction && this.mode==='battle') {
+      if(this.isHumanTurn()){this.cancelAi();this.advance();}
+      else if(this.aiReady){
+        const result=this.aiReady;this.aiReady=null;this.pendingAiAction=false;
+        this.lastAiDecision=result;this.aiHistory=[...this.aiHistory.slice(-49),result];
+        this.submit(result.command);
+      }else if(!this.aiBusy)this.requestAi();
     }
   }
 
   /** 切场景或卸载时调用。不等待任何动画。 */
   dispose(): void {
+    this.cancelAi();this.aiDriver?.dispose();this.needsAdvance=false;this.pendingAutoEvolution=false;
+    this.idleActionSeconds = 0;
     this.director.cancel();
     this.listeners.clear();
+  }
+
+  /** Resume after React StrictMode's setup/cleanup probe without restarting the battle. */
+  resume():void { if(this.mode==='battle'&&!this.director.isPerforming&&!this.aiBusy&&!this.pendingAiAction&&!this.pendingAutoEvolution)this.advance(); }
+
+  private aiOptions():AiSettings { return normalizeAiSettings({policy:this.readAiSettings?'heuristic':'baseline',...this.readAiSettings?.(),...this.config.ai}); }
+
+  private cancelAi():void {
+    this.aiEpoch++;this.aiDriver?.cancel();this.aiBusy=false;this.aiReady=null;this.pendingAiAction=false;
+  }
+
+  /** A preferences/model change invalidates only AI work, never a real battle animation. */
+  refreshAiPreferences():void {
+    if(this.aiBusy||this.aiReady){this.cancelAi();if(this.mode==='battle'&&!this.isHumanTurn())this.pendingAiAction=true;}
+    this.publish();
+  }
+
+  private requestAi():void {
+    const epoch=++this.aiEpoch,run=this.runId,seq=this.state.nextEventSeq,phase=this.state.phase,side=inputSideOf(this.state);
+    const request={observation:observeForAi(this.state,this.aiCatalogue,this.localMultiplayer),options:this.aiOptions(),
+      seed:this.aiRng.int(0,0xffffffff),model:this.readAiModel?.()??null};
+    this.aiBusy=true;this.publish();
+    const accept=(result:AiDecision)=>{
+      if(epoch!==this.aiEpoch||run!==this.runId||seq!==this.state.nextEventSeq||phase!==this.state.phase
+        ||side!==inputSideOf(this.state)||this.mode!=='battle'||this.isHumanTurn())return;
+      this.aiBusy=false;
+      this.aiReady=validateCommand(this.state,result.command).ok?result:quickDecision(request,'返回动作不合法，快速规则回退');
+      this.publish();
+    };
+    if(!this.aiDriver){accept(decideAi(request));return;}
+    void this.aiDriver.decide(request).then(accept).catch(error=>{
+      if(epoch!==this.aiEpoch||this.mode!=='battle')return;
+      accept(quickDecision(request,`规则回退：${error instanceof Error?error.message:'搜索错误'}`));
+    });
   }
 
   // --- 给导演用的查询 -----------------------------------------------------

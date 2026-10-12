@@ -15,7 +15,7 @@ export function RankingButton({ onClick, className = '' }: RankingButtonProps) {
   const still = useSettingsStore(state => state.reduceMotion);
   const art = cardArtUrl('SSS_001') ?? cardFaceUrl('SSS_001', 'battle');
   return <button type="button" className={`hub-button art-button hub-main__button hub-button--ranking ranking-button ${className}`}
-    data-still={still} data-unavailable={false} title="天梯与收藏排行榜 · 本地演示榜" onClick={onClick}
+    data-still={still} data-unavailable={false} title="天梯、收藏与深渊排行榜 · 本地演示榜" onClick={onClick}
     style={{ '--hub-color': '#dec184', '--hub-from': 'rgba(24, 32, 43, .92)', '--hub-to': 'rgba(34, 38, 43, .86)',
       '--button-art': art ? `url("${art}")` : 'none' } as CSSProperties}>
     <ArtButtonSurface />

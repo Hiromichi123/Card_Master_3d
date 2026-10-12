@@ -39,6 +39,7 @@ export interface MovingCardProps {
   readonly spawn?: readonly [number, number, number] | undefined;
   readonly rotationY?: number | undefined;
   readonly rotationX?: number | undefined;
+  readonly rotationZ?: number | undefined;
   readonly faceDown?: boolean | undefined;
   readonly selected?: boolean | undefined;
   readonly interactive?: boolean | undefined;
@@ -68,6 +69,7 @@ export function MovingCard({
   spawn,
   rotationY,
   rotationX,
+  rotationZ,
   faceDown,
   selected,
   interactive,
@@ -141,6 +143,7 @@ export function MovingCard({
         position={[0, 0, 0]}
         rotationY={rotationY}
         rotationX={rotationX}
+        rotationZ={rotationZ}
         faceDown={faceDown}
         selected={selected}
         interactive={interactive}

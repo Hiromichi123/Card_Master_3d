@@ -1,0 +1,12 @@
+@layer controls {
+  .cardtip.cardtip--abyss { color: #ede0f4; filter: drop-shadow(0 12px 24px #080311a6); }
+  .cardtip--abyss .cardtip__frame { background: linear-gradient(130deg, #d9c299, #84668e 24%, #49355188 44%, #b294c9 70%, #ddc49b); }
+  .cardtip--abyss .cardtip__surface { background: linear-gradient(145deg, #2b1e36ec, #130d21e8 65%, #24142fe8); }
+  .cardtip--abyss .cardtip__flow { opacity: .6; background: radial-gradient(ellipse at 25% 32%, #b086cf66, transparent 38%), radial-gradient(ellipse at 74% 69%, #95638e55, transparent 40%), conic-gradient(from 25deg at 48% 54%, transparent, #865fa344 85deg, transparent 155deg, #55427866 235deg, transparent); }
+  .cardtip--abyss .cardtip__trim { border-color: #b99bd13b; }
+  .cardtip--abyss .cardtip__trim::before, .cardtip--abyss .cardtip__trim::after { background: linear-gradient(90deg, #ceb0df, transparent); }
+  .cardtip--abyss .cardtip__meta { color: #bd9fcc; }
+  .cardtip--abyss .cardtip__function { color: #eedff5; line-height: 1.8; white-space: pre-line; }
+  .cardtip--abyss .cardtip__desc { color: #bfa7cd; border-color: #b59cc52e; }
+  .cardtip--abyss .cardtip__skills b { color: #d9b9ef; }
+}

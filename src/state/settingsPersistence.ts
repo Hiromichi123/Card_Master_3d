@@ -25,6 +25,7 @@ type StoreState = ReturnType<typeof useSettingsStore.getState>;
  * 不落盘——它们由其余字段现算，存下来只会成为第二个真相。
  */
 const PERSISTED_KEYS = [
+  'aiDifficulty', 'aiStyle', 'aiPolicy',
   'quality',
   'dprCap',
   'particleBudget',
@@ -37,10 +38,12 @@ const PERSISTED_KEYS = [
   'cameraModeId',
   'reduceMotion',
   'showPerf',
+  'skipTurnEnd',
 ] as const satisfies readonly (keyof SettingsState)[];
 
 function pick(state: StoreState): SettingsState {
   return {
+    aiDifficulty:state.aiDifficulty, aiStyle:state.aiStyle, aiPolicy:state.aiPolicy,
     quality: state.quality,
     dprCap: state.dprCap,
     particleBudget: state.particleBudget,
@@ -53,6 +56,7 @@ function pick(state: StoreState): SettingsState {
     cameraModeId: state.cameraModeId,
     reduceMotion: state.reduceMotion,
     showPerf: state.showPerf,
+    skipTurnEnd: state.skipTurnEnd,
   };
 }
 

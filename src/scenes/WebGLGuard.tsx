@@ -1,4 +1,5 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useContext, useEffect, useState, type ReactNode } from 'react';
+import { SharedWebGLStatusContext, type SharedWebGLStatus } from '../rendering/battle/SharedBattleSurfaceContext';
 
 /**
  * WebGL2 可用性检查。
@@ -28,18 +29,23 @@ function detectWebGL2(): Status {
   }
 }
 
-export function WebGLGuard({ children, fallback }: { children: ReactNode; fallback?: ReactNode }) {
+export function WebGLGuard({ children, fallback, standalone = false, onStatusChange }: { children: ReactNode; fallback?: ReactNode; standalone?: boolean; onStatusChange?: ((status: SharedWebGLStatus) => void) | undefined }) {
+  const sharedStatus = useContext(SharedWebGLStatusContext);
+  const shared = !standalone && sharedStatus !== null;
   const [status, setStatus] = useState<Status>('checking');
 
   useEffect(() => {
-    setStatus(detectWebGL2());
-  }, []);
+    if (!shared) setStatus(detectWebGL2());
+  }, [shared]);
+  useEffect(() => { onStatusChange?.(status); }, [status, onStatusChange]);
+  const effective = shared ? sharedStatus : status;
 
-  if (status === 'checking') {
+  if (effective === 'checking') {
+    if (shared) return null;
     return <div className="app-loading">正在检查 WebGL2 支持…</div>;
   }
 
-  if (status === 'unavailable') {
+  if (effective === 'unavailable') {
     if (fallback !== undefined) return <>{fallback}</>;
     return (
       <div className="app-error" role="alert">

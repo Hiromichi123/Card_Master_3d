@@ -70,3 +70,7 @@ assets-library/
 # docs/validation/        验证记录（环境、逐项结论、实测数字）。截图与录像不作为交付物，
 #                         2026-10-07 起不再入库，见 CONSTRUCTION_CHECKLIST.md 开头的记录约定。
 # scripts/*.json          切片定义等构建期输入，导入脚本要用。
+
+# AI 工具的临时 Node 包、样本和训练产物
+.ai-cache/
+artifacts/ai/

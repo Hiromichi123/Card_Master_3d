@@ -2,6 +2,7 @@ import type { AttackStatusKind, CardInstance, CombatStateGroup, SideId } from '.
 import type { BattleEventPayload, BattleState, DamageSource } from '../battle/types';
 import type { Rng } from '../battle/rng';
 import { resetCardLife } from '../battle/cardLifecycle';
+import { isSelfDestructCard } from '../cards/traits';
 
 /**
  * 35 个技能族的规则实现。
@@ -49,6 +50,10 @@ export interface SkillContext {
   readonly param: number;
   /** 仅攻击相关触发点有值。 */
   readonly attack: AttackState | null;
+  readonly trigger?: string;
+  readonly grantConcealment?: (target: CardInstance) => void;
+  readonly grantSilence?: (target: CardInstance, turns: number) => void;
+  readonly crushWaitingCard?: (target: CardInstance) => void;
   /** 记录一个事件（序号与回合由引擎补）。 */
   emit(event: BattleEventPayload): void;
   /** 对某个实例造成伤害，返回实际值。 */
@@ -164,6 +169,9 @@ export function traitsOf(state: BattleState, instance: CardInstance): readonly s
 
 /** 沉默：对位槽位当前占用者带「沉默」时，本方该槽的技能不触发。 */
 export function isSilenced(state: BattleState, side: SideId, slot: number): boolean {
+  const ownId=state.zones[side].battle[slot];
+  const own=ownId?state.instances[ownId]:undefined;
+  if(own?.marks.silenced || (own?.marks.silenceUntil??-1)>=state.turnIndex)return true;
   const oppositeRow = state.zones[opponentOf(side)].battle;
   const oppositeId = oppositeRow[oppositeIndex(slot)] ?? null;
   if (!oppositeId) {
@@ -189,6 +197,7 @@ export interface SkillRule {
   | 'AFTER_TARGETED_ATTACK'
     | 'AFTER_ATTACK'
     | 'ON_DEATH';
+  readonly additionalTriggers?: readonly SkillRule['trigger'][];
   apply(ctx: SkillContext): void;
 }
 
@@ -251,6 +260,7 @@ function woundedAllies(ctx: SkillContext): CardInstance[] {
 export const OFFENSIVE_SPELL_FAMILIES = new Set([
   'fireball', 'iceSeal', 'lightning', 'groupFireball', 'groupIceSeal', 'groupLightning',
   'bombard', 'groupBombard', 'explodeOnDeath', 'alignedDeathBlast', 'curse', 'delay', 'instantDeath', 'slash', 'groupSlash', 'teleport', 'groupDelay', 'severeFrost', 'burning', 'venom', 'bleeding', 'grievousWound', 'poisonCloud',
+  'groupSilence', 'crushWaiting',
   // Sword dance is direct HP loss across mechanisms, so it is not a reflectable spell.
 ]);
 
@@ -262,6 +272,26 @@ function retaliatoryStatus(kind: AttackStatusKind): SkillRule {
 }
 
 export const SKILL_RULES: Record<string, SkillRule> = {
+  grantConcealment: { trigger:'BEFORE_ATTACK', apply(ctx) {
+    const eligible=alliesInBattle(ctx).filter(card=>!card.marks.deploymentCast&&!card.marks.grantedConcealment&&
+      !(hasFamily(ctx.state,card,'concealment')&&!card.marks.concealmentUsed));
+    for(const card of ctx.rng.shuffle(eligible).slice(0,Math.max(0,Math.trunc(ctx.param))))ctx.grantConcealment?.(card);
+  } },
+  groupSilence: { trigger:'BEFORE_ATTACK', apply(ctx) {
+    for(const card of enemiesInBattle(ctx))ctx.grantSilence?.(card,ctx.param);
+  } },
+  crushWaiting: { trigger:'BEFORE_ATTACK', apply(ctx) {
+    for(const id of [...ctx.state.zones[opponentOf(ctx.owner)].prep]){
+      const card=id?ctx.state.instances[id]:undefined,definition=card?ctx.state.definitions[card.definitionId]:undefined;
+      if(card&&definition&&isSelfDestructCard(definition))ctx.crushWaitingCard?.(card);
+    }
+  } },
+  thornArmor: { trigger:'ON_DAMAGED', additionalTriggers:['AFTER_TARGETED_ATTACK'], apply(ctx) {
+    const attack=ctx.attack;if(!attack)return;
+    if(ctx.trigger==='AFTER_TARGETED_ATTACK'){
+      if(!attack.dodged&&(attack.rawAtk??attack.damage)>0)ctx.damage(attack.attacker,ctx.param,'counter');
+    }else attack.damage=Math.max(0,attack.damage-Math.max(0,ctx.param-attack.armorBreak));
+  } },
   concealment: { trigger: 'ON_DEPLOY', apply: () => undefined },
   firstStrike: { trigger: 'ON_DEPLOY', apply: () => undefined },
   vanguard: { trigger: 'ON_DEPLOY', apply: () => undefined },
@@ -625,7 +655,7 @@ export const SKILL_RULES: Record<string, SkillRule> = {
       }
       const defender = ctx.state.instances[defenderId];
       // 旧版只在防御者确实有防御 trait 时才记破甲（skill_effects.py:402-404）
-      if (!defender || !hasFamily(ctx.state, defender, 'defense')) {
+      if (!defender || (!hasFamily(ctx.state, defender, 'defense')&&!hasFamily(ctx.state, defender, 'thornArmor'))) {
         return;
       }
       attack.armorBreak = Math.max(attack.armorBreak, ctx.param);

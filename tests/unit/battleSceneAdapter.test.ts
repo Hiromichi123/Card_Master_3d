@@ -18,6 +18,8 @@ vi.mock('../../src/rendering/presentation/session', () => ({ BattleSession: clas
   constructor(_config: unknown, _definitions: unknown, _speed: unknown, _effects: unknown, control: SessionControl) { fixture.control = control; }
   getSnapshot = () => fixture.snapshot;
   start = fixture.start;
+  resume = () => {};
+  refreshAiPreferences = () => {};
   dispose = fixture.dispose;
   toMenu = fixture.toMenu;
 } }));
@@ -47,8 +49,8 @@ beforeEach(() => {
     turnNumber: 1, currentSide: 'player', inputSide: 'player', startingSide: 'player', priority: null,
     selectedKind: null, deployableInstanceIds: [], playableBattleSlots: [], cardsPlayedThisTurn: 0,
     cardLimit: 1, baseHp: state.rules.baseHp, playerHasLegalPlay: true, outcome: null,
-    selectedInstanceId: null, playablePrepSlots: [], log: [], autoPlayer: false, runId: 1,
-    localMultiplayer: false, autoEnemy: true, currentHasLegalPlay: true };
+    selectedInstanceId: null, playablePrepSlots: [], log: [], autoPlayer: false, autoEvolutionActive: false, autoEvolutionTurns: 0, autoEvolutionLimit: 10, runId: 1,
+    localMultiplayer: false, autoEnemy: true, currentHasLegalPlay: true, aiOptions:{difficulty:'normal',style:'balanced',policy:'heuristic'}, aiBusy:false, lastAiDecision:null, aiHistory:[] };
   fixture.start.mockClear(); fixture.dispose.mockClear(); fixture.board.mockClear();
   host = document.createElement('div'); document.body.appendChild(host); root = createRoot(host);
 });

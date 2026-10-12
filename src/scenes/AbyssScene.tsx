@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { useForegroundTimeout } from '../ui/useForegroundTimeout';
 import type { RouteId } from '../app/routes';
 import { backgroundUrl } from '../data/assets';
@@ -13,8 +13,11 @@ import { useProfileStore } from '../state/useProfileStore';
 import { abyssStateToken, planAbyssAction } from '../domain/progression/abyssRun';
 import type { AbyssEncounter, AbyssRun } from '../domain/progression/abyssTypes';
 import { AbyssRunPanel, type AbyssDispatch } from '../ui/AbyssRunPanel';
+import { LeaderboardModal } from '../ui/LeaderboardModal';
+import { AbyssRulesDialog } from '../ui/AbyssRulesDialog';
 import { AbyssHistoryDialog, AbyssTraitsDialog } from '../ui/AbyssRecords';
-import { AbyssBattleScene } from './AbyssBattleScene';
+import { AbyssBattleScene, AbyssSettlement } from './AbyssBattleScene';
+import type { BattleOutcome } from '../domain/battle/types';
 import { CardTipHost } from '../ui/CardTipHost';
 import { ToastHost } from '../ui/ToastHost';
 import { hideCardTip } from '../state/cardTipStore';
@@ -24,31 +27,70 @@ import {
   ABYSS_LOAD_TIMEOUT_MS, ABYSS_REVEAL_MS, ABYSS_HUD_DELAY_MS, abyssFlashIntensity,
   ABYSS_REVEAL_FLASH_DELAY_MS, ABYSS_STILL_DARKEN_MS, ABYSS_STILL_REVEAL_MS,
 } from './abyssPresentation';
+import { AbyssWeeklyRewards, AbyssRewardPacks } from '../ui/AbyssRewards';
+import { abyssPendingPacks, abyssCompletionCount, abyssCompletionTier, ABYSS_COMPLETION_REWARDS } from '../domain/progression/abyssRewards';
+import { AbyssTableSurfaceProvider } from './AbyssTableSurface';
+import { useSharedBattleSurface } from '../rendering/battle/SharedBattleSurfaceContext';
 import '../ui/abyss.css';
+import '../ui/abyssButtons.css';
+import '../ui/abyssFloating.css';
 
 type Phase = 'darkening' | 'black' | 'reveal' | 'active' | 'error';
 
-export function AbyssScene({ onNavigate, store = null, preDarkened = false }: {
+export function AbyssScene(props: Parameters<typeof AbyssSceneContent>[0]) {
+  return <AbyssTableSurfaceProvider><AbyssSceneContent {...props} /></AbyssTableSurfaceProvider>;
+}
+
+function AbyssSceneContent({ onNavigate, store = null, preDarkened = false, playerName = '当前玩家' }: {
   readonly onNavigate: (route: RouteId) => void;
   readonly store?: ProfileStore | null;
   readonly preDarkened?: boolean;
+  readonly playerName?: string;
 }) {
+  const sharedSurface = useSharedBattleSurface();
   const snapshot = useProfileStore(store);
   const profile = snapshot.profile;
   const [hudReady, setHudReady] = useState(false);
   const [panel, setPanel] = useState<'home' | 'run' | 'traits' | 'history'>('home');
   const [notice, setNotice] = useState('');
+  const [startingBattle, setStartingBattle] = useState(false);
+  const [rulesOpen, setRulesOpen] = useState(false);
+  const [rankingOpen, setRankingOpen] = useState(false);
+  const [weeklyOpen, setWeeklyOpen] = useState(false);
+  const [packsOpen, setPacksOpen] = useState(false);
   const [battleView, setBattleView] = useState<{ run: AbyssRun; battle: AbyssEncounter } | null>(null);
-  const preparing = panel === 'run' && isAbyssPreparation(profile?.abyss.run);
+  const [pendingSettlement, setPendingSettlement] = useState<{ battleId: string; outcome: BattleOutcome; run: AbyssRun } | null>(null);
+  // Retain the final table snapshot until settlement finishes, including terminal runs.
+  const rememberedRun = useRef<AbyssRun | null>(null);
+  if (profile?.abyss.run) rememberedRun.current = profile.abyss.run;
+  const preparationRun = profile?.abyss.run ?? pendingSettlement?.run ?? rememberedRun.current;
+  const completedRecord = profile?.abyss.history.find(entry => entry.runId === preparationRun?.id);
+  const boardRun = useMemo(() => {
+    if (!preparationRun || profile?.abyss.run || !completedRecord) return preparationRun;
+    return { ...preparationRun, cards: completedRecord.cards, coins: completedRecord.coins,
+      earnedCoins: completedRecord.earnedCoins, crystals: completedRecord.crystals ?? 0,
+      wins: completedRecord.wins, losses: completedRecord.losses };
+  }, [preparationRun, profile?.abyss.run, completedRecord]);
+  const preparing = panel === 'run' && (startingBattle || !!pendingSettlement || isAbyssPreparation(boardRun));
+  useLayoutEffect(() => { sharedSurface?.setEnabled(panel === 'run'); }, [sharedSurface, panel]);
   const exiting = useRef<() => void>(() => {});
   const dispatch: AbyssDispatch = async action => {
     if (!store || !profile) return false;
     const expectedToken = abyssStateToken(profile);
     const now = Date.now();
-    const result = await store.commitEconomic(current => planAbyssAction(current, { ...action, expectedToken }, now));
-    setNotice(result.ok ? '' : result.message);
-    if (result.ok && !result.view.run) setPanel('history');
-    return result.ok;
+    const autoBattle = action.kind === 'chooseBoon';
+    if (autoBattle) setStartingBattle(true);
+    try {
+      const result = await store.commitEconomic(current => planAbyssAction(current, { ...action, expectedToken }, now));
+      const claim = result.ok && (result.view.completionClaims?.length ?? 0) > (profile.abyss.completionClaims?.length ?? 0) ? result.view.completionClaims?.at(-1) : null;
+      setNotice(result.ok ? claim ? `通关结算：金币+${claim.gold}，水晶+${claim.crystal}，五选三卡包已保存。` : '' : result.message);
+      if (autoBattle && !result.ok) setStartingBattle(false);
+      if (result.ok && profile.abyss.run && !result.view.run) setPanel('run');
+      return result.ok;
+    } catch (error) {
+      if (autoBattle) setStartingBattle(false);
+      throw error;
+    }
   };
   const start = async () => {
     const confirmAbandon = !!profile?.abyss.run;
@@ -56,15 +98,26 @@ export function AbyssScene({ onNavigate, store = null, preDarkened = false }: {
     if (await dispatch({ kind: 'start', confirmAbandon })) setPanel('run');
   };
   const enterBattle = async () => {
-    if (!store) return;
-    const run = store.getSnapshot().profile?.abyss.run;
-    if (!run) return;
-    if (run.stage.kind === 'battleReady' && !await dispatch({ kind: 'beginBattle' })) return;
-    const latest = store.getSnapshot().profile?.abyss.run;
-    if (latest?.stage.kind === 'inBattle') { hideCardTip(); setBattleView({ run: latest, battle: latest.stage.battle }); }
+    if (!store) { setStartingBattle(false); return; }
+    setStartingBattle(true);
+    try {
+      const current = store.getSnapshot().profile;
+      const run = current?.abyss.run;
+      if (!current || !run) return;
+      if (run.stage.kind === 'battleReady' || run.stage.kind === 'inBattle') {
+        // The boon has just been saved: use its latest token, not a prior render's profile.
+        const expectedToken = abyssStateToken(current);
+        const result = await store.commitEconomic(profile => planAbyssAction(profile, { kind: run.stage.kind === 'inBattle' ? 'resumeBattle' : 'beginBattle', expectedToken }, Date.now()));
+        setNotice(result.ok ? '' : result.message);
+        if (!result.ok) return;
+      }
+      const latest = store.getSnapshot().profile?.abyss.run;
+      if (latest?.stage.kind === 'inBattle') { hideCardTip(); setBattleView({ run: latest, battle: latest.stage.battle }); }
+    } catch { setNotice('开始战斗保存失败，请重试。'); }
+    finally { setStartingBattle(false); }
   };
   exiting.current = () => {
-    if (battleView || preparing || snapshot.busy) return;
+    if (weeklyOpen || packsOpen || rankingOpen || rulesOpen || battleView || pendingSettlement || preparing || snapshot.busy) return;
     if (panel !== 'home') { hideCardTip(); setPanel('home'); }
     else onNavigate('activity');
   };
@@ -172,20 +225,51 @@ export function AbyssScene({ onNavigate, store = null, preDarkened = false }: {
     };
   }, [phase, still, visible, battleView, preparing, revealFlashReady]);
 
-  const homePresentation = useAbyssHomePresentation(still, phase === 'active' && hudReady && panel !== 'run' && !battleView);
+  const homePresentation = useAbyssHomePresentation(still, phase === 'active' && hudReady && panel !== 'run' && !battleView && !pendingSettlement);
   const revealed = phase === 'reveal' || phase === 'active';
   const retry = () => {
     setLoaded(false); setBlackHeld(false); setError('');
     setRevealFlashReady(false); revealFlashed.current = false;
     setPhase('black'); setAttempt(value => value + 1);
   };
-  if (battleView && store) return <><AbyssBattleScene key={battleView.battle.battleId} {...battleView} store={store}
-    onReturn={() => { hideCardTip(); setBattleView(null); setPanel(store.getSnapshot().profile?.abyss.run ? 'run' : 'history'); }} />
-    <ToastHost /><CardTipHost /></>;
-  if (preparing && profile?.abyss.run) return <><AbyssPreparationScene key={profile.abyss.run.id}
-    run={profile.abyss.run} busy={snapshot.busy} dispatch={dispatch} notice={notice} memory={snapshot.storage === 'memory'}
-    onBattle={() => { void enterBattle(); }} onHome={() => { hideCardTip(); setPanel('home'); }} />
-    <ToastHost /><CardTipHost /></>;
+  const pendingPackCount = profile ? abyssPendingPacks(profile.abyss).length : 0;
+  const openWeekly = async () => { if (await dispatch({ kind: 'prepareWeek' })) setWeeklyOpen(true); };
+  const receipt = profile?.abyss.completionClaims?.find(c => c.runId === boardRun?.id);
+  const rewardReceipt = receipt ? `通关奖励已到账：金币+${receipt.gold} · 水晶+${receipt.crystal}` :
+    profile && boardRun && !profile.abyss.run && completedRecord ? abyssCompletionTier(boardRun) === 0 ? '未通过1-10，本轮没有通关奖励。' :
+    '本周两次通关结算额度已用完，本轮成绩已保存。' : undefined;
+  const abandon = async () => {
+    if (!profile?.abyss.run || snapshot.busy) return;
+    const tier = abyssCompletionTier(profile.abyss.run), rule = ABYSS_COMPLETION_REWARDS[tier - 1];
+    const paid = profile.abyss.completionClaims?.some(c => c.runId === profile.abyss.run?.id);
+    const text = paid ? '本轮已领取通关结算，不重复发奖。' : abyssCompletionCount(profile.abyss, Date.now()) >= 2 ? '本周通关结算额度已用完，不发奖励。' : rule ?
+      `按${rule.label}结算：金币${rule.gold[0]}–${rule.gold[1]}、水晶${rule.crystal[0]}–${rule.crystal[1]}和五选三卡包，使用本周一次额度。` : '尚未通过1-10，本次没有通关奖励。';
+    if (window.confirm(`放弃本轮并保存成绩？${text}`)) await dispatch({ kind: 'abandon' });
+  };
+  const rulesDialog = <>
+    {weeklyOpen && profile && <AbyssWeeklyRewards state={profile.abyss} busy={snapshot.busy} dispatch={dispatch} onClose={() => setWeeklyOpen(false)} />}
+    {packsOpen && profile && <AbyssRewardPacks state={profile.abyss} busy={snapshot.busy} dispatch={dispatch} onClose={() => setPacksOpen(false)} />}{rulesOpen && <AbyssRulesDialog onClose={() => setRulesOpen(false)} />}
+    {rankingOpen && profile && <LeaderboardModal profile={profile} playerName={playerName} initialKind="abyss" onClose={() => setRankingOpen(false)} />}</>;
+  if (battleView && store) return <><AbyssBattleScene key={battleView.battle.battleId} {...battleView} store={store} onRules={() => setRulesOpen(true)}
+    onReturn={(outcome) => {
+      hideCardTip();
+      if (outcome) setPendingSettlement({ battleId: battleView.battle.battleId, outcome, run: battleView.run });
+      setBattleView(null);
+      setPanel('run');
+    }} />
+    {rulesDialog}<ToastHost /><CardTipHost /></>;
+  if (preparing && boardRun) return <><AbyssPreparationScene key={boardRun.id}
+    run={boardRun} busy={snapshot.busy || startingBattle} dispatch={dispatch} notice={notice} memory={snapshot.storage === 'memory'} settling={!!pendingSettlement}
+    onBattle={() => { void enterBattle(); }} onHome={() => { hideCardTip(); setPanel('home'); }} onRules={() => setRulesOpen(true)}
+    onRanking={() => setRankingOpen(true)} onRewards={() => setPacksOpen(true)} pendingPacks={pendingPackCount}
+    rewardReceipt={rewardReceipt}
+    onAbandon={() => { void abandon(); }} ended={!profile?.abyss.run && !pendingSettlement}>
+    {pendingSettlement && store && <AbyssSettlement store={store} battleId={pendingSettlement.battleId} outcome={pendingSettlement.outcome} onSaved={() => {
+      setPendingSettlement(null);
+      setPanel('run');
+    }} />}
+    </AbyssPreparationScene>
+    {rulesDialog}<ToastHost /><CardTipHost /></>;
   return <div ref={root} className="abyss-scene" data-phase={phase} data-still={still} data-visible={visible} tabIndex={-1} aria-label="深渊模式"
     style={{ '--abyss-darken-ms': `${still ? ABYSS_STILL_DARKEN_MS : ABYSS_DARKEN_MS}ms`,
       '--abyss-reveal-ms': `${still ? ABYSS_STILL_REVEAL_MS : ABYSS_REVEAL_MS}ms` } as CSSProperties}>
@@ -202,18 +286,27 @@ export function AbyssScene({ onNavigate, store = null, preDarkened = false }: {
     {phase === 'active' && hudReady && <div className="abyss-scene__hud">
       {panel === 'run' ? <div className="abyss-scene__countdown"><AbyssCountdown /></div> : <AbyssHome
         presentation={homePresentation} still={still} busy={snapshot.busy} available={!!profile} run={profile?.abyss.run ?? null}
+        state={profile?.abyss} onPrepareWeek={() => dispatch({ kind: 'prepareWeek' })} onWeeklyRewards={() => { void openWeekly(); }}
         onStart={() => { void start(); }} onContinue={() => setPanel('run')} onTraits={() => setPanel('traits')} onHistory={() => setPanel('history')} />}
-      {panel === 'run' && profile?.abyss.run && <AbyssRunPanel run={profile.abyss.run} busy={snapshot.busy} dispatch={dispatch}
-        onBattle={() => { void enterBattle(); }} onHome={() => { hideCardTip(); setPanel('home'); }} />}
+      {pendingSettlement && store && <AbyssSettlement store={store} {...pendingSettlement} onSaved={() => {
+        setPendingSettlement(null);
+        setPanel('run');
+      }} />}
+      {!pendingSettlement && panel === 'run' && profile?.abyss.run && <AbyssRunPanel run={profile.abyss.run} busy={snapshot.busy} dispatch={dispatch}
+        onBattle={() => { void enterBattle(); }} onHome={() => { hideCardTip(); setPanel('home'); }} onRules={() => setRulesOpen(true)} onRanking={() => setRankingOpen(true)} />}
       {panel !== 'run' && <nav className="abyss-scene__back" aria-label="深渊导航">
         <button type="button" disabled={snapshot.busy} onClick={() => onNavigate('activity')}>返回活动</button>
         <button type="button" disabled={snapshot.busy} onClick={() => onNavigate('hub')}>主界面</button>
+        <button type="button" onClick={() => setRulesOpen(true)}>规则讲解</button>
+        <button type="button" disabled={!profile} onClick={() => setRankingOpen(true)}>深渊排行</button>
+        <button type="button" disabled={!profile || snapshot.busy} onClick={() => { void openWeekly(); }}>本周结算</button>
+        <button type="button" disabled={!profile || snapshot.busy || pendingPackCount === 0} onClick={() => setPacksOpen(true)}>奖励卡包（{pendingPackCount}）</button>
       </nav>}
       {snapshot.storage === 'memory' && profile && <p className="abyss-storage-warning" role="status">当前使用内存存档，刷新或关闭页面会丢失深渊进度。</p>}
       {notice && <p className="abyss-notice" role="alert">{notice}</p>}
       {profile && panel === 'traits' && <AbyssTraitsDialog state={profile.abyss} onClose={() => { hideCardTip(); setPanel('home'); }} />}
       {profile && panel === 'history' && <AbyssHistoryDialog state={profile.abyss} onClose={() => { hideCardTip(); setPanel('home'); }} />}
-      <ToastHost /><CardTipHost />
+      {rulesDialog}<ToastHost /><CardTipHost />
     </div>}
     {phase === 'error' && <section className="abyss-scene__error" role="alert">
       <h1>深渊之门未能开启</h1><p>{error}</p>

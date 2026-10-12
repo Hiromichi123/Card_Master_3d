@@ -68,10 +68,10 @@ describe('深渊独立run状态机', () => {
     expect('rejected' in rejected).toBe(true);
   });
 
-  it('胜利恰好3免费并加30币，免费逐选后可付费，扣币/候选一体', () => {
+  it('普通完成给1免费并加15币，免费逐选后可付费，扣币/候选一体', () => {
     let current = settle(startBattle());
-    expect(current.abyss.run!.coins).toBe(30);
-    for (let remaining = 3; remaining > 0; remaining -= 1) {
+    expect(current.abyss.run!.coins).toBe(15);
+    for (let remaining = 1; remaining > 0; remaining -= 1) {
       const run = current.abyss.run!;
       const stage = run.stage;
       if (stage.kind !== 'camp' || !stage.offer) throw new Error('not camp');
@@ -82,16 +82,17 @@ describe('深渊独立run状态机', () => {
       current = move(current, { kind: 'chooseGrowth', offerId: stage.offer.id, index: 0, ...(target ? { targetId: target.instanceId } : {}) });
     }
     current = move(current, { kind: 'buy', purchase: 'training' });
-    expect(current.abyss.run!.coins).toBe(5);
+    expect(current.abyss.run!.coins).toBe(10);
     const stage = current.abyss.run!.stage;
     if (stage.kind !== 'camp') throw new Error('not camp');
-    expect(stage.offer?.source).toBe('training');
+    expect(stage.offer?.source).toBe('trait');
+    expect(stage.offer?.paidPrice).toBe(5);
     expect(JSON.parse(JSON.stringify(current)).abyss.run.stage.offer).toEqual(stage.offer);
     expect('rejected' in planAbyssAction(current, { kind: 'buy', purchase: 'training', expectedToken: abyssStateToken(current) }, now)).toBe(true);
     expect('rejected' in planAbyssAction(current, { kind: 'next', expectedToken: abyssStateToken(current) }, now)).toBe(true);
   });
 
-  it('非Boss失败/平局扣心、给10币无免费，第三次失败归档', () => {
+  it('非Boss失败/平局按等级发奖励并扣心，第三次失败归档', () => {
     let current = startBattle();
     for (let loss = 1; loss <= 3; loss += 1) {
       const stage = current.abyss.run!.stage;
@@ -100,13 +101,14 @@ describe('深渊独立run状态机', () => {
       if (loss === 3) break;
       const camp = current.abyss.run!.stage;
       expect(camp.kind).toBe('camp');
-      if (camp.kind === 'camp') expect(camp.freeRemaining).toBe(0);
+      if (camp.kind === 'camp') expect(camp.freeRemaining).toBe(1);
       expect(current.abyss.run!.lives).toBe(3 - loss);
-      expect(current.abyss.run!.coins).toBe(loss * 10);
+      expect(current.abyss.run!.coins).toBe(loss * 15);
+      current = move(current, { kind: 'skipFree' });
       current = startBattle(move(current, { kind: 'next' }));
     }
     expect(current.abyss.run).toBeNull();
-    expect(current.abyss.history[0]).toMatchObject({ reason: 'defeated', losses: 3, coins: 30, encounter: 3 });
+    expect(current.abyss.history[0]).toMatchObject({ reason: 'defeated', losses: 3, coins: 60, encounter: 3 });
   });
 
   it('Boss胜利营地后可进2-1，Boss失败3心也立即结束', () => {
@@ -122,10 +124,8 @@ describe('深渊独立run状态机', () => {
     expect(failed.abyss.history[0]).toMatchObject({ reason: 'defeated', losses: 1, encounter: 10 });
     current = move(settle(current), { kind: 'skipFree' });
     current = move(current, { kind: 'next' });
-    expect(current.abyss.run!.stage.kind).toBe('bossDecision');
-    const ended = move(current, { kind: 'finish' });
-    expect(ended.abyss.history[0]?.reason).toBe('settled');
-    current = move(current, { kind: 'next' });
+    expect(current.abyss.run!.stage.kind).toBe('boonChoice');
+    expect(planAbyssAction(current, { kind: 'finish', expectedToken: abyssStateToken(current) }, now)).toHaveProperty('rejected');
     expect(current.abyss.run).toMatchObject({ floor: 2, encounter: 1, lives: 3 });
   });
 
@@ -140,7 +140,10 @@ describe('深渊独立run状态机', () => {
     expect(applyEconomyTransaction(after, { ...plan.transaction, operationId: 'different' }).applied).toBe(false);
     expect(applyEconomyTransaction(before, { ...plan.transaction, currencyDelta: { gold: 1 } }).applied).toBe(false);
     expect(planAbyssAction(after, action, now)).toHaveProperty('rejected');
-    expect(planAbyssAction(before, action, new Date('2026-10-12T20:00:00Z'))).toEqual(plan);
+    const nextWeek = planAbyssAction(before, action, new Date('2026-10-12T20:00:00Z'));
+    if ('rejected' in nextWeek) throw new Error(nextWeek.rejected);
+    expect(nextWeek.view.run).toEqual(plan.view.run);
+    expect(nextWeek.view.weeks).toHaveLength(2);
     expect(after.currencies).toBe(before.currencies);
     expect(after.settledBattleIds).toBe(before.settledBattleIds);
   });
@@ -158,6 +161,7 @@ describe('深渊独立run状态机', () => {
     const full = Array.from({ length: 12 }, (_, index) => makeAbyssCard(base, `${run.id}/starter/test/${index}`));
     const fullRun: AbyssRun = { ...run, cards: full };
     const offer = makeAbyssGrowthOffer(fullRun, 'recruit', 1, cardDatabase.definitions);
+    expect(offer.options).toHaveLength(3);
     expect(abyssGrowthTargets(full, offer.options[0]!)).toHaveLength(12);
   });
 

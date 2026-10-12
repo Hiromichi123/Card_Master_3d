@@ -10,6 +10,7 @@
  * 2. 事件里带已经确定的目标与数值；演出层不得再次随机选择目标或自行扣血。
  */
 
+import type { AiSettings } from './ai/types';
 import type {
   AttackStatusKind,
   CardDefinition,
@@ -32,6 +33,8 @@ export interface BattleRules {
   readonly prepSlots: number;
   /** 双方基础生命。 */
   readonly baseHp: number;
+  /** Optional scenario-specific starting/max base HP. */
+  readonly baseHpBySide?: Readonly<Record<SideId, number>>;
   /** 开局每方抽牌数。 */
   readonly openingDraw: number;
   /** 当前方新回合抽牌数。 */
@@ -63,6 +66,8 @@ export type SummonDefinitionMap = Readonly<Partial<Record<SideId, Readonly<Recor
 
 /** 一局的输入。牌组用 cardId 表达，不使用图片路径。 */
 export interface BattleConfig {
+  /** Scenario AI overrides; does not change rules or random state. */
+  readonly ai?: Partial<AiSettings>;
   readonly seed: number;
   /** 玩家牌组（CardDefinition.cardId 列表，允许重复）。 */
   readonly playerDeck: readonly string[];
@@ -80,7 +85,7 @@ export interface BattleConfig {
 export type BattlePhase =
   /** 等待当前方出牌或结束回合。 */
   | 'awaitingPlay'
-  /** 主场选择操作顺序；客场只获得部署窗口。 */
+  /** Legacy phase; new battles go directly to the guest deployment window. */
   | 'awaitingPriority'
   | 'awaitingResponse'
   /** 正在按顺序结算一次行动。 */
@@ -151,6 +156,8 @@ export interface BattleState {
   nextEventSeq: number;
   /** 结算结果；未结束时为 null。 */
   outcome: BattleOutcome | null;
+  /** No ordinary hand/prep cards on either side: advance host rows automatically. */
+  autoEvolution?: { completedTurns: number; readonly limit: number } | null;
   /** 用于平局判定的状态重复检测（PLAN 第 4.2 节）。 */
   stateHistory: string[];
 }
@@ -176,7 +183,9 @@ export type BattleEndReason =
   /** 状态重复，判定无法推进。 */
   | 'stateRepeated'
   /** 双方同时满足失败条件。 */
-  | 'simultaneous';
+  | 'simultaneous'
+  | 'conceded'
+  | 'autoEvolutionLimit';
 
 /** 玩家或 AI 提交的行动。 */
 export type Command =
@@ -191,7 +200,7 @@ export type Command =
   | { readonly kind: 'useCooldownCard'; readonly side: SideId; readonly instanceId: string; readonly targetInstanceId: string }
   | { readonly kind: 'choosePriority'; readonly side: SideId; readonly order: 'first' | 'last' }
   | { readonly kind: 'endTurn'; readonly side: SideId }
-  /** 测试与调试用：直接推进到下一方的回合开始。 */
+  /** 主动认输；不受当前操作方与演出输入锁限制。 */
   | { readonly kind: 'concede'; readonly side: SideId };
 
 /** 行动被拒绝的原因。合法性与演出时长无关。 */
@@ -252,6 +261,10 @@ export type BattleEvent = { readonly seq: number; readonly turn: number } & (
   | { readonly type: 'UnyieldingChanged'; readonly side: SideId; readonly instanceId: string; readonly groupId: string; readonly active: boolean; readonly expiresAfterTurn: number }
   | { readonly type: 'LifeTransferred'; readonly side: SideId; readonly recipientId: string; readonly donorId: string; readonly amount: number }
   | { readonly type: 'FormationShuffled'; readonly side: SideId; readonly casterId: string; readonly order: readonly (string | null)[] }
+  | { readonly type: 'ConcealmentGranted'; readonly side: SideId; readonly instanceId: string; readonly sourceInstanceId: string }
+  | { readonly type: 'SilenceApplied'; readonly side: SideId; readonly instanceId: string; readonly sourceInstanceId: string; readonly turns: number; readonly expiresAfterTurn: number }
+  | { readonly type: 'SilenceExpired'; readonly side: SideId; readonly instanceId: string }
+  | { readonly type: 'WaitingCardCrushed'; readonly side: SideId; readonly instanceId: string; readonly casterId: string }
   | { readonly type: 'ConcealmentUsed'; readonly side: SideId; readonly instanceId: string; readonly attackerId: string }
   | { readonly type: 'VanguardIntercepted'; readonly side: SideId; readonly guardId: string; readonly protectedId: string; readonly attackerId: string }
   | { readonly type: 'DiscardDevoured'; readonly side: SideId; readonly casterId: string; readonly instanceIds: readonly string[] }
@@ -266,6 +279,7 @@ export type BattleEvent = { readonly seq: number; readonly turn: number } & (
   | { readonly type: 'CloneCreated'; readonly side: SideId; readonly instanceId: string; readonly groupId: string; readonly battleSlot: number; readonly mode: 'shared' | 'independent' }
   | { readonly type: 'SlotCompacted'; readonly side: SideId; readonly moves: readonly { readonly instanceId: string; readonly from: number; readonly to: number }[] }
   | { readonly type: 'TurnEnded'; readonly side: SideId; readonly nextSide: SideId }
+  | { readonly type: 'AutoEvolutionChanged'; readonly active: boolean; readonly completedTurns: number; readonly limit: number }
   | { readonly type: 'BattleEnded'; readonly outcome: BattleOutcome }
 );
 

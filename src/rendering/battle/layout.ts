@@ -221,7 +221,7 @@ export function handCardTransform(
   index: number,
   total: number,
   side: SideId,
-): { position: [number, number, number]; rotationY: number; rotationX: number } {
+): { position: [number, number, number]; rotationY: number; rotationX: number; rotationZ: number } {
   const centered = total <= 1 ? 0 : index - (total - 1) / 2;
   // Cooling rewards can grow the hand beyond deck size; keep the fan inside the table.
   const compression = Math.min(1, 12 / Math.max(1, total - 1));
@@ -238,8 +238,10 @@ export function handCardTransform(
       rowZ(side, ROW.hand + arcDepth),
     ],
     rotationY: -sign * visualCentered * 0.075,
-    // 平放是 -π/2，加一个正角就立起来；敌方取负，朝它自己那一侧倾
+    // Each hand leans toward its owner. The far face is turned in its own plane,
+    // keeping its head above its foot when viewed from the enemy side.
     rotationX: -Math.PI / 2 + sign * HAND.tilt,
+    rotationZ: side === 'enemy' ? Math.PI : 0,
   };
 }
 

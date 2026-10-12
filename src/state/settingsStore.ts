@@ -1,3 +1,4 @@
+import { normalizeAiSettings, DEFAULT_AI, type AiSettings, type AiDifficulty, type AiStyle, type AiPolicy } from '../domain/battle/ai/types';
 import { ANIMATION_DURATION_SCALE } from '../rendering/anim/timing';
 import { create } from 'zustand';
 
@@ -19,7 +20,7 @@ import type { SettingsState } from '../domain/progression/types';
  * 这里只放「改一次、长期不变」的东西：画质、演出速度、镜头震动开关、音量。
  * 高频的（相机、粒子、悬停）一律不进 store——每帧 setState 是 R3F 的典型陷阱。
  *
- * 这些开关**只影响表现**：任何一项都不得改变战斗结果（`V-FX-5`）。
+ * 画面开关只影响表现（`V-FX-5`）；AI 偏好控制所选命令，引擎不读取这些偏好。
  *
  * **这个 store 是设置的运行期唯一真相**（2026-10-08）。存档里的 `profile.settings`
  * 只是它的持久化镜像：启动时 `state/settingsPersistence.hydrateSettings` 灌进来，
@@ -105,6 +106,10 @@ function safeUnit(value: unknown, fallback: number): number {
 }
 
 interface SettingsStateShape {
+  readonly aiDifficulty: AiDifficulty;
+  readonly aiStyle: AiStyle;
+  readonly aiPolicy: AiPolicy;
+  setAi: (value: Partial<AiSettings>) => void;
   readonly quality: QualityTier;
   /** 画质档的四个可覆盖参数（扁平存放，便于字段级 diff 与持久化）。 */
   readonly dprCap: number;
@@ -119,6 +124,8 @@ interface SettingsStateShape {
   readonly cameraShake: boolean;
   /** 是否显示性能读数条。 */
   readonly showPerf: boolean;
+  readonly skipTurnEnd: boolean;
+  setSkipTurnEnd: (enabled: boolean) => void;
   /**
    * 减少动态。
    *
@@ -172,12 +179,19 @@ export const useSettingsStore = create<SettingsStateShape>((set) => {
   const medium = knobsOf('medium');
 
   return {
+    aiDifficulty: DEFAULT_AI.difficulty, aiStyle: DEFAULT_AI.style, aiPolicy: DEFAULT_AI.policy,
+    setAi: (patch) => set(state => {
+      const ai=normalizeAiSettings({difficulty:state.aiDifficulty,style:state.aiStyle,policy:state.aiPolicy,...patch});
+      return {aiDifficulty:ai.difficulty,aiStyle:ai.style,aiPolicy:ai.policy};
+    }),
     quality: 'medium',
     ...medium,
     profile: resolveProfile('medium', medium),
     presentationSpeed: 'normal',
     cameraShake: true,
     showPerf: false,
+    skipTurnEnd: false,
+    setSkipTurnEnd: (skipTurnEnd) => set({ skipTurnEnd }),
     reduceMotion: false,
     cameraModeId: DEFAULT_CAMERA_MODE,
     tableThemeId: DEFAULT_THEME_ID,
@@ -204,6 +218,11 @@ export const useSettingsStore = create<SettingsStateShape>((set) => {
 
     hydrateFromSave: (settings) =>
       set(() => {
+        const ai=normalizeAiSettings({
+          ...(settings.aiDifficulty ? {difficulty:settings.aiDifficulty}:{}),
+          ...(settings.aiStyle ? {style:settings.aiStyle}:{}),
+          ...(settings.aiPolicy ? {policy:settings.aiPolicy}:{}),
+        });
         const quality = safeTier(settings.quality, 'medium');
         const knobs: QualityKnobs = {
           dprCap:
@@ -218,6 +237,7 @@ export const useSettingsStore = create<SettingsStateShape>((set) => {
         const tableTheme = getTableTheme(settings.tableThemeId || DEFAULT_THEME_ID);
         const tableThemeId = tableTheme.id;
         return {
+          aiDifficulty:ai.difficulty, aiStyle:ai.style, aiPolicy:ai.policy,
           quality,
           ...knobs,
           profile: resolveProfile(quality, knobs),
@@ -229,6 +249,7 @@ export const useSettingsStore = create<SettingsStateShape>((set) => {
           cameraShake: safeBool(settings.cameraShake, true),
           reduceMotion: safeBool(settings.reduceMotion, false),
           showPerf: safeBool(settings.showPerf, false),
+          skipTurnEnd: safeBool(settings.skipTurnEnd, false),
           tableThemeId,
           tableTheme,
           cameraModeId: settings.cameraModeId

@@ -9,6 +9,7 @@ import { statPalette } from '../rendering/cards/statColors';
 import type { CardTipTarget } from '../state/cardTipStore';
 import { useSettingsStore } from '../state/settingsStore';
 import { useRarityIndex } from '../state/useRarityIndex';
+import './abyssCardTip.css';
 
 export function CardHoverTip({ target }: { readonly target: CardTipTarget }) {
   const rarityIndex = useRarityIndex();
@@ -16,6 +17,7 @@ export function CardHoverTip({ target }: { readonly target: CardTipTarget }) {
   const ref = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ width: 340, height: 260 });
   const card = target.card ?? (isCooldownCard(target.cardId) ? COOLDOWN_CARD : cardById.get(target.cardId));
+  const effect = target.effect;
   const traits = useMemo(() => card?.skills.map((skill) => ({ raw: skill.raw, text: describeTraitFunction(skill) })) ?? [], [card]);
   useLayoutEffect(() => {
     const element = ref.current;
@@ -29,11 +31,11 @@ export function CardHoverTip({ target }: { readonly target: CardTipTarget }) {
     const observer = new ResizeObserver(measure);
     observer.observe(element);
     return () => observer.disconnect();
-  }, [card]);
-  if (!card) return null;
-  const stats = target.stats ?? card;
-  const utility = isCooldownCard(card.cardId);
-  const color = rarityIndex.colorOf(card.rarity);
+  }, [card, effect]);
+  if (!card && !effect) return null;
+  const stats = target.stats ?? card ?? COOLDOWN_CARD;
+  const utility = !!card && isCooldownCard(card.cardId);
+  const color = effect?.color ?? rarityIndex.colorOf(card?.rarity ?? 'D');
   const gap = 18;
   const margin = 18;
   const width = Math.min(340, Math.max(1, window.innerWidth - margin * 2));
@@ -47,12 +49,18 @@ export function CardHoverTip({ target }: { readonly target: CardTipTarget }) {
   const statuses = (target.attackStatuses ?? []).map((kind) =>
     ({ frost: '严霜', burn: '燃烧', poison: '剧毒', bleed: '流血', grievous: '重伤' })[kind]);
   if (target.unyielding) statuses.push('不屈持续中');
-  if (card.rawTraits.includes('飞行') && target.flying === false) statuses.push('飞行被压制');
-  return createPortal(<div ref={ref} className={`cardtip${still ? ' cardtip--still' : ''}`} style={style} role="tooltip">
+  if (card?.rawTraits.includes('飞行') && target.flying === false) statuses.push('飞行被压制');
+  return createPortal(<div ref={ref} className={`cardtip${still ? ' cardtip--still' : ''}${target.theme === 'abyss' ? ' cardtip--abyss' : ''}`} style={style} role="tooltip">
     <div className="cardtip__frame"><div className="cardtip__surface">
       <div className="cardtip__flow" aria-hidden="true" />
       <div className="cardtip__trim" aria-hidden="true" />
       <div className="cardtip__content">
+        {effect ? <>
+          <header><h4 className="cardtip__name" style={{ color }}>{effect.name}</h4>
+            <p className="cardtip__meta">{effect.meta}</p></header>
+          <p className="cardtip__function">{effect.description}</p>
+          {effect.footer && <p className="cardtip__desc">{effect.footer}</p>}
+        </> : card && <>
         <header><h4 className="cardtip__name" style={{ color }}>{card.name}</h4>
           <p className="cardtip__meta">{utility ? '本局资源 · 不占普通出牌额度' : `${card.rarity} · ${card.cardId}`}</p></header>
         {!utility && <ul className="cardtip__stats">
@@ -66,6 +74,7 @@ export function CardHoverTip({ target }: { readonly target: CardTipTarget }) {
             <li key={`${trait.raw}-${index}`}><b>{trait.raw}</b><span>{trait.text}</span></li>)}</ul>
             : <p className="cardtip__empty">没有特性</p>}
         {!utility && card.description && <p className="cardtip__desc">{card.description}</p>}
+        </> }
       </div>
     </div></div>
     <span className="cardtip__orb-mount" aria-hidden="true"><CardTipOrb color={color} /></span>

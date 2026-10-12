@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { cardById } from '../data';
-import { cardFaceUrl } from '../data/assets';
+import type { CardDefinition } from '../domain/cards/types';
+import { cardFaceUrlForDefinition } from '../data/assets';
+import { useAbyssCardFace } from '../rendering/cards/useAbyssCardFace';
 import { foilForRarity } from '../rendering/cards/foilModel';
 import { statPalette } from '../rendering/cards/statColors';
 import { useRarityIndex } from '../state/useRarityIndex';
@@ -30,6 +32,7 @@ import { useFoilPointer } from './useFoilPointer';
  * 而不是给卡片再包一层。
  */
 export interface CardShowcaseProps {
+  readonly definition?: CardDefinition;
   readonly cardId: string;
   /**
    * 可浏览的顺序。只有一张时左右按钮禁用。
@@ -61,8 +64,9 @@ type SwitchPhase =
   /** 新卡正在飞入。 */
   | { readonly kind: 'in'; readonly dir: FlipDir };
 
-export function CardShowcase({ cardId, cardIds, onSelect, onClose }: CardShowcaseProps) {
-  const card = cardById.get(cardId);
+export function CardShowcase({ cardId, cardIds, definition, onSelect, onClose }: CardShowcaseProps) {
+  const card = definition ?? cardById.get(cardId);
+  const face = useAbyssCardFace(card, 'detail');
   const rarityIndex = useRarityIndex();
   const cardRef = useRef<HTMLDivElement | null>(null);
   const [phase, setPhase] = useState<SwitchPhase>({ kind: 'idle' });
@@ -148,7 +152,7 @@ export function CardShowcase({ cardId, cardIds, onSelect, onClose }: CardShowcas
 
   // 大图用 detail 档：这一处是玩家唯一会盯着看的画面，
   // 用缩略图会糊（纹理预算上只看一张，代价可以接受）
-  const url = cardFaceUrl(cardId, 'detail') ?? cardFaceUrl(cardId, 'battle');
+  const url = face ?? cardFaceUrlForDefinition(card, 'battle');
 
   /*
     色带配色**内联**而不是写成 CSS 类：每个稀有度的代表色都不同，

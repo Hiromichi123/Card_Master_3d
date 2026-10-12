@@ -23,6 +23,8 @@ export interface BattleResultPanelProps {
 
 const REASON_LABEL: Record<string, string> = {
   hpDepleted: '本体生命归零',
+  conceded: '一方主动认输',
+  autoEvolutionLimit: '自动演进 10 回合结束，按本体剩余生命判定',
   noCardsRemaining: '双方都无牌可出',
   turnLimit: '达到回合上限',
   stateRepeated: '局面重复，无法推进',

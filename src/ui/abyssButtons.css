@@ -1,0 +1,51 @@
+@layer controls {
+  .abyss-table-surface { position: fixed; inset: 0; z-index: 100; background: #100a19; }
+  .abyss-table-surface > div { width: 100%; height: 100%; }
+  .abyss-choice-scene[data-shared="true"], .abyss-battle[data-shared="true"] { background: transparent; }
+  .abyss-choice-scene[data-shared="true"], .abyss-battle[data-shared="true"],
+  .abyss-choice-scene[data-shared="true"] > .scene-viewport, .abyss-battle[data-shared="true"] > .scene-viewport { pointer-events: none; }
+  .abyss-choice-scene[data-shared="true"] :is(button, details, dialog, input, select, .abyss-choice-fallback),
+  .abyss-battle[data-shared="true"] :is(button, details, dialog, input, select) { pointer-events: auto; }
+  .abyss-surface-unavailable { padding: 24px; color: #cfb6e5; }
+  .abyss-battle[data-ending="true"] :is(.hud, .abyss-battle__effects, .abyss-battle__rules, .abyss-battle__result) { opacity: 0; transition: opacity .45s ease; pointer-events: none; }
+  .abyss-battle[data-ending="true"] :is(button, details, input, select) { pointer-events: none; }
+  .abyss-home-stage .abyss-home__buttons { --abyss-main-button-height: clamp(100px, 12vh, 142px); grid-template-columns: repeat(4, minmax(0, 1fr)); align-items: end; gap: 18px; }
+  .abyss-home-stage .abyss-home__buttons > .abyss-entrance:first-child,
+  .abyss-home-stage .abyss-home__buttons > .abyss-entrance:last-child { margin-bottom: calc(var(--abyss-main-button-height) / 2); }
+  .abyss-home-stage .abyss-home__buttons > .abyss-entrance > button { min-height: var(--abyss-main-button-height); }
+  .abyss-home-stage .abyss-home__buttons > .abyss-entrance > button,
+  .abyss-choice-scene .abyss-camp-nav > button {
+    position: relative; overflow: hidden; isolation: isolate; padding: 24px 18px 28px;
+    border: 1px solid #a187bc77; border-radius: 4px 14px 4px 14px;
+    color: #eadff8; background: repeating-linear-gradient(118deg, #c3a5df04 0 2px, transparent 2px 8px), linear-gradient(135deg, #33273ddf, #211d32eb 44%, #362347e8);
+    box-shadow: inset 0 1px 0 #e3cdfa3b, inset 0 -4px 0 #0e081c99, 0 8px 22px #07030f66;
+    text-shadow: 0 2px 8px #08030d; transition: filter .22s ease, translate .22s ease, border-color .22s ease;
+  }
+  .abyss-home-stage .abyss-home__buttons > .abyss-entrance > button::before,
+  .abyss-choice-scene .abyss-camp-nav > button::before {
+    content: ''; position: absolute; left: 16px; right: 16px; bottom: 11px; height: 3px; pointer-events: none;
+    background: linear-gradient(90deg, transparent, #7857bb, #d8bafa, #ac78e0, transparent); background-size: 180% 100%;
+    box-shadow: 0 0 10px #a473d8aa, 0 0 22px #76439d66; animation: abyss-purple-bar 4s ease-in-out infinite alternate;
+  }
+  .abyss-home-stage .abyss-home__buttons > .abyss-entrance > button::after,
+  .abyss-choice-scene .abyss-camp-nav > button::after {
+    content: ''; position: absolute; right: 14px; top: 12px; width: 14px; height: 19px; transform: rotate(18deg); pointer-events: none;
+    clip-path: polygon(50% 0,100% 32%,85% 76%,50% 100%,15% 76%,0 32%);
+    background: conic-gradient(from 25deg at 50% 45%, #eee0ff, #8b60c5 22%, #39234f 42%, #b191df 65%, #5f4588 85%, #eee0ff);
+    filter: drop-shadow(0 0 5px #aa7cd6aa);
+  }
+  .abyss-home-stage .abyss-home__buttons > .abyss-entrance > button:hover,
+  .abyss-choice-scene .abyss-camp-nav > button:hover { border-color: #d2aaf1; filter: brightness(1.18); translate: 0 -3px; }
+  .abyss-home-stage .abyss-home__buttons small { color: #c3aad4; }
+  .abyss-choice-scene .abyss-camp-nav > .abyss-save-exit { color: #e8c6e2; border-color: #b889ad88; }
+  .abyss-home-stage button:disabled::before, .abyss-choice-scene .abyss-camp-nav > button:disabled::before { animation: none; opacity: .4; }
+  .abyss-choice-scene[data-still="true"] button::before, .abyss-scene[data-still="true"] button::before { animation: none; }
+  @keyframes abyss-purple-bar { from { background-position: 0 50%; opacity: .65; } to { background-position: 100% 50%; opacity: 1; } }
+  @media (max-width: 700px) {
+    .abyss-home-stage .abyss-home__buttons { gap: 6px; }
+    .abyss-home-stage .abyss-home__buttons > .abyss-entrance > button { padding: 22px 6px 24px; }
+    .abyss-home-stage .abyss-home__buttons strong { font-size: 15px; }
+    .abyss-home-stage .abyss-home__buttons small { font-size: 10px; }
+    .abyss-choice-scene .abyss-camp-nav > button { padding: 16px 8px 22px; }
+  }
+}

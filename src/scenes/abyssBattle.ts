@@ -2,6 +2,8 @@ import { cardById } from '../data';
 import type { BattleConfig } from '../domain/battle/types';
 import type { CardDefinition } from '../domain/cards/types';
 import type { AbyssEffect, AbyssEncounter, AbyssRun } from '../domain/progression/abyssTypes';
+import { abyssBaseHp } from '../domain/progression/abyssRules';
+import { withAbyssRarity } from '../domain/progression/abyssRarity';
 import { summonDefinitionIds } from '../domain/skills/tacticalTraits';
 import type { DefinitionTable } from '../rendering/presentation/demoBattle';
 
@@ -12,16 +14,26 @@ export function withAbyssBattleEffects(card: CardDefinition, effects: readonly A
     hp: sum.hp + effect.modifier.hp,
     cd: sum.cd + effect.modifier.cd,
   }), { atk: 0, hp: 0, cd: 0 });
-  const additions = effects.flatMap(effect => effect.modifier.traits)
-    .filter((skill, index, skills) => !card.skills.some(existing => existing.family === skill.family)
-      && skills.findIndex(other => other.family === skill.family) === index);
+  const strongest = new Map<string, CardDefinition['skills'][number]>();
+  for (const skill of effects.flatMap(effect => effect.modifier.traits)) {
+    if (!skill.family) continue;
+    const previous = strongest.get(skill.family);
+    if (!previous || (skill.param ?? 0) > (previous.param ?? 0)) strongest.set(skill.family, skill);
+  }
+  const skills = [...card.skills];
+  for (const skill of strongest.values()) {
+    const indices = skills.map((existing, index) => existing.family === skill.family ? index : -1).filter(index => index >= 0);
+    if (!indices.length) { skills.push(skill); continue; }
+    const index = indices.reduce((best, next) => (skills[next]!.param ?? 1) > (skills[best]!.param ?? 1) ? next : best);
+    if (skill.param !== null && skill.param > (skills[index]!.param ?? 1)) skills[index] = skill;
+  }
   return {
     ...card, cardId,
     atk: Math.max(0, Math.min(999, card.atk + delta.atk)),
     hp: Math.max(1, Math.min(999, card.hp + delta.hp)),
     cd: Math.max(0, Math.min(999, card.cd + delta.cd)),
-    rawTraits: [...card.rawTraits, ...additions.map(skill => skill.raw)],
-    skills: [...card.skills, ...additions],
+    rawTraits: [...card.rawTraits.map((raw, index) => skills[index]?.raw ?? raw), ...skills.slice(card.skills.length).map(skill => skill.raw)],
+    skills,
     description: `${card.description}${card.description ? '\n' : ''}本战效果：${effects.map(effect => effect.description).join('；') || '无'}`,
   };
 }
@@ -35,7 +47,7 @@ export function compileAbyssBattle(run: AbyssRun, battle: AbyssEncounter, lookup
   const definitions: Record<string, CardDefinition> = {};
   const summonDefinitions: Record<'player' | 'enemy', Record<string, string>> = { player: {}, enemy: {} };
   for (const side of ['player', 'enemy'] as const) {
-    const cards = side === 'player' ? run.cards : battle.enemyCards;
+    const cards = side === 'player' ? run.cards.map(withAbyssRarity) : battle.enemyCards;
     const effects = side === 'player' ? [pair.positive, pair.negative] : [battle.enemyEffect];
     const local = new Map(cards.map(card => [card.instanceId, card.definition]));
     for (const card of cards) {
@@ -57,6 +69,8 @@ export function compileAbyssBattle(run: AbyssRun, battle: AbyssEncounter, lookup
   return {
     config: {
       seed: battle.seed,
+      rules: { baseHpBySide: abyssBaseHp(battle) },
+      ai: {difficulty:battle.difficulty==='nightmare'?'boss':battle.difficulty},
       playerDeck: run.cards.map(card => card.instanceId),
       enemyDeck: battle.enemyCards.map(card => card.instanceId),
       label: `深渊 ${battle.floor}-${battle.encounter}`,

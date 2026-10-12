@@ -1,7 +1,8 @@
 import { useEffect, useRef, type ReactNode } from 'react';
 
-export function AbyssDialog({ title, children, onClose }: {
+export function AbyssDialog({ title, children, onClose, className }: {
   readonly title: string;
+  readonly className?: string | undefined;
   readonly children: ReactNode;
   readonly onClose: () => void;
 }) {
@@ -12,7 +13,7 @@ export function AbyssDialog({ title, children, onClose }: {
     dialog?.showModal();
     return () => { dialog?.close(); previous?.focus({ preventScroll: true }); };
   }, []);
-  return <dialog ref={ref} className="abyss-dialog" aria-label={title}
+  return <dialog ref={ref} className={`abyss-dialog ${className ?? ''}`} aria-label={title}
     onCancel={event => { event.preventDefault(); onClose(); }}
     onKeyDown={event => { if (event.key === 'Escape') event.stopPropagation(); }}
     onClick={event => { if (event.target === event.currentTarget) {

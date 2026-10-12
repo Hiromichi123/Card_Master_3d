@@ -48,9 +48,9 @@ export function physicalDefender(state:BattleState,attacker:CardInstance,intende
 /** First physical attack per battlefield entry; spells and base shots never consume concealment. */
 export function consumeConcealment(resolver:{emit(event:BattleEventPayload):void},state:BattleState,
   defender:CardInstance,attack:AttackState):boolean {
-  if(defender.marks.concealmentUsed || !isBattleActive(state,defender) || !hasFamily(state,defender,'concealment') ||
+  if((defender.marks.concealmentUsed&&!defender.marks.grantedConcealment) || !isBattleActive(state,defender) || !(hasFamily(state,defender,'concealment')||defender.marks.grantedConcealment) ||
     isSilenced(state,defender.owner,defender.slotIndex)) return false;
-  defender.marks.concealmentUsed=true;attack.damage=0;attack.dodged=true;
+  defender.marks.grantedConcealment=false;defender.marks.concealmentUsed=true;attack.damage=0;attack.dodged=true;
   resolver.emit({type:'ConcealmentUsed',side:defender.owner,instanceId:defender.instanceId,attackerId:attack.attacker.instanceId});
   return true;
 }
