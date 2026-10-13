@@ -15,7 +15,7 @@
 import { createRng, seedFrom, type Rng } from '../battle/rng';
 import type { Currencies } from './types';
 import { isRejection, reject, type Planned } from './plan';
-import type { EconomyTransaction, ProfileState } from './types';
+import type { EconomyTransaction, ProfileState, ShopDailyState } from './types';
 
 export interface ShelfSpec {
   readonly label: string;
@@ -82,6 +82,26 @@ export function entryIdOf(
   label: string,
 ): string {
   return `${dayKey}|${shelfKey}|${index}|${cardId ?? label}`;
+}
+
+/** 每日日键与迷宫批次键不同，只接受真实的本地日历日期。 */
+export function isShopDayKey(value: string): boolean {
+  if (!/^\d{8}$/.test(value)) return false;
+  const year = Number(value.slice(0, 4));
+  const month = Number(value.slice(4, 6));
+  const day = Number(value.slice(6, 8));
+  const date = new Date(`${value.slice(0, 4)}-${value.slice(4, 6)}-${value.slice(6, 8)}T00:00:00Z`);
+  return Number.isFinite(date.getTime()) && date.getUTCFullYear() === year
+    && date.getUTCMonth() + 1 === month && date.getUTCDate() === day;
+}
+
+/** 加载与迁移共用：只留下指定日期的售罄记录。 */
+export function shopStateForDay(dayKey: string, soldOut: readonly string[]): ShopDailyState {
+  return {
+    dayKey,
+    seed: shopSeedFor(dayKey),
+    soldOut: [...new Set(soldOut.filter(id => id.startsWith(`${dayKey}|`)))],
+  };
 }
 
 function pickRarity(rng: Rng, rarities: readonly string[]): string {
@@ -251,6 +271,8 @@ export function planPurchase(args: PurchaseArgs): Planned<PurchaseView> {
     operationId: args.operationId,
     currencyDelta,
     inventoryDelta: { [cardId]: 1 },
+    // 迷宫复用购买计算，但会在组装节点事务时剥离每日商店字段。
+    shopDayKey: entry.entryId.split('|')[0]!,
     soldOutAdditions: [entry.entryId],
   };
 

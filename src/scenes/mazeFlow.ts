@@ -457,7 +457,7 @@ export function planMazePurchase(args: {
     `planPurchase` 会带上 `soldOutAdditions`，这里必须把它**去掉**而不是置 `undefined`
     ——`exactOptionalPropertyTypes` 下「有键但值为 undefined」不是合法形状。
   */
-  const { soldOutAdditions: _dailyShelf, ...transaction } = planned.transaction;
+  const { soldOutAdditions: _dailyShelf, shopDayKey: _dailyDay, ...transaction } = planned.transaction;
   return {
     transaction: {
       ...transaction,

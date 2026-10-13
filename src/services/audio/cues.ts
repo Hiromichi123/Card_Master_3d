@@ -7,8 +7,11 @@
  * 都会 import 这两个文件。
  */
 
-/** 五类音效。这是全工程唯一的音效词汇表。 */
-export type SoundCue = 'deal' | 'hit' | 'death' | 'gacha' | 'fusion';
+/** 全工程唯一的语义音效词汇表，样本加载失败时使用合成兜底。 */
+export type SoundCue = 'uiClick' | 'deal' | 'play' | 'deploy' | 'hit' | 'death' | 'gacha' | 'fusion'
+  | 'attack' | 'slash' | 'fire' | 'ice' | 'lightning' | 'heal' | 'shield' | 'teleport';
+
+const SKILL_POLICY: CuePolicy = { minGapMs: 100, windowMs: 300, windowMax: 2, mergeGain: 1, cooldownMs: 300 };
 
 /**
  * 单个 cue 的限流策略。
@@ -31,6 +34,17 @@ export interface CuePolicy {
 }
 
 export const CUE_POLICIES: Record<SoundCue, CuePolicy> = {
+  uiClick: { minGapMs: 40, windowMs: 200, windowMax: 4, mergeGain: 1, cooldownMs: 200 },
+  play: { ...SKILL_POLICY, minGapMs: 60 },
+  deploy: { ...SKILL_POLICY, minGapMs: 60 },
+  attack: { ...SKILL_POLICY, minGapMs: 60 },
+  slash: SKILL_POLICY,
+  fire: SKILL_POLICY,
+  ice: SKILL_POLICY,
+  lightning: SKILL_POLICY,
+  heal: SKILL_POLICY,
+  shield: SKILL_POLICY,
+  teleport: SKILL_POLICY,
   hit: { minGapMs: 40, windowMs: 120, windowMax: 3, mergeGain: 1.9, cooldownMs: 220 },
   death: { minGapMs: 60, windowMs: 200, windowMax: 2, mergeGain: 1.5, cooldownMs: 300 },
   gacha: { minGapMs: 90, windowMs: 400, windowMax: 4, mergeGain: 1.25, cooldownMs: 260 },

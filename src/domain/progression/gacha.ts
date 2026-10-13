@@ -219,6 +219,7 @@ export function planPull(args: PullArgs): Planned<GachaResult> {
   const currencyDelta: Partial<Currencies> = { [args.currency]: -cost };
   const transaction: EconomyTransaction = {
     operationId: args.operationId,
+    activityEvent: { kind: 'draw', count: args.count, poolId: args.poolId },
     currencyDelta,
     inventoryDelta,
   };

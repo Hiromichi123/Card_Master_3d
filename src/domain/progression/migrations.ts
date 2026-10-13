@@ -10,9 +10,26 @@
 
 import { SAVE_SCHEMA_VERSION } from './types';
 import { emptyRewards } from './rewardState';
+import { initialActivity } from './playerActivity';
 import { emptyMazeProgress } from './mazeProgress';
 import { migrateDeckSlots } from './deckSlots';
 import { emptyAbyssState } from './abyssRun';
+import { isShopDayKey, shopStateForDay } from './shop';
+
+/** 旧档的日键可能仍是建号日期，不能用它丢弃后续购买的售罄记录。 */
+const migrateDailyShop: Migration = value => {
+  const raw = value.shop;
+  if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) {
+    return { ...value, schemaVersion: 7 };
+  }
+  const shop = raw as Record<string, unknown>;
+  const soldOut = Array.isArray(shop.soldOut)
+    ? shop.soldOut.filter((id): id is string => typeof id === 'string') : [];
+  const days = [shop.dayKey, ...soldOut.map(id => id.split('|')[0])]
+    .filter((day): day is string => typeof day === 'string' && isShopDayKey(day));
+  const dayKey = days.sort().at(-1);
+  return { ...value, schemaVersion: 7, shop: dayKey ? shopStateForDay(dayKey, soldOut) : raw };
+};
 
 export type Migration = (value: Record<string, unknown>) => Record<string, unknown>;
 
@@ -28,6 +45,8 @@ export const MIGRATIONS: Record<number, Migration> = {
       ? { ...value.ladder, claimedTierFloors: [] } : value.ladder,
   }),
   5: value => ({ ...value, schemaVersion: 6, abyss: emptyAbyssState() }),
+  6: migrateDailyShop,
+  7: value => ({ ...value, schemaVersion: 8, activity: value.activity ?? initialActivity({ gacha: value.gacha, ladder: value.ladder, abyss: value.abyss }) }),
 };
 
 export type MigrateResult =

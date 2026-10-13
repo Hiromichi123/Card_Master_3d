@@ -16,6 +16,7 @@ import { pushToast } from '../state/toastStore';
 import { useSettingsStore } from '../state/settingsStore';
 import { menuPosterEntries } from './menuPosters';
 import { AbyssEntry } from '../ui/AbyssEntry';
+import { NoviceRewards, StatisticsPanel } from '../ui/PlayerPanels';
 import type { ProfileState } from '../domain/progression/types';
 import type { RouteId } from '../app/routes';
 import '../ui/hubMenu.css';
@@ -50,7 +51,7 @@ const MAIN_ROWS: readonly (readonly HubEntry[])[] = [
   ],
   [
     { id: 'ranking', kind: 'ranking', color: '#dec184', route: null, label: '排行榜', hint: '天梯、收藏与深渊排行榜 · 本地演示榜' },
-    { id: 'statistics', kind: 'statistics', color: '#a8c1c4', route: null, label: '统计数据', hint: '统计数据暂未开放' },
+    { id: 'statistics', kind: 'statistics', color: '#a8c1c4', route: null, label: '统计数据', hint: '查看战绩、收藏与累计次数' },
     { id: 'demo', kind: 'demo', color: '#b6b3e6', route: 'battle', label: '战斗演示', hint: '不影响存档的演示对局' },
   ],
 ];
@@ -85,6 +86,7 @@ export function HubScene({ profile, store, busy = false, playerName = '当前玩
   const snapshot = useProfileStore(store ?? null);
   const current = snapshot.profile ?? profile;
   const [rankingOpen, setRankingOpen] = useState(false);
+  const [statisticsOpen, setStatisticsOpen] = useState(false);
   const still = useSettingsStore((state) => state.reduceMotion);
   const [activeId, setActiveId] = useState<string | null>(null);
   const anchors = useRef(new Map<string, HTMLSpanElement>());
@@ -92,6 +94,7 @@ export function HubScene({ profile, store, busy = false, playerName = '当前玩
   const posters = menuPosterEntries();
 
   const activate = (entry: HubEntry): void => {
+    if (entry.id === 'statistics') { setStatisticsOpen(true); return; }
     if (entry.reset) {
       if (window.confirm('重置存档？当前的卡牌、货币与关卡进度都会被清掉。')) onReset();
     } else if (entry.route) {
@@ -114,7 +117,7 @@ export function HubScene({ profile, store, busy = false, playerName = '当前玩
       <button type="button"
       className={`hub-button art-button${entry.id === 'gacha' ? ' art-button--gold' : ''} ${dock ? 'hub-dock__item' : 'hub-main__button'} hub-button--${entry.id}${activeId === entry.id ? ' hub-button--active' : ''}`}
       style={{ '--hub-color': entry.color, '--hub-from': palette.from, '--hub-to': palette.to, '--button-art': art ? `url("${art}")` : 'none' } as CSSProperties}
-      title={entry.hint} data-unavailable={entry.route === null && !entry.reset}
+      title={entry.hint} data-unavailable={entry.route === null && !entry.reset && entry.id !== 'statistics'}
       onFocus={() => setActiveId(entry.id)} onBlur={() => clearActive(entry.id)}
       onClick={() => activate(entry)}>
       <ArtButtonSurface />
@@ -124,7 +127,7 @@ export function HubScene({ profile, store, busy = false, playerName = '当前玩
       <span className="hub-button__copy"><strong>{entry.label}</strong>
         {!dock && entry.route && <small>{entry.hint}</small>}
       </span>
-    </button></div>;
+    </button>{entry.id === 'daily' && store && <NoviceRewards store={store} />}</div>;
   };
 
   return <MenuChrome className={`menu--hub hub-menu${still ? ' hub-menu--still' : ''}`}
@@ -145,6 +148,7 @@ export function HubScene({ profile, store, busy = false, playerName = '当前玩
       {DOCK.map((entry) => button(entry, true))}
     </nav>
     <HubLogoLayer items={LOGOS} anchors={anchors} activeId={activeId} still={still} />
+    {statisticsOpen && <StatisticsPanel profile={current} onClose={() => setStatisticsOpen(false)} />}
     {rankingOpen && <LeaderboardModal profile={current} playerName={playerName} onClose={() => setRankingOpen(false)} />}
   </MenuChrome>;
 }

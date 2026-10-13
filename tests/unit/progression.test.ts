@@ -439,6 +439,33 @@ describe('商店', () => {
     expect(outcome.profile.shop.soldOut).toContain(entry.entryId);
   });
 
+  it('每日售罄同日累积、跨日清理，过期或重复事务不能扣费发卡', () => {
+    const rich = { ...freshProfile(), currencies: { gold: 999999, crystal: 999999, badge: 0 } };
+    const purchase = (profile: ProfileState, dayKey: string, index = 0) => {
+      const entry = buildShelf({ dayKey, spec, cardsByRarity: byRarity, soldOut: [] })[index]!;
+      const planned = planPurchase({ profile, entry, operationId: `${dayKey}-${index}`, cardsByRarity: byRarity, rng: createRng(7) });
+      if ('rejected' in planned) throw new Error(planned.rejected);
+      expect(planned.transaction.shopDayKey).toBe(dayKey);
+      return planned.transaction;
+    };
+    const first = purchase(rich, '20260101');
+    const bought = applyEconomyTransaction(rich, first).profile;
+    const second = purchase(bought, '20260101', 1);
+    const sameDay = applyEconomyTransaction(bought, second).profile;
+    expect(sameDay.shop.soldOut).toEqual([...first.soldOutAdditions!, ...second.soldOutAdditions!]);
+    expect(applyEconomyTransaction(sameDay, { ...first, operationId: 'repeat' })).toMatchObject({ applied: false, reason: 'shopChanged', profile: sameDay });
+    const tomorrow = purchase(sameDay, '20260102');
+    const nextDay = applyEconomyTransaction(sameDay, tomorrow).profile;
+    expect(nextDay.shop).toEqual({ dayKey: '20260102', seed: shopSeedFor('20260102'), soldOut: tomorrow.soldOutAdditions });
+    expect(applyEconomyTransaction(nextDay, first)).toMatchObject({ applied: false, reason: 'shopChanged', profile: nextDay });
+    for (const patch of [{ shopDayKey: '20260230' }, { shopDayKey: '20260103' }]) {
+      expect(applyEconomyTransaction(sameDay, { ...tomorrow, ...patch }).profile).toBe(sameDay);
+    }
+    const poor = { ...sameDay, currencies: { gold: 0, crystal: 0, badge: 0 } };
+    expect(applyEconomyTransaction(poor, tomorrow)).toMatchObject({ applied: false, reason: 'insufficientFunds' });
+    expect(applyEconomyTransaction(poor, tomorrow).profile).toBe(poor);
+  });
+
   it('已售罄的条目再买会被拒', () => {
     const profile = { ...freshProfile(), currencies: { gold: 999999, crystal: 999999, badge: 0 } };
     const shelf = buildShelf({ dayKey: '20260101', spec, cardsByRarity: byRarity, soldOut: [] });

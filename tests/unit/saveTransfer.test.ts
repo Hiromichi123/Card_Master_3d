@@ -10,6 +10,8 @@ import { describe, expect, it } from 'vitest';
 
 import { cardDatabase, slice } from '../../src/data';
 import { fixedClock } from '../../src/domain/progression/clock';
+import { migrateToCurrent } from '../../src/domain/progression/migrations';
+import { shopSeedFor } from '../../src/domain/progression/shop';
 import { emptyMazeProgress } from '../../src/domain/progression/mazeProgress';
 import { DEFAULT_SETTINGS, SAVE_SCHEMA_VERSION } from '../../src/domain/progression/types';
 import { detectSaveFormat, normalizeProfile, parseSaveJson } from '../../src/domain/progression/saveTransfer';
@@ -70,6 +72,40 @@ describe('parseSaveJson', () => {
 });
 
 describe('normalizeProfile', () => {
+  it('v6 混存记录恢复最后商店日键，加载/导入仅保留当天售罄', async () => {
+    const { store } = await readyStore();
+    const base = JSON.parse((await store.exportProfile())!);
+    const today = '20260101|normal|0|D_002';
+    const old = { ...base, schemaVersion: 6, shop: {
+      dayKey: '20250101', seed: 0,
+      soldOut: ['20251231|normal|0|D_002', today, today, 'bad|normal|0|D_002'],
+    } };
+    const migrated = migrateToCurrent(old, 6);
+    expect(migrated.ok).toBe(true);
+    if (!migrated.ok) return;
+    expect(migrated.value).toEqual({ ...old, schemaVersion: SAVE_SCHEMA_VERSION,
+      shop: { dayKey: '20260101', seed: shopSeedFor('20260101'), soldOut: [today] } });
+    const loaded = await readyStore(new MemorySaveRepository(old));
+    expect(loaded.store.getSnapshot().profile?.shop.soldOut).toEqual([today]);
+    expect(loaded.repository.commitCount).toBe(0);
+    const nextLoad = new ProfileStore({ repository: new MemorySaveRepository(old),
+      clock: fixedClock(new Date('2026-01-02T12:00:00Z')), seedSource: () => 1,
+      contentVersion: cardDatabase.contentVersion, starterCardIds: starterIds(), knownCardIds: KNOWN });
+    await nextLoad.load();
+    expect(nextLoad.getSnapshot().profile?.shop.soldOut).toEqual([]);
+    const normalized = normalizeProfile(old, normalizeCtx());
+    expect(normalized.ok).toBe(true);
+    if (!normalized.ok) return;
+    expect(normalized.profile.shop.soldOut).toEqual([today]);
+    expect(normalized.profile.inventory).toEqual(base.inventory);
+    expect(normalized.profile.currencies).toEqual(base.currencies);
+    expect(normalized.profile.decks).toEqual(base.decks);
+    const restored = normalizeProfile(JSON.parse(JSON.stringify(normalized.profile)), normalizeCtx());
+    expect(restored.ok && restored.profile.shop).toEqual(normalized.profile.shop);
+    const tomorrow = normalizeProfile(normalized.profile, { ...normalizeCtx(), dayKey: '20260102' });
+    expect(tomorrow.ok && tomorrow.profile.shop).toEqual({ dayKey: '20260102', seed: shopSeedFor('20260102'), soldOut: [] });
+  });
+
   it('缺 settings 时补上默认值', () => {
     const result = normalizeProfile(
       { schemaVersion: 3, inventory: {}, currencies: { gold: 10 }, mazeProgress: emptyMazeProgress() },

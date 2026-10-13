@@ -170,7 +170,7 @@ export interface ChapterConfig {
 
 export const stages = stagesJson as {
   chapters: readonly ChapterConfig[];
-  /** 只有第 4 章。它没有关卡，海报也不在 manifest 里——界面要能渲染「待续」。 */
+  /** 没有关卡的章节；目前六章均已配置关卡入口。 */
   readonly emptyChapters: readonly string[];
 };
 

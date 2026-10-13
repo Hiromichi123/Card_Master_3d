@@ -8,10 +8,10 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { admit, createGates } from '../../src/services/audio/CueGate';
-import { CUE_POLICIES } from '../../src/services/audio/cues';
+import { admit, BurstGate, createGates } from '../../src/services/audio/CueGate';
+import { CUE_POLICIES, type SoundCue } from '../../src/services/audio/cues';
 
-function run(cue: 'hit' | 'death' | 'gacha' | 'deal' | 'fusion', count: number, gapMs: number) {
+function run(cue: SoundCue, count: number, gapMs: number) {
   const gates = createGates();
   const result = { play: 0, merge: 0, drop: 0 };
   for (let i = 0; i < count; i += 1) {
@@ -28,6 +28,20 @@ function run(cue: 'hit' | 'death' | 'gacha' | 'deal' | 'fusion', count: number, 
 }
 
 describe('音效限流', () => {
+  it('新增攻击/施法同帧触发只响一次，不叠加合并增益', () => {
+    for (const cue of ['uiClick', 'play', 'deploy', 'attack', 'slash', 'fire', 'ice', 'lightning', 'heal', 'shield', 'teleport'] as const) {
+      expect(run(cue, 40, 0)).toEqual({ play: 1, merge: 0, drop: 39 });
+    }
+  });
+
+  it('不同元素共享总预算，80ms内最多四声，复位后恢复', () => {
+    const gate = new BurstGate();
+    expect(Array.from({ length: 30 }, () => gate.admit(0)).filter(Boolean)).toHaveLength(4);
+    expect(gate.admit(79)).toBe(false);
+    expect(gate.admit(80)).toBe(true);
+    gate.reset();
+    expect(gate.admit(0)).toBe(true);
+  });
   it('同一帧 40 次命中：独立声部受窗口预算约束，合并声不超过一次（冷却内）', () => {
     const policy = CUE_POLICIES.hit;
     const result = run('hit', 40, 0);

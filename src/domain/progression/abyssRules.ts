@@ -81,7 +81,7 @@ function weightedChoices<T>(items: readonly T[], count: number, rng: Rng, gradeO
   const choices: T[] = [];
   while (pool.length && choices.length < count) {
     let roll = rng.next() * pool.reduce((sum, item) => sum + ABYSS_GRADE_INFO[gradeOf(item)].weight, 0);
-    let chosen = pool[pool.length - 1]!;
+    let chosen: T = pool[pool.length - 1]!;
     for (const item of pool) { roll -= ABYSS_GRADE_INFO[gradeOf(item)].weight; if (roll < 0) { chosen = item; break; } }
     choices.push(chosen);
     const key = keyOf(chosen);

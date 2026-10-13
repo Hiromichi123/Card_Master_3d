@@ -141,6 +141,8 @@ interface SettingsStateShape {
   readonly cameraModeId: CameraModeId;
   /** 主音量 0..1。 */
   readonly masterVolume: number;
+  readonly sfxVolume: number;
+  readonly bgmVolume: number;
 
   setQuality: (tier: QualityTier) => void;
   setDprCap: (value: number) => void;
@@ -154,6 +156,8 @@ interface SettingsStateShape {
   setCameraMode: (id: CameraModeId) => void;
   setReduceMotion: (enabled: boolean) => void;
   setMasterVolume: (value: number) => void;
+  setSfxVolume: (value: number) => void;
+  setBgmVolume: (value: number) => void;
   /** 把存档里的设置灌进来。**只由 `state/settingsPersistence` 调用。** */
   hydrateFromSave: (settings: SettingsState) => void;
 }
@@ -197,6 +201,8 @@ export const useSettingsStore = create<SettingsStateShape>((set) => {
     tableThemeId: DEFAULT_THEME_ID,
     tableTheme: getTableTheme(DEFAULT_THEME_ID),
     masterVolume: 0.7,
+    sfxVolume: 1,
+    bgmVolume: 1,
 
     // 选预设 = 一次性把四个参数写回该档的值（并清掉「自定义」）
     setQuality: (tier) => set((state) => ({ quality: tier, ...applyKnobs(state, knobsOf(tier)) })),
@@ -215,6 +221,8 @@ export const useSettingsStore = create<SettingsStateShape>((set) => {
     setReduceMotion: (reduceMotion) => set({ reduceMotion }),
     setCameraMode: (cameraModeId) => set({ cameraModeId }),
     setMasterVolume: (value) => set({ masterVolume: safeUnit(value, 0.7) }),
+    setSfxVolume: (value) => set({ sfxVolume: safeUnit(value, 1) }),
+    setBgmVolume: (value) => set({ bgmVolume: safeUnit(value, 1) }),
 
     hydrateFromSave: (settings) =>
       set(() => {
@@ -256,6 +264,8 @@ export const useSettingsStore = create<SettingsStateShape>((set) => {
             ? (settings.cameraModeId as CameraModeId)
             : DEFAULT_CAMERA_MODE,
           masterVolume: safeUnit(settings.masterVolume, 0.7),
+          sfxVolume: safeUnit(settings.sfxVolume, 1),
+          bgmVolume: safeUnit(settings.bgmVolume, 1),
         };
       }),
   };

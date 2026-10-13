@@ -1,4 +1,6 @@
-import { admit, createGates, resetGates, type GateState } from './CueGate';
+import { admit, BurstGate, createGates, resetGates, type GateState } from './CueGate';
+import { SAMPLE_CUES, SAMPLE_URLS, SampleCache } from './samples';
+import { backgroundMusic } from './BackgroundMusic';
 import { CUE_POLICIES, type SoundCue } from './cues';
 
 /**
@@ -6,10 +8,9 @@ import { CUE_POLICIES, type SoundCue } from './cues';
  *
  * 设计取舍：
  *
- * 1. **零资源文件**——音效全部用振荡器与噪声**现合成**，不引入 mp3/ogg。
- *    理由：这个项目的音频只需要「有反馈」这一层，为一个音节去动几百 MB 的
- *    资源库（`assets-library` 331 MB）不划算；合成音也不受资源加载时序影响，
- *    不会出现「第一次命中没声音」。
+ * 1. **本地短样本 + 合成兜底**——解锁时预载 CC0 战斗音效；首次尚未加载或
+ *    解码失败时立即合成，不等待、不在加载完成后补播过期声音。
+ *    样本共用主音量、压缩器与限流，运行时不访问外站。
  * 2. **惰性创建 `AudioContext`**——构造语句写在 `resume()` 内部。加载期就建
  *    context 会被 Chrome 判为「无手势创建」，停在 `suspended` 并打警告。
  * 3. **`play()` 永不抛异常、永不同步等待**。它可能被战斗 `useFrame` 里的
@@ -128,7 +129,11 @@ function scheduleNoise(
  * 压缩器留出余量。改配方里的比例之后**要重新量一次**。
  */
 const CUE_LEVEL: Record<SoundCue, number> = {
+  attack: 4, slash: 4, fire: 4, ice: 4, lightning: 4, heal: 2, shield: 3, teleport: 2,
+  uiClick: 1,
   deal: 10,
+  play: 7,
+  deploy: 4,
   hit: 6,
   death: 6,
   gacha: 1.9,
@@ -151,6 +156,38 @@ function scheduleCue(
   // 相对比例 × 调用方倍数 × 实测标定的电平
   const level = gain * CUE_LEVEL[cue];
   switch (cue) {
+    case 'uiClick':
+      scheduleNoise(ctx, bus, buffer, at(), { dur: .035, gain: .28 * level, freq: 1900, q: .5 }, register);
+      scheduleTone(ctx, bus, at(), { freq: 720, endFreq: 480, dur: .045, gain: .22 * level, type: 'sine' }, register);
+      break;
+    case 'attack':
+    case 'slash':
+      scheduleNoise(ctx, bus, buffer, at(), { dur: cue === 'slash' ? .18 : .1, gain: .35 * level, freq: 2400, q: .6 }, register);
+      break;
+    case 'fire':
+      scheduleNoise(ctx, bus, buffer, at(), { dur: .38, gain: .4 * level, freq: 520, q: .7, type: 'lowpass' }, register);
+      scheduleTone(ctx, bus, at(), { freq: 140, endFreq: 48, dur: .25, gain: .18 * level }, register);
+      break;
+    case 'ice':
+    case 'lightning':
+      scheduleNoise(ctx, bus, buffer, at(), { dur: .2, gain: .3 * level, freq: cue === 'ice' ? 4200 : 1800, q: 1.2 }, register);
+      scheduleTone(ctx, bus, at(), { freq: cue === 'ice' ? 1400 : 300, endFreq: 650, type: cue === 'ice' ? 'sine' : 'sawtooth', dur: .18, gain: .12 * level }, register);
+      break;
+    case 'heal':
+    case 'teleport':
+      [440, 660, 880].forEach((freq, i) => scheduleTone(ctx, bus, at(i * .06), { freq, dur: .22, gain: .2 * level, type: 'sine' }, register));
+      break;
+    case 'shield':
+      scheduleTone(ctx, bus, at(), { freq: 740, endFreq: 370, dur: .2, gain: .18 * level, type: 'triangle' }, register);
+      break;
+    case 'play':
+      scheduleNoise(ctx, bus, buffer, at(), { dur: .08, gain: .25 * level, freq: 900, q: .5 }, register);
+      scheduleTone(ctx, bus, at(), { freq: 150, endFreq: 80, dur: .1, gain: .18 * level }, register);
+      break;
+    case 'deploy':
+      scheduleTone(ctx, bus, at(), { freq: 180, endFreq: 60, dur: .18, gain: .3 * level }, register);
+      scheduleTone(ctx, bus, at(.02), { freq: 540, endFreq: 720, dur: .18, gain: .12 * level, type: 'sine' }, register);
+      break;
     case 'deal':
       scheduleNoise(ctx, bus, buffer, at(), { dur: 0.05, gain: 0.34 * level, freq: 1500, q: 0.7 }, register);
       scheduleTone(ctx, bus, at(), { freq: 190, endFreq: 95, type: 'triangle', dur: 0.07, gain: 0.22 * level }, register);
@@ -208,9 +245,12 @@ export class AudioEngine {
   private masterGain: GainNode | null = null;
   private noiseBuffer: AudioBuffer | null = null;
   private readonly gates: Map<SoundCue, GateState> = createGates();
+  private readonly burstGate = new BurstGate();
+  private readonly samples = new SampleCache<AudioBuffer>();
   private voices = 0;
   private muted = false;
   private volume = 0.7;
+  private sfxVolume = 1;
   private counters = { requested: 0, played: 0, merged: 0, dropped: 0 };
 
   get unlocked(): boolean {
@@ -228,6 +268,7 @@ export class AudioEngine {
 
   /** 由**首次用户手势**调用。幂等；任何失败都吞掉（没声音不是错误）。 */
   async resume(): Promise<void> {
+    backgroundMusic.resume();
     try {
       if (!this.ctx) {
         this.build();
@@ -235,6 +276,7 @@ export class AudioEngine {
       if (this.ctx && this.ctx.state !== 'running') {
         await this.ctx.resume();
       }
+      if (this.ctx?.state === 'running') this.preloadSamples(this.ctx);
     } catch {
       /* 音频不可用：保持静默 */
     }
@@ -243,11 +285,18 @@ export class AudioEngine {
   /** 0..1。内部走平方曲线（感知更线性），0 即真静音。 */
   setMasterVolume(value: number): void {
     this.volume = Number.isFinite(value) ? Math.min(1, Math.max(0, value)) : 0.7;
+    backgroundMusic.setMasterVolume(this.volume);
+    this.applyVolume();
+  }
+
+  setSfxVolume(value: number): void {
+    this.sfxVolume = Number.isFinite(value) ? Math.min(1, Math.max(0, value)) : 1;
     this.applyVolume();
   }
 
   setMuted(muted: boolean): void {
     this.muted = muted;
+    backgroundMusic.setMuted(muted);
     this.applyVolume();
   }
 
@@ -269,7 +318,7 @@ export class AudioEngine {
         this.counters.dropped += 1;
         return;
       }
-      if (this.voices >= MAX_VOICES) {
+      if (this.voices >= MAX_VOICES - 4 || !this.burstGate.admit(ctx.currentTime * 1000)) {
         this.counters.dropped += 1;
         return;
       }
@@ -280,13 +329,28 @@ export class AudioEngine {
         this.counters.played += 1;
       }
       const boost = merged ? CUE_POLICIES[cue].mergeGain : 1;
+      const requestedGain = options.gain ?? 1;
+      const gain = Number.isFinite(requestedGain) ? Math.min(2, Math.max(0, requestedGain)) : 1;
+      // 出牌保留翻页音色，发牌使用独立纸牌滑动样本；上场复用低音命中。
+      const sample = this.samples.get(cue === 'deploy' ? 'hit' : cue);
+      if (sample) {
+        const source = ctx.createBufferSource();
+        source.buffer = sample;
+        source.playbackRate.value = cue === 'play' ? .8 : cue === 'deploy' ? .75 : 1;
+        const envelope = ctx.createGain();
+        envelope.gain.value = boost * gain;
+        source.connect(envelope).connect(bus);
+        this.registerVoice(source, [source, envelope]);
+        source.start(ctx.currentTime + .005);
+        return;
+      }
       scheduleCue(
         ctx,
         bus,
         buffer,
         ctx.currentTime + 0.005,
         cue,
-        boost * (options.gain ?? 1),
+        boost * gain,
         options.bright ?? false,
         merged,
         this.registerVoice,
@@ -297,7 +361,8 @@ export class AudioEngine {
   }
 
   /**
-   * 在 `OfflineAudioContext` 里渲染一声，返回**实测峰值**（0..1）。
+   * 在 `OfflineAudioContext` 里渲染一声合成兜底，返回**实测峰值**（0..1）。
+   * 不测下载样本；样本处理后的峰值记录在 public/assets/audio/sources.json。
    *
    * 用来量响度：`-20 dBFS` 左右的峰值在笔记本喇叭上基本听不见，
    * 而这件事靠耳朵调不出来。开发期工具，也是 `tests/unit` 之外
@@ -344,6 +409,8 @@ export class AudioEngine {
     this.noiseBuffer = null;
     this.voices = 0;
     resetGates(this.gates);
+    this.burstGate.reset();
+    this.samples.clear();
   }
 
   dispose(): void {
@@ -360,8 +427,9 @@ export class AudioEngine {
    */
   private registerVoice: VoiceRegister = (source, nodes) => {
     this.voices += 1;
+    const owner = this.ctx;
     source.onended = () => {
-      this.voices = Math.max(0, this.voices - 1);
+      if (this.ctx === owner) this.voices = Math.max(0, this.voices - 1);
       for (const node of nodes) {
         try {
           node.disconnect();
@@ -371,6 +439,16 @@ export class AudioEngine {
       }
     };
   };
+
+  private preloadSamples(ctx: AudioContext): void {
+    for (const cue of SAMPLE_CUES) {
+      void this.samples.load(cue, async () => {
+        const response = await fetch(SAMPLE_URLS[cue]!);
+        if (!response.ok) throw new Error(`Audio sample HTTP ${response.status}`);
+        return ctx.decodeAudioData(await response.arrayBuffer());
+      });
+    }
+  }
 
   private build(): void {
     const Ctor =
@@ -401,7 +479,7 @@ export class AudioEngine {
       return;
     }
     // 0.7 的音量对应 0.49 的增益；配合各 cue 的峰值（见 scheduleCue）落在可听区间
-    const target = this.muted ? 0 : this.volume * this.volume;
+    const target = this.muted ? 0 : this.volume * this.volume * this.sfxVolume * this.sfxVolume;
     // setTargetAtTime 而不是直接赋值：直接改会爆音
     try {
       gain.gain.setTargetAtTime(target, ctx.currentTime, 0.02);
@@ -418,7 +496,7 @@ export const audioEngine = new AudioEngine();
  * 首次用户手势解锁音频。返回移除监听的清理函数。
  *
  * **不用 `{ once: true }`**：`resume()` 可能被浏览器拒绝（或页面切后台后再次
- * `suspended`），所以两个监听都留到 `ctx.state === 'running'` 才一起摘掉。
+ * `suspended`），音乐切曲也可能需要重试，因此监听保留到 App 卸载。
  * `capture: true` 是为了在 React 合成事件与可能的 `stopPropagation` 之前拿到手势。
  */
 export function unlockAudioOnFirstGesture(target: Window = window): () => void {
@@ -430,11 +508,7 @@ export function unlockAudioOnFirstGesture(target: Window = window): () => void {
     (target as unknown as { __cmAudio?: AudioEngine }).__cmAudio = audioEngine;
   }
   const attempt = (): void => {
-    void audioEngine.resume().then(() => {
-      if (audioEngine.unlocked) {
-        remove();
-      }
-    });
+    void audioEngine.resume();
   };
   const remove = (): void => {
     target.removeEventListener('pointerdown', attempt, true);

@@ -13,9 +13,10 @@ import type { AiDifficulty, AiStyle, AiPolicy } from '../battle/ai/types';
 import type { CardRarity } from '../cards/types';
 import type { LadderState, NormalDeckIds } from './deckSlots';
 import type { AbyssState } from './abyssTypes';
+import type { PlayerActivity, NoviceKind } from './playerActivity';
 
 /** 存档格式版本。字段增删或语义变化时递增，并写迁移。 */
-export const SAVE_SCHEMA_VERSION = 6;
+export const SAVE_SCHEMA_VERSION = 8;
 
 /** 三种货币。旧版在 `ui/system_ui.py` 里以 golds/crystals/badges 保存。 */
 export interface Currencies {
@@ -56,7 +57,7 @@ export interface ShopDailyState {
   readonly dayKey: string;
   /** 货架随机种子；同一天必须可复现。 */
   readonly seed: number;
-  /** 已售罄条目的稳定标识。 */
+  /** 仅当前 dayKey 的售罄条目标识，跨日清理，不累积历史。 */
   readonly soldOut: readonly string[];
 }
 
@@ -127,6 +128,8 @@ export interface SettingsState {
   /** 演出速度，只影响播放时长。 */
   readonly presentationSpeed: 'normal' | 'fast' | 'skip';
   readonly masterVolume: number;
+  readonly sfxVolume: number;
+  readonly bgmVolume: number;
   /**
    * 台面主题 id 与相机视角预设 id。
    *
@@ -154,6 +157,8 @@ export const DEFAULT_SETTINGS: SettingsState = {
   cameraShake: true,
   presentationSpeed: 'normal',
   masterVolume: 0.7,
+  sfxVolume: 1,
+  bgmVolume: 1,
   tableThemeId: '',
   cameraModeId: '',
   reduceMotion: false,
@@ -182,6 +187,8 @@ export interface ProfileState {
   readonly shop: ShopDailyState;
   readonly campaign: CampaignState;
   readonly rewards: RewardsState;
+  /** v8 player statistics and novice reward ledger; missing legacy data is migrated. */
+  readonly activity?: PlayerActivity;
   readonly mazeRun: MazeRunState | null;
   readonly mazeProgress: MazeProgressState;
   readonly abyss: AbyssState;
@@ -200,6 +207,8 @@ export interface ProfileState {
 export interface EconomyTransaction {
   /** 幂等键；同一个 operationId 重复提交不得重复生效。 */
   readonly operationId: string;
+  readonly activityEvent?: { readonly kind: 'draw'; readonly count: number; readonly poolId: string } | { readonly kind: 'fusion'; readonly count: 1 };
+  readonly noviceClaim?: { readonly kind: NoviceKind; readonly repeat: boolean; readonly index: number };
   /** 深渊独立事务，不能夹带任何主模式资源/奖励变化。 */
   readonly abyssReward?: { readonly kind: 'completion'; readonly runId: string }
     | { readonly kind: 'pack'; readonly claimId: string; readonly indices: readonly number[] }
@@ -208,7 +217,9 @@ export interface EconomyTransaction {
   readonly currencyDelta: Partial<Currencies>;
   /** cardId → 数量变化，正数为获得。 */
   readonly inventoryDelta: Record<string, number>;
-  /** 需要标记为售罄的商店条目标识。 */
+  /** 每日商店事务的日键；与售罄、扣费和发卡一起提交。 */
+  readonly shopDayKey?: string;
+  /** 需要标记为售罄的商店条目标识，必须属于 shopDayKey。 */
   readonly soldOutAdditions?: readonly string[];
   /** 登记为已结算的战斗 ID。 */
   readonly settleBattleId?: string;

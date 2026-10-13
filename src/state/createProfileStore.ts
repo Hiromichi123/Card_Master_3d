@@ -21,7 +21,9 @@ import {
 } from '../domain/progression/economy';
 import { dayKeyOf, type Clock } from '../domain/progression/clock';
 import { migrateToCurrent } from '../domain/progression/migrations';
+import { shopStateForDay } from '../domain/progression/shop';
 import { normalizeRewards } from '../domain/progression/rewardState';
+import { initialActivity, normalizeActivity } from '../domain/progression/playerActivity';
 import { validateMazeState } from '../domain/progression/mazeProgress';
 import { validateAbyssState } from '../domain/progression/abyssValidation';
 import { withAbyssBest } from '../domain/progression/abyssRanking';
@@ -220,6 +222,8 @@ export class ProfileStore {
         if (!Array.isArray(current.decks) || !validDeckSlots(current.decks, current.normalDeckIds, current.ladder, current.activeDeckId)) {
           throw new Error('普通卡组槽位或天梯积分/卡组引用/奖励账本无效，无法安全读取');
         }
+        const activity = normalizeActivity(current.activity, initialActivity(current));
+        if (!activity) throw new Error('玩家统计或新手任务领奖记录无效，未清空账本。');
         let abyss = current.abyss;
         if (!validateAbyssState(abyss, this.deps.contentVersion)) {
           // 版本更新（加卡会改 contentVersion）会让在途 run 不可复现。**只降级这一种**：
@@ -236,7 +240,7 @@ export class ProfileStore {
         if (!maze) throw new Error('迷宫探索记录与保底账本不完整，无法安全读取');
         // 修好的那份**不立刻写盘**：与「新号不写盘」「rewards 就地归一」同一条纪律，
         // 内存里已经是合法状态，第一次真正的写入会把它带下去；一直不写也只是下次再归档一遍。
-        stored = { ...current, rewards: normalizeRewards(current.rewards), mazeRun: maze.run, mazeProgress: maze.progress, abyss };
+        stored = { ...current, activity, shop: shopStateForDay(this.todayKey(), current.shop.soldOut), rewards: normalizeRewards(current.rewards), mazeRun: maze.run, mazeProgress: maze.progress, abyss };
       }
       const profile =
         stored ??
@@ -836,6 +840,7 @@ const REJECT_TEXT: Record<ApplyOutcome['reason'] & string, string> = {
   alreadySettled: '这一局已经结算过了',
   alreadyClaimed: '这项奖励已经领取',
   rewardUnavailable: '尚未满足这项奖励的领取条件',
+  shopChanged: '商品已售罄或每日货架已变化，请重新打开商店',
   mazeShopChanged: '迷宫货架已变化，请重新打开商店',
   mazeStateChanged: '迷宫状态已变化，请重新操作',
   abyssStateChanged: '深渊进度已变化或数据无效，请重新操作',

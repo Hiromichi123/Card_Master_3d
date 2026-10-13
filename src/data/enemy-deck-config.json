@@ -1,0 +1,76 @@
+{
+  "schemaVersion": 1,
+  "campaign": {},
+  "ladderPresets": [
+    {
+      "id": "starter",
+      "name": "入门敌阵",
+      "enabled": true,
+      "minPoints": 0,
+      "maxPoints": 899,
+      "weight": 1,
+      "cardIds": [
+        "D_002",
+        "D_007",
+        "C_011",
+        "D_019",
+        "C_023",
+        "B_013",
+        "B_021",
+        "B_001",
+        "B_005",
+        "A_003",
+        "A_013",
+        "A_012"
+      ],
+      "replaceCount": 2,
+      "raritySteps": 1
+    },
+    {
+      "id": "advanced",
+      "name": "进阶敌阵",
+      "enabled": true,
+      "minPoints": 600,
+      "maxPoints": 1799,
+      "weight": 1,
+      "cardIds": [
+        "B_007",
+        "B_011",
+        "B_027",
+        "B_010",
+        "A_016",
+        "A_005",
+        "A_005",
+        "A_006",
+        "A_004",
+        "SS_004",
+        "SS_005",
+        "SSS_003"
+      ],
+      "replaceCount": 2,
+      "raritySteps": 1
+    },
+    {
+      "id": "elite",
+      "name": "高阶敌阵",
+      "enabled": true,
+      "minPoints": 1500,
+      "maxPoints": null,
+      "weight": 1,
+      "cardIds": [
+        "SS_005",
+        "SS_005",
+        "SS_005",
+        "SS_005",
+        "SS_005",
+        "SS_005",
+        "SS_005",
+        "SS_005",
+        "SS_005",
+        "SS_005"
+      ],
+      "replaceCount": 2,
+      "raritySteps": 1
+    }
+  ]
+}

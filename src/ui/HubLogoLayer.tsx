@@ -36,18 +36,24 @@ function LogoModels({ items, anchors, activeId, still }: LogoLayerProps) {
   const settleUntil = useRef(0);
   const reduced = useRef(false);
 
-  const place = (id: string): void => {
+  const place = (id: string, canvas = gl.domElement.getBoundingClientRect()): boolean => {
     const model = models.current.get(id);
     const anchor = anchors.current.get(id);
-    if (!model || !anchor) return;
-    const canvas = gl.domElement.getBoundingClientRect();
+    if (!model) return false;
+    if (!anchor || !anchor.isConnected || canvas.width === 0 || canvas.height === 0) {
+      const changed = model.visible; model.visible = false; return changed;
+    }
     const rect = anchor.getBoundingClientRect();
-    if (canvas.width === 0 || canvas.height === 0) return;
+    const visible = rect.width > 0 && rect.height > 0;
     const sx = size.width / canvas.width;
     const sy = size.height / canvas.height;
-    model.position.set((rect.left + rect.width / 2 - canvas.left - canvas.width / 2) * sx,
-      (canvas.top + canvas.height / 2 - rect.top - rect.height / 2) * sy, 0);
-    model.scale.setScalar(Math.min(rect.width * sx, rect.height * sy) * .68);
+    const x = (rect.left + rect.width / 2 - canvas.left - canvas.width / 2) * sx;
+    const y = (canvas.top + canvas.height / 2 - rect.top - rect.height / 2) * sy;
+    const scale = Math.min(rect.width * sx, rect.height * sy) * .68;
+    const changed = model.visible !== visible || Math.abs(model.position.x - x) > .01
+      || Math.abs(model.position.y - y) > .01 || Math.abs(model.scale.x - scale) > .01;
+    if (changed) { model.visible = visible; model.position.set(x, y, 0); model.scale.setScalar(scale); }
+    return changed;
   };
 
   useLayoutEffect(() => {
@@ -57,12 +63,23 @@ function LogoModels({ items, anchors, activeId, still }: LogoLayerProps) {
     ortho.top = size.height / 2;
     ortho.bottom = -size.height / 2;
     ortho.updateProjectionMatrix();
-    const measure = (): void => { for (const item of items) place(item.id); invalidate(); };
-    measure();
+    const measure = (): void => {
+      const canvas = gl.domElement.getBoundingClientRect();
+      let changed = false;
+      for (const item of items) changed = place(item.id, canvas) || changed;
+      if (changed) invalidate();
+    };
+    measure(); invalidate();
     const observer = new ResizeObserver(measure);
     observer.observe(gl.domElement);
     for (const anchor of anchors.current.values()) observer.observe(anchor);
-    return () => observer.disconnect();
+    // ResizeObserver cannot detect a position-only change (left/top, ancestor
+    // transforms or stylesheet replacement). Track DOM anchors independently of
+    // the demand render loop, drawing only when their actual coordinates change.
+    let frame = 0;
+    const track = (): void => { measure(); frame = requestAnimationFrame(track); };
+    frame = requestAnimationFrame(track);
+    return () => { cancelAnimationFrame(frame); observer.disconnect(); };
   }, [camera, gl, size.width, size.height, items, anchors, invalidate]);
 
   useLayoutEffect(() => {

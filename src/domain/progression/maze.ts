@@ -22,7 +22,7 @@
  *    `settledBattleIds` 的去重天然让它只能结算一次；「已通关」由落盘值推导。
  */
 
-import { DECK_LIMIT } from './types';
+import { STANDARD_RARITIES, type CardRarity } from '../cards/types';
 import type { MazeRunState, MazeShopState } from './types';
 import { createRng, seedFrom } from '../battle/rng';
 import type { Rng } from '../battle/rng';

@@ -15,8 +15,8 @@ import { CardMesh } from '../rendering/cards/CardMesh';
 import { useSettingsStore } from '../state/settingsStore';
 import { CardShowcase } from '../ui/CardShowcase';
 import { DesignStage } from '../ui/DesignStage';
-import { BattleScene } from './BattleScene';
-import { definitionsFor } from './campaignFlow';
+import { LocalCountedBattle } from '../ui/LocalCountedBattle';
+import type { ProfileStore } from '../state/createProfileStore';
 import { WebGLGuard } from './WebGLGuard';
 
 // Original draft_scene.py geometry in the shared 2880 × 1800 design space.
@@ -51,7 +51,7 @@ function DraftCamera() {
   return null;
 }
 
-export function LocalBattleScene({ onReturn }: { readonly onReturn: () => void }) {
+export function LocalBattleScene({ onReturn, store }: { readonly onReturn: () => void; readonly store: ProfileStore }) {
   const [draft, setDraft] = useState<LocalDraft>(newDraft);
   const [upperAI, setUpperAI] = useState(false);
   const [battle, setBattle] = useState<BattleConfig | null>(null);
@@ -97,10 +97,8 @@ export function LocalBattleScene({ onReturn }: { readonly onReturn: () => void }
     return () => window.removeEventListener('keydown', onKey);
   }, [battle, preview, onReturn]);
 
-  if (battle) return <BattleScene key={draft.seed}
-    config={battle} definitions={definitionsFor([...battle.playerDeck, ...battle.enemyDeck])}
-    localMultiplayer autoEnemy={upperAI} autoStart
-    onExit={restart} onLeave={onReturn} exitLabel="重新选卡" />;
+  if (battle) return <LocalCountedBattle key={draft.seed}
+    config={battle} store={store} upperAI={upperAI} onRestart={restart} onReturn={onReturn} />;
 
   const lock = complete || preview !== null || (upperAI && draft.currentSide === 'enemy');
   return <><DesignStage className="local-draft" backgroundUrl={backgroundUrl('battle_bg')}>

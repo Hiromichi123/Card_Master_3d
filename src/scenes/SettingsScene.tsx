@@ -27,7 +27,7 @@ import type { RouteId } from '../app/routes';
  *    由 `state/settingsPersistence` 双向接线——刷新不会丢。
  * 2. **画质档是「预设 + 四个可覆盖参数」**。点低/中/高是把四个参数一次写回；
  *    单独调任意一项就变成「自定义」。
- * 3. **音效是程序合成的**（`services/audio`），不依赖任何音频资源文件。
+ * 3. **音效使用本地短样本与合成兜底**（`services/audio`），统一受主音量控制。
  */
 
 const QUALITY_ORDER: QualityTier[] = ['low', 'medium', 'high'];
@@ -68,6 +68,10 @@ export function SettingsScene({ profile, store, onNavigate }: SettingsSceneProps
   const setCameraMode = useSettingsStore((state) => state.setCameraMode);
   const masterVolume = useSettingsStore((state) => state.masterVolume);
   const setMasterVolume = useSettingsStore((state) => state.setMasterVolume);
+  const sfxVolume = useSettingsStore((state) => state.sfxVolume);
+  const setSfxVolume = useSettingsStore((state) => state.setSfxVolume);
+  const bgmVolume = useSettingsStore((state) => state.bgmVolume);
+  const setBgmVolume = useSettingsStore((state) => state.setBgmVolume);
   const showPerf = useSettingsStore((state) => state.showPerf);
   const setShowPerf = useSettingsStore((state) => state.setShowPerf);
 
@@ -304,22 +308,28 @@ export function SettingsScene({ profile, store, onNavigate }: SettingsSceneProps
           {/* --- 声音 --- */}
           <section className="settings__panel" aria-label="声音">
             <h2 className="settings__title">声音</h2>
-            <label className="settings__row">
-              <span className="settings__label">主音量</span>
-              <input
-                type="range"
-                min={0}
-                max={100}
-                step={1}
-                className="settings__volume"
-                aria-label="主音量"
-                value={Math.round(masterVolume * 100)}
-                onChange={(e) => setMasterVolume(Number(e.target.value) / 100)}
-                onPointerUp={onVolumeRelease}
-                onKeyUp={onVolumeRelease}
-              />
-              <span className="settings__value">{Math.round(masterVolume * 100)}%</span>
-            </label>
+            {[
+              { label: '总音量', value: masterVolume, set: setMasterVolume },
+              { label: '音效音量', value: sfxVolume, set: setSfxVolume },
+              { label: 'BGM 音量', value: bgmVolume, set: setBgmVolume },
+            ].map((item) => (
+              <label key={item.label} className="settings__row">
+                <span className="settings__label">{item.label}</span>
+                <input
+                  type="range"
+                  min={0}
+                  max={100}
+                  step={1}
+                  className="settings__volume"
+                  aria-label={item.label}
+                  value={Math.round(item.value * 100)}
+                  onChange={(e) => item.set(Number(e.target.value) / 100)}
+                  onPointerUp={item.label === 'BGM 音量' ? undefined : onVolumeRelease}
+                  onKeyUp={item.label === 'BGM 音量' ? undefined : onVolumeRelease}
+                />
+                <span className="settings__value">{Math.round(item.value * 100)}%</span>
+              </label>
+            ))}
             <div className="settings__row">
               <button
                 type="button"
@@ -330,7 +340,7 @@ export function SettingsScene({ profile, store, onNavigate }: SettingsSceneProps
                 试听
               </button>
               <span className="settings__note">
-                音效由浏览器现场合成（起手 / 命中 / 死亡 / 抽卡 / 融合），不加载任何音频文件。
+                总音量控制所有声音；音效与 BGM 可单独调节，设为 0 即关闭该类声音。音效使用本地短样本与合成兜底，BGM 使用本地音乐。
               </span>
             </div>
           </section>

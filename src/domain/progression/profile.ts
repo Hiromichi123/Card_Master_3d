@@ -8,6 +8,8 @@
 
 import { DECK_LIMIT, DEFAULT_SETTINGS, SAVE_SCHEMA_VERSION } from './types';
 import { emptyRewards } from './rewardState';
+import { initialActivity } from './playerActivity';
+import { shopStateForDay } from './shop';
 import { emptyAbyssState } from './abyssRun';
 import { initializeDeckSlots, isFixedDeck } from './deckSlots';
 import { emptyMazeProgress, hasMazeHistory, validateMazeState } from './mazeProgress';
@@ -69,9 +71,10 @@ export function createInitialProfile(args: CreateProfileArgs): ProfileState {
     ...initializeDeckSlots([deck], deck.id),
     activeDeckId: deck.id,
     gacha: { pullsByPool: {} },
-    shop: { dayKey: args.dayKey, seed: 0, soldOut: [] },
+    shop: shopStateForDay(args.dayKey, []),
     campaign: { clearedStages: [], currentChapterId: null },
     rewards: emptyRewards(),
+    activity: initialActivity({}),
     mazeRun: null,
     mazeProgress: emptyMazeProgress(),
     abyss: emptyAbyssState(),

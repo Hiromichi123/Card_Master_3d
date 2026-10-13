@@ -20,6 +20,27 @@ export interface GateState {
 
 export type Admission = { readonly kind: 'play' } | { readonly kind: 'merge' } | null;
 
+/** Cross-cue budget: a skipped battle must not stack every element at once. */
+export class BurstGate {
+  private start = Number.NEGATIVE_INFINITY;
+  private count = 0;
+
+  admit(nowMs: number): boolean {
+    if (nowMs - this.start >= 80) {
+      this.start = nowMs;
+      this.count = 0;
+    }
+    if (this.count >= 4) return false;
+    this.count += 1;
+    return true;
+  }
+
+  reset(): void {
+    this.start = Number.NEGATIVE_INFINITY;
+    this.count = 0;
+  }
+}
+
 const EMPTY: GateState = {
   lastAt: Number.NEGATIVE_INFINITY,
   windowStart: Number.NEGATIVE_INFINITY,

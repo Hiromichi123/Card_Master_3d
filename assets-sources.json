@@ -28,6 +28,15 @@
   },
   "projectProvided": [
     {
+      "name": "登录、大厅与战斗背景音乐",
+      "source": "D:/Github/酔花.mp3、阿と花の札物语.mp3、茜色の丘.mp3、尾声.mp3",
+      "destination": "public/assets/audio/bgm/",
+      "marked": "user-designated-local-asset",
+      "license": "用户提供本地音乐；外部版权授权未核实，非 CC0",
+      "manifest": "public/assets/audio/bgm/sources.json",
+      "note": "酔花裁剪0:00–1:31用于登录和大厅循环；其余三首全长随机战斗循环。派生为192kbps/44100Hz立体声MP3，移除封面和元数据。四首共16768279字节。不修改原文件，不代表已获得公开发行授权。"
+    },
+    {
       "name": "深渊黑洞背景",
       "source": "dist/assets/bg/activity_abyss_bg2.webp",
       "destination": "public/assets/bg/activity_abyss_bg2.webp",
@@ -37,6 +46,24 @@
     }
   ],
   "thirdParty": [
+    {
+      "name": "本地按钮与战斗音效：Kenney / rubberduck / bart / Brandon Morris",
+      "license": "CC0-1.0（Spell sounds 选择 CC0 许可）",
+      "url": "https://kenney.nl/assets/rpg-audio",
+      "additionalUrls": [
+        "https://kenney.nl/assets/casino-audio",
+        "https://kenney.nl/assets/interface-sounds",
+        "https://opengameart.org/content/80-cc0-rpg-sfx",
+        "https://opengameart.org/content/ice-spells",
+        "https://opengameart.org/content/spell-sounds"
+      ],
+      "purpose": "按钮点击、纸牌发牌、出牌翻页、卡牌攻击、命中、斩击、火球、冰封、雷击、治疗、护盾与传送",
+      "marked": "downloaded-and-localized",
+      "manifest": "public/assets/audio/sources.json",
+      "licenseFile": "public/assets/audio/LICENSE.txt",
+      "processingScript": "scripts/prepare-audio.py",
+      "note": "12 个单声道 PCM16 WAV，共 308188 字节；逐文件作者、下载地址、原名、裁剪及峰值见 manifest。不依赖第三方 CDN；未经人工试听验收。"
+    },
     {
       "name": "Poly Haven",
       "url": "https://polyhaven.com/license",

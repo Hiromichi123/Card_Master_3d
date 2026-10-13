@@ -41,11 +41,11 @@ export interface ChapterInfo {
 }
 
 /**
- * Six world chapters; the first three retain their twelve playable stages.
- * The lunar island, ancient sea and central world tree have no playable stages.
+ * Six world chapters with four stages each. Newly added enemy decks remain
+ * empty until configured through the admin editor.
  * Poster and background IDs remain available for the existing chapter/stage views.
  */
-export function campaignChapters(): readonly ChapterInfo[] {
+export function campaignChapters(enemyOverrides: Readonly<Record<string, readonly string[]>> = {}): readonly ChapterInfo[] {
   const chapters:ChapterInfo[]=stages.chapters.map((chapter) => ({
     id: chapter.id,
     name: chapter.name,
@@ -59,13 +59,10 @@ export function campaignChapters(): readonly ChapterInfo[] {
       posterId: stage.posterId,
       summary: stage.summary,
       reward: stage.reward,
-      enemyDeck: decks.enemy[stage.id]?.cardIds ?? [],
+      enemyDeck: enemyOverrides[stage.id] ?? decks.enemy[stage.id]?.cardIds ?? [],
     })),
   }));
-  return [...chapters,
-    {id:'chapter_5',name:'古海',posterId:'',backgroundType:'',stages:[]},
-    {id:'chapter_6',name:'世界树',posterId:'',backgroundType:'',stages:[]},
-  ];
+  return chapters;
 }
 
 /** 引擎要的定义表：只放这一局用得到的卡。 */

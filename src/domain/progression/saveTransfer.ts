@@ -14,7 +14,9 @@ import { createInitialProfile } from './profile';
 import { previewDeck, previewInventory, previewProfile } from './legacyImport';
 import type { ImportSources } from './legacyImport';
 import { migrateToCurrent } from './migrations';
+import { shopStateForDay } from './shop';
 import { normalizeRewards } from './rewardState';
+import { initialActivity, normalizeActivity } from './playerActivity';
 import { validateMazeState } from './mazeProgress';
 import { validateAbyssState } from './abyssValidation';
 import { validDeckSlots, type LadderState, type NormalDeckIds } from './deckSlots';
@@ -272,15 +274,10 @@ export function normalizeProfile(raw: unknown, ctx: NormalizeContext): Normalize
     ? { pullsByPool: source.gacha.pullsByPool as Record<string, number> }
     : base.gacha;
 
-  const shop = isRecord(source.shop)
-    ? {
-        dayKey: typeof source.shop.dayKey === 'string' ? source.shop.dayKey : ctx.dayKey,
-        seed: Math.trunc(finiteOr(source.shop.seed, 0)),
-        soldOut: Array.isArray(source.shop.soldOut)
-          ? source.shop.soldOut.filter((id): id is string => typeof id === 'string')
-          : [],
-      }
-    : base.shop;
+  const shop = shopStateForDay(ctx.dayKey,
+    isRecord(source.shop) && Array.isArray(source.shop.soldOut)
+      ? source.shop.soldOut.filter((id): id is string => typeof id === 'string')
+      : []);
 
   const campaign = isRecord(source.campaign)
     ? {
@@ -299,10 +296,13 @@ export function normalizeProfile(raw: unknown, ctx: NormalizeContext): Normalize
   // 设置：逐字段兜底（`useSettingsStore.hydrateFromSave` 还会再兜一层）
   const settings = { ...DEFAULT_SETTINGS, ...(isRecord(source.settings) ? source.settings : {}) };
 
+  const activity = normalizeActivity(source.activity, initialActivity({ gacha, ladder, settledBattleIds, abyss: source.abyss }));
+  if (!activity) return { ok: false, reason: 'invalidShape', message: '玩家统计或新手任务领取账本无效，不能丢弃后导入。' };
+
   // 顶层不认识的字段：`ProfileState` 是强类型的，不能把陌生键带进内存
   const KNOWN_KEYS = new Set([
     'schemaVersion', 'contentVersion', 'revision', 'currencies', 'level', 'inventory', 'decks',
-    'activeDeckId', 'normalDeckIds', 'ladder', 'gacha', 'shop', 'campaign', 'rewards', 'mazeRun', 'mazeProgress', 'abyss', 'settings', 'settledBattleIds',
+    'activeDeckId', 'normalDeckIds', 'ladder', 'gacha', 'shop', 'campaign', 'rewards', 'activity', 'mazeRun', 'mazeProgress', 'abyss', 'settings', 'settledBattleIds',
   ]);
   const unknownKeys = Object.keys(source).filter((key) => !KNOWN_KEYS.has(key));
   if (unknownKeys.length > 0) {
@@ -326,6 +326,7 @@ export function normalizeProfile(raw: unknown, ctx: NormalizeContext): Normalize
       shop,
       campaign,
       rewards: normalizeRewards(source.rewards),
+      activity,
       mazeRun: maze.run,
       mazeProgress: maze.progress,
       abyss: source.abyss,

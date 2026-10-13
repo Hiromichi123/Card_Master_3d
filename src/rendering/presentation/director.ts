@@ -30,6 +30,7 @@ import { Timeline } from '../anim/Timeline';
 import { ATTACK_OUT_SECONDS, hpLossValues, hpStepSeconds } from '../anim/combatMotion';
 import type { SlotZone } from '../battle/layout';
 import { deathBlastIndex } from './eventEffects';
+import { cardSoundFor, castSoundFor } from './soundMapping';
 import { BOMBARD_HIT_SECONDS, DEATH_BOMBARD_HIT_SECONDS, RANGED_HIT_SECONDS } from '../effects/artilleryTiming';
 import { SPEED_SCALE, type PresentationSpeed } from '../../state/settingsStore';
 // 只 import 类型：编不过时也不会把 DOM/WebAudio 拖进 node 测试网
@@ -172,7 +173,7 @@ function groupPatches(patches: readonly DisplayPatch[]): Map<number, DisplayPatc
  * 导出是为了让测试能直接对着它断言（例如「一次 CardDied 恰好产出
  * 推代理、等代理退场、丢代理」）。
  */
-export function buildBeats(resolution: Resolution, deps: DirectorDeps): Beat[] {
+export function buildBeats(resolution: Resolution, deps: DirectorDeps, isSkipping: () => boolean = () => false): Beat[] {
   const beats: Beat[] = [];
   const patchesAt = groupPatches(resolution.patches);
   const events = resolution.events;
@@ -217,6 +218,8 @@ export function buildBeats(resolution: Resolution, deps: DirectorDeps): Beat[] {
       duration,
       onStart: () => {
         // 只在表现层：不读 finalState、不改 display，胜负与数值都不经过这里
+        const cardCue = cardSoundFor(event, isSkipping() || deps.speed() === 'skip');
+        if (cardCue) deps.sound?.(cardCue);
         if (event.type === 'CardDied') {
           deps.sound?.('death');
         }
@@ -231,6 +234,8 @@ export function buildBeats(resolution: Resolution, deps: DirectorDeps): Beat[] {
         };
         const request = effectRequestFor(event, context);
         if (request) {
+          const cue = castSoundFor(event, request.template, isSkipping() || deps.speed() === 'skip');
+          if (cue) deps.sound?.(cue);
           deps.play({ ...request, durationScale: SPEED_SCALE[deps.speed()] });
         }
       },
@@ -338,6 +343,7 @@ export function buildBeats(resolution: Resolution, deps: DirectorDeps): Beat[] {
 export class PresentationDirector {
   private timeline: Timeline | null = null;
   private finalState: BattleState | null = null;
+  private skipping = false;
 
   constructor(private readonly deps: DirectorDeps) {}
 
@@ -348,7 +354,7 @@ export class PresentationDirector {
   /** 播出一次结算。 */
   perform(resolution: Resolution): void {
     this.finalState = resolution.finalState;
-    this.start(buildBeats(resolution, this.deps));
+    this.start(buildBeats(resolution, this.deps, () => this.skipping));
   }
 
   /**
@@ -415,8 +421,13 @@ export class PresentationDirector {
     if (!timeline || timeline.isFinished) {
       return;
     }
-    timeline.skipToEnd();
-    this.deps.skipEffects();
+    this.skipping = true;
+    try {
+      timeline.skipToEnd();
+    } finally {
+      this.skipping = false;
+      this.deps.skipEffects();
+    }
   }
 
   /**

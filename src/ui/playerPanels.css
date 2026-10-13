@@ -1,0 +1,47 @@
+.player-panel { box-sizing: border-box; width: min(1080px, 94vw); max-width: 94vw; max-height: 90vh; overflow: auto; padding: 24px;
+  color: #eadfc9; border: 1px solid #c5aa70; border-radius: 14px; background: radial-gradient(ellipse at top right, #84714a33, transparent 60%), linear-gradient(125deg, #283037, #171c23 60%, #303029);
+  box-shadow: inset 0 0 0 3px #ceb47918, 0 25px 90px #0008; }
+.player-panel::backdrop { background: #080d1585; backdrop-filter: blur(5px); }
+.player-panel > header { display: flex; justify-content: space-between; align-items: center; gap: 20px; margin-bottom: 18px; }
+.player-panel h2 { margin: 5px 0 0; font: 800 28px/1.3 'Game Numerals', 'SimSun', serif; color: #f1ddad; }
+.player-panel > header small { color: #b8a475; letter-spacing: .2em; font-size: 10px; }
+.player-panel__note { color: #b7bcb9; font-size: 12px; line-height: 1.7; }
+.player-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.player-stats article { display: flex; gap: 16px; padding: 18px; align-items: center; border: 1px solid #c8ad742f; border-radius: 9px; background: linear-gradient(120deg, #d7bc8110, #ffffff03); }
+.player-stats svg { width: 65px; flex: 0 0 65px; filter: drop-shadow(0 3px 4px #0008); }
+.player-stats article > div { min-width: 0; }
+.player-stats small { color: #c0beb5; font-size: 12px; }
+.player-stats strong { display: block; font: 700 24px/1.5 'Game Numerals', 'SimSun', serif; color: var(--stat-color); }
+.player-stats p { font-size: 11px; margin: 2px 0 0; color: #b4b8b5; }
+.player-totals { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; border-block: 1px solid #bea16c55; padding: 22px 4px; margin: 20px 0; }
+.player-totals > div { display: flex; flex-direction: column; gap: 8px; }
+.player-totals span { font-size: 13px; color: #c9c5b6; }
+.player-totals strong { color: #f3d7a2; font: 700 36px/1.3 'Game Numerals', serif; }
+.novice-groups { display: grid; gap: 18px; }
+.novice-groups h3 { display: flex; justify-content: space-between; align-items: baseline; color: #ebd2a2; font-size: 17px; }
+.novice-groups h3 span { color: #b9bebd; font-size: 12px; font-weight: 400; }
+.novice-tasks { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.novice-tasks article { display: flex; flex-direction: column; gap: 10px; padding: 17px; border: 1px solid #b5995d66; border-radius: 8px;
+  background: linear-gradient(115deg, #68707918, #bca25d10); }
+.novice-tasks article[data-ready="true"] { border-color: #edc87f; box-shadow: inset 0 0 18px #d8b56918, 0 0 12px #cda46322; }
+.novice-tasks article[data-claimed="true"] { opacity: .6; }
+.novice-tasks small, .novice-tasks article > span { font-size: 11px; color: #b8b7aa; }
+.novice-tasks h4 { margin: 0; font-size: 15px; color: #efdeba; }
+.novice-tasks strong { font-size: 13px; color: #edc993; }
+.novice-tasks progress { width: 100%; height: 5px; accent-color: #d7bb7b; }
+.novice-result { display: flex; gap: 16px; align-items: center; margin-top: 16px; color: #efce89; font-size: 13px; }
+.novice-result .tile { width: 80px; }
+@layer hub {
+  .hub-main .hub-button-shell { position: relative; }
+  .hub-novice-entry { position: absolute; right: 0; bottom: calc(100% + 24 * var(--ui)); z-index: 4;
+    display: flex; align-items: center; gap: calc(10 * var(--ui)); white-space: nowrap;
+    padding: calc(7 * var(--ui)) calc(12 * var(--ui)); color: #ecd4a0; cursor: pointer;
+    border: 1px solid #c1a36b77; border-radius: calc(9 * var(--ui)); background: linear-gradient(115deg, #424239e6, #283139dc);
+    font: 700 max(12px, calc(30 * var(--ui)))/1.3 'Game Numerals', 'SimSun', serif; box-shadow: 0 3px 12px #0004; }
+  .hub-novice-entry svg { width: max(24px, calc(55 * var(--ui))); height: max(24px, calc(55 * var(--ui))); }
+  .hub-novice-entry[data-ready="true"] { color: #fff0bd; border-color: #e8c37d; }
+  .hub-novice-entry i { width: 6px; height: 6px; border-radius: 50%; background: #f8d88a; box-shadow: 0 0 8px #f5d687; }
+  .hub-novice-entry:hover { filter: brightness(1.2); }
+}
+@media (max-width: 720px) { .novice-tasks { grid-template-columns: repeat(2, minmax(0, 1fr)); } .player-stats { grid-template-columns: minmax(0, 1fr); } .player-panel { padding: 16px; } }
+@media (max-width: 420px) { .novice-tasks, .player-totals { grid-template-columns: minmax(0, 1fr); } }

@@ -70,6 +70,8 @@ describe('世界树迷宫货架批次与购买', () => {
       operationId: 'forged', rng: createRng(1) }));
     expect(planned.transaction.currencyDelta).toEqual({ [slot.item.price.currency]: -slot.item.price.amount });
     expect(planned.transaction.inventoryDelta).toEqual({ [slot.item.cardId]: 1 });
+    expect(planned.transaction).not.toHaveProperty('shopDayKey');
+    expect(planned.transaction).not.toHaveProperty('soldOutAdditions');
     const result = applyEconomyTransaction(p, planned.transaction);
     expect(result.applied).toBe(true);
     expect(result.profile.shop).toEqual(p.shop);

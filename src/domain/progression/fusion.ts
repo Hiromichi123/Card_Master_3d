@@ -81,7 +81,7 @@ export function planFusion(args: {
   for (const [id, count] of Object.entries(counts)) inventoryDelta[id] = -count;
   inventoryDelta[drawn.cardId] = (inventoryDelta[drawn.cardId] ?? 0) + 1;
   return {
-    transaction: { operationId, currencyDelta: { gold: -spec.currencyCost }, inventoryDelta },
+    transaction: { operationId, activityEvent: { kind: 'fusion', count: 1 }, currencyDelta: { gold: -spec.currencyCost }, inventoryDelta },
     view: { operationId, materials: [...materials], cardId: drawn.cardId, rarity: drawn.rarity, rngState: rng.snapshot().state },
   };
 }

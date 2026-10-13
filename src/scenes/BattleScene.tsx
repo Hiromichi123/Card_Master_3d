@@ -18,6 +18,7 @@ import { DeploymentDragController, type DeploymentDrag } from '../rendering/batt
 import { BATTLE_CARD_SCALE, type SlotZone } from '../rendering/battle/layout';
 import { effectDirector } from '../rendering/effects/effectDirector';
 import { audioEngine } from '../services/audio/AudioEngine';
+import { backgroundMusic } from '../services/audio/BackgroundMusic';
 import { EffectSystem } from '../rendering/effects/EffectSystem';
 import { PerfSampler } from '../rendering/PerfSampler';
 import { DEMO_CONFIG, demoDefinitions } from '../rendering/presentation/demoBattle';
@@ -68,6 +69,8 @@ export interface BattleSceneProps {
   /** 规则终局同步报告，不等待结果演出；独立模式在这里提交存档。 */
   readonly onOutcome?: ((outcome: BattleOutcome) => void) | undefined;
   readonly allowRematch?: boolean | undefined;
+  /** Local match owner can assign a new persistent identity when replaying. */
+  readonly onRematchRequested?: (() => void) | undefined;
   /** 提供时替换默认战役/演示结果面板，仍等演出完成后显示。 */
   readonly resultPanel?: ReactNode;
   readonly exitDisabled?: boolean | undefined;
@@ -96,6 +99,7 @@ export function BattleScene({
   onFinished,
   onOutcome,
   allowRematch = true,
+  onRematchRequested,
   resultPanel,
   exitDisabled = false,
   leaveLabel,
@@ -131,6 +135,14 @@ export function BattleScene({
       }),
   );
   const snapshot = useBattleSession(session);
+  const musicOwner = useRef({});
+  useEffect(() => {
+    backgroundMusic.beginBattle(musicOwner.current, snapshot.runId);
+  }, [snapshot.runId]);
+  useEffect(() => {
+    const owner = musicOwner.current;
+    return () => backgroundMusic.endBattle(owner);
+  }, []);
   useEffect(()=>{
     const settings=useSettingsStore.subscribe((next,prev)=>{
       if(next.skipTurnEnd!==prev.skipTurnEnd)session.refreshTurnPreferences();
@@ -338,7 +350,7 @@ export function BattleScene({
             localMultiplayer={localMultiplayer}
             backLabel={exitLabel ?? (onExit ? '返回战役' : '返回菜单')}
             exitDisabled={exitDisabled}
-            onRematch={allowRematch ? () => { if (!exitDisabled) session.start(); } : undefined}
+            onRematch={allowRematch ? () => { if (!exitDisabled) { if (onRematchRequested) onRematchRequested(); else session.start(); } } : undefined}
             onBackToMenu={() => {
               if (exitDisabled) return;
               if (onExit) {

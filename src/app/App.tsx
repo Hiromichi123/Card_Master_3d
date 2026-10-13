@@ -25,11 +25,14 @@ import { pushToast } from '../state/toastStore';
 import { attachSettingsPersistence, hydrateSettings } from '../state/settingsPersistence';
 import { useSettingsStore } from '../state/settingsStore';
 import { audioEngine, unlockAudioOnFirstGesture } from '../services/audio/AudioEngine';
+import { backgroundMusic } from '../services/audio/BackgroundMusic';
+import { attachUiClickSound } from '../services/audio/uiClick';
 import { SceneBackgroundProvider } from '../ui/SceneBackground';
 import { useAbyssDeparture } from '../ui/useAbyssDeparture';
 import { useProfileStore } from '../state/useProfileStore';
 import { PerfToggle } from '../ui/BattleSettings';
 import { AdminResources } from '../ui/AdminResources';
+import { AdminEnemyDecks } from '../ui/AdminEnemyDecks';
 import { configFor, definitionsFor, settlementFor } from '../scenes/campaignFlow';
 import type { SettlementView, StageLaunch } from '../domain/progression/campaign';
 import { planSettlement } from '../domain/progression/campaign';
@@ -190,10 +193,27 @@ export function App() {
     音量读 zustand（设置的运行期唯一真相），存档镜像由 settingsPersistence 负责。
   */
   const masterVolume = useSettingsStore((state) => state.masterVolume);
-  useEffect(() => unlockAudioOnFirstGesture(), []);
+  const sfxVolume = useSettingsStore((state) => state.sfxVolume);
+  const bgmVolume = useSettingsStore((state) => state.bgmVolume);
+  useEffect(() => {
+    backgroundMusic.start();
+    const remove = unlockAudioOnFirstGesture();
+    const removeClicks = attachUiClickSound();
+    return () => {
+      removeClicks();
+      remove();
+      backgroundMusic.dispose();
+    };
+  }, []);
   useEffect(() => {
     audioEngine.setMasterVolume(masterVolume);
   }, [masterVolume]);
+  useEffect(() => {
+    audioEngine.setSfxVolume(sfxVolume);
+  }, [sfxVolume]);
+  useEffect(() => {
+    backgroundMusic.setBgmVolume(bgmVolume);
+  }, [bgmVolume]);
 
   // 打不开 IndexedDB 时，降级必须**看得见**——静默不落盘是最坏的失败
   useEffect(() => {
@@ -242,6 +262,7 @@ export function App() {
         <span className="app-nav__spacer" />
         {!navCollapsed && account && <span className="app-nav__account" title="当前本地账号">{account.username}</span>}
         {!navCollapsed && <AdminResources store={store} busy={snapshot.busy} />}
+        {!navCollapsed && <AdminEnemyDecks store={store} busy={snapshot.busy} trialAllowed={['hub', 'campaign', 'ladder', 'battlemenu', 'activity'].includes(route)} />}
         {!navCollapsed && <PerfToggle />}
         <button
           type="button"
@@ -448,7 +469,7 @@ function Screen({
         />
       );
     case 'localBattle':
-      return <LocalBattleScene onReturn={() => onNavigate('battlemenu')} />;
+      return <LocalBattleScene store={store} onReturn={() => onNavigate('battlemenu')} />;
     case 'battlemenu':
       return <BattleMenuScene profile={profile} onNavigate={onNavigate} />;
     case 'activity':

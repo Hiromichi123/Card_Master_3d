@@ -20,7 +20,7 @@ import { coastDistance, FORTRESS_FLAG, fortressContains, rand, SEA_LEVEL, SEA_WA
 export { WORLD_EXPANSION, rand } from './worldLayout';
 import { CHAPTER_FOCI, islandAt, islandCandidate, MAP_RADIUS, shorePoint, TOXIC_ISLANDS } from './worldIslands';
 import { DEMON_SITES, DEMON_PIT_RADIUS, demonPitDistance, demonRelief, demonVegetationSafe } from './demonLayout';
-import { MOON_ORIGIN } from './moonLayout';
+import { MOON_ISLANDS, MOON_ORIGIN } from './moonLayout';
 import { FUTURE_CHAPTER_VIEWS } from './worldFutureChapters';
 import { demonScenerySafe } from './demonScenery';
 import { CENTRAL_TREE_ANCHOR, CENTRAL_TREE_ROOT_RADIUS, mainlandOriginal, mainlandPoint, type Mainland } from './worldPlacement';
@@ -42,8 +42,14 @@ export const STAGE_LANDMARKS:Readonly<Record<string,readonly [number,number]>>={
   '1-1':FORTRESS_FLAG,'1-2':mainlandPoint('human',-4.15,3),'1-3':mainlandPoint('human',-6.65,-.75),'1-4':mainlandPoint('human',-7.75,4.05),
   '2-1':DEMON_SITES['2-1'].flag,'2-2':DEMON_SITES['2-2'].flag,'2-3':DEMON_SITES['2-3'].flag,'2-4':DEMON_SITES['2-4'].flag,
   '3-1':mainlandPoint('sacred',0,-4.95),'3-2':mainlandPoint('sacred',-3.5,-6.3),'3-3':mainlandPoint('sacred',1.6,-8),'3-4':mainlandPoint('sacred',5.3,-6.8),
+  '5-1':[-7.2,11.5],'5-2':[-1.6,13.3],'5-3':[-5.5,17.4],'5-4':[1.3,18.2],
+  '6-1':[-3.5,3.7],'6-2':[3.4,1.6],'6-3':[-2.8,8.1],'6-4':[.5,9.4],
 };
 export function stagePoint(id:string,height=0):Vec3 {
+  // Moon islands use elevated model coordinates, unlike the ground map.
+  const moonIndex=({'4-1':1,'4-2':2,'4-3':3,'4-4':0} as Readonly<Record<string,number>>)[id];
+  if(moonIndex!==undefined){const island=MOON_ISLANDS[moonIndex]!;
+    return [island.position[0]+.35,island.position[1]+.3+height,island.position[2]+.25];}
   const point:readonly [number,number]=STAGE_LANDMARKS[id]??[0,0];return landmarkPoint(point[0],point[1],height);
 }
 

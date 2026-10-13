@@ -1,0 +1,73 @@
+.admin-enemy-editor {
+  box-sizing: border-box; width: min(1540px, 96vw); max-width: 96vw; max-height: 94vh;
+  padding: 20px; color: #f2e7cd; border: 1px solid #c4a364; border-radius: 14px;
+  background: radial-gradient(ellipse at top right, #62513b44, transparent 65%), linear-gradient(125deg, #242829, #14191d 60%, #292724);
+  box-shadow: inset 0 0 0 3px #d9b46517, 0 24px 100px #0009; overflow: auto;
+}
+.admin-enemy-editor::backdrop { background: #05090cb0; backdrop-filter: blur(6px); }
+.admin-enemy-editor > header { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.admin-enemy-editor h2 { margin: 5px 0 14px; font-size: 24px; }
+.admin-enemy-editor h3 { margin: 6px 0 12px; font-size: 16px; color: #f4d695; }
+.admin-enemy-editor small { color: #b4b7b4; }
+.admin-enemy-editor header small { color: #d6b16b; letter-spacing: .18em; }
+.admin-enemy-editor button:not(.tile), .admin-enemy-editor__import {
+  padding: 7px 10px; border: 1px solid #bfa26780; border-radius: 6px; color: #f0dfb9;
+  background: linear-gradient(125deg, #4b4438b0, #222b30, #423e3590); cursor: pointer; font: inherit; font-size: 12px;
+  box-shadow: inset 0 1px #efdaa72a;
+}
+.admin-enemy-editor button:not(.tile):hover, .admin-enemy-editor button[aria-pressed="true"], .admin-enemy-editor__import:focus-within {
+  border-color: #ebca84; background: linear-gradient(125deg, #6d593c, #384044); box-shadow: 0 0 12px #deb36427;
+}
+.admin-enemy-editor button:disabled { opacity: .4; cursor: default; }
+.admin-enemy-editor input:not([type="checkbox"]):not([type="file"]), .admin-enemy-editor select {
+  min-width: 0; box-sizing: border-box; padding: 7px; border: 1px solid #bca27366; border-radius: 5px;
+  color: #f6e9ce; background: #111b22; font: inherit; font-size: 13px;
+}
+.admin-enemy-editor input:focus-visible, .admin-enemy-editor button:focus-visible { outline: 2px solid #efc77a; outline-offset: 2px; }
+.admin-enemy-editor__toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+.admin-enemy-editor__toolbar > span { color: #dbbd85; font-size: 12px; margin-right: auto; }
+.admin-enemy-editor__import { position: relative; display: inline-block; overflow: hidden; }
+.admin-enemy-editor__import input { position: absolute; inset: 0; opacity: 0; width: 100%; cursor: pointer; }
+.admin-enemy-editor__note { font-size: 12px; line-height: 1.6; color: #bdc2be; }
+.admin-enemy-editor__message { padding: 9px; border-left: 2px solid #e0b977; color: #f2d28f; background: #d8b26610; font-size: 13px; }
+.admin-enemy-editor__layout { display: grid; grid-template-columns: 190px minmax(350px, 1fr) minmax(300px, .85fr); gap: 18px; }
+.admin-enemy-editor__layout > * { min-width: 0; }
+.admin-enemy-editor__targets { max-height: 65vh; overflow: auto; padding-right: 5px; }
+.admin-enemy-editor__targets > button { width: 100%; display: grid; gap: 4px; text-align: left; margin-bottom: 7px; }
+.admin-enemy-editor__targets small { font-size: 10px; }
+.admin-enemy-editor__deck-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.admin-enemy-editor__deck-head h3 { width: 100%; margin-bottom: 0; }
+.admin-enemy-editor__deck-head span { font-size: 12px; }
+.admin-enemy-editor__slots { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; }
+.admin-enemy-editor__slots > div { padding: 4px; border: 1px solid #8576564a; border-radius: 6px; min-width: 0; background: #d8bc8110; }
+.admin-enemy-editor__slots > div[data-selected="true"] { border-color: #ffe098; box-shadow: 0 0 12px #ebc97744; }
+.admin-enemy-editor__slots small { display: block; margin-bottom: 3px; font-size: 10px; }
+.admin-enemy-editor .tile { width: 100%; min-width: 0; aspect-ratio: 2 / 3; }
+.admin-enemy-editor__empty { width: 100%; aspect-ratio: 2 / 3; }
+.admin-enemy-editor__slot-tools { display: flex; margin-top: 4px; gap: 2px; }
+.admin-enemy-editor__slot-tools > button { flex: 1; padding: 2px !important; font-size: 11px !important; }
+.admin-enemy-editor__rules { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; margin-top: 18px; }
+.admin-enemy-editor__rules h3, .admin-enemy-editor__rules p { grid-column: 1 / -1; }
+.admin-enemy-editor__rules label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; }
+.admin-enemy-editor__rules label:has([type="checkbox"]) { flex-direction: row; align-items: center; }
+.admin-enemy-editor__rules p { margin: 0; font-size: 12px; line-height: 1.6; color: #b9bfbb; }
+.admin-enemy-editor__preview { display: flex; flex-wrap: wrap; align-items: end; gap: 8px; margin-top: 20px; }
+.admin-enemy-editor__preview label { display: grid; gap: 4px; font-size: 12px; width: 145px; }
+.admin-enemy-editor__preview p, .admin-enemy-editor__preview > small { width: 100%; font-size: 12px; }
+.admin-enemy-editor__sample { width: 100%; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; }
+.admin-enemy-editor__catalogue > input, .admin-enemy-editor__catalogue > select { width: 100%; margin-bottom: 8px; }
+.admin-enemy-editor__cards { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; max-height: 58vh; overflow: auto; padding: 4px; }
+.admin-enemy-editor__catalogue nav { display: flex; justify-content: space-between; align-items: center; gap: 4px; margin-top: 9px; font-size: 11px; }
+.admin-enemy-editor--trial { height: 94vh; display: flex; flex-direction: column; overflow: hidden; }
+.admin-enemy-editor__trial { position: relative; flex: 1; min-height: 0; overflow: hidden; border-radius: 8px; }
+@media (max-width: 1100px) {
+  .admin-enemy-editor__layout { grid-template-columns: 160px minmax(0, 1fr); }
+  .admin-enemy-editor__catalogue { grid-column: 1 / -1; }
+  .admin-enemy-editor__cards { grid-template-columns: repeat(10, minmax(0, 1fr)); max-height: 40vh; }
+}
+@media (max-width: 650px) {
+  .admin-enemy-editor { padding: 12px; }
+  .admin-enemy-editor__layout { grid-template-columns: minmax(0, 1fr); }
+  .admin-enemy-editor__targets { max-height: 160px; }
+  .admin-enemy-editor__cards { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+}

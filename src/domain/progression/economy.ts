@@ -14,6 +14,8 @@
 
 import type { Currencies } from './types';
 import { grantXp } from './levels';
+import { foldActivity, validNoviceTransaction } from './playerActivity';
+import { isShopDayKey, shopStateForDay } from './shop';
 import { mazeShopBatchKey } from './maze';
 import { mazeProgressToken } from './mazeProgress';
 import { canCheckIn, STORY_NODE_PATTERN } from './rewardState';
@@ -23,7 +25,7 @@ import { validAbyssRewardTransaction } from './abyssRewards';
 import { validateAbyssState } from './abyssValidation';
 import type { EconomyTransaction, ProfileState } from './types';
 
-export type RejectReason = 'insufficientFunds' | 'insufficientCards' | 'alreadySettled' | 'alreadyClaimed' | 'rewardUnavailable' | 'mazeShopChanged' | 'mazeStateChanged' | 'abyssStateChanged';
+export type RejectReason = 'insufficientFunds' | 'insufficientCards' | 'alreadySettled' | 'alreadyClaimed' | 'rewardUnavailable' | 'shopChanged' | 'mazeShopChanged' | 'mazeStateChanged' | 'abyssStateChanged';
 
 export interface ApplyOutcome {
   /** 折叠后的存档。被拒时**就是传入的那一份**（同一个引用）。 */
@@ -86,18 +88,27 @@ export function applyEconomyTransaction(
     levelsGained: 0,
   });
 
+  if (!validNoviceTransaction(profile, tx)) return unchanged('rewardUnavailable');
+  if (tx.activityEvent) {
+    const event = tx.activityEvent;
+    if (tx.abyssUpdate || tx.abyssReward || tx.noviceClaim || tx.settleBattleId || tx.rewardClaim || tx.ladderRewardClaim
+      || !Number.isSafeInteger(event.count) || event.count <= 0
+      || (event.kind === 'draw' && (event.count > 10 || !event.poolId || Object.values(tx.inventoryDelta).reduce((a,b)=>a+b,0) !== event.count))
+      || (event.kind === 'fusion' && (event.count !== 1 || Object.values(tx.inventoryDelta).reduce((a,b)=>a+b,0) !== -4))) return unchanged('rewardUnavailable');
+  }
+
   if (tx.abyssUpdate) {
     const update = tx.abyssUpdate;
     if (update.expectedToken !== abyssStateToken(profile) || update.state.revision !== profile.abyss.revision + 1
       || !validateAbyssState(update.state) || !validAbyssRewardTransaction(profile.abyss, update.state, tx)
-      || tx.rewardClaim || tx.ladderRewardClaim || tx.settleBattleId || tx.clearStageId || tx.xpDelta !== undefined
-      || tx.soldOutAdditions || tx.mazeUpdate || tx.mazeSoldOut || tx.mazeShopExpected || tx.mazeShopRefresh
+      || tx.rewardClaim || tx.ladderRewardClaim || tx.noviceClaim || tx.activityEvent || tx.settleBattleId || tx.clearStageId || tx.xpDelta !== undefined
+      || tx.shopDayKey !== undefined || tx.soldOutAdditions || tx.mazeUpdate || tx.mazeSoldOut || tx.mazeShopExpected || tx.mazeShopRefresh
       ) return unchanged('abyssStateChanged');
     const currencies = Object.keys(tx.currencyDelta).length === 0 ? profile.currencies : { ...profile.currencies, gold: profile.currencies.gold + (tx.currencyDelta.gold ?? 0), crystal: profile.currencies.crystal + (tx.currencyDelta.crystal ?? 0) };
     const inventory = Object.keys(tx.inventoryDelta).length === 0 ? profile.inventory : addToInventory(profile.inventory, tx.inventoryDelta);
     if (!Object.values(currencies).every(n => Number.isSafeInteger(n) && n >= 0)
       || !Object.values(inventory).every(n => Number.isSafeInteger(n) && n > 0)) return unchanged('abyssStateChanged');
-    return { profile: { ...profile, revision: profile.revision + 1, abyss: update.state, currencies, inventory }, applied: true, levelsGained: 0 };
+    return { profile: { ...profile, revision: profile.revision + 1, activity: foldActivity(profile, tx), abyss: update.state, currencies, inventory }, applied: true, levelsGained: 0 };
   }
 
   if (tx.abyssReward) return unchanged('abyssStateChanged');
@@ -137,7 +148,7 @@ export function applyEconomyTransaction(
       || amounts.some(count => !Number.isSafeInteger(count) || count <= 0)
       || amounts.reduce((sum, count) => sum + count, 0) !== reward.count
       || tx.rewardClaim || tx.settleBattleId || tx.clearStageId || tx.xpDelta
-      || tx.soldOutAdditions || tx.mazeUpdate || tx.mazeSoldOut || tx.mazeShopRefresh || tx.mazeShopExpected) {
+      || tx.shopDayKey !== undefined || tx.soldOutAdditions || tx.mazeUpdate || tx.mazeSoldOut || tx.mazeShopRefresh || tx.mazeShopExpected) {
       return unchanged('rewardUnavailable');
     }
   }
@@ -166,6 +177,18 @@ export function applyEconomyTransaction(
     }
   }
 
+  // 每日商店只接受单日事务；旧页面和重复提交不能重置售罄或重复发货。
+  if (tx.shopDayKey !== undefined || tx.soldOutAdditions !== undefined) {
+    const dayKey = tx.shopDayKey;
+    const additions = tx.soldOutAdditions;
+    if (!dayKey || !isShopDayKey(dayKey) || !additions?.length
+      || dayKey < profile.shop.dayKey
+      || additions.some(id => !id.startsWith(`${dayKey}|`) || profile.shop.soldOut.includes(id))
+      || tx.mazeUpdate || tx.mazeSoldOut || tx.mazeShopExpected || tx.mazeShopRefresh) {
+      return unchanged('shopChanged');
+    }
+  }
+
   // 2. 余额与库存
   if (!canAfford(profile.currencies, tx.currencyDelta)) {
     return unchanged('insufficientFunds');
@@ -188,9 +211,9 @@ export function applyEconomyTransaction(
   const clearedStages = tx.clearStageId
     ? [...new Set([...profile.campaign.clearedStages, tx.clearStageId])]
     : profile.campaign.clearedStages;
-  const soldOut = tx.soldOutAdditions?.length
-    ? [...new Set([...profile.shop.soldOut, ...tx.soldOutAdditions])]
-    : profile.shop.soldOut;
+  const shop = tx.shopDayKey
+    ? shopStateForDay(tx.shopDayKey, [...profile.shop.soldOut, ...tx.soldOutAdditions!])
+    : profile.shop;
 
   // 已通过批次前置校验，不补造seed=0的货架，也不碰每日货架。
   let mazeRun = tx.mazeUpdate?.run ?? profile.mazeRun;
@@ -209,6 +232,8 @@ export function applyEconomyTransaction(
       revision: profile.revision + 1,
       currencies,
       rewards,
+      activity: foldActivity(profile, tx),
+      gacha: tx.activityEvent?.kind === 'draw' ? { pullsByPool: { ...profile.gacha.pullsByPool, [tx.activityEvent.poolId]: (profile.gacha.pullsByPool[tx.activityEvent.poolId] ?? 0) + tx.activityEvent.count } } : profile.gacha,
       ladder,
       inventory: addToInventory(profile.inventory, tx.inventoryDelta),
       level: trained ? trained.level : profile.level,
@@ -221,7 +246,7 @@ export function applyEconomyTransaction(
             ? tx.clearStageId.split('-')[0] ?? null
             : profile.campaign.currentChapterId,
       },
-      shop: { ...profile.shop, soldOut },
+      shop,
       mazeRun,
       mazeProgress: tx.mazeUpdate?.progress ?? profile.mazeProgress,
       settledBattleIds: tx.settleBattleId

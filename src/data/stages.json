@@ -185,11 +185,182 @@
       "name": "月之都",
       "posterId": "poster/chapter_4_enter",
       "bgType": "bg/chapter_4_map",
-      "stages": []
+      "stages": [
+        {
+          "id": "4-1",
+          "name": "月下渡口",
+          "posterId": null,
+          "summary": "月之都第1关。敌方卡组由 admin 配置工具指定。",
+          "reward": {
+            "gold": 1800,
+            "xp": 700,
+            "items": [
+              "稀有卡牌概率掉落"
+            ]
+          }
+        },
+        {
+          "id": "4-2",
+          "name": "浮空回廊",
+          "posterId": null,
+          "summary": "月之都第2关。敌方卡组由 admin 配置工具指定。",
+          "reward": {
+            "gold": 1900,
+            "xp": 750,
+            "items": [
+              "水晶掉落"
+            ]
+          }
+        },
+        {
+          "id": "4-3",
+          "name": "星辉高台",
+          "posterId": null,
+          "summary": "月之都第3关。敌方卡组由 admin 配置工具指定。",
+          "reward": {
+            "gold": 2000,
+            "xp": 800,
+            "items": [
+              "稀有卡牌概率掉落"
+            ]
+          }
+        },
+        {
+          "id": "4-4",
+          "name": "月都之巅",
+          "posterId": null,
+          "summary": "月之都第4关。敌方卡组由 admin 配置工具指定。",
+          "reward": {
+            "gold": 2100,
+            "xp": 850,
+            "items": [
+              "水晶掉落"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter_5",
+      "name": "古海",
+      "posterId": null,
+      "bgType": null,
+      "stages": [
+        {
+          "id": "5-1",
+          "name": "遗落群岛",
+          "posterId": null,
+          "summary": "古海第1关。敌方卡组由 admin 配置工具指定。",
+          "reward": {
+            "gold": 2300,
+            "xp": 900,
+            "items": [
+              "稀有卡牌概率掉落"
+            ]
+          }
+        },
+        {
+          "id": "5-2",
+          "name": "潮汐遗迹",
+          "posterId": null,
+          "summary": "古海第2关。敌方卡组由 admin 配置工具指定。",
+          "reward": {
+            "gold": 2400,
+            "xp": 950,
+            "items": [
+              "水晶掉落"
+            ]
+          }
+        },
+        {
+          "id": "5-3",
+          "name": "深海回响",
+          "posterId": null,
+          "summary": "古海第3关。敌方卡组由 admin 配置工具指定。",
+          "reward": {
+            "gold": 2500,
+            "xp": 1000,
+            "items": [
+              "稀有卡牌概率掉落"
+            ]
+          }
+        },
+        {
+          "id": "5-4",
+          "name": "古海之心",
+          "posterId": null,
+          "summary": "古海第4关。敌方卡组由 admin 配置工具指定。",
+          "reward": {
+            "gold": 2600,
+            "xp": 1050,
+            "items": [
+              "水晶掉落"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter_6",
+      "name": "世界树",
+      "posterId": null,
+      "bgType": null,
+      "stages": [
+        {
+          "id": "6-1",
+          "name": "根脉之路",
+          "posterId": null,
+          "summary": "世界树第1关。敌方卡组由 admin 配置工具指定。",
+          "reward": {
+            "gold": 2800,
+            "xp": 1100,
+            "items": [
+              "稀有卡牌概率掉落"
+            ]
+          }
+        },
+        {
+          "id": "6-2",
+          "name": "苍翠守望",
+          "posterId": null,
+          "summary": "世界树第2关。敌方卡组由 admin 配置工具指定。",
+          "reward": {
+            "gold": 2900,
+            "xp": 1150,
+            "items": [
+              "水晶掉落"
+            ]
+          }
+        },
+        {
+          "id": "6-3",
+          "name": "生命之泉",
+          "posterId": null,
+          "summary": "世界树第3关。敌方卡组由 admin 配置工具指定。",
+          "reward": {
+            "gold": 3000,
+            "xp": 1200,
+            "items": [
+              "稀有卡牌概率掉落"
+            ]
+          }
+        },
+        {
+          "id": "6-4",
+          "name": "世界树之誓",
+          "posterId": null,
+          "summary": "世界树第4关。敌方卡组由 admin 配置工具指定。",
+          "reward": {
+            "gold": 3100,
+            "xp": 1250,
+            "items": [
+              "水晶掉落"
+            ]
+          }
+        }
+      ]
     }
   ],
-  "emptyChapters": [
-    "chapter_4"
-  ],
+  "emptyChapters": [],
   "sourceHash": "581019e63fe1f606"
 }

@@ -1,0 +1,8 @@
+Selected sound effects: CC0 1.0 Universal
+https://creativecommons.org/publicdomain/zero/1.0/
+
+Authors, source pages and original filenames: sources.json
+Spell sounds offers CC0 and OGA-BY; these files are used under CC0.
+Processing: mono PCM16 WAV at 22050 Hz, leading silence trimmed, duration capped,
+peak normalized to <= -6 dBFS, 2 ms fade-in and 20 ms fade-out.
+Reproduce with scripts/prepare-audio.py (requires ffmpeg).
