@@ -27,7 +27,7 @@ import type { RouteId } from '../app/routes';
  * 滚轮只管「选中」——换背景、换说明。进入要靠面板上的「进入」按钮。
  * 这与抽卡页一致（选卡池 ≠ 抽卡），也避免玩家滚过一页就误入迷宫。
  *
- * 五个模式保留顺序；迷宫、天梯预览及深渊挑战可进入，协力/极难仍给未开放提示。
+ * 五个模式保留顺序；协力作战与高难挑战接入实际战斗和本地结算。
  */
 
 interface ActivityMode {
@@ -59,17 +59,17 @@ const MODES: readonly ActivityMode[] = [
     id: 'abyss',
     title: '深渊挑战',
     desc: '从三套六张卡组中选择，以三颗心深入深渊。接受正负契约，培养本轮独立卡牌；每层十战，击败噩梦后可结算或继续。',
-    schedule: 'UTC+8 每周一04:00 · 跨周保留进度，周奖励暂未开放',
+    schedule: 'UTC+8 每周一04:00 · 跨周保留进度与周奖励',
     bgType: 'bg/activity_abyss',
     route: 'abyss',
   },
   {
     id: 'coop',
-    title: '协力突袭',
-    desc: '匹配其他玩家共同击破巨型敌人，分享掉落。',
-    schedule: '周末限时开放',
+    title: '协力作战',
+    desc: '本地多账号共同削减世界 Boss 生命，敌阵随阶段成长；按累计伤害领取里程碑与阶段排名奖励。',
+    schedule: '本地共享 · 每周一北京时间04:00开启新一期',
     bgType: 'bg/activity_coop',
-    route: null,
+    route: 'coop',
   },
   {
     id: 'ladder',
@@ -81,11 +81,11 @@ const MODES: readonly ActivityMode[] = [
   },
   {
     id: 'extreme',
-    title: '极难挑战',
-    desc: '面对大幅强化过的敌阵，限一次通关机会，成功即得极限称号。',
-    schedule: '不定期开放，持续 72 小时',
+    title: '高难挑战',
+    desc: '每三日轮换公开敌阵，不限制挑战次数；针对卡组制定战术，通关并完成特殊目标获得额外奖励。',
+    schedule: '每三日北京时间04:00轮换 · 不限挑战次数',
     bgType: 'bg/activity_extreme',
-    route: null,
+    route: 'extreme',
   },
 ];
 

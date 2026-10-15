@@ -236,10 +236,14 @@ export function planAbyssAction(profile: ProfileState, action: AbyssAction, now:
           next = { ...updated, stage: { ...stage, freeRemaining, offerSerial: serial, offer: freeRemaining > 0 ? makeAbyssGrowthOffer(updated, 'free', serial, definitions) : null } };
           break;
         }
-        case 'skipFree':
+        case 'skipFree': {
           if (stage.kind !== 'camp' || stage.freeRemaining <= 0 || stage.offer?.source !== 'free') return reject('当前没有可放弃的免费培养。');
-          next = { ...run, stage: { ...stage, freeRemaining: 0, offer: null } };
+          const freeRemaining = stage.freeRemaining - 1;
+          const serial = stage.offerSerial + 1;
+          next = { ...run, stage: { ...stage, freeRemaining, offerSerial: serial,
+            offer: freeRemaining > 0 ? makeAbyssGrowthOffer(run, 'free', serial, definitions) : null } };
           break;
+        }
         case 'next':
           if (stage.kind === 'bossDecision') {
             next = nextBattle(run, definitions);

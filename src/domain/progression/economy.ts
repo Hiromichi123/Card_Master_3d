@@ -15,6 +15,8 @@
 import type { Currencies } from './types';
 import { grantXp } from './levels';
 import { foldActivity, validNoviceTransaction } from './playerActivity';
+import { foldMailbox, validMailTransaction } from './mailbox';
+import { foldActivityProgress, validActivityReceipt } from './activityModes';
 import { isShopDayKey, shopStateForDay } from './shop';
 import { mazeShopBatchKey } from './maze';
 import { mazeProgressToken } from './mazeProgress';
@@ -88,6 +90,8 @@ export function applyEconomyTransaction(
     levelsGained: 0,
   });
 
+  if (!validActivityReceipt(profile, tx)) return unchanged('rewardUnavailable');
+  if (!validMailTransaction(profile, tx)) return unchanged('rewardUnavailable');
   if (!validNoviceTransaction(profile, tx)) return unchanged('rewardUnavailable');
   if (tx.activityEvent) {
     const event = tx.activityEvent;
@@ -233,6 +237,8 @@ export function applyEconomyTransaction(
       currencies,
       rewards,
       activity: foldActivity(profile, tx),
+      mailbox: foldMailbox(profile, tx),
+      activityModes: foldActivityProgress(profile, tx),
       gacha: tx.activityEvent?.kind === 'draw' ? { pullsByPool: { ...profile.gacha.pullsByPool, [tx.activityEvent.poolId]: (profile.gacha.pullsByPool[tx.activityEvent.poolId] ?? 0) + tx.activityEvent.count } } : profile.gacha,
       ladder,
       inventory: addToInventory(profile.inventory, tx.inventoryDelta),

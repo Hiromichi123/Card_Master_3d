@@ -21,6 +21,7 @@ import { normalizeAiSettings, type AiSettings, type AiModel, type AiDecision } f
 import type { AiDriver } from '../../services/ai/AiWorkerClient';
 import { applyCommand, createBattle, hasLegalPlay, validateCommand } from '../../domain/battle/engine';
 import { AUTO_EVOLUTION_LIMIT, autoEvolutionCommand } from '../../domain/battle/autoEvolution';
+import type { ActivityBattleReport } from '../../domain/progression/activityModes';
 import { hasUsableBattleAction, inputSideOf, insertionSlots, isCooldownCard, readyCardIds } from '../../domain/battle/turnActions';
 import { createRng, type Rng } from '../../domain/battle/rng';
 import type {
@@ -119,6 +120,7 @@ export interface SessionControl {
   readonly readAiModel?: () => AiModel | null;
   /** 规则已得出终局，尚未等待表现层；持久化入口不应依赖动画完成。 */
   readonly onOutcome?: ((outcome: BattleOutcome) => void) | undefined;
+  readonly onReport?: ((report: ActivityBattleReport) => void) | undefined;
   readonly localMultiplayer?: boolean | undefined;
   readonly autoEnemy?: boolean | undefined;
 }
@@ -138,6 +140,9 @@ export class BattleSession {
   private readonly localMultiplayer: boolean;
   private readonly onOutcome: ((outcome: BattleOutcome) => void) | undefined;
   private outcomeReported = false;
+  private enemyBaseDamage = 0;
+  private playerBaseDamage = 0;
+  private readonly onReport: ((report: ActivityBattleReport) => void) | undefined;
   private runId = 0;
   private readonly log: string[] = [];
   private readonly listeners = new Set<() => void>();
@@ -182,6 +187,7 @@ export class BattleSession {
     this.readAiModel = control.readAiModel;
     this.localMultiplayer = control.localMultiplayer ?? false;
     this.onOutcome = control.onOutcome;
+    this.onReport = control.onReport;
     this.autoEnemy = control.autoEnemy ?? true;
     this.state = createBattle(config, definitions);
     this.display = displayFromState(this.state);
@@ -321,6 +327,7 @@ export class BattleSession {
     }
     this.runId += 1;
     this.outcomeReported = false;
+    this.enemyBaseDamage = 0; this.playerBaseDamage = 0;
     this.aiRng = createRng(this.config.seed ^ AI_SEED_MIX);
     this.mode = 'battle';
     this.inputOpen = false;
@@ -502,12 +509,22 @@ export class BattleSession {
       return;
     }
     this.idleActionSeconds = 0;
+    for (const event of resolution.events) {
+      if (event.type !== 'PlayerHpChanged') continue;
+      const loss = Math.max(0, event.hpBefore - event.hpAfter);
+      if (event.side === 'player') this.playerBaseDamage += loss;
+      else if (!['selfInflicted','sacrifice','collapse','unyielding'].includes(event.source)) this.enemyBaseDamage += loss;
+    }
     this.state = resolution.finalState;
     // 分身/复活会凭空造出实例，先把身份补上，后面解析世界坐标才找得到它们
     syncIdentities(this.display, this.state);
     this.inputOpen = false;
     if (this.state.outcome && !this.outcomeReported) {
       this.outcomeReported = true;
+      this.onReport?.({ outcome: this.state.outcome, turns: this.state.turnNumber,
+        playerHp: Math.max(0, this.state.hp.player), enemyHp: Math.max(0, this.state.hp.enemy),
+        enemyBaseDamage: this.enemyBaseDamage, playerBaseDamage: this.playerBaseDamage,
+        handCount: this.state.zones.player.hand.filter(id => !isCooldownCard(this.state.instances[id]!.definitionId)).length });
       this.onOutcome?.(this.state.outcome);
     }
     this.director.perform(resolution);

@@ -49,6 +49,8 @@ export function CardHoverTip({ target }: { readonly target: CardTipTarget }) {
   const statuses = (target.attackStatuses ?? []).map((kind) =>
     ({ frost: '严霜', burn: '燃烧', poison: '剧毒', bleed: '流血', grievous: '重伤' })[kind]);
   if (target.unyielding) statuses.push('不屈持续中');
+  if (target.charmed) statuses.push('魅惑：普攻攻击己方本体，攻击技能停用');
+  if (target.puppeted) statuses.push('傀儡：攻击技能转向其它友军');
   if (card?.rawTraits.includes('飞行') && target.flying === false) statuses.push('飞行被压制');
   return createPortal(<div ref={ref} className={`cardtip${still ? ' cardtip--still' : ''}${target.theme === 'abyss' ? ' cardtip--abyss' : ''}`} style={style} role="tooltip">
     <div className="cardtip__frame"><div className="cardtip__surface">

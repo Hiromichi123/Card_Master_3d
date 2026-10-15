@@ -66,3 +66,24 @@
   @keyframes abyss-encounter-new { 0% { opacity: 0; transform: translateX(30px) scale(.82); } 35%,70% { opacity: 1; transform: translateX(0) scale(1.12); } 100% { opacity: 0; transform: scale(1.02); } }
   @media (max-width: 700px) { .abyss-contract-actions { gap: 6px; }.abyss-choice-footer--camp { bottom: 142px; }.abyss-board-countdown { top: 95px; }.abyss-encounter-banner { flex-wrap: wrap; gap: 10px; }.abyss-board-enemy { top: 140px; left: 4%; right: 4%; } }
 }
+
+@layer controls {
+  /* Selection actions stay above the cards and away from the camp crystal dock. */
+  .abyss-choice-footer.abyss-choice-footer--top {
+    top: max(124px, 15vh); bottom: auto; left: 21%; right: 21%;
+  }
+  .abyss-choice-footer--top .abyss-contract-actions {
+    position: static; top: auto; left: auto; transform: none;
+    width: 100%; margin: 10px auto 0;
+  }
+  .abyss-choice-footer--top p { margin-bottom: 10px; }
+  @media (max-width: 700px), (max-height: 560px) {
+    .abyss-choice-footer.abyss-choice-footer--top { top: 128px; bottom: auto; left: 4%; right: 4%; }
+    .abyss-choice-footer--top p { max-height: 42px; overflow: auto; margin-bottom: 6px; pointer-events: auto; }
+    .abyss-choice-footer--top .abyss-contract-actions { margin-top: 6px; gap: 6px; }
+  }
+}
+
+@layer controls {
+  .abyss-choice-footer--top button.abyss-choice-skip { display: block; width: fit-content; margin: 8px auto 0; }
+}

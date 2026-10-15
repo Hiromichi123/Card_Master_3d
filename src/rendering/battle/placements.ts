@@ -279,6 +279,8 @@ function makePlacement(
     holo: placement.holo,
     flying: identity.flying ?? card.rawTraits.includes('飞行'),
     attackStatuses: placement.statLayout === 'battle' ? identity.attackStatuses : undefined,
+    charmed: placement.statLayout === 'battle' && identity.charmed === true,
+    puppeted: placement.statLayout === 'battle' && identity.puppeted === true,
     unyielding: placement.statLayout === 'battle' && display.groups[identity.stateGroupId]?.unyielding === true,
     stats: stats ?? undefined,
     emphasisedStats: emphasised,

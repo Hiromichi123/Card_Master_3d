@@ -13,6 +13,8 @@ export interface CardTipDetails {
   readonly attackStatuses?: readonly AttackStatusKind[] | undefined;
   readonly flying?: boolean | undefined;
   readonly unyielding?: boolean | undefined;
+  readonly charmed?: boolean | undefined;
+  readonly puppeted?: boolean | undefined;
 }
 export interface CardTipTarget extends CardTipDetails {
   readonly cardId: string;

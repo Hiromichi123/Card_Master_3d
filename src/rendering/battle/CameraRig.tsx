@@ -84,7 +84,7 @@ export function CameraRig({ interactionLocked = false }: { interactionLocked?: b
       camera.position.copy(TARGET).add(unit);
       camera.lookAt(TARGET);
 
-      const radius = geometry === 'abyss' ? 9.6 : geometry === 'temple' ? 9.8 : geometry === 'volcano' ? 8.95 : themeId === 'tournament' ? 8.5 : TABLE_RADIUS;
+      const radius = geometry === 'cloud' ? 8.9 : geometry === 'abyss' ? 9.6 : geometry === 'temple' ? 9.8 : geometry === 'volcano' ? 8.95 : themeId === 'tournament' ? 8.5 : TABLE_RADIUS;
       const minHeight = geometry === 'temple' ? -5.35 : 0;
       const distance = fitCameraTo(camera, TARGET, { radius, minHeight }) * mode.zoom;
       camera.position.copy(TARGET).addScaledVector(unit, distance);

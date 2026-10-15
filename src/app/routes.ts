@@ -24,6 +24,8 @@ export type RouteId =
   | 'localBattle'
   /** 限时活动模式（活动大厅）。旧版 `activity/activity_scene.py`。 */
   | 'activity'
+  | 'coop'
+  | 'extreme'
   /** 深渊：独立牌库、培养与逐层肉鸽挑战。 */
   | 'abyss'
   /** 天梯段位与独立阵容预览；匹配暂未开放。 */

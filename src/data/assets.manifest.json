@@ -1,21 +1,21 @@
 {
   "generatedBy": "scripts/prepare-assets.py",
   "legacyRoot": "D:\\Github\\card_maker",
-  "contentVersion": "69bbdb9733b0",
+  "contentVersion": "21f2e39ccb32",
   "tiers": {
     "thumbnail": 384,
     "battle": 768,
     "detail": 1536
   },
   "tierBytes": {
-    "thumbnail": 12910278,
-    "battle": 38435578,
-    "detail": 64019314
+    "thumbnail": 12908212,
+    "battle": 38434858,
+    "detail": 64024742
   },
   "tierMiB": {
     "thumbnail": 12.31,
-    "battle": 36.66,
-    "detail": 61.05
+    "battle": 36.65,
+    "detail": 61.06
   },
   "cards": {
     "SSS_001": {
@@ -257,7 +257,7 @@
             256,
             384
           ],
-          "bytes": 42460
+          "bytes": 40394
         },
         "battle": {
           "url": "/assets/card/battle/sss/005.webp",
@@ -269,7 +269,7 @@
             512,
             768
           ],
-          "bytes": 121090
+          "bytes": 120370
         },
         "detail": {
           "url": "/assets/card/detail/sss/005.webp",
@@ -281,7 +281,7 @@
             720,
             1080
           ],
-          "bytes": 198430
+          "bytes": 203858
         }
       },
       "art": {

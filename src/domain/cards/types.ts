@@ -196,6 +196,9 @@ export interface AttackAffliction {
 }
 
 export interface CardMarks {
+  /** Charm persists for this life; puppetedBy is a derived aligned aura. */
+  charmed?: boolean;
+  puppetedBy?: string;
   /** One granted concealment charge, consumed by a physical card hit and cleared on departure. */
   grantedConcealment?: boolean;
   /** Timed silence expires after this complete recipient host action. */

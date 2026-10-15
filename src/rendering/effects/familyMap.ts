@@ -10,6 +10,8 @@
  */
 
 export type EffectTemplateId =
+  | 'skyCollapse'
+  | 'earthRift'
   | 'frostRetaliation'
   | 'burnMark'
   | 'poisonLance'
@@ -66,6 +68,8 @@ export type EffectTemplateId =
  * P4 覆盖全部 35 族时，只需在这里补齐映射，不需要新写效果。
  */
 export const FAMILY_TO_EFFECT: Record<string, EffectTemplateId> = {
+  charm:'status', puppet:'status',
+  skyCollapse: 'skyCollapse', earthRift: 'earthRift',
   lethalStrike: 'instantDeath', masterpiece: 'flow', foxSpiritSummon: 'flow', alignedDeathBlast: 'deathBombard',
   splash: 'normalAttack', groupDelay: 'cooldown', severeFrost: 'frostRetaliation',
   burning: 'burnMark', venom: 'poisonLance', bleeding: 'bleedMark', grievousWound: 'grievousMark', poisonCloud: 'poisonCloud',
@@ -136,6 +140,8 @@ export const FAMILY_TO_EFFECT: Record<string, EffectTemplateId> = {
  * 两处各写一遍迟早会漂。这里不 import three，所以纯逻辑的演出层可以照常引用。
  */
 export const FAMILY_TINT: Record<string, string> = {
+  charm:'#ed72bb', puppet:'#ed962e',
+  skyCollapse: '#9d8c72', earthRift: '#c39b54',
   venom: '#49a82b', poisonCloud: '#49a82b', bleeding: '#a51b34', grievousWound: '#480919',
   holyShield: '#ffd77a',
   grantConcealment:'#dbc9ff',thornArmor:'#b3d7ec',

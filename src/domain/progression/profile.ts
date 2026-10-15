@@ -9,6 +9,8 @@
 import { DECK_LIMIT, DEFAULT_SETTINGS, SAVE_SCHEMA_VERSION } from './types';
 import { emptyRewards } from './rewardState';
 import { initialActivity } from './playerActivity';
+import { welcomeMailbox } from './mailbox';
+import { emptyActivityProgress } from './activityModes';
 import { shopStateForDay } from './shop';
 import { emptyAbyssState } from './abyssRun';
 import { initializeDeckSlots, isFixedDeck } from './deckSlots';
@@ -40,6 +42,7 @@ export interface CreateProfileArgs {
    * 真正的正式存档应该让玩家从零开始收集。
    */
   readonly ownedCardIds?: readonly string[] | undefined;
+  readonly initialCurrencies?: Currencies | undefined;
   /** 建号时刻，写进卡组的 `updatedAt`。 */
   readonly now: Date;
 }
@@ -65,7 +68,7 @@ export function createInitialProfile(args: CreateProfileArgs): ProfileState {
     schemaVersion: SAVE_SCHEMA_VERSION,
     contentVersion: args.contentVersion,
     revision: 0,
-    currencies: { ...STARTING_CURRENCIES },
+    currencies: { ...(args.initialCurrencies ?? STARTING_CURRENCIES) },
     level: { level: 1, xp: 0, baseXp: 100, xpMultiplier: 1.2 },
     inventory,
     ...initializeDeckSlots([deck], deck.id),
@@ -74,6 +77,8 @@ export function createInitialProfile(args: CreateProfileArgs): ProfileState {
     shop: shopStateForDay(args.dayKey, []),
     campaign: { clearedStages: [], currentChapterId: null },
     rewards: emptyRewards(),
+    mailbox: welcomeMailbox(args.now),
+    activityModes: emptyActivityProgress(),
     activity: initialActivity({}),
     mazeRun: null,
     mazeProgress: emptyMazeProgress(),

@@ -4,6 +4,7 @@ export interface LoginAccount {
   readonly username: string;
 }
 
+export const STARTER_ACCOUNT_ID = 'player-00000000000000000000000000001234';
 export const ACCOUNT_USERNAME_MAX_LENGTH = 24;
 export const ACCOUNT_PASSWORD_MIN_LENGTH = 4;
 export const ACCOUNT_PASSWORD_MAX_LENGTH = 128;
@@ -149,21 +150,23 @@ async function makeAccount(id: string, username: string, key: string, password: 
   };
 }
 
-async function ensureDefaultAccount(db: IDBDatabase): Promise<void> {
-  if (await readAccount(db, 'admin')) return;
-  const initial = await makeAccount('admin', 'admin', 'admin', 'admin');
-  // Check again in the same write transaction: two tabs may initialize together.
+async function ensureBuiltinAccount(db: IDBDatabase, id: string, key: string, password: string): Promise<void> {
+  if (await readAccount(db, key)) return;
+  const initial = await makeAccount(id, key, key, password);
+  // Concurrent initialization must never replace an existing account/password.
   await new Promise<void>((resolve, reject) => {
     const transaction = db.transaction(STORE, 'readwrite');
     const store = transaction.objectStore(STORE);
-    const request = store.get('admin');
-    request.onsuccess = () => {
-      if (request.result === undefined) store.add(initial);
-    };
+    const request = store.get(key);
+    request.onsuccess = () => { if (request.result === undefined) store.add(initial); };
     transaction.oncomplete = () => resolve();
-    transaction.onabort = () => reject(new Error('默认账号保存失败，请允许本地存储后重试。'));
-    transaction.onerror = () => reject(new Error('默认账号保存失败，请检查可用存储空间。'));
+    transaction.onabort = () => reject(new Error('初始账号保存失败，请允许本地存储后重试。'));
+    transaction.onerror = () => reject(new Error('初始账号保存失败，请检查可用存储空间。'));
   });
+}
+async function ensureDefaultAccount(db: IDBDatabase): Promise<void> {
+  await ensureBuiltinAccount(db, 'admin', 'admin', 'admin');
+  await ensureBuiltinAccount(db, STARTER_ACCOUNT_ID, '1234', '1234');
 }
 
 async function getDatabase(): Promise<IDBDatabase> {

@@ -53,6 +53,8 @@ export function AbyssHome({ presentation, still, busy, available, run, state, on
   const anchors = useRef(new Map<number, HTMLSpanElement>());
   const [activeCrystal, setActiveCrystal] = useState<number | null>(null);
   const [crystalsReady, setCrystalsReady] = useState(false);
+  const [subtitleReady, setSubtitleReady] = useState(false);
+  useForegroundTimeout(layout === 'settled', 500, () => setSubtitleReady(true));
   const entries = [
     { title: '新的开始', detail: '从三套六张起始牌组中选择', disabled: busy || !available, action: onStart },
     { title: '继续进度', detail: run ? `${run.floor}-${run.encounter} · ${run.lives}颗心 · ${run.coins}币` : '暂无进行中的挑战', disabled: busy || !run, action: onContinue },
@@ -64,10 +66,9 @@ export function AbyssHome({ presentation, still, busy, available, run, state, on
     <div className="abyss-scene__countdown abyss-home-stage__countdown"><AbyssCountdown /></div>
     <AbyssWeeklyProgress state={state} busy={busy} onPrepare={onPrepareWeek} onRewards={onWeeklyRewards} />
     <h1 className="abyss-home-stage__title">深 渊</h1>
+    <p className="abyss-home-stage__subtitle" data-visible={subtitleReady && layout === 'settled'} aria-hidden={!subtitleReady || layout !== 'settled'}>THE ABYSS</p>
     <section className="abyss-home" aria-label="深渊大厅">
-      <p className="abyss-home__eyebrow">THE ABYSS · 独立肉鸽挑战</p>
       <div className="abyss-home-stage__title-space" aria-hidden="true" />
-      <p>三颗心，一副只属于这次旅途的卡组。</p>
       <div className="abyss-home__buttons" data-crystals-ready={crystalsReady}>
         <AbyssHomeCrystals entries={entries} anchors={anchors} active={activeCrystal} still={still} onReady={() => setCrystalsReady(true)} />
         {entries.map((entry, index) => <AbyssEntrance key={entry.title} index={index} play={(arrivedMask & (1 << index)) === 0} still={still} onArrived={onArrived}>

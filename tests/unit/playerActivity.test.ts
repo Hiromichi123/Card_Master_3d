@@ -46,7 +46,7 @@ describe('player records and novice rewards', () => {
     const old = { ...fresh(), schemaVersion: 7, activity: undefined, gacha: { pullsByPool: { x: 12 } } };
     const migrated = migrateToCurrent(old, 7);
     expect(migrated.ok).toBe(true);
-    if (migrated.ok) expect(migrated.value).toMatchObject({ schemaVersion: 8, activity: { draws: 12, fusions: 0 } });
+    if (migrated.ok) expect(migrated.value).toMatchObject({ schemaVersion: 10, activity: { draws: 12, fusions: 0 } });
     expect(normalizeActivity({ ...initialActivity({}), claimedFixed: ['battle:0', 'battle:0'] }, initialActivity({}))).toBeNull();
   });
 });

@@ -20,6 +20,8 @@ import type { StatKind } from '../cards/statBadge';
 
 /** 显示状态里的一张卡：只保留身份，不保留数值。 */
 export interface DisplayCard {
+  charmed?: boolean;
+  puppeted?: boolean;
   flying?: boolean;
   attackStatuses?: readonly AttackStatusKind[];
   readonly definitionId: string;
@@ -134,6 +136,8 @@ export function displayFromState(state: BattleState): DisplayState {
   for (const [instanceId, card] of Object.entries(state.instances)) {
     instances[instanceId] = {
       flying: card.flying,
+      charmed: card.marks.charmed === true,
+      puppeted: card.marks.puppetedBy !== undefined,
       attackStatuses: Object.keys(card.marks.attackStatuses ?? {}) as AttackStatusKind[],
       definitionId: card.definitionId,
       stateGroupId: card.stateGroupId,
@@ -284,7 +288,7 @@ export function applyEventToDisplay(display: DisplayState, event: BattleEvent): 
     case 'CardReset': {
       const identity = display.instances[event.instanceId];
       if (identity) display.instances[event.instanceId] = { ...identity,
-        stateGroupId: event.groupId, flying: event.flying, attackStatuses: [] };
+        stateGroupId: event.groupId, flying: event.flying, attackStatuses: [], charmed: false, puppeted: false };
       display.groups[event.groupId] = { hp: event.hp, maxHp: event.maxHp, atk: event.atk, unyielding: false };
       display.cd[event.instanceId] = event.cd;
       delete display.emphasised[event.instanceId];
@@ -380,7 +384,7 @@ export function applyEventToDisplay(display: DisplayState, event: BattleEvent): 
       // 分身共享一份状态，所以整组只死一次、只弃一张牌。
       for (const id of event.collapsedInstanceIds) {
         const card = display.instances[id];
-        if (card) card.attackStatuses = [];
+        if (card) { card.attackStatuses = []; card.charmed = false; card.puppeted = false; }
         const slotIndex = indexOfInBoard(side, id);
         if (slotIndex !== null) {
           pushProxy(display, id, event.side, slotIndex);
@@ -392,6 +396,11 @@ export function applyEventToDisplay(display: DisplayState, event: BattleEvent): 
       break;
     }
 
+    case 'ControlChanged': {
+      const card=display.instances[event.instanceId];
+      if(card){if(event.kind==='charm')card.charmed=event.active;else card.puppeted=event.active;}
+      break;
+    }
     case 'FlightChanged': {
       const card = display.instances[event.instanceId];
       if (card) card.flying = event.flying;
@@ -551,6 +560,7 @@ export function projectDisplay(display: DisplayState): string {
       .map(([id, card]) => [id, card.flying ?? false]),
     attackStatuses: Object.fromEntries(Object.entries(display.instances).filter(([, card]) => (card.attackStatuses?.length ?? 0) > 0)
       .map(([id, card]) => [id, [...(card.attackStatuses ?? [])].sort()])),
+    control: Object.entries(display.instances).filter(([,card])=>card.charmed||card.puppeted).map(([id,card])=>[id,card.charmed??false,card.puppeted??false]),
     unyielding: Object.keys(display.groups).filter((id) => display.groups[id]?.unyielding).sort(),
     cd: display.cd,
   });

@@ -24,6 +24,8 @@ import { migrateToCurrent } from '../domain/progression/migrations';
 import { shopStateForDay } from '../domain/progression/shop';
 import { normalizeRewards } from '../domain/progression/rewardState';
 import { initialActivity, normalizeActivity } from '../domain/progression/playerActivity';
+import { normalizeMailbox } from '../domain/progression/mailbox';
+import { normalizeActivityProgress } from '../domain/progression/activityModes';
 import { validateMazeState } from '../domain/progression/mazeProgress';
 import { validateAbyssState } from '../domain/progression/abyssValidation';
 import { withAbyssBest } from '../domain/progression/abyssRanking';
@@ -34,6 +36,7 @@ import { SAVE_SCHEMA_VERSION } from '../domain/progression/types';
 import { activeDeckOf, createInitialProfile, withActiveDeck, withDeck, withMazeRun, withSettings, withoutDeck } from '../domain/progression/profile';
 import type { Planned } from '../domain/progression/plan';
 import type {
+  Currencies,
   Deck,
   MazeRunState,
   ProfileState,
@@ -119,6 +122,7 @@ export interface ProfileStoreDeps {
   readonly starterCardIds: readonly string[];
   /** 开号时一并放进库存的卡。不给就只拥有起始卡组那几张。 */
   readonly ownedCardIds?: readonly string[] | undefined;
+  readonly initialCurrencies?: Currencies | undefined;
   /**
    * 当前卡库认识的 cardId。导入时用来判断库存/卡组里的项是否真的存在。
    * 可选：不给就跳过「认不认识」这层校验（测试构造时不必准备一份卡库）。
@@ -224,6 +228,10 @@ export class ProfileStore {
         }
         const activity = normalizeActivity(current.activity, initialActivity(current));
         if (!activity) throw new Error('玩家统计或新手任务领奖记录无效，未清空账本。');
+        const activityModes = normalizeActivityProgress(current.activityModes);
+        if (!activityModes) throw new Error('活动奖励记录无效，未清空记录。');
+        const mailbox = normalizeMailbox(current.mailbox);
+        if (!mailbox) throw new Error('邮箱领取记录无效，未清空邮件。');
         let abyss = current.abyss;
         if (!validateAbyssState(abyss, this.deps.contentVersion)) {
           // 版本更新（加卡会改 contentVersion）会让在途 run 不可复现。**只降级这一种**：
@@ -240,7 +248,7 @@ export class ProfileStore {
         if (!maze) throw new Error('迷宫探索记录与保底账本不完整，无法安全读取');
         // 修好的那份**不立刻写盘**：与「新号不写盘」「rewards 就地归一」同一条纪律，
         // 内存里已经是合法状态，第一次真正的写入会把它带下去；一直不写也只是下次再归档一遍。
-        stored = { ...current, activity, shop: shopStateForDay(this.todayKey(), current.shop.soldOut), rewards: normalizeRewards(current.rewards), mazeRun: maze.run, mazeProgress: maze.progress, abyss };
+        stored = { ...current, activity, mailbox, activityModes, shop: shopStateForDay(this.todayKey(), current.shop.soldOut), rewards: normalizeRewards(current.rewards), mazeRun: maze.run, mazeProgress: maze.progress, abyss };
       }
       const profile =
         stored ??
@@ -249,6 +257,7 @@ export class ProfileStore {
           dayKey: dayKeyOf(this.deps.clock()),
           starterCardIds: this.deps.starterCardIds,
           ownedCardIds: this.deps.ownedCardIds,
+          initialCurrencies: this.deps.initialCurrencies,
           now: this.deps.clock(),
         });
       this.profile = profile;
@@ -814,6 +823,7 @@ export class ProfileStore {
           dayKey: dayKeyOf(this.deps.clock()),
           starterCardIds: this.deps.starterCardIds,
           ownedCardIds: this.deps.ownedCardIds,
+          initialCurrencies: this.deps.initialCurrencies,
           now: this.deps.clock(),
         });
         // 不先clear；新档写失败时旧档必须仍在。

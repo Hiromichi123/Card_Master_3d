@@ -6,3 +6,23 @@
 .abyss-reward-receipt { position:absolute;top:110px;right:3%;z-index:31;margin:4px 0;color:#e8c592;pointer-events:none; }
 .abyss-board-abandon { color:#e2b6d2; }
 @media(max-width:650px) { .abyss-reward-dialog .abyss-trait-deck__grid,.abyss-weekly-actions{gap:4px;} .abyss-reward-dialog .abyss-trait-card__anchor{min-height:115px;} .abyss-reward-dialog .abyss-trait-card strong{font-size:12px;} .abyss-reward-dialog .abyss-trait-card__description{display:none;} .abyss-weekly-actions button{padding:8px 2px;font-size:11px;} }
+
+/* Pack selection floats directly over the current abyss scene. Weekly rewards
+   retain their separate framed dialog. */
+.abyss-dialog.abyss-pack-dialog {
+  width: min(1240px, 96vw); max-height: 92vh; overflow: auto;
+  background: transparent; border: 0; box-shadow: none; backdrop-filter: none;
+  color: #efdcc0; text-shadow: 0 2px 10px #08030b;
+}
+.abyss-pack-dialog::backdrop { background: #06030b35; backdrop-filter: none; }
+.abyss-pack-dialog .abyss-trait-card,
+.abyss-pack-dialog .abyss-trait-card:hover,
+.abyss-pack-dialog .abyss-trait-card[data-selected="true"] {
+  background: transparent; border-color: transparent; box-shadow: none;
+}
+.abyss-pack-dialog .abyss-trait-card::before,
+.abyss-pack-dialog .abyss-trait-card::after { content: none; }
+.abyss-pack-dialog .abyss-trait-card[data-selected="true"] strong { color: #ffe4a5; }
+.abyss-pack-actions { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; margin: 24px auto 0; }
+.abyss-pack-actions > button { min-width: 180px; padding: 12px 24px; background: linear-gradient(120deg,#554369,#241e38); border: 1px solid #ba92dd; color: #f6e6ff; }
+.abyss-pack-actions > small { color: #d9c29d; font-size: 12px; }

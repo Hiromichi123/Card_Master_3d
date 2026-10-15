@@ -14,9 +14,11 @@ import type { CardRarity } from '../cards/types';
 import type { LadderState, NormalDeckIds } from './deckSlots';
 import type { AbyssState } from './abyssTypes';
 import type { PlayerActivity, NoviceKind } from './playerActivity';
+import type { MailboxState } from './mailbox';
+import type { ActivityProgress, ActivityReceipt } from './activityModes';
 
 /** 存档格式版本。字段增删或语义变化时递增，并写迁移。 */
-export const SAVE_SCHEMA_VERSION = 8;
+export const SAVE_SCHEMA_VERSION = 10;
 
 /** 三种货币。旧版在 `ui/system_ui.py` 里以 golds/crystals/badges 保存。 */
 export interface Currencies {
@@ -189,6 +191,8 @@ export interface ProfileState {
   readonly rewards: RewardsState;
   /** v8 player statistics and novice reward ledger; missing legacy data is migrated. */
   readonly activity?: PlayerActivity;
+  readonly mailbox?: MailboxState;
+  readonly activityModes?: ActivityProgress;
   readonly mazeRun: MazeRunState | null;
   readonly mazeProgress: MazeProgressState;
   readonly abyss: AbyssState;
@@ -207,6 +211,8 @@ export interface ProfileState {
 export interface EconomyTransaction {
   /** 幂等键；同一个 operationId 重复提交不得重复生效。 */
   readonly operationId: string;
+  readonly activityReceipt?: ActivityReceipt;
+  readonly mailAction?: { readonly kind: 'read' | 'claim'; readonly mailId: string };
   readonly activityEvent?: { readonly kind: 'draw'; readonly count: number; readonly poolId: string } | { readonly kind: 'fusion'; readonly count: 1 };
   readonly noviceClaim?: { readonly kind: NoviceKind; readonly repeat: boolean; readonly index: number };
   /** 深渊独立事务，不能夹带任何主模式资源/奖励变化。 */

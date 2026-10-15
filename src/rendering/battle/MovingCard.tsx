@@ -54,6 +54,8 @@ export interface MovingCardProps {
   readonly attackStatuses?: readonly AttackStatusKind[] | undefined;
   readonly flying?: boolean | undefined;
   readonly unyielding?: boolean | undefined;
+  readonly charmed?: boolean | undefined;
+  readonly puppeted?: boolean | undefined;
   readonly ready?: boolean | undefined;
   readonly dragging?: boolean | undefined;
   readonly hoverTip?: boolean | undefined;
@@ -80,6 +82,8 @@ export function MovingCard({
   showStats,
   holo,
   unyielding,
+  charmed,
+  puppeted,
   ready,
   dragging = false,
   hoverTip,
@@ -154,6 +158,8 @@ export function MovingCard({
         showStats={showStats}
         holo={holo}
         unyielding={unyielding}
+        charmed={charmed}
+        puppeted={puppeted}
         ready={ready}
         dragging={dragging}
         hoverTip={hoverTip}

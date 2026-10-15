@@ -1,0 +1,20 @@
+.mailbox-layout { display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: 24px; min-height: 330px; }
+.mailbox-list { display: flex; flex-direction: column; gap: 10px; border-right: 1px solid #bd9c6055; padding-right: 18px; }
+.mailbox-list .btn { display: flex; align-items: center; gap: 12px; text-align: left; padding: 14px; }
+.mailbox-list button[aria-pressed="true"] { border-color: #e1bf7b; box-shadow: 0 0 16px #cdaa5630; }
+.mailbox-list strong { display: block; font-size: 14px; }
+.mailbox-list small { display: block; margin-top: 6px; font-size: 11px; color: #bdb9a7; }
+.mailbox-envelope { color: #b4b2a9; font-size: 27px; }.mailbox-envelope--new { color: #e7c875; }
+.mailbox-content > header { border-bottom: 1px solid #bca06b44; padding-bottom: 16px; }
+.mailbox-content h3 { color: #efd6a0; font: 700 24px/1.4 'Game Numerals', 'SimSun', serif; margin: 8px 0; }
+.mailbox-content header span, .mailbox-content time { color: #b9b8ac; font-size: 12px; }
+.mailbox-content > p { white-space: pre-wrap; color: #d2c9b6; line-height: 1.9; font-size: 14px; margin: 24px 0; }
+.mailbox-attachments { display: flex; flex-wrap: wrap; gap: 16px; margin: 25px 0; }
+.mailbox-attachments article { display: flex; gap: 14px; align-items: center; min-width: 140px; padding: 16px; background: #d1b47512; border: 1px solid #d1b47555; border-radius: 8px; font-size: 12px; }
+.mailbox-attachments strong { display: block; color: #f3d8a0; font: 700 26px/1.5 'Game Numerals', serif; }
+.mailbox-gem { color: #88c9ef; font-size: 35px; text-shadow: 0 0 14px #659cdb77; }.mailbox-coin { color: #e2bc65; font-size: 35px; text-shadow: 0 0 14px #cda35f77; }
+.mailbox-content footer { display: flex; justify-content: center; }
+.mailbox-content .mailbox-feedback { color: #e6c987; font-size: 13px; }
+.mailbox-empty { text-align: center; padding: 80px 0; color: #beb7a9; }
+@layer hub { .hub-side__badge { position: absolute; top: -3px; right: -3px; min-width: 15px; height: 15px; padding: 0 3px; border-radius: 8px; background: #9e3345; color: #ffe9ba; font: 700 10px/15px 'Game Numerals', serif; text-align: center; box-shadow: 0 0 8px #e1ac5944; } }
+@media (max-width: 650px) { .mailbox-layout { grid-template-columns: minmax(0, 1fr); gap: 16px; }.mailbox-list { border-right: 0; border-bottom: 1px solid #bd9c6055; padding: 0 0 14px; }.mailbox-content h3 { font-size: 20px; } }

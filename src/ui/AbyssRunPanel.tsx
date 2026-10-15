@@ -75,8 +75,8 @@ export function AbyssRunPanel({ run: savedRun, busy, dispatch, onBattle, onHome,
         <p className="abyss-note">{stage.freeRemaining > 0 ? `本局加成 · 剩余 ${stage.freeRemaining} 次选择（本级奖励${ABYSS_REWARD_DRAWS[stage.battle.difficulty]}次）` : '奖励已处理，可抽取新卡 / 新特性，或进入下一轮。'}</p>
         {stage.offer && <Growth key={stage.offer.id} offer={stage.offer} run={run} busy={busy} dispatch={dispatch} />}
         {stage.freeRemaining > 0 && <button type="button" disabled={busy} onClick={() => {
-          if (window.confirm(`放弃剩余 ${stage.freeRemaining} 次奖励？`)) void dispatch({ kind: 'skipFree' });
-        }}>放弃剩余奖励</button>}
+          if (window.confirm('仅放弃本次免费加成？剩余次数保留。')) void dispatch({ kind: 'skipFree' });
+        }}>放弃本次奖励</button>}
         {ready && <div className="abyss-camp-ready"><span aria-hidden="true">✦</span><p>准备好后，从上方进入下一轮</p></div>}
       </>}
       {stage.kind === 'bossDecision' && <>

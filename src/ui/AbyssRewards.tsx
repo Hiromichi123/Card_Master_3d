@@ -56,11 +56,11 @@ export function AbyssRewardPacks({ state, busy, dispatch, onClose }: {
   const claim = async () => {
     if (!pack || indices.length !== 3 || busy || lock.current) return;
     lock.current = true; setSending(true); setMessage('');
-    try { if (await dispatch({ kind: 'chooseRewardPack', claimId: pack.id, indices })) { setSelection({ id: '', indices: [] }); setMessage('三张卡牌已加入主收藏。'); } else setMessage('领取未完成，请重新确认当前卡包。'); }
+    try { if (await dispatch({ kind: 'chooseRewardPack', claimId: pack.id, indices })) { setSelection({ id: '', indices: [] }); onClose(); } else setMessage('领取未完成，请重新确认当前卡包。'); }
     catch { setMessage('保存失败，请重试；候选与选择保留。'); }
     finally { lock.current = false; setSending(false); }
   };
-  return <AbyssDialog title="通关卡包 · 五选三" className="abyss-dialog--traits abyss-reward-dialog" onClose={() => { if (!busy && !sending) onClose(); }}>
+  return <AbyssDialog title="通关卡包 · 五选三" className="abyss-dialog--traits abyss-reward-dialog abyss-pack-dialog" onClose={() => { if (!busy && !sending) onClose(); }}>
     {pack ? <>
       <p>{ABYSS_COMPLETION_REWARDS[pack.tier - 1]!.label}结算 · 金币 +{pack.gold} · 水晶 +{pack.crystal}已到账 · 待选卡包 {pending.length}个</p>
       <p>候选平均{ABYSS_COMPLETION_REWARDS[pack.tier - 1]!.average}。选择三张加入主收藏，可暂时关闭；刷新后候选与领取记录保留。</p>
@@ -69,7 +69,7 @@ export function AbyssRewardPacks({ state, busy, dispatch, onClose }: {
           selected: indices.includes(index), disabled: busy || sending || indices.length === 3 && !indices.includes(index),
           footer: indices.includes(index) ? '已选中' : '点击选择', onSelect: () => toggle(index) };
       })} />
-      <button type="button" className="abyss-primary" disabled={busy || sending || indices.length !== 3} onClick={() => { void claim(); }}>确认领取 {indices.length}/3</button>
+      <div className="abyss-pack-actions"><button type="button" className="abyss-primary" disabled={busy || sending || indices.length !== 3} onClick={() => { void claim(); }}>{sending ? '正在结算…' : '确认结算 退出'}</button><small>已选择 {indices.length}/3 张</small></div>
     </> : <p>所有奖励卡包已领取。</p>}
     {message && <p role="status">{message}</p>}
   </AbyssDialog>;

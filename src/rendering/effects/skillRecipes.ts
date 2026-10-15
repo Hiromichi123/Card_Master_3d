@@ -6,6 +6,7 @@ import type { EffectTemplateId } from './familyMap';
 import { attackStatusTiming } from './attackStatusTiming';
 import { usesAttackStatusVisual } from './AttackStatusSkillVisuals';
 import { usesLinearAbility } from './NamedSkillVisuals';
+import { usesEarthSkill } from './EarthSkillVisuals';
 import { usesQuarks } from './QuarksSkillVisuals';
 import { quarksTiming } from './artilleryTiming';
 import { LAYOUT } from '../battle/layout';
@@ -21,6 +22,7 @@ const PALETTE = {
 
 /** These durations are shared with the event adapter; no damage is calculated here. */
 export function skillImpactSeconds(template: EffectTemplateId): number {
+  if (usesEarthSkill(template)) return .42;
   if (template === 'bloodBurst') return slashTiming('slash').hit;
   if (usesAttackStatusVisual(template) || ['bleedMark', 'grievousMark'].includes(template)) return attackStatusTiming(template).hit;
   if (template === 'dodgeGrant') return skillImpactSeconds('armorBreak');
@@ -42,6 +44,18 @@ export function buildSkillTimeline(template: EffectTemplateId, context: EffectCo
   }
   const { pool, from, to } = context;
   const motionScale = Math.max(0.01, context.durationScale);
+  if (usesEarthSkill(template)) {
+    const handles = [to, ...context.extraTargets].slice(0, 5).map(target => context.visuals?.create({
+      template, family: context.family, from, to: target, intensity: context.intensity,
+      countScale: context.countScale, durationScale: context.durationScale,
+    })).filter((handle): handle is SkillVisualHandle => handle !== undefined);
+    const update = (phase: VisualPhase, t: number): void => { for (const handle of handles) handle.update(phase, t); };
+    return new Timeline(() => { for (const handle of handles) handle.dispose(); })
+      .add({ duration: .08 * motionScale, onUpdate: t => update('charge', t) })
+      .add({ duration: .34 * motionScale, onUpdate: t => update('travel', t) })
+      .add({ duration: .32 * motionScale, onStart: () => context.onHit?.(), onUpdate: t => update('impact', t) })
+      .add({ duration: .55 * motionScale, onUpdate: t => update('fade', t) });
+  }
   if (template === 'burnMark') {
     // Applying the status starts ONE reveal on the actual card. Never overlay a second transient crack actor.
     return new Timeline().add({ duration: attackStatusTiming(template).hit * motionScale,
@@ -100,7 +114,7 @@ export function buildSkillTimeline(template: EffectTemplateId, context: EffectCo
     const handles = targets.map((target, index) => context.visuals?.create({
       template: template === 'groupPiercing' ? 'piercing' : template, family: context.family,
       // Each lane starts over its own friendly slot and stays aligned with the opposing slot.
-      from: template === 'groupPiercing' ? new Vector3(target.x, from.y, from.z) : from,
+      from: template === 'groupPiercing' && context.family !== 'puppetedGroupPiercing' ? new Vector3(target.x, from.y, from.z) : from,
       to: target, intensity: context.intensity, tint: context.tint,
       countScale: context.countScale, durationScale: context.durationScale,
       sourceBurst: template !== 'deathBombard' || index === 0,

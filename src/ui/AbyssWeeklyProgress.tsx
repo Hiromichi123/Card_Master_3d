@@ -43,7 +43,7 @@ export function AbyssWeeklyProgress({ state, busy, onPrepare, onRewards }: {
     </div>
     <div className="abyss-week-progress__rewards">{ABYSS_WEEKLY_TIERS.map((tier, index) => {
       const card = cardById.get(preview?.designatedCardIds[index] ?? '');
-      const thumbnail = card && cardFaceUrlForDefinition(card, 'thumbnail'), large = card && cardFaceUrlForDefinition(card, 'battle');
+      const thumbnail = card && cardFaceUrlForDefinition(card, 'thumbnail');
       const achieved = reached >= tier.reached, claimed = preview?.claimedMilestones.includes(tier.reached) === true;
       const owner = `abyss-week-progress:${tier.reached}`;
       const tip = (element: HTMLElement) => { if (card) showCardTip(card.cardId, element.getBoundingClientRect(), { card, theme: 'abyss', ownerKey: owner, ownerElement: element }); };
@@ -54,7 +54,6 @@ export function AbyssWeeklyProgress({ state, busy, onPrepare, onRewards }: {
         onPointerLeave={() => hideCardTip(owner)} onFocus={event => tip(event.currentTarget)} onBlur={() => hideCardTip(owner)}>
         <span className="abyss-week-progress__point" aria-hidden="true" /><b>{tier.label}</b>
         <span className="abyss-week-progress__card">{thumbnail ? <img src={thumbnail} alt={card!.name} loading="lazy" draggable={false} /> : null}</span>
-        {card && large && <span className="abyss-week-progress__preview" aria-hidden="true"><img src={large} alt="" draggable={false} /></span>}
       </button>;
     })}</div></div>
   </section>;

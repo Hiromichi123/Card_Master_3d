@@ -20,7 +20,7 @@ export interface TableTheme {
   readonly id: string;
   readonly name: string;
   /** Independent arena geometry; omitted themes retain the classic tiled table. */
-  readonly geometry?: 'mecha' | 'volcano' | 'harvest' | 'temple' | 'solar' | 'icefield' | 'abyss';
+  readonly geometry?: 'mecha' | 'volcano' | 'harvest' | 'temple' | 'solar' | 'icefield' | 'abyss' | 'cloud';
   /** 一句话描述，显示在切换器里。 */
   readonly blurb: string;
 
@@ -238,6 +238,20 @@ export const TABLE_THEMES: readonly TableTheme[] = [
     },
     accent: { slot: 0x9fb3c8, placeable: 0x7fd4ff, target: 0xffd166 },
     post: { bloom: .18, bloomThreshold: 1.12 },
+  },
+  {
+    id: 'cloud-top', name: '云顶', geometry: 'cloud',
+    blurb: '白云的平坦顶面承托卡牌，细金线勾勒战阵，蓝天与天边阳光映照漂浮云海。',
+    table: { color: 0xf5faff, roughness: .98 },
+    background: 0xd4e7fa, fog: fog(0xf4f9ff, 75, 170), environmentIntensity: .55,
+    mat: {
+      light: { kind: 'plain', color: 0xf7fbff, roughness: .98, metalness: 0 },
+      dark: { kind: 'plain', color: 0xf1f7fb, roughness: .98, metalness: 0 },
+      frame: { kind: 'plain', color: 0xffffff, roughness: 1, metalness: 0 },
+      inlay: 0xc8a55b,
+    },
+    accent: { slot: 0xc2a16c, placeable: 0x429abd, target: 0xcf824c },
+    post: { bloom: .10, bloomThreshold: 1.25 },
   },
   {
     id: 'abyss', name: '深渊', geometry: 'abyss',

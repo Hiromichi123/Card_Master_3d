@@ -311,18 +311,18 @@ export function AbyssPreparationScene({ run: savedRun, busy, dispatch, onBattle,
     {!ended && !upgrade && !transition && boon && stage.kind === 'boonChoice' && <aside className="abyss-choice-enemy" title={stage.battle.enemyEffect.description}>
       敌方本战增益：{stage.battle.enemyEffect.name} · {stage.battle.enemyEffect.description}
     </aside>}
-    {!ended && !upgrade && !settling && !ready && !transition && stage.kind !== 'bossDecision' && stage.kind !== 'battleReady' && stage.kind !== 'inBattle' && <footer className={`abyss-choice-footer${camp ? ' abyss-choice-footer--camp' : ''}`}><p>{hint}</p>
+    {!ended && !upgrade && !settling && !ready && !transition && stage.kind !== 'bossDecision' && stage.kind !== 'battleReady' && stage.kind !== 'inBattle' && <footer className={boon ? 'abyss-choice-footer' : 'abyss-choice-footer abyss-choice-footer--top'}><p>{hint}</p>
       {boon && stage.kind === 'boonChoice' && <div className="abyss-contract-actions" aria-label="接受本战契约">
         {stage.battle.boonChoices.map((pair, index) => <button key={pair.id} type="button" className="abyss-choice-group" disabled={locked}
           aria-pressed={selected === index} onClick={() => { void (async () => { if (await commit({ kind: 'chooseBoon', index })) onBattle(); })(); }}>接受契约 {index + 1}</button>)}
       </div>}
       {option && !choiceNeedsTarget(option, run.cards.length) && <button type="button" className="abyss-primary" disabled={locked}
         onClick={() => apply(selected!)}>{option.kind === 'crystal' ? '领取深渊结晶' : `加入 ${option.kind === 'recruit' ? option.card.definition.name : option.label}`}</button>}
-      {offer && <button type="button" disabled={locked} onClick={() => {
-        if (window.confirm(offer.source === 'free' ? '放弃剩余免费加成？' : '放弃本次候选？已支付费用不返还。'))
+      {offer && <button type="button" className="abyss-choice-skip" disabled={locked} onClick={() => {
+        if (window.confirm(offer.source === 'free' ? '仅放弃本次免费加成？剩余次数保留。' : '放弃本次候选？已支付费用不返还。'))
           void commit(offer.source === 'free' ? { kind: 'skipFree' } : { kind: 'cancelOffer' });
       }}>
-        {offer.source === 'free' ? '放弃剩余免费加成' : '放弃候选（不退款）'}</button>}
+        {offer.source === 'free' ? '放弃本次免费加成' : '放弃候选（不退款）'}</button>}
     </footer>}
     {!draft && !settling && <div className="abyss-board-countdown"><AbyssCountdown /></div>}
     {camp && !settling && !ended && <AbyssCampCrystals still={still} entries={[

@@ -5,6 +5,7 @@ import type {
 } from '../cards/types';
 import {
   battleInstances,
+  terrainSkillTargets,
   groupOf,
   isSilenced,
   isBattleActive,
@@ -19,6 +20,7 @@ import {
 
 import { SUMMON_TARGETS, resolveSummonDefinitionId, lethalStrikeChance, canPhysicallyHit, physicalDefender, consumeConcealment } from '../skills/tacticalTraits';
 import { syncFlightState, syncBerserk, rememberBerserkBase } from '../skills/passiveTraits';
+import { grantCharm, syncControlState, puppetController, puppetAllies, isAttackCast } from '../skills/controlTraits';
 import { attackTick, grantAttackStatus, triggerAttackStatuses, clearAttackStatuses } from '../skills/attackStatuses';
 import { createRng, type Rng } from './rng';
 import { resetCardLife } from './cardLifecycle';
@@ -336,6 +338,7 @@ class Resolver {
       if (instance) activateUnyielding(this, this.state, instance);
     }
     if (['DamageApplied', 'Healed', 'CardMoved', 'FormationShuffled', 'SlotCompacted', 'SilenceApplied', 'SilenceExpired'].includes(event.type)) syncFlightState(this, this.state);
+    if (['DamageApplied','Healed','CardMoved','CardDied','CardDeployed','CardSummoned','CardReset','FormationInserted','FormationShuffled','SlotCompacted','SilenceApplied','SilenceExpired'].includes(event.type)) syncControlState(this,this.state);
   }
 
   /**
@@ -570,6 +573,7 @@ function triggerSkills(
    */
   onlyFamily?: string,
 ): void {
+  syncControlState(resolver,state);
   const definition = state.definitions[instance.definitionId];
   if (!definition) {
     return;
@@ -584,7 +588,7 @@ function triggerSkills(
     skills.push({ raw: `闪避${giftedDodge}（赋予）`, family: 'dodge', param: giftedDodge, resolution: 'implemented' });
   }
   for (const skill of skills) {
-    if (['berserk', 'antiAir', 'groupGround', 'siege', 'concealment', 'firstStrike', 'vanguard'].includes(skill.family ?? '')) continue;
+    if (['puppet', 'berserk', 'antiAir', 'groupGround', 'siege', 'concealment', 'firstStrike', 'vanguard'].includes(skill.family ?? '')) continue;
     if (!skill.family || (onlyFamily !== undefined && skill.family !== onlyFamily)) continue;
     if (skill.resolution !== 'implemented' && skill.resolution !== 'alias') continue;
     if (scope === 'effects' && skill.family === 'selfDestruct') continue;
@@ -602,11 +606,28 @@ function triggerSkills(
     if(skill.family==='groupSilence'&&(skill.param??1)<=0)continue;
     if(skill.family==='crushWaiting'&&!state.zones[opponentOf(instance.owner)].prep.some(id=>{const card=id?state.instances[id]:undefined;const d=card?state.definitions[card.definitionId]:undefined;return !!d&&isSelfDestructCard(d);} ))continue;
 
-    if (ENEMY_CARD_ATTACK_FAMILIES.has(skill.family) &&
+    const attackingSkill=isAttackCast(skill.family,trigger);
+    if(instance.marks.charmed&&attackingSkill)continue;
+    // Ordinary attacks and their passive splash keep their original targeting.
+    const puppeteer=attackingSkill&&skill.family!=='splash'?puppetController(state,instance):null;
+    let controlledTargets=puppeteer?puppetAllies(state,instance):[];
+    if(skill.family==='skyCollapse')controlledTargets=controlledTargets.filter(card=>card.flying);
+    if(skill.family==='earthRift')controlledTargets=controlledTargets.filter(card=>!card.flying);
+    if(puppeteer&&controlledTargets.length===0)continue;
+    const misdirected=puppeteer!==null;
+    const controlledTarget=misdirected?resolver.rng.pick(controlledTargets):undefined;
+    if(skill.family==='charm'){
+      const id=state.zones[opponentOf(instance.owner)].battle[instance.slotIndex];
+      const target=id?state.instances[id]:undefined;
+      if(!target||!isBattleActive(state,target))continue;
+    }
+    if (!misdirected && ['skyCollapse', 'earthRift'].includes(skill.family) &&
+      terrainSkillTargets(state, instance.owner, skill.family === 'skyCollapse').length === 0) continue;
+    if (!misdirected && ENEMY_CARD_ATTACK_FAMILIES.has(skill.family) &&
       !battleInstances(state, opponentOf(instance.owner)).some(({ instance: target }) => isBattleActive(state, target))) continue;
     if (['curse', 'armorBreak'].includes(skill.family)) {
       const id = state.zones[opponentOf(instance.owner)].battle[attack?.defenderSlot ?? instance.slotIndex];
-      const target = id ? state.instances[id] : undefined;
+      const target = controlledTarget ?? (id ? state.instances[id] : undefined);
       if (!target || !isBattleActive(state, target)) continue;
     }
 
@@ -616,12 +637,12 @@ function triggerSkills(
       !state.zones[instance.owner].battle.includes(null))) continue;
     if (skill.family === 'alignedDeathBlast') {
       const id = state.zones[opponentOf(instance.owner)].battle[deathSlot ?? instance.slotIndex];
-      const target = id ? state.instances[id] : undefined;
+      const target = controlledTarget ?? (id ? state.instances[id] : undefined);
       if (!target || !isBattleActive(state, target)) continue;
     }
     if (skill.family === 'lethalStrike') {
       const id = state.zones[opponentOf(instance.owner)].battle[attack?.defenderSlot ?? instance.slotIndex];
-      const target = id ? state.instances[id] : undefined;
+      const target = controlledTarget ?? (id ? state.instances[id] : undefined);
       if (!target || !isBattleActive(state, target) || groupOf(state, target).hp <= 0 ||
         !resolver.rng.chance(lethalStrikeChance(skill.param ?? 1))) continue;
     }
@@ -635,7 +656,7 @@ function triggerSkills(
     }
     if (skill.family === 'execute') {
       const id = state.zones[opponentOf(instance.owner)].battle[attack?.defenderSlot ?? instance.slotIndex];
-      const target = id ? state.instances[id] : undefined;
+      const target = controlledTarget ?? (id ? state.instances[id] : undefined);
       if (state.currentSide !== instance.owner || !target || !isBattleActive(state, target) ||
         groupOf(state, target).hp >= groupOf(state, instance).hp) continue;
     }
@@ -645,19 +666,20 @@ function triggerSkills(
     // Slash families require live battlefield targets before they can be reflected or animated.
     if (['slash', 'swordDance'].includes(skill.family)) {
       const alignedId = state.zones[opponentOf(instance.owner)].battle[attack?.defenderSlot ?? instance.slotIndex];
-      const aligned = alignedId ? state.instances[alignedId] : undefined;
+      const aligned = controlledTarget ?? (alignedId ? state.instances[alignedId] : undefined);
       if (!aligned || !isBattleActive(state, aligned)) continue;
-    } else if (['groupSlash', 'groupSwordDance'].includes(skill.family) &&
+    } else if (!misdirected && ['groupSlash', 'groupSwordDance'].includes(skill.family) &&
       !battleInstances(state, opponentOf(instance.owner)).some(({ instance: target }) => isBattleActive(state, target))) continue;
 
     resolver.emit({ type: 'SkillTriggered', side: instance.owner, instanceId: instance.instanceId,
       trigger, family: skill.family, raw: skill.raw, param: skill.param,
-      ...(['armorBreak', 'alignedDeathBlast'].includes(skill.family) ? { targetInstanceId:
+      ...(misdirected?{misdirected:true}:{}),
+      ...(!misdirected && ['armorBreak', 'alignedDeathBlast'].includes(skill.family) ? { targetInstanceId:
         state.zones[opponentOf(instance.owner)].battle[skill.family === 'alignedDeathBlast' ? deathSlot ?? instance.slotIndex : attack?.defenderSlot ?? instance.slotIndex] ?? null } : {}) });
 
     // An active reflector protects its entire side immediately. Run the captured
     // incoming spell once with reversed ownership; never dispatch another cast.
-    const reflector = OFFENSIVE_SPELL_FAMILIES.has(skill.family)
+    const reflector = !misdirected && OFFENSIVE_SPELL_FAMILIES.has(skill.family)
       ? battleInstances(state, opponentOf(instance.owner)).map((entry) => entry.instance).find((card) =>
         isBattleActive(state, card) && traitsOf(state, card).includes('法术反弹') &&
         !isSilenced(state, card.owner, card.slotIndex))
@@ -669,19 +691,26 @@ function triggerSkills(
     const ctx: SkillContext = {
       state, rng: resolver.rng, owner,
       self: reflector ? { ...instance, owner } : instance,
-      ...(reflector && instance.zone === 'battle' && isBattleActive(state, instance) ? { reflectedTarget: instance } : {}),
+      ...(misdirected?{reflectedTarget:controlledTarget!,hostileTargets:controlledTargets}:reflector && instance.zone === 'battle' && isBattleActive(state, instance) ? { reflectedTarget: instance } : {}),
       trigger,
       param: skill.param ?? (['explodeOnDeath', 'alignedDeathBlast'].includes(skill.family) ? 2 : 1), attack, deathSlot,
       emit: (event) => resolver.emit(event),
-      damage: (target, amount, source: DamageSource) => source === 'trueDamage' || source === 'collapse'
-        ? resolver.trueDamage(target, amount, source) : resolver.damage(target, amount, source),
+      damage: (target, amount, source: DamageSource) => {
+        const recipient=misdirected&&target.owner!==instance.owner?controlledTarget!:target;
+        return source==='trueDamage'||source==='collapse'?resolver.trueDamage(recipient,amount,source):resolver.damage(recipient,amount,source);
+      },
       heal: (target, amount) => resolver.heal(target, amount),
       drainAlly: (donor, amount) => resolver.transferLife(instance, donor, amount),
-      damagePlayer: (side, amount, source) => resolver.damagePlayer(side, amount, source),
+      damagePlayer: (side, amount, source) => {
+        if(!misdirected)return resolver.damagePlayer(side,amount,source);
+        const eligible=controlledTargets.filter(card=>isBattleActive(state,card));
+        return eligible.length?resolver.damage(resolver.rng.pick(eligible),amount,'skill'):0;
+      },
       discard: () => undefined, placeInPrep: () => false,
       createDuplicate: (source, mode, slot) => resolver.duplicate(source, mode, slot),
       summonCard: (definitionId) => resolver.summon(instance, definitionId),
       kill: (target) => {
+        if(misdirected&&target.owner!==instance.owner)target=controlledTarget!;
         const group = groupOf(state, target);
         const before = group.hp;
         group.hp = 0;
@@ -689,8 +718,9 @@ function triggerSkills(
           amount: before, hpBefore: before, hpAfter: 0, source: 'instantDeath' });
         removeDead(resolver, state);
       },
-      grantAttackStatus: (target, kind, level) => grantAttackStatus(resolver, state, target,
+      grantAttackStatus: (target, kind, level) => grantAttackStatus(resolver, state, misdirected&&target.owner!==instance.owner?controlledTarget!:target,
         reflector ?? instance, kind, level, skill.family !== 'poisonCloud'),
+      grantCharm:target=>grantCharm(resolver,state,target,reflector??instance),
       grantConcealment:target=>grantConcealment(resolver,state,target,instance),
       grantSilence:(target,turns)=>grantSilence(resolver,state,target,reflector??instance,turns),
       crushWaitingCard:target=>resolver.crushWaiting(target,reflector??instance),
@@ -699,8 +729,8 @@ function triggerSkills(
         resolver.emit({ type: 'DodgeGranted', side: target.owner, instanceId: target.instanceId,
           sourceInstanceId: instance.instanceId, level: target.marks.grantedDodge });
       },
-      physicalAttack: (target, amount) => resolvePhysicalHit(resolver, state, instance, target, amount,
-        skill.family === 'groupPhysicalDamage', skill.family === 'splash'),
+      physicalAttack: (target, amount) => resolvePhysicalHit(resolver, state, instance, misdirected&&target.owner!==instance.owner?controlledTarget!:target, amount,
+        skill.family === 'groupPhysicalDamage', skill.family === 'splash', misdirected),
     };
     rule.apply(ctx);
     if (['directDamage', 'groupPhysicalDamage', 'slash', 'groupSlash', 'swordDance', 'groupSwordDance', 'sacrifice'].includes(skill.family)) removeDead(resolver, state);
@@ -722,11 +752,12 @@ function returnAttackOverflow(resolver: Resolver, state: BattleState, attacker: 
 
 /** Physical skill hits share normal mitigation/counters and emit the ordinary lunge request. */
 function resolvePhysicalHit(resolver: Resolver, state: BattleState, attacker: CardInstance,
-  defender: CardInstance, amount: number, allowDeadAttacker = false, secondary = false): void {
+  defender: CardInstance, amount: number, allowDeadAttacker = false, secondary = false, friendlySkill = false): void {
   if (defender.zone !== 'battle' || !isBattleActive(state, defender) ||
     (!allowDeadAttacker && !isBattleActive(state, attacker))) return;
   const intended = defender;
-  defender = physicalDefender(state, attacker, intended);
+  if(friendlySkill&&!canPhysicallyHit(state,attacker,intended))return;
+  defender = friendlySkill?intended:physicalDefender(state, attacker, intended);
   if (defender !== intended) resolver.emit({ type: 'VanguardIntercepted', side: defender.owner,
     guardId: defender.instanceId, protectedId: intended.instanceId, attackerId: attacker.instanceId });
   const slot = defender.slotIndex;
@@ -806,9 +837,10 @@ function resolveAttack(
 
   const statusSnapshot = Object.values(attacker.marks.attackStatuses ?? {}).filter((status) => status !== undefined).map((status) => ({ ...status }));
   attack.rawAtk = group.atk;
+  const charmed=attacker.marks.charmed===true;
   const traits = traitsOf(state, attacker);
-  const directKind: 'ranged' | 'siege' | null = silenced ? null : hasFamily(state, attacker, 'siege') ? 'siege' : traits.includes('远射') ? 'ranged' : null;
-  if (!directKind && defender) {
+  const directKind: 'ranged' | 'siege' | null = silenced || charmed ? null : hasFamily(state, attacker, 'siege') ? 'siege' : traits.includes('远射') ? 'ranged' : null;
+  if (!directKind && !charmed && defender) {
     const intended = defender;
     defender = physicalDefender(state, attacker, intended);
     attack.defenderSlot = defender.slotIndex;
@@ -819,7 +851,8 @@ function resolveAttack(
     type: 'AttackDeclared',
     side,
     attackerId: attacker.instanceId,
-    targetInstanceId: directKind ? null : defender?.instanceId ?? null,
+    targetInstanceId: charmed || directKind ? null : defender?.instanceId ?? null,
+    ...(charmed?{targetSide:side}:{}),
     targetSlot: defender?.slotIndex ?? attackerSlot,
     ...(directKind ? { attackKind: directKind } : {}),
   });
@@ -833,7 +866,9 @@ function resolveAttack(
    */
   let hitCard = false;
 
-  if (directKind) {
+  if (charmed) {
+    attack.dealt=resolver.damagePlayer(side,attack.damage,'normalAttack');
+  } else if (directKind) {
     // The aligned card is neither damaged nor asked to defend/counter this shot.
     attack.dealt = resolver.damagePlayer(other, attack.damage, directKind);
   } else if (defender && defender.flying && !attackerCanHitAir) {
@@ -1409,6 +1444,7 @@ export function applyCommand(state: BattleState, command: Command): Resolution {
   }
 
   syncFlightState(resolver, working);
+  syncControlState(resolver, working);
   syncAutoEvolution(working, event => resolver.emit(event));
   working.rng = resolver.rng.snapshot();
 
@@ -1428,6 +1464,7 @@ export function applyCommand(state: BattleState, command: Command): Resolution {
 export function stateFingerprint(state: BattleState): string {
   return JSON.stringify({
     currentSide: state.currentSide, phase: state.phase, priority: state.priority, hostAttacked: state.hostAttacked,
+    control:Object.values(state.instances).filter(card=>card.zone==='battle').map(card=>[card.instanceId,card.marks.charmed??false,card.marks.puppetedBy??null]),
     grantedTraits:Object.values(state.instances).filter(card=>card.zone==='battle').map(card=>[card.instanceId,card.marks.grantedConcealment??false,(card.marks.silenceUntil??state.turnIndex-1)-state.turnIndex]),
     concealment: Object.values(state.instances).filter((card) => card.zone === 'battle' && hasFamily(state, card, 'concealment'))
       .map((card) => [card.instanceId, card.marks.concealmentUsed ?? false]),

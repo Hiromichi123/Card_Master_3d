@@ -32,6 +32,7 @@ export interface EffectRecipe {
 }
 
 export const EFFECT_TEMPLATE_IDS = [
+  'skyCollapse', 'earthRift',
   'frostRetaliation', 'burnMark', 'poisonLance', 'bleedMark', 'grievousMark', 'poisonCloud', 'frostShatter', 'burnBurst', 'poisonBurst', 'bloodBurst', 'grievousPulse',
   'normalAttack', 'slash', 'groupSlash', 'swordDance', 'groupSwordDance', 'fireball', 'iceSeal', 'lightning', 'groupFireball',
   'groupIceSeal', 'groupLightning', 'shield', 'heal', 'buff', 'debuff', 'curse', 'instantDeath', 'dodgeGrant', 'injury',
@@ -40,6 +41,7 @@ export const EFFECT_TEMPLATE_IDS = [
 ] as const satisfies readonly EffectTemplateId[];
 
 const SHAKE: Partial<Record<EffectTemplateId, number>> = {
+  skyCollapse: .4, earthRift: .3,
   normalAttack: 0, fireball: 0.5, groupFireball: 0.7, lightning: 0.55,
   groupLightning: 0.75, iceSeal: 0.2, groupIceSeal: 0.35, bombard: 0.6, deathBurst: 0.6,
 };

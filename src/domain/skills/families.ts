@@ -198,6 +198,10 @@ export const SKILL_FAMILIES = [
   {id:'groupSilence',sourceName:'全体沉默n',category:'special',hasParam:true,purity:'pure',summary:'攻击前令当前敌方全体在场卡沉默n个完整自身回合，期限不随换位或施法者离场取消'},
   {id:'thornArmor',sourceName:'刺甲n',category:'afterAttack',hasParam:true,purity:'pure',summary:'受到普攻时获得防御n，实际命中后反伤n；完全减免也反伤，闪避或隐匿不反伤'},
   {id:'crushWaiting',sourceName:'粉碎',category:'deckPrep',hasParam:false,purity:'pure',summary:'攻击前清除敌方等待区全部自毁卡，直接入弃牌并重置，不触发任何特性'},
+  { id: 'skyCollapse', sourceName: '天崩', category: 'element', hasParam: false, purity: 'pure', summary: '上场时对敌方全部当前飞行单位各造成3点技能伤害，无火落石从目标上空砸落' },
+  { id: 'earthRift', sourceName: '地裂', category: 'element', hasParam: false, purity: 'pure', summary: '上场时对敌方全部当前地面单位各造成2点技能伤害，土黄色石柱从目标下方生长' },
+  { id:'charm',sourceName:'魅惑',category:'special',hasParam:false,purity:'scene',summary:'上场魅惑对位，普攻转向其己方本体、攻击技能停用，目标离场解除' },
+  { id:'puppet',sourceName:'操纵 / 傀儡',category:'special',hasParam:false,purity:'declarative',summary:'在场对位光环，使对位攻击技能改打其它友军，普通攻击不变；持有者离场或沉默后失效' },
 ] as const satisfies readonly SkillFamily[];
 
 export type SkillFamilyId = (typeof SKILL_FAMILIES)[number]['id'];
@@ -220,7 +224,7 @@ export const LEGACY_FAMILY_COUNT = 35;
  * 所以它不再是 35——两个数不一样是**预期**，不是漂移。
  * 新加族时把它加进这个数组，`EXPECTED_FAMILY_COUNT` 会跟着走。
  */
-export const EXTRA_FAMILY_IDS = ['holyShield', 'ranged', 'piercing', 'directDamage', 'instantDeath', 'spellReflect', 'grantDodge', 'groupPhysicalDamage', 'slash', 'groupSlash', 'swordDance', 'groupSwordDance', 'sacrifice', 'execute', 'teleport', 'groupPiercing', 'criticalCollapse', 'unyielding', 'splash', 'groupDelay', 'severeFrost', 'burning', 'venom', 'bleeding', 'grievousWound', 'poisonCloud', 'antiAir', 'groupGround', 'siege', 'concealment', 'firstStrike', 'devour', 'masterpiece', 'vanguard', 'lethalStrike', 'alignedDeathBlast', 'foxSpiritSummon', 'grantConcealment', 'groupSilence', 'thornArmor', 'crushWaiting'] as const;
+export const EXTRA_FAMILY_IDS = ['charm', 'puppet', 'skyCollapse', 'earthRift', 'holyShield', 'ranged', 'piercing', 'directDamage', 'instantDeath', 'spellReflect', 'grantDodge', 'groupPhysicalDamage', 'slash', 'groupSlash', 'swordDance', 'groupSwordDance', 'sacrifice', 'execute', 'teleport', 'groupPiercing', 'criticalCollapse', 'unyielding', 'splash', 'groupDelay', 'severeFrost', 'burning', 'venom', 'bleeding', 'grievousWound', 'poisonCloud', 'antiAir', 'groupGround', 'siege', 'concealment', 'firstStrike', 'devour', 'masterpiece', 'vanguard', 'lethalStrike', 'alignedDeathBlast', 'foxSpiritSummon', 'grantConcealment', 'groupSilence', 'thornArmor', 'crushWaiting'] as const;
 
 /** 表里应有的族数。 */
 export const EXPECTED_FAMILY_COUNT = LEGACY_FAMILY_COUNT + EXTRA_FAMILY_IDS.length;

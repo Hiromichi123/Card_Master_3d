@@ -170,7 +170,7 @@ export function effectRequestFor(
           }
         }
       }
-      if (['grantConcealment', 'groupSilence', 'crushWaiting', 'concealment', 'firstStrike', 'vanguard', 'devour', 'masterpiece', 'foxSpiritSummon', 'antiAir', 'groupGround', 'siege', 'berserk', 'severeFrost', 'burning', 'venom', 'bleeding', 'grievousWound', 'splash', 'groupDelay', 'ranged', 'directDamage', 'groupPhysicalDamage', 'selfDestruct', 'sacrifice', 'unyielding'].includes(event.family ?? '')) return null;
+      if (['charm', 'puppet', 'grantConcealment', 'groupSilence', 'crushWaiting', 'concealment', 'firstStrike', 'vanguard', 'devour', 'masterpiece', 'foxSpiritSummon', 'antiAir', 'groupGround', 'siege', 'berserk', 'severeFrost', 'burning', 'venom', 'bleeding', 'grievousWound', 'splash', 'groupDelay', 'ranged', 'directDamage', 'groupPhysicalDamage', 'selfDestruct', 'sacrifice', 'unyielding'].includes(event.family ?? '')) return null;
       const template = event.family ? FAMILY_TO_EFFECT[event.family] : undefined;
       if (!template) {
         return null;
@@ -179,18 +179,19 @@ export function effectRequestFor(
         : castPointOf(context.worldPointOf(event.instanceId), event.side);
       // Self-heals/buffs must retain their actual recipient, including group casts.
       const next = context.events[context.index + 1];
+      if (['skyCollapse', 'earthRift'].includes(event.family ?? '') && next?.type === 'SpellReflected') return null;
       const targets = next?.type === 'SpellReflected' && next.casterId === event.instanceId
         ? [{ instanceId: next.reflectorId, side: next.side }]
         : event.targetInstanceId ? [{ instanceId: event.targetInstanceId, side: oppositeOf(event.side) }] : targetsOf(context);
       if (usesSlash(template) && targets.length === 0) return null;
-      if (ENEMY_CARD_ATTACK_FAMILIES.has(event.family ?? '') &&
+      if (!event.misdirected && ENEMY_CARD_ATTACK_FAMILIES.has(event.family ?? '') &&
         !targets.some((target) => target.side !== event.side)) return null;
-      const points = targets.map((target) => (event.family === 'criticalCollapse' || event.family === 'poisonCloud')
+      const points = targets.map((target) => (['criticalCollapse', 'poisonCloud', 'skyCollapse', 'earthRift'].includes(event.family ?? ''))
         ? context.cardFacePointOf?.(target.instanceId) ?? pointFor(target, context) : pointFor(target, context));
       const [first, ...rest] = points;
       return {
         template,
-        family: event.family ?? undefined,
+        family: event.misdirected && event.family === 'groupPiercing' ? 'puppetedGroupPiercing' : event.family ?? undefined,
         // 个别族换颜色（圣盾＝金色的护盾）；其余族交给模板自带的配色
         color: event.family ? FAMILY_TINT[event.family] : undefined,
         sourceInstanceId: event.instanceId,
@@ -198,7 +199,7 @@ export function effectRequestFor(
         // 没有可辨认的目标时落在自己身上：宁可原地起手，也不要朝世界原点乱飞
         to: first ?? impactPointOf(context.worldPointOf(event.instanceId)),
         extraTargets: rest,
-        intensity: event.param ?? 1,
+        intensity: event.family === 'skyCollapse' ? 3 : event.family === 'earthRift' ? 2 : event.param ?? 1,
       };
     }
 
@@ -208,7 +209,7 @@ export function effectRequestFor(
       if (!template) return null;
       const resolvedTargets = targetsOf(context);
       if (ENEMY_CARD_ATTACK_FAMILIES.has(event.family) && resolvedTargets.length === 0) return null;
-      const points = resolvedTargets.map((target) => event.family === 'poisonCloud'
+      const points = resolvedTargets.map((target) => ['poisonCloud', 'skyCollapse', 'earthRift'].includes(event.family)
         ? context.cardFacePointOf?.(target.instanceId) ?? pointFor(target, context) : pointFor(target, context));
       return { template, family: event.family === 'explodeOnDeath' ? 'groupBombard' : event.family === 'alignedDeathBlast' ? 'bombard' : event.family,
         sourceInstanceId: event.reflectorId, from: castPointOf(context.worldPointOf(event.reflectorId), event.side),
@@ -259,10 +260,12 @@ export function effectRequestFor(
         from,
         to: !event.attackKind && event.targetInstanceId
           ? impactPointOf(context.worldPointOf(event.targetInstanceId))
-          : context.playerAnchor(oppositeOf(event.side)),
+          : context.playerAnchor(event.targetSide ?? oppositeOf(event.side)),
         intensity: 1,
       };
     }
+
+    case 'ControlChanged': return null; // The card-mounted shader owns the one-shot flash and persistent mask.
 
     case 'PlayerHpChanged':
       // HP feedback is handled by the number countdown; never emit an extra ball.

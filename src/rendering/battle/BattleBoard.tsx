@@ -54,6 +54,8 @@ export interface CardPlacement {
   readonly attackStatuses?: readonly AttackStatusKind[] | undefined;
   readonly flying?: boolean | undefined;
   readonly unyielding?: boolean | undefined;
+  readonly charmed?: boolean | undefined;
+  readonly puppeted?: boolean | undefined;
   readonly ready?: boolean | undefined;
   readonly dragging?: boolean | undefined;
   readonly hoverTip?: boolean | undefined;
@@ -168,6 +170,8 @@ export function BattleBoard({
           showStats={placement.showStats}
           holo={placement.holo}
           unyielding={placement.unyielding}
+          charmed={placement.charmed}
+          puppeted={placement.puppeted}
           ready={placement.ready}
           dragging={placement.dragging}
           hoverTip={placement.hoverTip}

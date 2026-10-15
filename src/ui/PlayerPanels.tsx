@@ -24,7 +24,7 @@ function StatLogo({ kind, color }: { readonly kind: IconKind; readonly color: st
   return <svg viewBox="0 0 80 80" aria-hidden="true"><defs><linearGradient id={gradient} x2="1" y2="1"><stop stopColor="#fff4d2"/><stop offset=".45" stopColor={color}/><stop offset="1" stopColor="#534058"/></linearGradient></defs>
     <path d={paths[kind]} fill={`url(#${gradient})`} fillOpacity=".35" stroke={`url(#${gradient})`} strokeWidth="3" strokeLinejoin="round"/></svg>;
 }
-function PlayerDialog({ title, onClose, children }: { readonly title: string; readonly onClose: () => void; readonly children: ReactNode }) {
+export function PlayerDialog({ title, onClose, children }: { readonly title: string; readonly onClose: () => void; readonly children: ReactNode }) {
   const ref = useRef<HTMLDialogElement>(null);
   useEffect(() => { const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     const element = ref.current; element?.showModal(); return () => { element?.close(); previous?.focus({ preventScroll: true }); }; }, []);

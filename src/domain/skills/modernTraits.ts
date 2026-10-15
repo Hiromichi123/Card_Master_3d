@@ -21,7 +21,11 @@ export function withModernTraits(original: CardDefinition): CardDefinition {
   const skills = card.skills.map((skill): SkillSpec => {
     let family: string | null = null;
     let param: number | null = null;
-    if(skill.raw==='粉碎')family='crushWaiting';
+    if (skill.raw === '魅惑') family = 'charm';
+    else if (['操纵', '傀儡', '操纵/傀儡'].includes(skill.raw)) family = 'puppet';
+    else if (skill.raw === '天崩') family = 'skyCollapse';
+    else if (skill.raw === '地裂') family = 'earthRift';
+    else if(skill.raw==='粉碎')family='crushWaiting';
     else if(skill.raw==='隐匿赋予'){family='grantConcealment';param=1;}
     else if (/^溅射(?:\d+)?$/.test(skill.raw)) family = 'splash';
     else if (skill.raw === '隐匿') family = 'concealment';

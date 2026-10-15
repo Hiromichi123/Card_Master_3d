@@ -42,10 +42,11 @@ export interface DeckEditorSceneProps {
   readonly profile: ProfileState;
   readonly store: ProfileStore;
   readonly initialDeckId?: string | undefined;
+  readonly battleReturnRoute?: RouteId | undefined;
   readonly onNavigate?: ((route: RouteId) => void) | undefined;
 }
 
-export function DeckEditorScene({ profile: initialProfile, store, initialDeckId, onNavigate }: DeckEditorSceneProps) {
+export function DeckEditorScene({ profile: initialProfile, store, initialDeckId, onNavigate, battleReturnRoute = 'battlemenu' }: DeckEditorSceneProps) {
   const snapshot = useSyncExternalStore(store.subscribe, store.getSnapshot, store.getSnapshot);
   const profile = snapshot.profile ?? initialProfile;
   const rarityIndex = useRarityIndex();
@@ -238,7 +239,7 @@ export function DeckEditorScene({ profile: initialProfile, store, initialDeckId,
         )}
         {onNavigate && <nav className="deckedit__nav" aria-label="配置页导航">
           <button type="button" className="btn" data-action="battle-menu" disabled={disabled}
-            onClick={() => void saveThen('battlemenu')}>前往对战模式</button>
+            onClick={() => void saveThen(battleReturnRoute)}>{battleReturnRoute === 'coop' ? '返回协力作战' : battleReturnRoute === 'extreme' ? '返回高难挑战' : '前往对战模式'}</button>
           <button type="button" className="btn" data-action="ladder" disabled={disabled}
             onClick={() => void saveThen('ladder')}>返回天梯赛</button>
         </nav>}

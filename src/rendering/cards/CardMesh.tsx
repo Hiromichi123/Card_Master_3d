@@ -28,6 +28,7 @@ import {
 import { CardGlow } from './CardGlow';
 import { AttackStatusOverlay } from './AttackStatusOverlay';
 import { UnyieldingOverlay } from './UnyieldingOverlay';
+import { ControlStatusOverlay } from './ControlStatusOverlay';
 import { HoloLayer, holoIntensityForRarity } from './HoloLayer';
 import { StatBadges, type StatLayout } from './StatBadges';
 import type { StatKind } from './statBadge';
@@ -59,6 +60,8 @@ export interface CardMeshProps {
   readonly attackKey?: string | undefined;
   readonly attackStatuses?: readonly AttackStatusKind[] | undefined;
   readonly unyielding?: boolean | undefined;
+  readonly charmed?: boolean | undefined;
+  readonly puppeted?: boolean | undefined;
   readonly ready?: boolean | undefined;
   readonly dragging?: boolean | undefined;
   readonly hoverTip?: boolean | undefined;
@@ -135,6 +138,8 @@ export function CardMesh({
   textureTier,
   attackKey,
   unyielding = false,
+  charmed = false,
+  puppeted = false,
   ready = false,
   dragging = false,
   hoverTip = true,
@@ -251,8 +256,8 @@ export function CardMesh({
     return () => hideCardTip(tipOwner);
   }, [tipEnabled, tipOwner, statLayout]);
   useEffect(() => {
-    refreshCardTip(tipOwner, { card, stats, attackStatuses, flying, unyielding });
-  }, [tipOwner, card, stats, attackStatuses, flying, unyielding]);
+    refreshCardTip(tipOwner, { card, stats, attackStatuses, flying, unyielding, charmed, puppeted });
+  }, [tipOwner, card, stats, attackStatuses, flying, unyielding, charmed, puppeted]);
 
   useEffect(() => {
     // 受控：进度由外面写，这里不建时间轴
@@ -350,7 +355,7 @@ export function CardMesh({
     // Position is batched once per frame by the host; live stats refresh through the effect above.
     if (useCardTipStore.getState().target?.ownerKey === tipOwner) return;
     showCardTip(card.cardId, { x: event.clientX, y: event.clientY }, {
-      ownerKey: tipOwner, source: '3d', card, stats, attackStatuses, flying, unyielding,
+      ownerKey: tipOwner, source: '3d', card, stats, attackStatuses, flying, unyielding, charmed, puppeted,
       ownerElement: event.nativeEvent.target instanceof Element ? event.nativeEvent.target : undefined,
     });
   };
@@ -432,6 +437,7 @@ export function CardMesh({
 
       {attackStatuses && attackStatuses.length > 0 && holoVisible && <AttackStatusOverlay statuses={attackStatuses} />}
       {unyielding && holoVisible && <UnyieldingOverlay />}
+      {holoVisible && (charmed || puppeted) && <ControlStatusOverlay charmed={charmed} puppeted={puppeted} />}
 
       {showStatsNow && (
         <StatBadges

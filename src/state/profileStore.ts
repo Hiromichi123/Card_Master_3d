@@ -7,6 +7,7 @@
  */
 
 import { cardDatabase, slice } from '../data';
+import { STARTER_ACCOUNT_ID } from '../services/auth/accounts';
 import { fixedClock, parseDayKey, systemClock, type Clock } from '../domain/progression/clock';
 import { FailingSaveRepository } from '../services/save/FailingSaveRepository';
 import { openSaveRepository } from '../services/save/openSaveRepository';
@@ -14,6 +15,7 @@ import type { SaveRepository } from '../services/save/SaveRepository';
 import { ProfileStore } from './createProfileStore';
 import { pushToast } from './toastStore';
 
+const beginnerCardIds = Array.from({ length: 12 }, (_, index) => `D_${String(index + 1).padStart(3, '0')}`);
 const instances = new Map<string, ProfileStore>();
 const opening = new Map<string, Promise<ProfileStore>>();
 
@@ -93,8 +95,9 @@ async function build(accountId: string): Promise<ProfileStore> {
     clock: makeClock(),
     seedSource: makeSeedSource(),
     contentVersion: cardDatabase.contentVersion,
-    starterCardIds: starterCardIds(),
-    ownedCardIds: ownedCardIds(),
+    starterCardIds: accountId === STARTER_ACCOUNT_ID ? beginnerCardIds : starterCardIds(),
+    ownedCardIds: accountId === STARTER_ACCOUNT_ID ? beginnerCardIds : ownedCardIds(),
+    initialCurrencies: accountId === STARTER_ACCOUNT_ID ? { gold: 0, crystal: 0, badge: 0 } : undefined,
     // 导入时用来自查「这份存档里的 cardId 在当前卡库里还在不在」
     knownCardIds: new Set(cardDatabase.definitions.map((card) => card.cardId)),
     fallbackReason: opened.fallbackReason,

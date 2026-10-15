@@ -5,6 +5,7 @@ import { CollectionScene } from '../scenes/CollectionScene';
 import { DeckEditorScene } from '../scenes/DeckEditorScene';
 import { EffectLabScene } from '../scenes/EffectLabScene';
 import { ActivityScene } from '../scenes/ActivityScene';
+import { ActivityModeScene } from '../scenes/ActivityModeScene';
 import { AbyssScene } from '../scenes/AbyssScene';
 import { CampaignScene } from '../scenes/CampaignScene';
 import { BattleMenuScene } from '../scenes/BattleMenuScene';
@@ -64,6 +65,7 @@ export function App() {
   }, [reduceUiMotion]);
   const [route, setRoute] = useState<RouteId>('hub');
   const [deckInitialId, setDeckInitialId] = useState<string | undefined>(undefined);
+  const [deckBattleReturn, setDeckBattleReturn] = useState<RouteId>('battlemenu');
   const [entered, setEntered] = useState(false);
   const [account, setAccount] = useState<LoginAccount | null>(null);
   const gameLayer = useRef<HTMLDivElement>(null);
@@ -123,12 +125,16 @@ export function App() {
   const navigate = useCallback((next: RouteId) => {
     if (departure.busy) return;
     if (next === 'abyss' && route !== 'abyss') { departure.start(); return; }
-    if (next === 'deck') setDeckInitialId(undefined);
+    if (next === 'deck') {
+      setDeckInitialId(undefined);
+      setDeckBattleReturn(route === 'coop' || route === 'extreme' ? route : 'battlemenu');
+    }
     setAbyssPreDarkened(false);
     setRoute(next);
   }, [departure.busy, departure.start, route]);
   const configureLadder = useCallback(() => {
     setDeckInitialId(store?.getSnapshot().profile?.ladder.deckId);
+    setDeckBattleReturn('battlemenu');
     setRoute('deck');
   }, [store]);
 
@@ -284,7 +290,9 @@ export function App() {
               route={route}
               abyssPreDarkened={abyssPreDarkened}
               playerName={account?.username ?? '当前玩家'}
+              playerId={account?.id ?? 'admin'}
               deckInitialId={deckInitialId}
+              deckBattleReturn={deckBattleReturn}
               onConfigureLadder={configureLadder}
               snapshot={snapshot}
               store={store}
@@ -330,7 +338,9 @@ interface ScreenProps {
   readonly route: RouteId;
   readonly abyssPreDarkened: boolean;
   readonly playerName: string;
+  readonly playerId: string;
   readonly deckInitialId: string | undefined;
+  readonly deckBattleReturn: RouteId;
   readonly onConfigureLadder: () => void;
   readonly snapshot: ReturnType<typeof useProfileStore>;
   /**
@@ -360,7 +370,9 @@ function Screen({
   route,
   abyssPreDarkened,
   playerName,
+  playerId,
   deckInitialId,
+  deckBattleReturn,
   onConfigureLadder,
   snapshot,
   store,
@@ -443,7 +455,7 @@ function Screen({
     case 'collection':
       return <CollectionScene profile={profile} />;
     case 'deck':
-      return <DeckEditorScene profile={profile} store={store} onNavigate={onNavigate}
+      return <DeckEditorScene profile={profile} store={store} onNavigate={onNavigate} battleReturnRoute={deckBattleReturn}
         {...(deckInitialId ? { initialDeckId: deckInitialId } : {})} />;
     case 'ladder':
       return <LadderScene profile={profile} store={store} playerName={playerName}
@@ -472,6 +484,9 @@ function Screen({
       return <LocalBattleScene store={store} onReturn={() => onNavigate('battlemenu')} />;
     case 'battlemenu':
       return <BattleMenuScene profile={profile} onNavigate={onNavigate} />;
+    case 'coop':
+    case 'extreme':
+      return <ActivityModeScene key={`${playerId}:${route}`} mode={route} store={store} playerId={playerId} playerName={playerName} onNavigate={onNavigate} />;
     case 'activity':
       return <ActivityScene profile={profile} onNavigate={onNavigate} />;
     case 'abyss':

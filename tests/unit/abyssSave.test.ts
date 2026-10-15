@@ -22,14 +22,14 @@ function draft(): ProfileState {
 describe('schema6深渊存档', () => {
   it('新档空深渊，v5迁移不改变天梯/迷宫/主资源', () => {
     const current = fresh();
-    expect(SAVE_SCHEMA_VERSION).toBe(8);
+    expect(SAVE_SCHEMA_VERSION).toBe(10);
     expect(current.abyss).toEqual(emptyAbyssState());
     const old = { ...current, schemaVersion: 5, abyss: undefined, ladder: { ...current.ladder, points: 2400, claimedTierFloors: [0, 300] } };
     const migrated = migrateToCurrent(old, 5);
     expect(migrated.ok).toBe(true);
     if (!migrated.ok) return;
     expect(migrated.value).toEqual({ ...old, schemaVersion: SAVE_SCHEMA_VERSION, abyss: emptyAbyssState() });
-    expect(migrated.warnings).toEqual(['已从 v5 迁移到 v6。', '已从 v6 迁移到 v7。', '已从 v7 迁移到 v8。']);
+    expect(migrated.warnings).toEqual(['已从 v5 迁移到 v6。', '已从 v6 迁移到 v7。', '已从 v7 迁移到 v8。', '已从 v8 迁移到 v9。', '已从 v9 迁移到 v10。']);
   });
 
   it('v1到v5完整爬链，导出导入保留固定起始候选', () => {

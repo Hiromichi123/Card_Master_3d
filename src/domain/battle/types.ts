@@ -251,10 +251,11 @@ export type BattleEvent = { readonly seq: number; readonly turn: number } & (
   | { readonly type: 'FormationInserted'; readonly side: SideId; readonly order: readonly (string | null)[] }
   | { readonly type: 'CardReset'; readonly side: SideId; readonly instanceId: string; readonly groupId: string; readonly atk: number; readonly hp: number; readonly maxHp: number; readonly cd: number; readonly flying: boolean }
   | { readonly type: 'CardDeployed'; readonly side: SideId; readonly instanceId: string; readonly battleSlot: number }
-  | { readonly type: 'SkillTriggered'; readonly side: SideId; readonly instanceId: string; readonly trigger: string; readonly family: string | null; readonly raw: string; readonly param: number | null; readonly targetInstanceId?: string | null }
-  | { readonly type: 'AttackDeclared'; readonly side: SideId; readonly attackerId: string; readonly targetInstanceId: string | null; readonly targetSlot: number; readonly attackKind?: 'ranged' | 'piercing' | 'siege' }
+  | { readonly type: 'SkillTriggered'; readonly side: SideId; readonly instanceId: string; readonly misdirected?: boolean; readonly trigger: string; readonly family: string | null; readonly raw: string; readonly param: number | null; readonly targetInstanceId?: string | null }
+  | { readonly type: 'AttackDeclared'; readonly side: SideId; readonly attackerId: string; readonly targetInstanceId: string | null; readonly targetSlot: number; readonly targetSide?: SideId; readonly attackKind?: 'ranged' | 'piercing' | 'siege' }
   | { readonly type: 'DamageApplied'; readonly side: SideId; readonly instanceId: string; readonly amount: number; readonly hpBefore: number; readonly hpAfter: number; readonly source: DamageSource }
   | { readonly type: 'SpellReflected'; readonly side: SideId; readonly casterId: string; readonly reflectorId: string; readonly family: string; readonly raw: string; readonly param: number | null }
+  | { readonly type: 'ControlChanged'; readonly side: SideId; readonly instanceId: string; readonly sourceInstanceId: string; readonly kind: 'charm' | 'puppet'; readonly active: boolean }
   | { readonly type: 'AttackStatusApplied'; readonly side: SideId; readonly instanceId: string; readonly sourceInstanceId: string; readonly kind: AttackStatusKind; readonly level: number; readonly animate?: boolean }
   | { readonly type: 'AttackStatusTriggered'; readonly side: SideId; readonly instanceId: string; readonly kind: AttackStatusKind; readonly level: number }
   | { readonly type: 'AttackStatusExpired'; readonly side: SideId; readonly instanceId: string; readonly kind: AttackStatusKind }

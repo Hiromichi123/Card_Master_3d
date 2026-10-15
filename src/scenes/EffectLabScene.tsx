@@ -58,6 +58,10 @@ import { WebGLGuard } from './WebGLGuard';
  * 靠族名去 `FAMILY_TINT` 取金色（见 `playTemplate` 的 color 参数）。
  */
 const TEMPLATE_LABELS: { id: EffectTemplateId; label: string; family?: string }[] = [
+  { id:'status',label:'魅惑遮罩（开 / 关）',family:'charm' },
+  { id:'status',label:'操纵 / 傀儡遮罩（开 / 关）',family:'puppet' },
+  { id: 'skyCollapse', label: '天崩', family: 'skyCollapse' },
+  { id: 'earthRift', label: '地裂', family: 'earthRift' },
   { id: 'normalAttack', label: '普通攻击' },
   { id: 'normalAttack', label: '溅射', family: 'splash' },
   { id: 'cooldown', label: '群体延迟', family: 'groupDelay' },
@@ -252,6 +256,7 @@ export function EffectLabScene() {
   const [paused, setPaused] = useState(false);
   const [statusPreview, setStatusPreview] = useState<Partial<Record<SlotId, readonly AttackStatusKind[]>>>({});
   const [unyieldingPreview, setUnyieldingPreview] = useState(false);
+  const [controlPreview,setControlPreview]=useState<Partial<Record<SlotId,{charmed:boolean;puppeted:boolean}>>>({});
   const [lastEffect, setLastEffect] = useState('（尚未触发）');
   const [particles, setParticles] = useState({ alive: 0, capacity: 0, peak: 0 });
 
@@ -264,7 +269,7 @@ export function EffectLabScene() {
     () =>
       [...new Set([...slice.cards.map((entry) => entry.cardId),
         ...cardDatabase.definitions.filter((card) => card.skills.some((skill) =>
-          ['grantConcealment', 'groupSilence', 'thornArmor', 'crushWaiting', 'ranged', 'piercing', 'bombard', 'groupBombard', 'explodeOnDeath', 'instantDeath', 'spellReflect', 'grantDodge', 'directDamage', 'groupPhysicalDamage', 'slash', 'groupSlash', 'swordDance', 'groupSwordDance', 'sacrifice', 'execute', 'teleport', 'groupPiercing', 'criticalCollapse', 'unyielding', 'concealment', 'firstStrike', 'devour', 'masterpiece', 'foxSpiritSummon', 'alignedDeathBlast', 'vanguard', 'lethalStrike', 'antiAir', 'groupGround', 'siege', 'berserk', 'splash', 'groupDelay', 'severeFrost', 'burning', 'venom', 'bleeding', 'grievousWound', 'poisonCloud'].includes(skill.family ?? ''))).map((card) => card.cardId)])]
+          ['charm', 'puppet', 'skyCollapse', 'earthRift', 'grantConcealment', 'groupSilence', 'thornArmor', 'crushWaiting', 'ranged', 'piercing', 'bombard', 'groupBombard', 'explodeOnDeath', 'instantDeath', 'spellReflect', 'grantDodge', 'directDamage', 'groupPhysicalDamage', 'slash', 'groupSlash', 'swordDance', 'groupSwordDance', 'sacrifice', 'execute', 'teleport', 'groupPiercing', 'criticalCollapse', 'unyielding', 'concealment', 'firstStrike', 'devour', 'masterpiece', 'foxSpiritSummon', 'alignedDeathBlast', 'vanguard', 'lethalStrike', 'antiAir', 'groupGround', 'siege', 'berserk', 'splash', 'groupDelay', 'severeFrost', 'burning', 'venom', 'bleeding', 'grievousWound', 'poisonCloud'].includes(skill.family ?? ''))).map((card) => card.cardId)])]
         .map((id) => cardById.get(id))
         .filter((card): card is CardDefinition => card !== undefined),
     [],
@@ -325,6 +330,13 @@ export function EffectLabScene() {
 
   const playTemplate = useCallback(
     (template: EffectTemplateId, label: string, overrideIntensity?: number, family?: string | null) => {
+      if(family==='charm'||family==='puppet'){
+        const slot:SlotId=layout==='formation'?ALIGNED_SLOT:'source';
+        const field=family==='charm'?'charmed':'puppeted';
+        setControlPreview(current=>({...current,[slot]:{charmed:current[slot]?.charmed??false,
+          puppeted:current[slot]?.puppeted??false,[field]:!current[slot]?.[field]}}));
+        setLastEffect(`${label} · 切换对位卡面遮罩`);return;
+      }
       if (family === 'unyielding') {
         setUnyieldingPreview((current) => !current);
         setLastEffect('不屈 · 切换施法卡持续遮罩');
@@ -338,12 +350,15 @@ export function EffectLabScene() {
       const self = impactAt(sourcePosition, liftOf(source));
       const direct = template === 'ranged' || template === 'piercing' || template === 'groupPiercing';
       const selfBurst = template === 'injury' || template === 'deathBurst' || family === 'criticalCollapse';
-      const primary: Vec3 = selfBurst ? self : direct ? [SOURCE_X, IMPACT_Y + 0.4, TARGET_Z - 1.35]
+      const terrain = template === 'skyCollapse' || template === 'earthRift';
+      const terrainPoints = targetPoints.filter((_, index) => targets[index]?.rawTraits.includes('飞行') === (template === 'skyCollapse'));
+      if (terrain && targetPoints.length > 0 && terrainPoints.length === 0) { setLastEffect(`${label} · 无符合条件的目标`); return; }
+      const primary: Vec3 = terrain ? terrainPoints[0] ?? self : selfBurst ? self : direct ? [SOURCE_X, IMPACT_Y + 0.4, TARGET_Z - 1.35]
         : (targetPoints[ALIGNED_SLOT] ?? targetPoints[0] ?? self);
-      const extra = targetPoints.filter((_, slot) => slot !== ALIGNED_SLOT);
-      const spreads = (template === 'deathBombard' && family !== 'alignedDeathBlast') || template.startsWith('group') || family?.startsWith('group') === true || family === 'teleport';
+      const extra = terrain ? terrainPoints.slice(1) : targetPoints.filter((_, slot) => slot !== ALIGNED_SLOT);
+      const spreads = terrain || (template === 'deathBombard' && family !== 'alignedDeathBlast') || template.startsWith('group') || family?.startsWith('group') === true || family === 'teleport';
       const aimed =
-        selfBurst ? '作用于自身' : template === 'groupPiercing' ? '战场五路平行贯穿，独立命中本体' : direct ? '越过对位命中本体' : targetPoints.length === 0 ? '单张大图：落在自己身上' : spreads ? '三张' : '只打对位';
+        terrain ? `全部${template === 'skyCollapse' ? '飞行' : '地面'}目标` : selfBurst ? '作用于自身' : template === 'groupPiercing' ? '战场五路平行贯穿，独立命中本体' : direct ? '越过对位命中本体' : targetPoints.length === 0 ? '单张大图：落在自己身上' : spreads ? '三张' : '只打对位';
 
       const statusKind = ({ severeFrost: 'frost', burning: 'burn', venom: 'poison', bleeding: 'bleed', grievousWound: 'grievous', poisonCloud: 'poison' } as Record<string, AttackStatusKind>)[family ?? ''];
       const statusSlot: SlotId = layout === 'formation' ? ALIGNED_SLOT : 'source';
@@ -373,6 +388,7 @@ export function EffectLabScene() {
       sourcePosition,
       source?.cardId,
       targetPoints,
+      targets,
       color,
       intensity,
       countScale,
@@ -409,16 +425,17 @@ export function EffectLabScene() {
   const staged: StagedCard[] =
     layout === 'formation'
       ? [
-          { key: 'source', card: source, position: sourcePosition, flying: isFlying(source), unyielding: unyieldingPreview, attackStatuses: statusPreview.source },
+          { key: 'source', card: source, position: sourcePosition, flying: isFlying(source), unyielding: unyieldingPreview, attackStatuses: statusPreview.source, ...controlPreview.source },
           ...targets.map((card, index) => ({
             key: `target-${index}`,
             card,
             position: targetPosition(index),
             flying: isFlying(card),
             attackStatuses: statusPreview[index as 0 | 1 | 2],
+            ...controlPreview[index as 0 | 1 | 2],
           })),
         ]
-      : [{ key: 'source', card: source, position: [0, 0, 0], flying: isFlying(source), unyielding: unyieldingPreview, attackStatuses: statusPreview.source }];
+      : [{ key: 'source', card: source, position: [0, 0, 0], flying: isFlying(source), unyielding: unyieldingPreview, attackStatuses: statusPreview.source, ...controlPreview.source }];
 
   const triggerPreviewStatuses = () => {
     const slot: SlotId = layout === 'formation' ? ALIGNED_SLOT : 'source';
@@ -623,7 +640,7 @@ export function EffectLabScene() {
             <h3>攻击与特效</h3>
             <div className="lab__buttons">
               <button type="button" onClick={triggerPreviewStatuses}>状态卡主动普攻（触发状态）</button>
-              <button type="button" onClick={() => setStatusPreview({})}>清除卡面状态</button>
+              <button type="button" onClick={() => { setStatusPreview({}); setControlPreview({}); }}>清除卡面状态</button>
             </div>
             <p className="lab__hint">赋予状态后会留在对位卡面，可预览普攻后的碎冰或爆发；实验台手动清除，实际战斗按一回合到期。</p>
             <div className="lab__buttons">
@@ -764,6 +781,8 @@ export function EffectLabScene() {
 }
 
 interface StagedCard {
+  readonly charmed?: boolean | undefined;
+  readonly puppeted?: boolean | undefined;
   readonly attackStatuses?: readonly AttackStatusKind[] | undefined;
   readonly unyielding?: boolean;
   readonly key: string;
@@ -801,6 +820,8 @@ function LabStage({
           position={entry.position}
           flying={entry.flying}
           unyielding={entry.unyielding}
+          charmed={entry.charmed}
+          puppeted={entry.puppeted}
           attackStatuses={entry.attackStatuses}
           faceDown={faceDown}
           holo={holoEnabled}
@@ -815,6 +836,8 @@ function LabStage({
 }
 
 interface LabCardProps {
+  readonly charmed?: boolean | undefined;
+  readonly puppeted?: boolean | undefined;
   readonly attackStatuses?: readonly AttackStatusKind[] | undefined;
   readonly unyielding?: boolean | undefined;
   readonly card: CardDefinition;
@@ -841,6 +864,8 @@ interface LabCardProps {
 function LabCard({
   card,
   unyielding,
+  charmed,
+  puppeted,
   attackStatuses,
   position,
   flying,
@@ -874,6 +899,8 @@ function LabCard({
         holo={holo}
         holoScale={holoScale}
         unyielding={unyielding}
+        charmed={charmed}
+        puppeted={puppeted}
         attackStatuses={attackStatuses}
         statLayout="battle"
         onClick={onCardClick}

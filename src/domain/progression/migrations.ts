@@ -11,6 +11,8 @@
 import { SAVE_SCHEMA_VERSION } from './types';
 import { emptyRewards } from './rewardState';
 import { initialActivity } from './playerActivity';
+import { emptyMailbox } from './mailbox';
+import { emptyActivityProgress } from './activityModes';
 import { emptyMazeProgress } from './mazeProgress';
 import { migrateDeckSlots } from './deckSlots';
 import { emptyAbyssState } from './abyssRun';
@@ -47,6 +49,8 @@ export const MIGRATIONS: Record<number, Migration> = {
   5: value => ({ ...value, schemaVersion: 6, abyss: emptyAbyssState() }),
   6: migrateDailyShop,
   7: value => ({ ...value, schemaVersion: 8, activity: value.activity ?? initialActivity({ gacha: value.gacha, ladder: value.ladder, abyss: value.abyss }) }),
+  8: value => ({ ...value, schemaVersion: 9, mailbox: value.mailbox ?? emptyMailbox() }),
+  9: value => ({ ...value, schemaVersion: 10, activityModes: value.activityModes ?? emptyActivityProgress() }),
 };
 
 export type MigrateResult =

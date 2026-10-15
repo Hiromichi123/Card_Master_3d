@@ -1,5 +1,5 @@
 {
-  "contentVersion": "90d97d69d2ab",
+  "contentVersion": "7ab16932725e",
   "source": "assets/outputs/*/cards.json",
   "definitions": [
     {
@@ -44,11 +44,11 @@
       "skills": [
         {
           "raw": "魅惑",
-          "resolution": "unimplemented",
-          "family": null,
+          "resolution": "implemented",
+          "family": "charm",
           "param": null,
-          "evidence": "全项目 .py 无该字符串",
-          "note": "无实现。"
+          "matchKind": "exact",
+          "note": "上场魅惑对位，普攻转向己方本体并停用攻击技能，离场解除"
         },
         {
           "raw": "自毁",
@@ -130,7 +130,7 @@
     {
       "cardId": "SSS_005",
       "rarity": "SSS",
-      "name": "5th 的 纪 念",
+      "name": "奇 迹 纪 念",
       "level": 0,
       "atk": 1,
       "hp": 99,
@@ -980,11 +980,11 @@
       "skills": [
         {
           "raw": "傀儡",
-          "resolution": "flavor",
-          "family": null,
+          "resolution": "implemented",
+          "family": "puppet",
           "param": null,
-          "evidence": "全项目 .py 无该字符串；游戏中不存在召唤系统",
-          "note": "卡面描述提到召唤傀儡，但没有任何召唤机制。判断成分：若后续要做召唤系统，此项应重新归类。"
+          "matchKind": "exact",
+          "note": "在场对位操纵光环：攻击技能转向其它友军，普通攻击不变"
         }
       ],
       "description": "潜入调查员，成熟可靠、深藏不露。擅长召唤傀儡并用雷电丝线操控傀儡。",
@@ -7662,16 +7662,15 @@
       "hp": 5,
       "cd": 7,
       "rawTraits": [
-        "操控1"
+        "操控"
       ],
       "skills": [
         {
-          "raw": "操控1",
-          "resolution": "unimplemented",
+          "raw": "操控",
+          "resolution": "ambiguous",
           "family": null,
           "param": null,
-          "evidence": "全项目 .py 无该字符串；不存在控制权转移机制",
-          "note": "无实现。"
+          "note": "未在 trait-overlay.json 中登记"
         }
       ],
       "description": "冰湖魔女的大弟子，天赋万里挑一，日后成为了西方王国的首席大魔法师。",
@@ -8295,10 +8294,11 @@
         },
         {
           "raw": "天崩",
-          "resolution": "ambiguous",
-          "family": null,
+          "resolution": "implemented",
+          "family": "skyCollapse",
           "param": null,
-          "note": "未在 trait-overlay.json 中登记"
+          "matchKind": "exact",
+          "note": "上场对敌方全体飞行单位造成3点技能伤害"
         },
         {
           "raw": "破甲2",

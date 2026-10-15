@@ -11,6 +11,7 @@ import { NamedSkillVisuals, usesLinearAbility } from './NamedSkillVisuals';
 import { AttackStatusSkillVisuals, usesAttackStatusVisual } from './AttackStatusSkillVisuals';
 import { SlashSkillVisuals } from './SlashSkillVisuals';
 import { usesSlash } from './slashTiming';
+import { EarthSkillVisuals, usesEarthSkill } from './EarthSkillVisuals';
 import { createCrystalGeometry } from './vendor/linearCrystal';
 import { LINEAR_BOLT_FRAGMENT, LINEAR_BOLT_VERTEX } from './vendor/linearShaders';
 
@@ -121,11 +122,12 @@ export class SkillVisualPool implements SkillVisualFactory {
   private readonly active = new Set<SkillVisualHandle>();
   private readonly attackStatus = new AttackStatusSkillVisuals();
   private readonly named = new NamedSkillVisuals();
+  private readonly earth = new EarthSkillVisuals();
   private readonly slash = new SlashSkillVisuals();
   private readonly quarks: QuarksSkillVisuals;
   private readonly textures = new Map<string, Texture>();
 
-  constructor(readonly maxActors = 24) { this.quarks = new QuarksSkillVisuals(maxActors <= 10 ? 0.45 : 1); this.group.name = 'battle-skill-geometry'; this.group.add(this.named.group, this.quarks.group, this.slash.group, this.attackStatus.group); }
+  constructor(readonly maxActors = 24) { this.quarks = new QuarksSkillVisuals(maxActors <= 10 ? 0.45 : 1); this.group.name = 'battle-skill-geometry'; this.group.add(this.earth.group, this.named.group, this.quarks.group, this.slash.group, this.attackStatus.group); }
   updateFrame(camera: Camera, renderer: WebGLRenderer, delta: number, scene?: Scene): void { this.attackStatus.updateCamera(camera); this.named.updateFrame(camera, renderer, delta, scene); this.quarks.update(delta); this.slash.updateFrame(renderer); }
   get activeCount(): number { return this.active.size; }
   get geometryCount(): number { return Object.keys(this.geometries).length; }
@@ -142,8 +144,8 @@ export class SkillVisualPool implements SkillVisualFactory {
 
   create(spec: SkillVisualSpec): SkillVisualHandle {
     while (this.active.size >= this.maxActors) this.active.values().next().value?.dispose();
-    if (usesAttackStatusVisual(spec.template) || ['bleedMark', 'grievousMark'].includes(spec.template) || usesQuarks(spec.template) || usesLinearAbility(spec.template) || usesSlash(spec.template)) {
-      const original = usesAttackStatusVisual(spec.template) ? this.attackStatus.create(spec, this.worldScale)
+    if (usesEarthSkill(spec.template) || usesAttackStatusVisual(spec.template) || ['bleedMark', 'grievousMark'].includes(spec.template) || usesQuarks(spec.template) || usesLinearAbility(spec.template) || usesSlash(spec.template)) {
+      const original = usesEarthSkill(spec.template) ? this.earth.create(spec, this.worldScale) : usesAttackStatusVisual(spec.template) ? this.attackStatus.create(spec, this.worldScale)
         : ['bleedMark', 'grievousMark'].includes(spec.template) ? this.named.create({ ...spec, template: 'injury', family: spec.template === 'grievousMark' ? 'grievousWound' : spec.family,
           tint: new Color(spec.template === 'grievousMark' ? '#821930' : '#a51b34') }, this.worldScale)
         : usesSlash(spec.template) ? this.slash.create(spec, this.worldScale)
@@ -327,7 +329,7 @@ export class SkillVisualPool implements SkillVisualFactory {
   clear(): void { for (const actor of [...this.active]) actor.dispose(); }
   dispose(): void {
     this.clear();
-    this.attackStatus.dispose(); this.named.dispose();
+    this.attackStatus.dispose(); this.named.dispose(); this.earth.dispose();
     this.slash.dispose();
     this.quarks.dispose();
     for (const geometry of Object.values(this.geometries)) geometry.dispose();

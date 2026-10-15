@@ -88,6 +88,8 @@ export interface SkillContext {
   readonly damagePlayer?: (side: SideId, amount: number, source: DamageSource) => number;
   /** Reflected single-target spells return to their original caster. */
   readonly reflectedTarget?: CardInstance | undefined;
+  readonly hostileTargets?: readonly CardInstance[];
+  readonly grantCharm?: (target: CardInstance) => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -203,7 +205,12 @@ export interface SkillRule {
 
 /** 取敌方战斗区的全部实例。 */
 function enemiesInBattle(ctx: SkillContext): CardInstance[] {
-  return battleCards(ctx.state, opponentOf(ctx.owner));
+  return ctx.hostileTargets ? [...ctx.hostileTargets] : battleCards(ctx.state, opponentOf(ctx.owner));
+}
+
+/** Snapshot actual flight state, including grounding auras; never target hand/prep/base. */
+export function terrainSkillTargets(state: BattleState, owner: SideId, flying: boolean): CardInstance[] {
+  return battleCards(state, opponentOf(owner)).filter(card => card.flying === flying);
 }
 
 /** 取己方战斗区的全部实例。 */
@@ -258,6 +265,8 @@ function woundedAllies(ctx: SkillContext): CardInstance[] {
 
 /** Hostile spells are intercepted as one whole cast, including every target of group spells. */
 export const OFFENSIVE_SPELL_FAMILIES = new Set([
+  'charm',
+  'skyCollapse', 'earthRift',
   'fireball', 'iceSeal', 'lightning', 'groupFireball', 'groupIceSeal', 'groupLightning',
   'bombard', 'groupBombard', 'explodeOnDeath', 'alignedDeathBlast', 'curse', 'delay', 'instantDeath', 'slash', 'groupSlash', 'teleport', 'groupDelay', 'severeFrost', 'burning', 'venom', 'bleeding', 'grievousWound', 'poisonCloud',
   'groupSilence', 'crushWaiting',
@@ -272,6 +281,20 @@ function retaliatoryStatus(kind: AttackStatusKind): SkillRule {
 }
 
 export const SKILL_RULES: Record<string, SkillRule> = {
+  charm: { trigger:'ON_DEPLOY', apply(ctx) {
+    const id = ctx.state.zones[opponentOf(ctx.owner)].battle[ctx.self.slotIndex];
+    const target = ctx.reflectedTarget ?? (id ? ctx.state.instances[id] : undefined);
+    if (target && isBattleActive(ctx.state,target)) ctx.grantCharm?.(target);
+  } },
+  puppet: { trigger:'ON_DEPLOY', apply:()=>undefined },
+  skyCollapse: { trigger: 'ON_DEPLOY', apply(ctx) {
+    const targets = (ctx.hostileTargets ?? terrainSkillTargets(ctx.state, ctx.owner, true)).filter(card => card.flying);
+    for (const target of targets) ctx.damage(target, 3, 'skill');
+  } },
+  earthRift: { trigger: 'ON_DEPLOY', apply(ctx) {
+    const targets = (ctx.hostileTargets ?? terrainSkillTargets(ctx.state, ctx.owner, false)).filter(card => !card.flying);
+    for (const target of targets) ctx.damage(target, 2, 'skill');
+  } },
   grantConcealment: { trigger:'BEFORE_ATTACK', apply(ctx) {
     const eligible=alliesInBattle(ctx).filter(card=>!card.marks.deploymentCast&&!card.marks.grantedConcealment&&
       !(hasFamily(ctx.state,card,'concealment')&&!card.marks.concealmentUsed));
@@ -306,7 +329,7 @@ export const SKILL_RULES: Record<string, SkillRule> = {
   // The engine rolls once before emitting SkillTriggered, so failed rolls have no kill animation.
   lethalStrike: { trigger: 'BEFORE_ATTACK', apply(ctx) {
     const id=ctx.state.zones[opponentOf(ctx.owner)].battle[ctx.attack?.defenderSlot??ctx.self.slotIndex];
-    const target=id?ctx.state.instances[id]:undefined;
+    const target=ctx.reflectedTarget??(id?ctx.state.instances[id]:undefined);
     if(target&&isBattleActive(ctx.state,target)&&groupOf(ctx.state,target).hp>0)ctx.kill?.(target);
   } },
   severeFrost: retaliatoryStatus('frost'),
@@ -368,7 +391,7 @@ export const SKILL_RULES: Record<string, SkillRule> = {
     apply(ctx) {
       if (ctx.state.currentSide !== ctx.owner) return;
       const id = ctx.state.zones[opponentOf(ctx.owner)].battle[ctx.attack?.defenderSlot ?? ctx.self.slotIndex];
-      const target = id ? ctx.state.instances[id] : undefined;
+      const target = ctx.reflectedTarget ?? (id ? ctx.state.instances[id] : undefined);
       if (target && isBattleActive(ctx.state, target) && groupOf(ctx.state, target).hp < groupOf(ctx.state, ctx.self).hp) {
         ctx.kill?.(target);
       }
@@ -618,7 +641,7 @@ export const SKILL_RULES: Record<string, SkillRule> = {
       if (!defenderId) {
         return;
       }
-      const defender = ctx.state.instances[defenderId];
+      const defender = ctx.reflectedTarget ?? ctx.state.instances[defenderId];
       if (!defender) {
         return;
       }

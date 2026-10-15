@@ -19,7 +19,7 @@ export function BattleCanvas({ children, onPointerMissed, themeId, standalone = 
   if (shared && !standalone) return <SharedBattleLayer onPointerMissed={onPointerMissed}>{children}</SharedBattleLayer>;
   return <Canvas flat shadows={profile.shadows ? { type: PCFShadowMap } : false}
     dpr={[1, profile.dprCap]}
-    camera={{ position: [0, 11, 9], fov: 45, near: .1, far: theme.geometry === 'abyss' ? 360 : theme.geometry === 'solar' ? 320 : theme.geometry === 'mecha' ? 260 : 120 }}
+    camera={{ position: [0, 11, 9], fov: 45, near: .1, far: theme.geometry === 'cloud' ? 180 : theme.geometry === 'abyss' ? 360 : theme.geometry === 'solar' ? 320 : theme.geometry === 'mecha' ? 260 : 120 }}
     gl={{ antialias: true, powerPreference: 'high-performance' }} {...(onPointerMissed ? { onPointerMissed } : {})}>
     <BattleVisualContext.Provider value={visuals}>
     {children}

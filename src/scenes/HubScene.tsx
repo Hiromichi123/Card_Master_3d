@@ -3,6 +3,8 @@ import { HubWordmark } from '../ui/HubWordmark';
 import { ArtButtonSurface } from '../ui/ArtButtonSurface';
 import { assetManifest, cardArtUrl, cardFaceUrl } from '../data/assets';
 import { HubSideRail } from '../ui/HubSideRail';
+import { MailboxPanel } from '../ui/MailboxPanel';
+import { mailAttentionCount } from '../domain/progression/mailbox';
 import { MenuChrome } from '../ui/MenuChrome';
 import { PlayerStatus } from '../ui/PlayerStatus';
 import { HubRewards } from '../ui/HubRewards';
@@ -87,6 +89,7 @@ export function HubScene({ profile, store, busy = false, playerName = '当前玩
   const current = snapshot.profile ?? profile;
   const [rankingOpen, setRankingOpen] = useState(false);
   const [statisticsOpen, setStatisticsOpen] = useState(false);
+  const [mailOpen, setMailOpen] = useState(false);
   const still = useSettingsStore((state) => state.reduceMotion);
   const [activeId, setActiveId] = useState<string | null>(null);
   const anchors = useRef(new Map<string, HTMLSpanElement>());
@@ -136,7 +139,7 @@ export function HubScene({ profile, store, busy = false, playerName = '当前玩
       <PlayerStatus level={profile.level} currencies={profile.currencies} />
       {store && <HubRewards profile={profile} store={store} busy={busy} />}
     </div><AbyssEntry onClick={() => onNavigate('abyss')} /></div>}>
-    <HubSideRail />
+    <HubSideRail onMail={() => setMailOpen(true)} mailCount={mailAttentionCount(current)} />
     <nav className="hub-main" aria-label="主界面玩法">
       {MAIN_ROWS.map((row, index) => <div key={index} className={`hub-main__row hub-main__row--${index + 1}`}>
         {row.map((entry) => button(entry, false))}
@@ -148,6 +151,7 @@ export function HubScene({ profile, store, busy = false, playerName = '当前玩
       {DOCK.map((entry) => button(entry, true))}
     </nav>
     <HubLogoLayer items={LOGOS} anchors={anchors} activeId={activeId} still={still} />
+    {mailOpen && store && <MailboxPanel store={store} onClose={() => setMailOpen(false)} />}
     {statisticsOpen && <StatisticsPanel profile={current} onClose={() => setStatisticsOpen(false)} />}
     {rankingOpen && <LeaderboardModal profile={current} playerName={playerName} onClose={() => setRankingOpen(false)} />}
   </MenuChrome>;

@@ -17,6 +17,8 @@ import { migrateToCurrent } from './migrations';
 import { shopStateForDay } from './shop';
 import { normalizeRewards } from './rewardState';
 import { initialActivity, normalizeActivity } from './playerActivity';
+import { normalizeMailbox } from './mailbox';
+import { normalizeActivityProgress } from './activityModes';
 import { validateMazeState } from './mazeProgress';
 import { validateAbyssState } from './abyssValidation';
 import { validDeckSlots, type LadderState, type NormalDeckIds } from './deckSlots';
@@ -299,10 +301,15 @@ export function normalizeProfile(raw: unknown, ctx: NormalizeContext): Normalize
   const activity = normalizeActivity(source.activity, initialActivity({ gacha, ladder, settledBattleIds, abyss: source.abyss }));
   if (!activity) return { ok: false, reason: 'invalidShape', message: '玩家统计或新手任务领取账本无效，不能丢弃后导入。' };
 
+  const activityModes = normalizeActivityProgress(source.activityModes);
+  if (!activityModes) return { ok: false, reason: 'invalidShape', message: '活动奖励记录无效，不能清空后导入。' };
+  const mailbox = normalizeMailbox(source.mailbox);
+  if (!mailbox) return { ok: false, reason: 'invalidShape', message: '邮箱或领取记录无效，不能清空后导入。' };
+
   // 顶层不认识的字段：`ProfileState` 是强类型的，不能把陌生键带进内存
   const KNOWN_KEYS = new Set([
     'schemaVersion', 'contentVersion', 'revision', 'currencies', 'level', 'inventory', 'decks',
-    'activeDeckId', 'normalDeckIds', 'ladder', 'gacha', 'shop', 'campaign', 'rewards', 'activity', 'mazeRun', 'mazeProgress', 'abyss', 'settings', 'settledBattleIds',
+    'activeDeckId', 'normalDeckIds', 'ladder', 'gacha', 'shop', 'campaign', 'rewards', 'activity', 'mailbox', 'activityModes', 'mazeRun', 'mazeProgress', 'abyss', 'settings', 'settledBattleIds',
   ]);
   const unknownKeys = Object.keys(source).filter((key) => !KNOWN_KEYS.has(key));
   if (unknownKeys.length > 0) {
@@ -327,6 +334,8 @@ export function normalizeProfile(raw: unknown, ctx: NormalizeContext): Normalize
       campaign,
       rewards: normalizeRewards(source.rewards),
       activity,
+      mailbox,
+      activityModes,
       mazeRun: maze.run,
       mazeProgress: maze.progress,
       abyss: source.abyss,

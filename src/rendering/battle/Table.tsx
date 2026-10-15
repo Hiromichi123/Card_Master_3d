@@ -21,6 +21,7 @@ import { MarbleTempleTable } from './MarbleTempleTable';
 import { SolarSystemStage } from './SolarSystemStage';
 import { IcefieldTable } from './IcefieldTable';
 import { AbyssTable } from './AbyssTable';
+import { CloudTopTable } from './CloudTopTable';
 
 /**
  * 战斗桌。
@@ -109,6 +110,9 @@ export interface TableProps {
 }
 
 export function Table(props: TableProps) {
+  if (props.theme.geometry === 'cloud') {
+    return <CloudTopTable theme={props.theme} quality={props.quality} reduceMotion={props.reduceMotion ?? false} />;
+  }
   if (props.theme.geometry === 'abyss') {
     return <AbyssTable theme={props.theme} reduceMotion={props.reduceMotion ?? false} />;
   }

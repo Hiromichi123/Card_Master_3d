@@ -7,6 +7,10 @@ export function describeTraitFunction(skill: SkillSpec): string {
   if (skill.family === 'immunity') return '免受技能、反击及技能持续伤害；不挡普攻、真伤、自伤、直接击杀或负面状态。被当前对位沉默时失效。';
   if (skill.raw === '飞行') return '规避无对空的地面普攻；该普攻穿过自己命中本体。';
   const text: Record<string, string> = {
+    charm:'上场魅惑对位：其普通攻击转向己方本体，攻击技能停用；仍正常受击，直到目标离场。',
+    puppet:'在场对位光环：对位的攻击技能改打其其它友军，普通攻击保持正常；持有者离场或被沉默即失效。操纵与傀儡为同一特性。',
+    skyCollapse: '上场时，对敌方全部当前飞行单位各造成3点技能伤害，落石从卡牌上空砸落。',
+    earthRift: '上场时，对敌方全部当前地面单位各造成2点技能伤害，卡牌下方生长土黄色岩柱。',
     fireball: `随机敌方受到 ${n} 点技能伤害。`, iceSeal: `随机敌方受到 ${n} 点技能伤害。`,
     lightning: `随机敌方受到 ${n} 点技能伤害。`, bombard: `随机敌方受到 ${n} 点技能伤害。`,
     groupFireball: `敌方全体各受到 ${n} 点技能伤害。`, groupIceSeal: `敌方全体各受到 ${n} 点技能伤害。`,

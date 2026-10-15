@@ -174,7 +174,7 @@ export function LoginScene({ onAuthenticated, onReveal, onComplete }: LoginScene
             minLength={ACCOUNT_PASSWORD_MIN_LENGTH} maxLength={ACCOUNT_PASSWORD_MAX_LENGTH} required disabled={busy !== null}
             aria-describedby="login-account-hint login-feedback" />
         </label>
-        <p className="login-form__hint" id="login-account-hint">初始账号与密码均为 <strong>admin</strong> · 账号保存在此浏览器</p>
+        <p className="login-form__hint" id="login-account-hint">演示账号 <strong>admin / admin</strong> · 新手账号 <strong>1234 / 1234</strong> · 账号保存在此浏览器</p>
         <div className={`login-feedback${error ? ' login-feedback--error' : ''}`} id="login-feedback"
           role={error ? 'alert' : 'status'} aria-live="polite">{error || message || '每一张卡牌，都是新的可能。'}</div>
         <div className="login-form__actions">

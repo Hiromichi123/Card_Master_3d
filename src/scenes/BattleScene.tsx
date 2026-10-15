@@ -24,6 +24,7 @@ import { PerfSampler } from '../rendering/PerfSampler';
 import { DEMO_CONFIG, demoDefinitions } from '../rendering/presentation/demoBattle';
 import type { DefinitionTable } from '../rendering/presentation/demoBattle';
 import type { BattleConfig, BattleOutcome } from '../domain/battle/types';
+import type { ActivityBattleReport } from '../domain/progression/activityModes';
 import type { SettlementView } from '../domain/progression/campaign';
 import { BattleSession } from '../rendering/presentation/session';
 import { useBattleSession } from '../rendering/presentation/useBattleSession';
@@ -68,6 +69,7 @@ export interface BattleSceneProps {
   readonly onFinished?: ((outcome: BattleOutcome) => void) | undefined;
   /** 规则终局同步报告，不等待结果演出；独立模式在这里提交存档。 */
   readonly onOutcome?: ((outcome: BattleOutcome) => void) | undefined;
+  readonly onReport?: ((report: ActivityBattleReport) => void) | undefined;
   readonly allowRematch?: boolean | undefined;
   /** Local match owner can assign a new persistent identity when replaying. */
   readonly onRematchRequested?: (() => void) | undefined;
@@ -98,6 +100,7 @@ export function BattleScene({
   settlement = null,
   onFinished,
   onOutcome,
+  onReport,
   allowRematch = true,
   onRematchRequested,
   resultPanel,
@@ -114,6 +117,8 @@ export function BattleScene({
   const {profile} = visuals;
   const showPerf = useSettingsStore((state) => state.showPerf);
 
+  const reportCallback = useRef(onReport);
+  reportCallback.current = onReport;
   const outcomeCallback = useRef(onOutcome);
   outcomeCallback.current = onOutcome;
   const [session] = useState(
@@ -127,7 +132,7 @@ export function BattleScene({
         },
         // 命中/死亡的音效由导演在演出节点回调；这里只把出口接上
         sound: (cue) => audioEngine.play(cue),
-      }, { localMultiplayer, autoEnemy, onOutcome: (outcome) => outcomeCallback.current?.(outcome),
+      }, { localMultiplayer, autoEnemy, onReport: (report) => reportCallback.current?.(report), onOutcome: (outcome) => outcomeCallback.current?.(outcome),
         aiDriver:new AiWorkerClient(), aiCatalogue:cardDatabase.definitions,
         readAiSettings:()=>{const s=useSettingsStore.getState();return normalizeAiSettings({difficulty:s.aiDifficulty,style:s.aiStyle,policy:s.aiPolicy});},
         readAiModel:()=>useAiModelStore.getState().model,

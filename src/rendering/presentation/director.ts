@@ -194,12 +194,12 @@ export function buildBeats(resolution: Resolution, deps: DirectorDeps, isSkippin
       : slashHit !== undefined ? slashHit
       : event.type === 'AttackStatusApplied' ? (event.animate === false ? 0 : statusAppliedHit(event.kind))
       : event.type === 'AttackStatusTriggered' ? statusTriggeredHit(event.kind)
-      : ['SilenceExpired', 'ConcealmentUsed', 'VanguardIntercepted', 'DiscardDevoured'].includes(event.type) || event.type === 'AttackStatusExpired' || event.type === 'FlightChanged' || (event.type === 'StatChanged' && event.cause === 'berserk') ? 0
+      : ['ControlChanged', 'SilenceExpired', 'ConcealmentUsed', 'VanguardIntercepted', 'DiscardDevoured'].includes(event.type) || event.type === 'AttackStatusExpired' || event.type === 'FlightChanged' || (event.type === 'StatChanged' && event.cause === 'berserk') ? 0
       : event.type === 'UnyieldingChanged' ? 0
       : event.type === 'LifeTransferred' ? 0.42
       : event.type === 'FormationShuffled' ? 0.3
       : event.type === 'AttackDeclared' ? (event.attackKind && event.attackKind !== 'siege' ? RANGED_HIT_SECONDS : ATTACK_OUT_SECONDS)
-      : event.type === 'SkillTriggered' && ['grantConcealment', 'groupSilence', 'crushWaiting', 'concealment', 'firstStrike', 'vanguard', 'devour', 'masterpiece', 'foxSpiritSummon', 'antiAir', 'groupGround', 'siege', 'berserk', 'severeFrost', 'burning', 'venom', 'bleeding', 'grievousWound', 'splash', 'groupDelay', 'ranged', 'directDamage', 'groupPhysicalDamage', 'selfDestruct', 'sacrifice', 'unyielding'].includes(event.family ?? '') ? 0
+      : event.type === 'SkillTriggered' && ['charm', 'puppet', 'grantConcealment', 'groupSilence', 'crushWaiting', 'concealment', 'firstStrike', 'vanguard', 'devour', 'masterpiece', 'foxSpiritSummon', 'antiAir', 'groupGround', 'siege', 'berserk', 'severeFrost', 'burning', 'venom', 'bleeding', 'grievousWound', 'splash', 'groupDelay', 'ranged', 'directDamage', 'groupPhysicalDamage', 'selfDestruct', 'sacrifice', 'unyielding'].includes(event.family ?? '') ? 0
       : event.type === 'SkillTriggered' && ['piercing', 'groupPiercing'].includes(event.family ?? '') ? RANGED_HIT_SECONDS
       : event.type === 'SkillTriggered' && event.family === 'poisonCloud' ? .42
       : event.type === 'ConcealmentGranted' ? 0.3
