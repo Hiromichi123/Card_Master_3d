@@ -90,7 +90,7 @@ export const TABLE_THEMES: readonly TableTheme[] = [
   {
     id: 'tournament',
     name: '锦标赛',
-    blurb: '木质牌桌承托黄杨木与胡桃木棋盘，大理石地面映出柔和反光。',
+    blurb: '木质牌桌承托原棋盘深色整体垫与浅色卡位嵌垫，软木生命槽配方形大理石地面和四壁顶面镜室。',
     table: { color: 0x6b4b2e, roughness: .36 },
     background: 0x282018,
     fog: fog(0x302822, 52, 128),
@@ -115,6 +115,36 @@ export const TABLE_THEMES: readonly TableTheme[] = [
   },
 
   {
+    id: 'abyss', name: '深渊', geometry: 'abyss',
+    blurb: '破裂黑曜石祭台悬于紫灰云旋之上，符文、残门与闪电环绕。固定最高画质。',
+    table: { color: 0x272332, roughness: .32 },
+    background: 0x090511, fog: fog(0x130a20, 54, 300), environmentIntensity: .4,
+    mat: {
+      light: { kind: 'stone', color: 0x332c40, roughness: .34, metalness: .26, clearcoat: .5, clearcoatRoughness: .19, envMapIntensity: .75 },
+      dark: { kind: 'stone', color: 0x24212d, roughness: .7, metalness: .12, envMapIntensity: .45 },
+      frame: { kind: 'metal', color: 0x534255, roughness: .32, metalness: .78, clearcoat: .24, envMapIntensity: .8 },
+      inlay: 0xa887d4,
+    },
+    accent: { slot: 0x9583af, placeable: 0x77deed, target: 0xf5bc7b },
+    post: { bloom: .36, bloomThreshold: 1.05 },
+  },
+
+  {
+    id: 'cloud-top', name: '云顶天宫', geometry: 'cloud',
+    blurb: '云海承托金线战阵，黄瓦红墙的宫殿与层叠塔楼散落云端，蓝天霞光映照仙宫。',
+    table: { color: 0xf5faff, roughness: .98 },
+    background: 0xd4e7fa, fog: fog(0xf4f9ff, 75, 170), environmentIntensity: .55,
+    mat: {
+      light: { kind: 'plain', color: 0xf7fbff, roughness: .98, metalness: 0 },
+      dark: { kind: 'plain', color: 0xf1f7fb, roughness: .98, metalness: 0 },
+      frame: { kind: 'plain', color: 0xffffff, roughness: 1, metalness: 0 },
+      inlay: 0xc8a55b,
+    },
+    accent: { slot: 0xc2a16c, placeable: 0x429abd, target: 0xcf824c },
+    post: { bloom: .10, bloomThreshold: 1.25 },
+  },
+
+  {
     id: 'white-mecha', name: '未来', geometry: 'mecha',
     blurb: '灰银金属装甲与青蓝能源导轨，悬浮科技立方体上的虚空战场。',
     // Darker metallic coating: soft metal reflections replace the earlier ceramic matte finish.
@@ -128,6 +158,31 @@ export const TABLE_THEMES: readonly TableTheme[] = [
     },
     accent: { slot: 0x607f8e, placeable: 0x1684b5, target: 0xc88630 },
     post: { bloom: .14, bloomThreshold: 1.08 },
+  },
+
+  {
+    id: 'obsidian',
+    name: '太阳系',
+    geometry: 'solar',
+    blurb: '地球与火星轨道之间的悬浮战桌，太阳、行星与陨石带在星空中缓慢流转。',
+    table: { color: 0x05070a, roughness: 0.4 },
+    background: 0x07090d,
+    fog: fog(0x07090d, 22, 68),
+    environmentIntensity: 0.4,
+    mat: {
+      light: {
+        kind: 'stone', color: 0x40474f, roughness: 0.4, metalness: 0.12,
+        clearcoat: 0.3, envMapIntensity: 0.6,
+      },
+      dark: {
+        kind: 'stone', color: 0x14181d, roughness: 0.42, metalness: 0.14,
+        clearcoat: 0.3, envMapIntensity: 0.6,
+      },
+      frame: { kind: 'metal', color: 0x2a2f36, roughness: 0.22, metalness: 0.95 },
+      inlay: 0x4fd6ff,
+    },
+    accent: { slot: 0x7f93a8, placeable: 0x49f5c4, target: 0x4fd6ff },
+    post: { bloom: 0.55, bloomThreshold: 0.62 },
   },
 
   {
@@ -159,7 +214,7 @@ export const TABLE_THEMES: readonly TableTheme[] = [
     table: { color: 0xd0d0c6, roughness: .24 },
     background: 0xbfc5c5,
     fog: fog(0xbfc5c5, 60, 210),
-    environmentIntensity: .48,
+    environmentIntensity: .32,
     mat: {
       light: {
         kind: 'marble', color: 0xf0f0e9, base: 0xf3f1e9, vein: 0xbfc3c0, scale: 7.2,
@@ -173,32 +228,7 @@ export const TABLE_THEMES: readonly TableTheme[] = [
       inlay: 0xb9a97e,
     },
     accent: ACCENT_DEFAULT,
-    post: { bloom: .15, bloomThreshold: 1.1 },
-  },
-
-  {
-    id: 'obsidian',
-    name: '太阳系',
-    geometry: 'solar',
-    blurb: '地球与火星轨道之间的悬浮战桌，太阳、行星与陨石带在星空中缓慢流转。',
-    table: { color: 0x05070a, roughness: 0.4 },
-    background: 0x07090d,
-    fog: fog(0x07090d, 22, 68),
-    environmentIntensity: 0.4,
-    mat: {
-      light: {
-        kind: 'stone', color: 0x40474f, roughness: 0.4, metalness: 0.12,
-        clearcoat: 0.3, envMapIntensity: 0.6,
-      },
-      dark: {
-        kind: 'stone', color: 0x14181d, roughness: 0.42, metalness: 0.14,
-        clearcoat: 0.3, envMapIntensity: 0.6,
-      },
-      frame: { kind: 'metal', color: 0x2a2f36, roughness: 0.22, metalness: 0.95 },
-      inlay: 0x4fd6ff,
-    },
-    accent: { slot: 0x7f93a8, placeable: 0x49f5c4, target: 0x4fd6ff },
-    post: { bloom: 0.55, bloomThreshold: 0.62 },
+    post: { bloom: .06, bloomThreshold: 1.3 },
   },
 
   {
@@ -238,34 +268,6 @@ export const TABLE_THEMES: readonly TableTheme[] = [
     },
     accent: { slot: 0x9fb3c8, placeable: 0x7fd4ff, target: 0xffd166 },
     post: { bloom: .18, bloomThreshold: 1.12 },
-  },
-  {
-    id: 'cloud-top', name: '云顶', geometry: 'cloud',
-    blurb: '白云的平坦顶面承托卡牌，细金线勾勒战阵，蓝天与天边阳光映照漂浮云海。',
-    table: { color: 0xf5faff, roughness: .98 },
-    background: 0xd4e7fa, fog: fog(0xf4f9ff, 75, 170), environmentIntensity: .55,
-    mat: {
-      light: { kind: 'plain', color: 0xf7fbff, roughness: .98, metalness: 0 },
-      dark: { kind: 'plain', color: 0xf1f7fb, roughness: .98, metalness: 0 },
-      frame: { kind: 'plain', color: 0xffffff, roughness: 1, metalness: 0 },
-      inlay: 0xc8a55b,
-    },
-    accent: { slot: 0xc2a16c, placeable: 0x429abd, target: 0xcf824c },
-    post: { bloom: .10, bloomThreshold: 1.25 },
-  },
-  {
-    id: 'abyss', name: '深渊', geometry: 'abyss',
-    blurb: '破裂黑曜石祭台悬于紫灰云旋之上，符文、残门与闪电环绕。固定最高画质。',
-    table: { color: 0x272332, roughness: .32 },
-    background: 0x090511, fog: fog(0x130a20, 54, 300), environmentIntensity: .4,
-    mat: {
-      light: { kind: 'stone', color: 0x332c40, roughness: .34, metalness: .26, clearcoat: .5, clearcoatRoughness: .19, envMapIntensity: .75 },
-      dark: { kind: 'stone', color: 0x24212d, roughness: .7, metalness: .12, envMapIntensity: .45 },
-      frame: { kind: 'metal', color: 0x534255, roughness: .32, metalness: .78, clearcoat: .24, envMapIntensity: .8 },
-      inlay: 0xa887d4,
-    },
-    accent: { slot: 0x9583af, placeable: 0x77deed, target: 0xf5bc7b },
-    post: { bloom: .36, bloomThreshold: 1.05 },
   },
 ];
 

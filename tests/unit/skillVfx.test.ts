@@ -9,6 +9,7 @@ import type { BattleEvent } from '../../src/domain/battle/types';
 describe('bounded skill geometry lifecycle', () => {
   it('reclaims geometry actors on completion and skip while firing one group callback', () => {
     const visuals = new SkillVisualPool(4);
+    const subsystemGroups = [...visuals.group.children];
     const onHit = vi.fn();
     const context = { pool: new ParticlePool(100), visuals, from: new Vector3(0, 0.55, 2),
       to: new Vector3(0, 0.08, -2), extraTargets: [new Vector3(1, 0.08, -2), new Vector3(-1, 0.08, -2)],
@@ -21,8 +22,9 @@ describe('bounded skill geometry lifecycle', () => {
     expect(visuals.activeCount).toBe(0);
     // The pool permanently holds two subsystem groups — the linear-ability visuals and the
     // three.quarks batched renderer — so actors have to be gone from inside them.
-    expect(visuals.group.children).toHaveLength(2);
-    const [linear, quarks] = visuals.group.children;
+    expect(visuals.group.children).toEqual(subsystemGroups);
+    const linear = subsystemGroups.find(group => group.name.includes('LinearAbilityCasting'));
+    const quarks = subsystemGroups.find(group => group.name === 'three.quarks:card-artillery');
     expect(linear!.name).toContain('LinearAbilityCasting');
     expect(quarks!.name).toBe('three.quarks:card-artillery');
     expect(linear!.children).toHaveLength(0);

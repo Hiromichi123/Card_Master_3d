@@ -56,6 +56,7 @@ export function SceneEnvironment({ theme, shadows, shadowMapSize }: SceneEnviron
   const scene = useThree((state) => state.scene);
   const tournament = theme.id === 'tournament';
   const abyss = theme.geometry === 'abyss';
+  const temple = theme.geometry === 'temple';
 
   useEffect(() => {
     scene.environment = getRoomEnvironment(gl);
@@ -75,7 +76,7 @@ export function SceneEnvironment({ theme, shadows, shadowMapSize }: SceneEnviron
           整张桌子都在里面，不用为每张台面重算视锥。 */}
       <directionalLight
         color={abyss ? 0xeee7ff : tournament ? 0xffecd0 : theme.geometry === 'mecha' ? 0xf8fcff : 0xfff4e6}
-        intensity={abyss ? 1.1 : tournament ? .85 : 1.35}
+        intensity={abyss ? 1.1 : tournament ? .85 : temple ? .92 : 1.35}
         position={[-11, 20, 9]}
         castShadow={shadows}
         shadow-mapSize-width={shadowMapSize}
@@ -95,7 +96,7 @@ export function SceneEnvironment({ theme, shadows, shadowMapSize }: SceneEnviron
       />
 
       {/* 补光：对侧、偏冷、不投影。把暗部从背景里托起来。 */}
-      <directionalLight color={abyss ? 0xbab8ee : 0xbcd4ff} intensity={abyss ? .34 : tournament ? .22 : .5} position={[13, 9, -11]} />
+      <directionalLight color={abyss ? 0xbab8ee : 0xbcd4ff} intensity={abyss ? .34 : tournament ? .22 : temple ? .28 : .5} position={[13, 9, -11]} />
 
       {/* 轮廓光：低位后方，把主体边缘从背景里分出来。
           力度要克制——推猛了会把靠近镜头的一侧打出一条白边。 */}

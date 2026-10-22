@@ -3,7 +3,7 @@ import { useSettingsStore } from '../state/settingsStore';
 import { useState } from 'react';
 import { withAbyssRarity, abyssRarityAtLevel } from '../domain/progression/abyssRarity';
 import type { AbyssAction, AbyssGrowthOffer, AbyssRun } from '../domain/progression/abyssTypes';
-import { ABYSS_DIFFICULTY_NAMES, ABYSS_REWARD_DRAWS, abyssPurchasePrice, abyssBaseHp, abyssRecruitLevel, abyssGrowthTargets } from '../domain/progression/abyssRules';
+import { ABYSS_DIFFICULTY_NAMES, ABYSS_REWARD_DRAWS, abyssPurchasePrice, abyssBaseHp, abyssEnemyEffects, abyssRecruitLevel, abyssGrowthTargets } from '../domain/progression/abyssRules';
 import { ABYSS_GRADE_INFO, abyssTraitGrade, abyssEffectGrade, abyssEffectLevel, abyssGrowthGrade, abyssGrowthAmount } from '../domain/progression/abyssGrades';
 import { describeTraitFunction } from '../domain/skills/traitDescriptions';
 import { AbyssCard } from './AbyssCard';
@@ -106,9 +106,9 @@ function Enemy({ run }: { readonly run: AbyssRun }) {
   const [open, setOpen] = useState(false);
   if (!('battle' in run.stage)) return null;
   const battle = run.stage.battle;
-  return <details className="abyss-enemy" onToggle={event => setOpen(event.currentTarget.open)}><summary>{ABYSS_DIFFICULTY_NAMES[battle.difficulty]} · 敌方特性：{battle.enemyEffect.name} · 强度 {battle.enemyEffect.strength}</summary>
-    {open && <><AbyssTraitCards items={[{ id: `enemy:${battle.enemyEffect.id}`, name: battle.enemyEffect.name,
-      description: battle.enemyEffect.description, tone: 'positive', icon: battle.enemyEffect.modifier.traits[0]?.family ?? battle.enemyEffect.id, grade: abyssEffectGrade(battle.enemyEffect), level: abyssEffectLevel(battle.enemyEffect), footer: '敌方全体 · 本战有效' }]} />
+  return <details className="abyss-enemy" onToggle={event => setOpen(event.currentTarget.open)}><summary>{ABYSS_DIFFICULTY_NAMES[battle.difficulty]} · 敌方特性：{abyssEnemyEffects(battle).length ? `${battle.enemyEffect.name} · 强度 ${battle.enemyEffect.strength}` : '无全局特性'}</summary>
+    {open && <>{abyssEnemyEffects(battle).length > 0 && <AbyssTraitCards items={[{ id: `enemy:${battle.enemyEffect.id}`, name: battle.enemyEffect.name,
+      description: battle.enemyEffect.description, tone: 'positive', icon: battle.enemyEffect.modifier.traits[0]?.family ?? battle.enemyEffect.id, grade: abyssEffectGrade(battle.enemyEffect), level: abyssEffectLevel(battle.enemyEffect), footer: '敌方全体 · 本战有效' }]} />}
     <p>敌方 {battle.enemyCards.length} 张牌（增益前属性） · 本战本体生命：我方 {abyssBaseHp(battle).player} / 敌方 {abyssBaseHp(battle).enemy}</p>
     <div className="abyss-card-grid">{battle.enemyCards.map(card => <AbyssCard key={card.instanceId} card={card.definition} label="敌方基础" />)}</div></>}
   </details>;

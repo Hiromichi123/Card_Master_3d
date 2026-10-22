@@ -5,6 +5,7 @@ import { defineConfig } from 'vite';
 
 export default defineConfig({
   plugins: [react()],
+  base: process.env.VITE_BASE_PATH || '/',
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
@@ -44,7 +45,7 @@ export default defineConfig({
     target: 'es2022',
     // 素材是三档独立纹理，不做内联，便于按档加载与淘汰。
     assetsInlineLimit: 0,
-    sourcemap: true,
+    sourcemap: process.env.BUILD_SOURCEMAP === 'true',
   },
   // 中文字体与纹理都在 public/ 下，构建产物不依赖在线资源。
   publicDir: 'public',

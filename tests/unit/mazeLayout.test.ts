@@ -106,9 +106,9 @@ describe('迷宫版面：节点外观与坐标', () => {
     expect([...LEGEND_ORDER]).toEqual(['entry', 'normal', 'elite', 'boss', 'supply']);
   });
 
-  it('节点透明度与旧版 `node_type_styles` 的各档一致', () => {
+  it('节点透明度采用当前地图可读性配置', () => {
     expect(NODE_STYLE.entry.alpha).toBe(230);
-    expect(NODE_STYLE.normal.alpha).toBe(210);
+    expect(NODE_STYLE.normal.alpha).toBe(225);
     expect(NODE_STYLE.elite.alpha).toBe(215);
     expect(NODE_STYLE.boss.alpha).toBe(235);
     expect(NODE_STYLE.supply.alpha).toBe(220);

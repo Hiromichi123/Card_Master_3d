@@ -1,5 +1,7 @@
+import { ActivityCanvas as Canvas } from '../ActivityCanvas';
+import { RenderActivity } from '../RenderActivity';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
+import { useFrame } from '@react-three/fiber';
 import { ACESFilmicToneMapping, PCFSoftShadowMap, PerspectiveCamera, Vector3 } from 'three';
 
 import { useSettingsStore } from '../../state/settingsStore';
@@ -160,6 +162,7 @@ export function LoginStage(props: LoginStageProps) {
     gl={{ antialias: true, alpha: false, powerPreference: 'high-performance', toneMapping: ACESFilmicToneMapping }}
     onCreated={({ gl }) => { gl.toneMappingExposure = .9; gl.shadowMap.type = PCFSoftShadowMap; }}
   >
+    <RenderActivity />
     <LoginWorld {...props} quality={quality} reducedMotion={still || systemReduced}
       shadows={true} shadowMapSize={quality === 'low' ? 1024 : Math.max(2048, profile.shadowMapSize)} />
   </Canvas>;

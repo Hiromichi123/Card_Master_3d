@@ -2,7 +2,7 @@ import { cardById } from '../data';
 import type { BattleConfig } from '../domain/battle/types';
 import type { CardDefinition } from '../domain/cards/types';
 import type { AbyssEffect, AbyssEncounter, AbyssRun } from '../domain/progression/abyssTypes';
-import { abyssBaseHp } from '../domain/progression/abyssRules';
+import { abyssBaseHp, abyssEnemyEffects } from '../domain/progression/abyssRules';
 import { withAbyssRarity } from '../domain/progression/abyssRarity';
 import { summonDefinitionIds } from '../domain/skills/tacticalTraits';
 import type { DefinitionTable } from '../rendering/presentation/demoBattle';
@@ -48,7 +48,7 @@ export function compileAbyssBattle(run: AbyssRun, battle: AbyssEncounter, lookup
   const summonDefinitions: Record<'player' | 'enemy', Record<string, string>> = { player: {}, enemy: {} };
   for (const side of ['player', 'enemy'] as const) {
     const cards = side === 'player' ? run.cards.map(withAbyssRarity) : battle.enemyCards;
-    const effects = side === 'player' ? [pair.positive, pair.negative] : [battle.enemyEffect];
+    const effects = side === 'player' ? [pair.positive, pair.negative] : abyssEnemyEffects(battle);
     const local = new Map(cards.map(card => [card.instanceId, card.definition]));
     for (const card of cards) {
       const growth = `本轮培养：ATK +${card.upgrades.atk}，HP +${card.upgrades.hp}，CD ${card.upgrades.cd}；新增特性：${card.addedTraits.map(skill => skill.raw).join('、') || '无'}。`;

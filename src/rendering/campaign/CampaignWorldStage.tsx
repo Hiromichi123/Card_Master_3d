@@ -1,5 +1,7 @@
+import { ActivityCanvas as Canvas } from '../ActivityCanvas';
+import { RenderActivity } from '../RenderActivity';
 import { useEffect, useLayoutEffect, useMemo, useRef,useState,type ReactNode } from 'react';
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { useFrame, useThree } from '@react-three/fiber';
 import { Bloom, EffectComposer } from '@react-three/postprocessing';
 import {
   BoxGeometry, BufferGeometry, CatmullRomCurve3, CircleGeometry, Color, ConeGeometry,
@@ -58,7 +60,7 @@ export function CampaignWorldStage(props:CampaignWorldStageProps){
   const camera=useMemo(()=>({position:[WORLD_RADIUS*WORLD_SCALE*.8,WORLD_RADIUS*WORLD_SCALE*2.8,WORLD_RADIUS*WORLD_SCALE*3.2] as [number,number,number],fov:40,near:.3,far:WORLD_CAMERA_FAR}),[]);
   return <WebGLGuard><Canvas camera={camera} dpr={[1,profile.dprCap]} shadows={profile.shadows} gl={{alpha:true,antialias:true}}
     onPointerDown={()=>pauseWorldLoading()} onPointerMove={event=>{if(event.buttons)pauseWorldLoading();}} onWheel={()=>pauseWorldLoading()}
-    onPointerMissed={event=>{if(event.button===0)props.onDismiss();}}><WorldContent {...props}/></Canvas></WebGLGuard>;
+    onPointerMissed={event=>{if(event.button===0)props.onDismiss();}}><RenderActivity /><WorldContent {...props}/></Canvas></WebGLGuard>;
 }
 
 function Clouds({records, material}: {readonly records: readonly CloudInstance[]; readonly material: Material}) {

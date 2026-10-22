@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { CardDefinition } from '../../src/domain/cards/types';
 import { createBattle, applyCommand, validateCommand } from '../../src/domain/battle/engine';
-import { legalActions, commandKey } from '../../src/domain/battle/ai/actions';
+import { legalActions } from '../../src/domain/battle/ai/actions';
 import { observeForAi, sampleWorld } from '../../src/domain/battle/ai/observation';
 import { decideAi } from '../../src/domain/battle/ai/search';
 import { DEFAULT_AI, AI_BUDGETS } from '../../src/domain/battle/ai/types';
@@ -45,9 +45,6 @@ describe('AI public observation and legal action contract',()=>{
     expect(choices.some(c=>c.kind==='deployCard')).toBe(true);
     expect(choices.every(c=>c.kind==='deployCard'||c.kind==='endTurn')).toBe(true);
     for(const c of choices)expect(validateCommand(state,c).ok).toBe(true);
-    state.phase='awaitingPriority';
-    expect(legalActions(state).map(commandKey)).toEqual([]);
-    expect(validateCommand(state,{kind:'choosePriority',side:state.currentSide,order:'first'}).ok).toBe(false);
   });
   it('a sampled decision is reproducible, legal, bounded, and does not modify the live state',()=>{
     const state=battle(),before=structuredClone(state),request={observation:observeForAi(state,catalogue),options:{...DEFAULT_AI,difficulty:'easy' as const},seed:123};

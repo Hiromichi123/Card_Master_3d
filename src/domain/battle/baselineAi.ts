@@ -5,7 +5,6 @@ import { inputSideOf, insertionSlots, isCooldownCard, readyCardIds } from './tur
 /** Baseline strategy: spend cooling cards, deploy all possible ready cards, random insertion. */
 export function chooseBaselineCommand(state: BattleState, rng: Rng, side = inputSideOf(state)): Command {
   if (state.outcome) return { kind: 'endTurn', side };
-  if (state.phase === 'awaitingPriority') return { kind: 'choosePriority', side, order: 'last' };
   const zones = state.zones[side];
   if (state.phase === 'awaitingPlay') {
     const token = zones.hand.find((id) => isCooldownCard(state.instances[id]?.definitionId ?? ''));

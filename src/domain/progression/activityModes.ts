@@ -9,7 +9,7 @@ const DAY = 86_400_000;
 // Epochs are Beijing 04:00, independent of the host timezone.
 const WEEK_EPOCH = Date.UTC(2026, 9, 11, 20);
 const CHALLENGE_EPOCH = Date.UTC(2026, 9, 14, 20);
-export function activityPeriod(kind: ActivityKind, now = Date.now()): ActivityPeriod {
+export function activityPeriod(kind: ActivityKind, now: number): ActivityPeriod {
   const span = DAY * (kind === 'coop' ? 7 : 3), epoch = kind === 'coop' ? WEEK_EPOCH : CHALLENGE_EPOCH;
   const index = Math.floor((now - epoch) / span), start = epoch + index * span;
   return { key: `${kind}:${index}`, start, end: start + span };

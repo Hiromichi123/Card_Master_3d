@@ -1,3 +1,4 @@
+import { bakedSurfaceTexture } from './bakedSurfaceTexture';
 import {
   CanvasTexture,
   DataTexture,
@@ -14,10 +15,9 @@ import {
  * `src/render/three/textures.js`，只做适配（TypeScript 类型、命名、注释），
  * 生成算法保持一致。来源与许可见仓库根目录的 `assets-sources.json`。
  *
- * 为什么保留「程序化生成」这条路而不是贴图文件：
- * - 仓库里不放二进制纹理，一个主题换配色不需要再出一套图；
- * - 按设备分辨率现画，任何视口下都清晰；
- * - 木纹/大理石/石面都是 fbm 噪声驱动的，参数化就能得到一整个系列。
+ * 常用参数优先加载由原算法离线生成的无损 PNG（见 surfaceTextures.json）。
+ * 这里保留算法供 scripts/bake-surfaces.mjs 使用，也给未烘焙的新参数作回退。
+ * 避免每次首次切换主题都在主线程同步计算几十万像素的 fbm 噪声。
  *
  * 缓存键是**完整的参数组合**——主题之间共用生成器，
  * 不缓存的话每次切主题都会重画一遍 768² 的画布。
@@ -37,6 +37,8 @@ function cached<T extends Texture>(key: string, build: () => T): T {
   if (hit) {
     return hit as T;
   }
+  const baked = bakedSurfaceTexture(key);
+  if (baked) { cache.set(key, baked); return baked as T; }
   const texture = build();
   cache.set(key, texture);
   return texture;

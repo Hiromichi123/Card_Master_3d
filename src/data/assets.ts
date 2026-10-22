@@ -1,3 +1,4 @@
+import { rebaseAssetTree } from '../services/assetUrl';
 import type { TextureTier } from '../services/AssetManager';
 import type { CardDefinition } from '../domain/cards/types';
 
@@ -10,7 +11,7 @@ import manifestJson from './assets.manifest.json';
  * 运行时不扫描目录、不靠图片存在与否推断卡牌数据
  * （`docs/LEGACY_AUDIT.md` 第 5 节记录了这个旧问题）。
  *
- * 注意：默认只派生**切片 23 张**的卡面。非切片卡返回 `null`，
+ * 已烘焙卡面按 manifest 加载；尚无资源的卡返回 `null`，
  * 由调用方决定怎么表现——不能假装它有贴图。
  */
 
@@ -44,7 +45,7 @@ interface Manifest {
   };
 }
 
-const manifest = manifestJson as unknown as Manifest;
+const manifest = rebaseAssetTree(manifestJson) as unknown as Manifest;
 const cardsByArtId = new Map(Object.values(manifest.cards).map((entry) => [entry.artId, entry]));
 
 /** 公共卡背。所有卡共用一张，不按稀有度各做一份。 */

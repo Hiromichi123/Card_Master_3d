@@ -89,6 +89,9 @@ export interface MazeShopState extends ShopDailyState {
 
 /** 跨轮保留的探索保底与每周清空账本。 */
 export interface MazeProgressState {
+  /** 旧档首次启用为1点；每日补1，最多3。 */
+  readonly failureChances?: number;
+  readonly failureDay?: string;
   /** 尚未兑换的探索次数；空活动池时可以超过 100。 */
   readonly explorationCount: number;
   readonly awardedCount: number;

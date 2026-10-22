@@ -14,6 +14,7 @@
  * 本文件不 import three / React / DOM，可以在 node 环境里直接测。
  */
 
+import { COOLDOWN_CARD_ID } from '../../domain/battle/turnActions';
 import type { BattleState, BattleEvent, DisplayPatch } from '../../domain/battle/types';
 import type { AttackStatusKind, SideId } from '../../domain/cards/types';
 import type { StatKind } from '../cards/statBadge';
@@ -295,6 +296,11 @@ export function applyEventToDisplay(display: DisplayState, event: BattleEvent): 
       break;
     }
     case 'CooldownCardGranted': {
+      const groupId = `g-${event.instanceId}`;
+      display.instances[event.instanceId] = { definitionId: COOLDOWN_CARD_ID, stateGroupId: groupId,
+        flying: false, charmed: false, puppeted: false, attackStatuses: [] };
+      display.groups[groupId] = { hp: 0, maxHp: 0, atk: 0, unyielding: false };
+      display.cd[event.instanceId] = 0;
       display.zones[event.side].hand.push(event.instanceId);
       break;
     }
@@ -312,7 +318,6 @@ export function applyEventToDisplay(display: DisplayState, event: BattleEvent): 
       display.zones[event.side].battle = [...event.order];
       break;
     }
-    case 'PriorityChosen':
     case 'DeploymentWindowOpened': break;
     case 'CardDrawn': {
       const side = display.zones[event.side];

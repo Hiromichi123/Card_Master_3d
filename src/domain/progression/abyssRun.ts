@@ -6,7 +6,7 @@ import { ABYSS_WEEKLY_TIERS, abyssWeekKey, prepareAbyssWeek, markAbyssReached, c
 import type { EconomyTransaction } from './types';
 import type { ProfileState } from './types';
 import type { AbyssAction, AbyssCard, AbyssHistory, AbyssRun, AbyssState } from './abyssTypes';
-import { ABYSS_DECK_LIMIT, ABYSS_MAX_FLOOR, ABYSS_RULES_VERSION, ABYSS_STAT_LIMIT, ABYSS_WIN_COINS, ABYSS_REWARD_DRAWS, abyssPurchasePrice, abyssGrowthTargets, abyssEffectDiscoveryIds, abyssStarterChoices, makeAbyssEncounter, makeAbyssGrowthOffer } from './abyssRules';
+import { ABYSS_DECK_LIMIT, ABYSS_MAX_FLOOR, ABYSS_RULES_VERSION, ABYSS_STAT_LIMIT, ABYSS_WIN_COINS, ABYSS_REWARD_DRAWS, abyssPurchasePrice, abyssGrowthTargets, abyssEnemyEffects, abyssEffectDiscoveryIds, abyssStarterChoices, makeAbyssEncounter, makeAbyssGrowthOffer } from './abyssRules';
 
 import { withAbyssBest } from './abyssRanking';
 import { withAbyssRarities } from './abyssRarity';
@@ -137,7 +137,7 @@ export function planAbyssAction(profile: ProfileState, action: AbyssAction, now:
           const pair = stage.battle.boonChoices[action.index];
           if (!pair) return reject('这组绑定增益不存在。');
           next = { ...run, stage: { kind: 'battleReady', battle: { ...stage.battle, selectedBoon: action.index } } };
-          state = discover(state, [pair.positive, pair.negative, stage.battle.enemyEffect].flatMap(abyssEffectDiscoveryIds));
+          state = discover(state, [pair.positive, pair.negative, ...abyssEnemyEffects(stage.battle)].flatMap(abyssEffectDiscoveryIds));
           break;
         }
         case 'beginBattle':

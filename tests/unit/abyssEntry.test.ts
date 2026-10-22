@@ -51,7 +51,7 @@ describe('深渊入口与结算展示', () => {
     expect(navigate).toHaveBeenCalledWith('abyss');
     await click('[data-wheel-id="coop"]');
     expect(host.querySelector('.abyss-countdown')).toBeNull();
-    expect(host.querySelector('.activity-detail__enter')!.textContent).toBe('尚未开放');
+    expect(host.querySelector('.activity-detail__enter')!.textContent).toBe('进入');
   });
   it('倒计时到点滚入下一周，后台暂停更新、回来按真实时间校准，卸载清定时器', async () => {
     await act(async () => root.render(createElement(AbyssCountdown)));
@@ -71,7 +71,7 @@ describe('深渊入口与结算展示', () => {
   it('主页独立入口和第一张海报均进入深渊，旧玩法入口保留', async () => {
     const navigate = vi.fn();
     await act(async () => root.render(createElement(HubScene, { profile, onNavigate: navigate, onReset: vi.fn() })));
-    expect(host.querySelector('.hub-abyss-entry .abyss-new')!.textContent).toBe('NEW');
+    expect(host.querySelector('.hub-abyss-entry')!.textContent).toContain('v3.0新模式');
     expect(host.querySelector('.hub-abyss-entry')!.getAttribute('data-still')).toBe('true');
     expect(host.querySelector('.hub-button--start')).not.toBeNull();
     expect(host.querySelector('.poster')!.getAttribute('aria-label')).toBe('海报：深渊降临');

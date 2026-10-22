@@ -14,6 +14,7 @@ import { buildMaterial } from '../table/materials';
 import type { TableTheme } from '../table/themes';
 import { hasWeather, WeatherLayer } from '../table/weather';
 import { LAYOUT } from './layout';
+import { StandardTable } from './StandardTable';
 import { MechaTable } from './MechaTable';
 import { VolcanoTable } from './VolcanoTable';
 import { HarvestTable } from './HarvestTable';
@@ -110,6 +111,7 @@ export interface TableProps {
 }
 
 export function Table(props: TableProps) {
+  if (props.theme.id === 'tournament') return <StandardTable theme={props.theme} quality={props.quality} />;
   if (props.theme.geometry === 'cloud') {
     return <CloudTopTable theme={props.theme} quality={props.quality} reduceMotion={props.reduceMotion ?? false} />;
   }

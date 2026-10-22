@@ -17,6 +17,7 @@ export type RouteId =
   | 'fusion'
   | 'collection'
   | 'deck'
+  | 'mall'
   | 'shop'
   /** 选择对战模式。旧版 `battle_menu.py`，从主菜单的「进入战斗」进。 */
   | 'battlemenu'
@@ -32,7 +33,7 @@ export type RouteId =
   | 'ladder'
   /** 迷宫第一层。旧版 `activity/maze_scene.py`，从活动大厅的第一张卡进。 */
   | 'maze'
-  /** 活动商店。与『商店』同一块屏、不同货架，从活动大厅进。 */
+  /** 旧活动商店入口：直接显示商城活动精选分类。 */
   | 'activityShop'
   | 'settings'
   | 'battle'
@@ -50,7 +51,7 @@ export interface RouteMeta {
 /** 导航栏顺序。主菜单排在最前。 */
 export const ROUTES: readonly RouteMeta[] = [
   { id: 'hub', label: '主菜单', hint: '回到主界面' },
-  { id: 'campaign', label: '战役', hint: '三章十二关' },
+  { id: 'campaign', label: '战役', hint: '六章二十四关，未配置敌阵的关卡不可挑战' },
   { id: 'gacha', label: '抽卡', hint: '八个卡池' },
   { id: 'fusion', label: '融合工坊', hint: '五槽祭坛，五张换一张' },
   /*
@@ -60,7 +61,7 @@ export const ROUTES: readonly RouteMeta[] = [
   */
   { id: 'deck', label: '配置', hint: '编辑当前出战卡组' },
   { id: 'collection', label: '图鉴', hint: '已拥有的卡牌' },
-  { id: 'shop', label: '商店', hint: '本日货架' },
+  { id: 'mall', label: '商城', hint: '每日卡牌、卡包与徽章兑换' },
   { id: 'probe', label: '数据自检', hint: '确认导入的数据被应用读到', dev: true },
   { id: 'viewer', label: '实验台', hint: '手动触发卡牌特性与攻击特效', dev: true },
 ];

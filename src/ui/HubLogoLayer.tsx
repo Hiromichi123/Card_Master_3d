@@ -1,6 +1,9 @@
+import { ActivityCanvas as Canvas } from '../rendering/ActivityCanvas';
 import { useLayoutEffect, useRef, type RefObject } from 'react';
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { useFrame, useThree } from '@react-three/fiber';
 import { Edges } from '@react-three/drei';
+import { observeLayout } from './observeLayout';
+import { RenderActivity } from '../rendering/RenderActivity';
 import type { Group, OrthographicCamera } from 'three';
 
 export type HubLogoKind = 'battle' | 'market' | 'activity' | 'ranking' | 'statistics' | 'demo'
@@ -20,6 +23,7 @@ export function HubLogoLayer(props: LogoLayerProps) {
     <Canvas orthographic camera={{ position: [0, 0, 1000], near: 1, far: 3000, zoom: 1 }}
       style={{ pointerEvents: 'none' }}
       frameloop="demand" dpr={[1, 1.4]} gl={{ alpha: true, antialias: true }}>
+      <RenderActivity mode="demand" />
       <ambientLight intensity={1.35} />
       <directionalLight position={[200, 400, 800]} intensity={2.8} color="#fff3d4" />
       <directionalLight position={[-400, -120, 500]} intensity={1.1} color="#91bfd5" />
@@ -70,16 +74,7 @@ function LogoModels({ items, anchors, activeId, still }: LogoLayerProps) {
       if (changed) invalidate();
     };
     measure(); invalidate();
-    const observer = new ResizeObserver(measure);
-    observer.observe(gl.domElement);
-    for (const anchor of anchors.current.values()) observer.observe(anchor);
-    // ResizeObserver cannot detect a position-only change (left/top, ancestor
-    // transforms or stylesheet replacement). Track DOM anchors independently of
-    // the demand render loop, drawing only when their actual coordinates change.
-    let frame = 0;
-    const track = (): void => { measure(); frame = requestAnimationFrame(track); };
-    frame = requestAnimationFrame(track);
-    return () => { cancelAnimationFrame(frame); observer.disconnect(); };
+    return observeLayout(gl.domElement, [...anchors.current.values()], measure);
   }, [camera, gl, size.width, size.height, items, anchors, invalidate]);
 
   useLayoutEffect(() => {
@@ -100,7 +95,10 @@ function LogoModels({ items, anchors, activeId, still }: LogoLayerProps) {
 
   useFrame((_, delta) => {
     // Read only the entering/leaving anchors while their CSS lift settles.
-    for (const id of moving.current) place(id);
+    if (moving.current.size) {
+      const canvas = gl.domElement.getBoundingClientRect();
+      for (const id of moving.current) place(id, canvas);
+    }
     const settling = performance.now() < settleUntil.current;
     if (!settling) moving.current.clear();
     const rotating = activeId !== null && !still && !reduced.current;

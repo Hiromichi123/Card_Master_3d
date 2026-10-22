@@ -219,6 +219,7 @@ export function authenticateAccount(username: string, password: string): Promise
       difference |= digest.charCodeAt(index) ^ account.passwordHash.charCodeAt(index);
     }
     if (difference !== 0) throw new Error('账号或密码不正确。');
+    await getSocialOverview(account.id);
     return { id: account.id, username: account.username };
   });
 }
@@ -242,6 +243,157 @@ export function registerAccount(username: string, password: string): Promise<Log
       transaction.onabort = failure;
       transaction.onerror = failure;
     });
+    await getSocialOverview(account.id);
     return { id: account.id, username: account.username };
   });
+}
+
+export interface SocialPlayer {
+  readonly publicId: string;
+  readonly username: string;
+  readonly relation: 'self' | 'friend' | 'incoming' | 'outgoing' | 'none';
+}
+export interface SocialOverview {
+  readonly self: SocialPlayer;
+  readonly friends: readonly SocialPlayer[];
+  readonly incoming: readonly SocialPlayer[];
+  readonly outgoing: readonly SocialPlayer[];
+}
+type FriendAction = 'request' | 'accept' | 'reject' | 'cancel' | 'remove';
+interface SocialAccount extends StoredAccount {
+  publicId: string;
+  friendIds: string[];
+  friendRequests: string[];
+}
+
+function initialPublicId(accountId: string): number {
+  let hash = 2166136261;
+  for (const character of accountId) hash = Math.imul(hash ^ character.charCodeAt(0), 16777619);
+  return 1_000_000 + (hash >>> 0) % 9_000_000;
+}
+
+/** Assign missing IDs and mutate relationships in one serialized IndexedDB transaction.
+ * Credentials remain private; callers only receive the explicit public projection below.
+ */
+async function socialTransaction<T>(work: (accounts: SocialAccount[]) => T): Promise<T> {
+  return withStorageErrors(async () => {
+    const db = await getDatabase();
+    return new Promise<T>((resolve, reject) => {
+      const transaction = db.transaction(STORE, 'readwrite');
+      const store = transaction.objectStore(STORE);
+      const request = store.getAll();
+      let result: T;
+      let failure: Error | null = null;
+      request.onsuccess = () => {
+        try {
+          const accounts = (request.result as unknown[]).map(value => {
+            const account = storedAccount(value);
+            if (!account) throw new Error('账号记录不存在。');
+            return { ...account } as SocialAccount;
+          });
+          const originals = new Map(accounts.map(account => [account.id, JSON.stringify(account)]));
+          const used = new Set<string>();
+          const ids = new Set(accounts.map(account => account.id));
+          for (const account of accounts) {
+            if (account.publicId === undefined) continue;
+            if (typeof account.publicId !== 'string' || !/^[1-9]\d{6}$/.test(account.publicId) || used.has(account.publicId)) {
+              throw new Error('玩家 ID 记录异常，请恢复账号备份。');
+            }
+            used.add(account.publicId);
+          }
+          for (const account of accounts) {
+            if (!account.publicId) {
+              let value = initialPublicId(account.id);
+              const start = value;
+              while (used.has(String(value))) {
+                value = value === 9_999_999 ? 1_000_000 : value + 1;
+                if (value === start) throw new Error('玩家 ID 已用尽。');
+              }
+              account.publicId = String(value);
+              used.add(account.publicId);
+            }
+            const validLinks = (value: unknown): string[] => Array.isArray(value)
+              ? [...new Set(value.filter((id): id is string => typeof id === 'string' && id !== account.id && ids.has(id)))] : [];
+            account.friendIds = validLinks(account.friendIds);
+            account.friendRequests = validLinks(account.friendRequests).filter(id => !account.friendIds.includes(id));
+          }
+          result = work(accounts);
+          for (const account of accounts) {
+            if (JSON.stringify(account) !== originals.get(account.id)) store.put(account);
+          }
+        } catch (error) {
+          failure = error instanceof Error ? error : new Error('好友操作失败。');
+          transaction.abort();
+        }
+      };
+      transaction.oncomplete = () => resolve(result!);
+      transaction.onabort = () => reject(failure ?? new Error('好友数据保存失败，请重试。'));
+      transaction.onerror = () => { /* onabort reports the final failure. */ };
+    });
+  });
+}
+
+function socialSelf(accounts: SocialAccount[], accountId: string): SocialAccount {
+  const self = accounts.find(account => account.id === accountId);
+  if (!self) throw new Error('当前账号不存在，请重新登录。');
+  return self;
+}
+function publicPlayer(account: SocialAccount, self: SocialAccount): SocialPlayer {
+  const relation = account.id === self.id ? 'self' : self.friendIds.includes(account.id) ? 'friend'
+    : self.friendRequests.includes(account.id) ? 'incoming' : account.friendRequests.includes(self.id) ? 'outgoing' : 'none';
+  return { publicId: account.publicId, username: account.username, relation };
+}
+function overview(accounts: SocialAccount[], accountId: string): SocialOverview {
+  const self = socialSelf(accounts, accountId);
+  const players = accounts.map(account => publicPlayer(account, self));
+  return {
+    self: publicPlayer(self, self),
+    friends: players.filter(player => player.relation === 'friend'),
+    incoming: players.filter(player => player.relation === 'incoming'),
+    outgoing: players.filter(player => player.relation === 'outgoing'),
+  };
+}
+export function getSocialOverview(accountId: string): Promise<SocialOverview> {
+  return socialTransaction(accounts => overview(accounts, accountId));
+}
+export function searchSocialPlayer(accountId: string, publicId: string): Promise<SocialPlayer | null> {
+  if (!/^[1-9]\d{6}$/.test(publicId)) return Promise.reject(new Error('请输入完整的七位玩家 ID。'));
+  return socialTransaction(accounts => {
+    const self = socialSelf(accounts, accountId);
+    const target = accounts.find(account => account.publicId === publicId);
+    return target ? publicPlayer(target, self) : null;
+  });
+}
+export async function updateFriendship(accountId: string, targetId: string, action: FriendAction): Promise<SocialOverview> {
+  const result = await socialTransaction(accounts => {
+    const self = socialSelf(accounts, accountId);
+    const target = accounts.find(account => account.publicId === targetId);
+    if (!target || target.id === self.id) throw new Error('请选择其它玩家。');
+    const unlinkRequests = () => {
+      self.friendRequests = self.friendRequests.filter(id => id !== target.id);
+      target.friendRequests = target.friendRequests.filter(id => id !== self.id);
+    };
+    if (action === 'request') {
+      if (self.friendIds.includes(target.id)) throw new Error('对方已经是你的好友。');
+      if (self.friendRequests.includes(target.id)) throw new Error('对方已申请添加你，请在申请列表接受。');
+      if (target.friendRequests.includes(self.id)) throw new Error('申请已发送，请等待对方接受。');
+      target.friendRequests.push(self.id);
+    } else if (action === 'accept') {
+      if (!self.friendRequests.includes(target.id)) throw new Error('该申请已失效，请刷新列表。');
+      self.friendIds = [...new Set([...self.friendIds, target.id])];
+      target.friendIds = [...new Set([...target.friendIds, self.id])];
+      unlinkRequests();
+    } else if (action === 'reject') {
+      self.friendRequests = self.friendRequests.filter(id => id !== target.id);
+    } else if (action === 'cancel') {
+      target.friendRequests = target.friendRequests.filter(id => id !== self.id);
+    } else {
+      self.friendIds = self.friendIds.filter(id => id !== target.id);
+      target.friendIds = target.friendIds.filter(id => id !== self.id);
+      unlinkRequests();
+    }
+    return overview(accounts, accountId);
+  });
+  window.dispatchEvent(new Event('card-master-social-change'));
+  return result;
 }

@@ -22,5 +22,7 @@ export default defineConfig({
     include: ['tests/unit/**/*.test.ts'],
     environment: 'node',
     reporters: ['default'],
+    // Bound CPU contention: world-geometry jobs otherwise starve each other on CI/iGPU laptops.
+    maxWorkers: 4,
   },
 });

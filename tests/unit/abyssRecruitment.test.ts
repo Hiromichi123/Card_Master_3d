@@ -54,7 +54,7 @@ describe('Abyss recruits, endless and permanent leaderboard records', () => {
     expect(new Set(a.options.map(option => option.kind === 'recruit' ? option.card.instanceId : '')).size).toBe(3);
   });
   it('pays once for three choices, keeps saved candidates and only acquires the selected card', () => {
-    let p = move(win(battle()), { kind: 'skipFree' });
+    let p = skipFreeRewards(win(battle()));
     p = move(p, { kind: 'buy', purchase: 'recruit' });
     const run = p.abyss.run!, stage = run.stage;
     if (stage.kind !== 'camp' || !stage.offer) throw new Error('not camp');
@@ -74,7 +74,7 @@ describe('Abyss recruits, endless and permanent leaderboard records', () => {
   it('opens settlement after 3-10, permits endless camp settlement, and preserves best results beyond ten histories', () => {
     let p = battle();
     for (let j = 1; j <= 30; j++) {
-      p = move(win(p), { kind: 'skipFree' });
+      p = skipFreeRewards(win(p));
       p = move(p, { kind: 'next' });
       if (j === 10 || j === 20) {
         expect(p.abyss.run!.stage.kind).toBe('boonChoice');
@@ -87,7 +87,7 @@ describe('Abyss recruits, endless and permanent leaderboard records', () => {
     expect(settled.abyss.history[0]).toMatchObject({ floor: 3, encounter: 10, reason: 'settled' });
     p = move(p, { kind: 'next' });
     p = move(move(p, { kind: 'chooseBoon', index: 0 }), { kind: 'beginBattle' });
-    p = move(win(p), { kind: 'skipFree' });
+    p = skipFreeRewards(win(p));
     p = move(p, { kind: 'finish' });
     expect(p.abyss.history[0]).toMatchObject({ floor: 4, encounter: 1, reason: 'settled' });
     expect(abyssBestOf(p.abyss)).toMatchObject({ cleared: 31, wins: 31 });
@@ -106,3 +106,10 @@ describe('Abyss recruits, endless and permanent leaderboard records', () => {
     expect(rows.map(row => row.id)).toEqual(['b', 'a', 'c']);
   });
 });
+
+/** Leaving camp in these fixtures intentionally declines each remaining independent reward. */
+function skipFreeRewards(profile: ProfileState): ProfileState {
+  while (profile.abyss.run?.stage.kind === 'camp' && profile.abyss.run.stage.freeRemaining > 0)
+    profile = move(profile, { kind: 'skipFree' });
+  return profile;
+}

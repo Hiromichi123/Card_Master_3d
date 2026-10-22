@@ -1,5 +1,7 @@
+import { ActivityCanvas as Canvas } from '../ActivityCanvas';
+import { RenderActivity } from '../RenderActivity';
 import { useCallback, useEffect, useMemo, useRef, useState, useLayoutEffect } from 'react';
-import { Canvas, useThree } from '@react-three/fiber';
+import { useThree } from '@react-three/fiber';
 import { PCFShadowMap, Vector3 } from 'three';
 import type { Group } from 'three';
 
@@ -100,6 +102,7 @@ export function GachaStage(props: GachaStageProps) {
           camera={cameraOptions}
           gl={{ antialias: true, powerPreference: 'high-performance' }}
         >
+          <RenderActivity />
           <StageContent {...props} profile={profile} theme={theme} shake={cameraShake && !reduceMotion}
             onFinished={finish} instant={skipAnimation || (runKey !== null && forcedKey === runKey)} />
         </Canvas>

@@ -49,7 +49,7 @@ describe('深渊按钮屏外依次浮入', () => {
     expect(arrived).toHaveBeenCalledOnce();
   });
   it('屏外起点使用视口高度而非按钮自身高度，动画由包装层负责', () => {
-    const css = readFileSync(new URL('../../src/ui/abyss.css', import.meta.url), 'utf8');
+    const css = readFileSync('src/ui/abyss.css', 'utf8');
     expect(css).toContain('transform: translateY(100vh); transform: translateY(100dvh)');
     expect(css).toContain('animation: abyss-button-rise var(--abyss-enter-duration)');
     expect(css).toContain('var(--abyss-enter-delay) both');

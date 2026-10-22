@@ -1,7 +1,8 @@
 import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
+import { StandardMirrorRoom } from './StandardMirrorRoom';
 import { MeshReflectorMaterial } from '@react-three/drei';
 import {
-  BoxGeometry, Color, CylinderGeometry, Euler, ExtrudeGeometry, Matrix4, Quaternion, Shape, Vector3,
+  BoxGeometry, Color, Euler, ExtrudeGeometry, Matrix4, Quaternion, Shape, Vector3,
   type BufferGeometry, type InstancedMesh, type Material,
 } from 'three';
 import { RectAreaLightUniformsLib } from 'three/addons/lights/RectAreaLightUniformsLib.js';
@@ -50,7 +51,7 @@ export function TournamentSetting({quality}:{readonly quality:QualityLevel}) {
   useLayoutEffect(()=>{RectAreaLightUniformsLib.init();},[]);
   const geometry=useMemo(()=>({
     box:new BoxGeometry(1,1,1),table:roundedTable(),
-    foundation:new CylinderGeometry(FLOOR_RADIUS,FLOOR_RADIUS,.54,64),
+    foundation:new BoxGeometry(FLOOR_RADIUS*2,.54,FLOOR_RADIUS*2),
   }),[]);
   const materials=useMemo(()=>({
     trim:buildMaterial({kind:'wood',light:0x59402a,dark:0x2c2017,rings:16,roughness:.5,clearcoat:.22,envMapIntensity:.45},{quality}),
@@ -81,16 +82,20 @@ export function TournamentSetting({quality}:{readonly quality:QualityLevel}) {
   return <group position={[0,0,LAYOUT.tableCenterZ]}>
     <mesh geometry={geometry.foundation} material={materials.foundation} dispose={null} position={[0,FLOOR-.27,0]} receiveShadow raycast={noHit}/>
     <mesh rotation={[-Math.PI/2,0,0]} position={[0,FLOOR+.012,0]} receiveShadow raycast={noHit}>
-      <circleGeometry args={[FLOOR_RADIUS,64]}/>
+      <planeGeometry args={[FLOOR_RADIUS*2,FLOOR_RADIUS*2]}/>
       {quality==='low'?<primitive object={materials.floor} attach="material" dispose={null}/>:<MeshReflectorMaterial
         resolution={quality==='high'?512:256} blur={[160,60]} mixBlur={.75} mixStrength={.36} mirror={.32} mixContrast={.94}
         minDepthThreshold={.4} maxDepthThreshold={1.4} depthScale={.15} roughness={.2} metalness={.02}
         map={materials.floor.map} roughnessMap={materials.floor.roughnessMap} normalMap={materials.floor.normalMap}
         normalScale={materials.floor.normalScale} color={materials.floor.color} envMapIntensity={.65}/>}</mesh>
+    <group scale={[1.15,1,1.15]}>
     <mesh geometry={geometry.table} material={materials.tabletop} dispose={null} receiveShadow castShadow raycast={noHit}/>
-    <mesh geometry={geometry.box} material={materials.felt} dispose={null} position={[0,-.155,0]} scale={[11.76,.23,11.76]} receiveShadow raycast={noHit}/>
+    {/* Keep the backing below the recessed walnut top (-0.085); its former top at -0.04 covered the wood. */}
+    <mesh geometry={geometry.box} material={materials.felt} dispose={null} position={[0,-.28,0]} scale={[11.76,.23,11.76]} receiveShadow raycast={noHit}/>
     <Parts geometry={geometry.box} material={materials.trim} parts={parts.timber} shadow/>
     <Parts geometry={geometry.box} material={materials.brass} parts={parts.bronze}/>
+    </group>
+    <StandardMirrorRoom quality={quality} />
     <rectAreaLight position={[0,5.35,0]} rotation={[-Math.PI/2,0,0]} width={9} height={11} intensity={2.1} color={0xffe0b5}/>
   </group>;
 }

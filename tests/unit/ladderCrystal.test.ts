@@ -9,6 +9,8 @@ vi.mock('@react-three/fiber', () => ({
   Canvas: (props: { children: ReactNode }) => { canvas.props = props; return props.children; },
   useFrame: vi.fn(),
 }));
+// Render scheduling is independently covered by renderActivity.test.ts.
+vi.mock('../../src/rendering/RenderActivity', () => ({ RenderActivity: () => null }));
 vi.mock('../../src/scenes/WebGLGuard', () => ({ WebGLGuard: ({ children }: { children: ReactNode }) => children }));
 afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
@@ -30,7 +32,8 @@ describe('天梯晶体材质契约', () => {
       expect(core.querySelector('meshstandardmaterial')!.getAttribute('emissive')).toBe('#ffbd32');
       expect(host.querySelector('[name="golden-halo"]')).not.toBeNull();
       await act(async () => root.render(createElement(LadderCrystal, { color: '#aabbcc', still: false, world: true })));
-      expect(canvas.props.frameloop).toBe('always');
+      // Ambient motion is now paced at 30 Hz by RenderActivity instead of a permanent loop.
+      expect(canvas.props.frameloop).toBe('demand');
     } finally { await act(async () => root.unmount()); }
   });
 });

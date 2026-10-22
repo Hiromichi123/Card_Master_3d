@@ -41,7 +41,7 @@ describe('schema5天梯领奖账本', () => {
     if (!migrated.ok) return;
     const next = migrated.value as ProfileState;
     expect(next).toEqual({ ...old, schemaVersion: SAVE_SCHEMA_VERSION, ladder: { ...old.ladder, claimedTierFloors: [] } });
-    expect(migrated.warnings).toEqual(['已从 v4 迁移到 v5。', '已从 v5 迁移到 v6。']);
+    expect(migrated.warnings).toEqual(Array.from({ length: SAVE_SCHEMA_VERSION - 4 }, (_, i) => `已从 v${i + 4} 迁移到 v${i + 5}。`));
     const claimed = { ...next, ladder: { ...next.ladder, claimedTierFloors: [0, 300] } };
     const again = migrateToCurrent(claimed, SAVE_SCHEMA_VERSION);
     expect(again.ok && again.value).toEqual(claimed);

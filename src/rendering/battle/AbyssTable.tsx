@@ -1,3 +1,4 @@
+import { AbyssVitalsHousing } from './AbyssVitals';
 import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import {
@@ -135,6 +136,7 @@ export function AbyssTable({ theme, reduceMotion }: { readonly theme: TableTheme
     <mesh geometry={g.funnel} material={s.funnel} renderOrder={-30} raycast={noHit} />
     <mesh geometry={g.funnel} material={s.funnel} scale={[.74,.84,.74]} position={[0,-5.4,0]} rotation={[0,.74,0]} renderOrder={-29} raycast={noHit} />
     <mesh geometry={g.deck} material={m.stone} castShadow receiveShadow raycast={noHit} />
+    <AbyssVitalsHousing />
     <mesh geometry={g.rim} material={m.metal} castShadow receiveShadow raycast={noHit} />
     <mesh geometry={g.trim} material={m.trim} raycast={noHit} />
     <mesh geometry={g.rift} material={s.rift} raycast={noHit} />

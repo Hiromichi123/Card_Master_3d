@@ -1,3 +1,4 @@
+import { isCooldownCard, inputSideOf } from '../../src/domain/battle/turnActions';
 /**
  * 显示状态与桌面映射。
  *
@@ -65,10 +66,33 @@ const KNOWN_EVENTS: readonly BattleEvent['type'][] = [
   'CardDrawn',
   'CardPlayed',
   'CooldownChanged',
+  'CooldownCardGranted',
+  'CooldownCardUsed',
+  'DeploymentWindowOpened',
+  'FormationInserted',
+  'CardReset',
   'CardDeployed',
   'SkillTriggered',
   'AttackDeclared',
   'DamageApplied',
+  'SpellReflected',
+  'ControlChanged',
+  'AttackStatusApplied',
+  'AttackStatusTriggered',
+  'AttackStatusExpired',
+  'UnyieldingChanged',
+  'LifeTransferred',
+  'FormationShuffled',
+  'ConcealmentGranted',
+  'SilenceApplied',
+  'SilenceExpired',
+  'WaitingCardCrushed',
+  'ConcealmentUsed',
+  'VanguardIntercepted',
+  'DiscardDevoured',
+  'CardSummoned',
+  'FlightChanged',
+  'DodgeGranted',
   'Healed',
   'StatChanged',
   'PlayerHpChanged',
@@ -77,6 +101,7 @@ const KNOWN_EVENTS: readonly BattleEvent['type'][] = [
   'CloneCreated',
   'SlotCompacted',
   'TurnEnded',
+  'AutoEvolutionChanged',
   'BattleEnded',
 ];
 
@@ -117,8 +142,10 @@ describe('显示状态', () => {
     const state = demoBattle();
     const display = displayFromState(state);
 
-    expect(display.zones.player.hand).toHaveLength(3);
-    expect(display.zones.enemy.hand).toHaveLength(3);
+    for (const side of ['player', 'enemy'] as const) {
+      expect(display.zones[side].hand.filter(id => !isCooldownCard(state.instances[id]!.definitionId))).toHaveLength(3);
+      expect(display.zones[side].hand).toEqual(state.zones[side].hand);
+    }
     expect(display.zones.player.battle.every((slot) => slot === null)).toBe(true);
     expect(display.zones.player.prep.every((slot) => slot === null)).toBe(true);
     expect(display.playerHp).toEqual({ player: state.hp.player, enemy: state.hp.enemy });
@@ -137,11 +164,12 @@ describe('显示状态', () => {
   it('推进一次结算之后，显示状态与权威状态一致', () => {
     const state = demoBattle();
     const display = displayFromState(state);
-    const instanceId = state.zones.player.hand[0] as string;
+    const side = inputSideOf(state);
+    const instanceId = state.zones[side].hand.find(id => !isCooldownCard(state.instances[id]!.definitionId))!;
 
     const resolution = applyCommand(state, {
       kind: 'playCard',
-      side: 'player',
+      side,
       instanceId,
     });
     expect(resolution.accepted).toBe(true);
@@ -167,9 +195,9 @@ describe('整局推进', () => {
 
       replayInto(display, resolution);
       expect(
-        projectDisplay(display),
+        JSON.parse(projectDisplay(display)),
         `第 ${steps} 手（${command.kind}）之后显示状态与权威状态不一致`,
-      ).toBe(projectDisplay(displayFromState(resolution.finalState)));
+      ).toEqual(JSON.parse(projectDisplay(displayFromState(resolution.finalState))));
 
       state = resolution.finalState;
       steps += 1;

@@ -42,7 +42,7 @@ describe('new grant / silence / thorns / crush traits',()=>{
   it('silences two complete enemy host actions and survives source silence',()=>{
     const {state,source,target}=fixture(card('caster',['全体沉默2']),card('enemy',['火球3']));
     let s=end(state).finalState;expect(s.instances[target.instanceId]!.marks.silenceUntil).toBe(4);
-    s.instances[source.instanceId]!.marks.silenced=true; // Prevent refreshing the test deadline.
+    s.instances[source.instanceId]!.marks.silenceUntil=99; // Prevent refreshing the test deadline.
     const first=end(s);expect(first.events.some(e=>e.type==='SkillTriggered'&&e.family==='fireball')).toBe(false);s=first.finalState;
     expect(isSilenced(s,'enemy',0)).toBe(true);s=end(s).finalState;
     const second=end(s);expect(second.events.some(e=>e.type==='SkillTriggered'&&e.family==='fireball')).toBe(false);

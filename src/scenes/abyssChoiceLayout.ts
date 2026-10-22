@@ -12,7 +12,10 @@ export function starterChoicePositions(group: number): readonly ChoicePoint[] {
   ]);
 }
 export function starterChoiceButton(group: number): ChoicePoint {
-  return [group === 0 ? 0 : group === 1 ? -3.45 : 3.45, .25, group === 0 ? -.35 : 6.65];
+  const positions = starterChoicePositions(group);
+  const centerX = positions.reduce((sum, point) => sum + point[0], 0) / positions.length;
+  const lowerEdge = Math.max(...positions.map(point => point[2])) + 1.5 * 1.15 / 2;
+  return [centerX, .06, lowerEdge + (group === 0 ? 1.45 : .50)];
 }
 export function choiceOptionPosition(index: number, count: number, contract = false): ChoicePoint {
   return [(index - (count - 1) / 2) * 3.3, .22, contract ? -2 : .15];

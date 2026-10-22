@@ -1,4 +1,6 @@
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { ActivityCanvas as Canvas } from '../rendering/ActivityCanvas';
+import { RenderActivity } from '../rendering/RenderActivity';
+import { useFrame, useThree } from '@react-three/fiber';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import { BufferGeometry, Float32BufferAttribute, EdgesGeometry, CanvasTexture, Color, SRGBColorSpace, AdditiveBlending,
   type Group, type MeshPhysicalMaterial, type OrthographicCamera, type ShaderMaterial } from 'three';
@@ -27,9 +29,10 @@ export function AbyssHomeCrystals({ entries, anchors, active, still, onReady }: 
   }, []);
   return <div className="abyss-home-crystals" aria-hidden="true">
     <WebGLGuard fallback={null}>
-      <Canvas orthographic camera={{ position: [0, 0, 1000], near: 1, far: 2200, zoom: 1 }} dpr={[1, 1.5]}
+      <Canvas activityFps={active === null ? 30 : 60} orthographic camera={{ position: [0, 0, 1000], near: 1, far: 2200, zoom: 1 }} dpr={[1, 1.5]}
         frameloop={!visible ? 'never' : still ? 'demand' : 'always'} gl={{ alpha: true, antialias: true }}
         onCreated={onReady} style={{ pointerEvents: 'none' }}>
+        <RenderActivity mode={still ? 'demand' : 'always'} fps={active === null ? 30 : 60} />
         <ambientLight intensity={.95} color="#d1bde8" />
         <directionalLight position={[-180, 320, 500]} intensity={2.5} color="#f4d19a" />
         <directionalLight position={[300, 90, 300]} intensity={1.9} color="#b995df" />

@@ -61,7 +61,7 @@
     background-position: 0% 20%, 100% 80%, center;
     background-repeat: no-repeat;
     box-shadow: var(--ui-shadow);
-    animation: ui-surface-flow var(--ui-flow-duration) ease-in-out infinite alternate;
+    animation: ui-surface-flow var(--ui-flow-duration) steps(360, end) infinite alternate;
     animation-play-state: var(--ui-flow-play, running);
   }
   :where(.ui-panel, .overlay__panel, .modal__panel, .detail, .activity-detail,
@@ -91,7 +91,7 @@
     background-repeat: no-repeat;
     box-shadow: inset 0 0 0 1px #e6c8840c, inset 0 1px #fff0ca20, 0 3px 9px #0004;
     text-shadow: 0 1px 3px #0008;
-    animation: ui-surface-flow var(--ui-flow-duration) ease-in-out infinite alternate;
+    animation: ui-surface-flow var(--ui-flow-duration) steps(360, end) infinite alternate;
     animation-play-state: var(--ui-flow-play, running);
     transition: border-color .18s, box-shadow .18s, color .18s;
   }
@@ -160,7 +160,7 @@
     background-size: 210% 240%, 240% 220%, 100% 100%;
     background-position: 0% 20%, 100% 80%, center;
     box-shadow: var(--ui-shadow);
-    animation: ui-surface-flow 28s ease-in-out infinite alternate;
+    animation: ui-surface-flow 28s steps(420, end) infinite alternate;
     animation-play-state: var(--ui-flow-play, running);
   }
   :where(.gacha-dashboard__selection, .activity-wheel__selection) {

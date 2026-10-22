@@ -11,7 +11,7 @@ export function observeForAi(state:BattleState,catalogue:readonly CardDefinition
   const counts:AiObservation['counts']={player:{deck:0,hiddenHand:0},enemy:{deck:0,hiddenHand:0}};
   const visible:BattleState={rules:{...state.rules},definitions:{},seed:0,rng:{state:0,draws:0},
     turnNumber:state.turnNumber,currentSide:state.currentSide,startingSide:state.startingSide,turnIndex:state.turnIndex,
-    priority:state.priority,hostAttacked:state.hostAttacked,phase:state.phase,hp:{...state.hp},
+    hostAttacked:state.hostAttacked,phase:state.phase,hp:{...state.hp},
     zones:{player:{deck:[],hand:[],prep:[],battle:[],discard:[]},enemy:{deck:[],hand:[],prep:[],battle:[],discard:[]}},
     instances:{},groups:{},cardsPlayedThisTurn:state.cardsPlayedThisTurn,copyUsedThisTurn:{...state.copyUsedThisTurn},
     autoEvolution:state.autoEvolution?{...state.autoEvolution}:null,

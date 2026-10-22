@@ -43,7 +43,7 @@ describe('深渊战斗编译', () => {
     const negative = ABYSS_EFFECTS.find(effect => effect.id === 'delay')!;
     const enemyEffect = ABYSS_EFFECTS.find(effect => effect.id === 'vitality')!;
     const localRun: AbyssRun = { ...run, cards: [player] };
-    const localBattle: AbyssEncounter = { ...battle, enemyCards: [enemy], enemyEffect, selectedBoon: 0,
+    const localBattle: AbyssEncounter = { ...battle, floor: 2, enemyCards: [enemy], enemyEffect, selectedBoon: 0,
       boonChoices: [{ id: 'test', positive, negative }] };
     const compiled = compileAbyssBattle(localRun, localBattle);
     expect(compiled.definitions[player.instanceId]!.atk).toBe(template.atk + 3);

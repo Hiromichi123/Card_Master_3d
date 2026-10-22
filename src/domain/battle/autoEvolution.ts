@@ -42,7 +42,5 @@ export function finishAutoEvolutionTurn(state: BattleState, emit: Emit): void {
 }
 
 export function autoEvolutionCommand(state: BattleState): Command {
-  return state.phase === 'awaitingPriority'
-    ? { kind: 'choosePriority', side: state.currentSide, order: 'last' }
-    : { kind: 'endTurn', side: inputSideOf(state) };
+  return { kind: 'endTurn', side: inputSideOf(state) };
 }

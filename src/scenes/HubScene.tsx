@@ -1,4 +1,6 @@
-import { useRef, useState, type CSSProperties } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { getSocialOverview } from '../services/auth/accounts';
+import { FriendsPanel } from '../ui/FriendsPanel';
 import { HubWordmark } from '../ui/HubWordmark';
 import { ArtButtonSurface } from '../ui/ArtButtonSurface';
 import { assetManifest, cardArtUrl, cardFaceUrl } from '../data/assets';
@@ -29,6 +31,7 @@ export interface HubSceneProps {
   readonly store?: ProfileStore;
   readonly busy?: boolean;
   readonly playerName?: string;
+  readonly playerId?: string;
   readonly onNavigate: (route: RouteId) => void;
   readonly onReset: () => void;
 }
@@ -58,7 +61,7 @@ const MAIN_ROWS: readonly (readonly HubEntry[])[] = [
   ],
 ];
 const DOCK: readonly HubEntry[] = [
-  { id: 'mall', kind: 'market', color: '#d7b774', route: null, label: '商城', hint: '商城暂未开放' },
+  { id: 'mall', kind: 'market', color: '#d7b774', route: 'mall', label: '商城', hint: '每日精选、特典卡包与活动兑换' },
   { id: 'gacha', kind: 'gacha', color: '#edb16d', route: 'gacha', label: '抽卡', hint: '选择卡池，单抽或十连', palette: 'gacha' },
   { id: 'deck', kind: 'deck', color: '#d7b774', route: 'deck', label: '配置', hint: '配置 12 张出战卡牌' },
   { id: 'collection', kind: 'collection', color: '#d7b774', route: 'collection', label: '卡牌图鉴', hint: '浏览卡牌与特性' },
@@ -84,12 +87,22 @@ const PALETTES: Record<Palette, { from: string; to: string }> = {
 };
 
 /** Lobby entry blocks and an equal-width dock share one transparent 3D logo layer. */
-export function HubScene({ profile, store, busy = false, playerName = '当前玩家', onNavigate, onReset }: HubSceneProps) {
+export function HubScene({ profile, store, busy = false, playerName = '当前玩家', playerId = 'admin', onNavigate, onReset }: HubSceneProps) {
   const snapshot = useProfileStore(store ?? null);
   const current = snapshot.profile ?? profile;
   const [rankingOpen, setRankingOpen] = useState(false);
   const [statisticsOpen, setStatisticsOpen] = useState(false);
   const [mailOpen, setMailOpen] = useState(false);
+  const [friendsOpen, setFriendsOpen] = useState(false);
+  const [publicId, setPublicId] = useState('');
+  const [identityError, setIdentityError] = useState('');
+  useEffect(() => {
+    let alive = true;
+    setPublicId(''); setIdentityError('');
+    void getSocialOverview(playerId).then(result => { if (alive) setPublicId(result.self.publicId); })
+      .catch(error => { if (alive) setIdentityError(error instanceof Error ? error.message : '玩家 ID 读取失败'); });
+    return () => { alive = false; };
+  }, [playerId]);
   const still = useSettingsStore((state) => state.reduceMotion);
   const [activeId, setActiveId] = useState<string | null>(null);
   const anchors = useRef(new Map<string, HTMLSpanElement>());
@@ -139,7 +152,8 @@ export function HubScene({ profile, store, busy = false, playerName = '当前玩
       <PlayerStatus level={profile.level} currencies={profile.currencies} />
       {store && <HubRewards profile={profile} store={store} busy={busy} />}
     </div><AbyssEntry onClick={() => onNavigate('abyss')} /></div>}>
-    <HubSideRail onMail={() => setMailOpen(true)} mailCount={mailAttentionCount(current)} />
+    <p className="hub-account-id" title={identityError || '玩家 ID'}>id:{publicId || (identityError ? '读取失败' : '…')}</p>
+    <HubSideRail onFriends={() => setFriendsOpen(true)} onMail={() => setMailOpen(true)} mailCount={mailAttentionCount(current)} />
     <nav className="hub-main" aria-label="主界面玩法">
       {MAIN_ROWS.map((row, index) => <div key={index} className={`hub-main__row hub-main__row--${index + 1}`}>
         {row.map((entry) => button(entry, false))}
@@ -152,7 +166,8 @@ export function HubScene({ profile, store, busy = false, playerName = '当前玩
     </nav>
     <HubLogoLayer items={LOGOS} anchors={anchors} activeId={activeId} still={still} />
     {mailOpen && store && <MailboxPanel store={store} onClose={() => setMailOpen(false)} />}
-    {statisticsOpen && <StatisticsPanel profile={current} onClose={() => setStatisticsOpen(false)} />}
+    {friendsOpen && <FriendsPanel accountId={playerId} onClose={() => setFriendsOpen(false)} />}
+    {statisticsOpen && <StatisticsPanel profile={current} playerId={publicId} onClose={() => setStatisticsOpen(false)} />}
     {rankingOpen && <LeaderboardModal profile={current} playerName={playerName} onClose={() => setRankingOpen(false)} />}
   </MenuChrome>;
 }

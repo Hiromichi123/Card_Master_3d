@@ -63,7 +63,7 @@ describe('残局自动演进', () => {
 
   it('does not count a guest deployment window as a host action', () => {
     let state = battlefield();
-    state.phase = 'awaitingResponse'; state.hostAttacked = false; state.priority = 'last';
+    state.phase = 'awaitingResponse'; state.hostAttacked = false;
     state = advance(state).finalState;
     expect(state.phase).toBe('awaitingPlay');
     expect(state.autoEvolution?.completedTurns).toBe(0);

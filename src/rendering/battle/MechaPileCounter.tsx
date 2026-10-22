@@ -1,3 +1,4 @@
+import { useBattleVisuals } from './battleVisuals';
 import { useEffect, useMemo } from 'react';
 import { CanvasTexture, LinearFilter, SRGBColorSpace } from 'three';
 import { numberCanvasFont } from '../text/numberFont';
@@ -5,12 +6,12 @@ import type { PileView } from './placements';
 
 const noHit = (): void => {};
 /** Georgia text replaces the old seven-segment stencil; colors and board placement stay shared. */
-function numberLabel(pile: PileView): { texture: CanvasTexture; aspect: number } {
+function numberLabel(pile: PileView, light: boolean): { texture: CanvasTexture; aspect: number } {
   const remaining = String(Math.max(0, Math.trunc(pile.count)));
   const total = String(Math.max(0, Math.trunc(pile.totalCount ?? pile.count)));
   const parts = pile.kind === 'deck'
-    ? [{text: remaining, color: '#70ed9e'}, {text: `/${total}`, color: '#f4d368'}]
-    : [{text: remaining, color: '#f37872'}];
+    ? [{text: remaining, color: light ? '#176546' : '#70ed9e'}, {text: `/${total}`, color: light ? '#906316' : '#f4d368'}]
+    : [{text: remaining, color: light ? '#a62f35' : '#f37872'}];
   const canvas = document.createElement('canvas'), ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('无法创建牌堆数字贴图');
   ctx.font = numberCanvasFont(192);
@@ -30,14 +31,16 @@ function numberLabel(pile: PileView): { texture: CanvasTexture; aspect: number }
 }
 
 export function MechaPileCounter({pile}: {readonly pile: PileView}) {
-  const label = useMemo(() => numberLabel(pile), [pile.count, pile.totalCount, pile.kind]);
+  const { theme } = useBattleVisuals();
+  const light = ['cloud', 'temple', 'icefield'].includes(theme.geometry ?? '') || theme.id === 'tournament';
+  const label = useMemo(() => numberLabel(pile, light), [pile.count, pile.totalCount, pile.kind, light]);
   useEffect(() => () => label.texture.dispose(), [label]);
-  const height = .43, width = Math.min(1.04, label.aspect * height);
+  const height = .43, width = label.aspect * height;
   const direction = pile.side === 'player' ? 1 : -1;
   return <group position={[0,.028,direction*.98]} rotation={[-Math.PI/2,0,0]}>
-    <mesh raycast={noHit} renderOrder={1}>
+    <mesh raycast={noHit} renderOrder={1000}>
       <planeGeometry args={[width,height]}/>
-      <meshBasicMaterial map={label.texture} transparent depthWrite={false} toneMapped={false} fog={false}/>
+      <meshBasicMaterial map={label.texture} transparent depthTest={false} depthWrite={false} toneMapped={false} fog={false}/>
     </mesh>
   </group>;
 }

@@ -87,3 +87,8 @@
 @layer controls {
   .abyss-choice-footer--top button.abyss-choice-skip { display: block; width: fit-content; margin: 8px auto 0; }
 }
+
+@layer controls {
+  .abyss-choice-header .abyss-starter-hint { margin: 9px 0 0; max-width: min(580px, 46vw); font-size: clamp(10px, 1vw, 13px); line-height: 1.6; color: #d7c0a2; letter-spacing: 0; text-align: left; }
+  .abyss-choice-scene button.abyss-choice-group--starter { display: inline-flex; flex-direction: row; align-items: center; justify-content: center; width: max-content; min-width: 110px; max-width: none; height: auto; min-height: 34px; writing-mode: horizontal-tb; white-space: nowrap; transform: none; }
+}

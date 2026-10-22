@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { act, createElement, StrictMode, type ReactElement, type ReactNode } from 'react';
+import { act, Children, isValidElement, createElement, StrictMode, type ReactElement, type ReactNode } from 'react';
 import { BufferGeometry, ShaderMaterial, Texture, TextureLoader } from 'three';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -13,6 +13,7 @@ const capture = vi.hoisted(() => ({
   frame: null as ((state: unknown, delta: number) => void) | null,
   materials: [] as { uniforms: Record<string, { value: unknown }> }[],
 }));
+vi.mock('../../src/rendering/RenderActivity', () => ({ RenderActivity: () => null }));
 vi.mock('three', async importOriginal => {
   const actual = await importOriginal<typeof import('three')>();
   return { ...actual, ShaderMaterial: class extends actual.ShaderMaterial {
@@ -30,7 +31,7 @@ vi.mock('@react-three/fiber', () => ({
   useThree: () => capture.three,
 }));
 function smokeCallbacks() {
-  return (capture.props.children as ReactElement<{ onReady: () => void; onUnavailable: () => void }>).props;
+  return (Children.toArray(capture.props.children as ReactNode).find(child => isValidElement(child) && 'onReady' in (child.props as object)) as ReactElement<{ onReady: () => void; onUnavailable: () => void }>).props;
 }
 beforeEach(() => {
   vi.spyOn(document, 'hidden', 'get').mockReturnValue(false);
@@ -54,7 +55,7 @@ describe('深渊云雾装饰声明', () => {
     const root = createRoot(host);
     try {
       await act(async () => root.render(createElement(AbyssVortex, { backgroundUrl: '/abyss.webp', still: false, active: true, flash })));
-      expect(capture.props.frameloop).toBe('always');
+      expect(capture.props.frameloop).toBe('demand');
       expect(host.querySelector('.abyss-vortex')!.getAttribute('data-motion')).toBe('running');
       expect(capture.props.dpr).toEqual([1, 1.2]);
       expect(host.querySelector('.abyss-vortex')!.getAttribute('data-smoke-count')).toBe('48');

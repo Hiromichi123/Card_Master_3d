@@ -99,6 +99,7 @@ export function CardTile({
           src={url}
           alt={card?.name ?? cardId}
           loading="lazy"
+          decoding="async"
           draggable={false}
           onError={() => setBroken(true)}
         />

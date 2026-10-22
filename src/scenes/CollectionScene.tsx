@@ -11,6 +11,7 @@ import { ScrollArea } from '../ui/ScrollArea';
 import { CardShowcase } from '../ui/CardShowcase';
 import { CrossfadeBackground } from '../ui/SceneBackground';
 import { useParallax } from '../ui/useParallax';
+import '../ui/collectionNavigation.css';
 
 /**
  * 卡牌图鉴。
@@ -32,9 +33,10 @@ import { useParallax } from '../ui/useParallax';
  */
 export interface CollectionSceneProps {
   readonly profile: ProfileState;
+  readonly onReturn?: () => void;
 }
 
-export function CollectionScene({ profile }: CollectionSceneProps) {
+export function CollectionScene({ profile, onReturn }: CollectionSceneProps) {
   const rarityIndex = useRarityIndex();
   const [rarity, setRarity] = useState<string | null>(null);
   const [showcaseCardId, setShowcaseCardId] = useState<string | null>(null);
@@ -96,6 +98,7 @@ export function CollectionScene({ profile }: CollectionSceneProps) {
             );
           })}
         </ul>
+        {onReturn && <button type="button" className="btn collection__return" onClick={onReturn}>返回大厅</button>}
       </header>
 
       <div className="collection__filter" role="group" aria-label="按稀有度筛选">

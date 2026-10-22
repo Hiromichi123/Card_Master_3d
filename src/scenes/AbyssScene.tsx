@@ -75,17 +75,27 @@ function AbyssSceneContent({ onNavigate, store = null, preDarkened = false, play
   useLayoutEffect(() => { sharedSurface?.setEnabled(panel === 'run'); }, [sharedSurface, panel]);
   const exiting = useRef<() => void>(() => {});
   const dispatch: AbyssDispatch = async action => {
-    if (!store || !profile) return false;
-    const expectedToken = abyssStateToken(profile);
+    if (!store) return false;
+    const live = store.getSnapshot();
+    const currentProfile = live.profile;
+    if (!currentProfile) { setNotice('存档尚未加载，请稍后重试。'); return false; }
+    if (live.busy) { setNotice('上一个操作还在保存，请稍后重试。'); return false; }
+    // Metadata updates (such as weekly rewards) may precede React's next render.
+    // Read the revision at click time, while refusing choices from a different run/stage.
+    if (action.kind !== 'start' && action.kind !== 'prepareWeek' && profile?.abyss.run
+      && (profile.abyss.run.id !== currentProfile.abyss.run?.id || profile.abyss.run.stage.kind !== currentProfile.abyss.run?.stage.kind)) {
+      setNotice('选择页面已更新，请使用当前显示的选项。'); return false;
+    }
+    const expectedToken = abyssStateToken(currentProfile);
     const now = Date.now();
     const autoBattle = action.kind === 'chooseBoon';
     if (autoBattle) setStartingBattle(true);
     try {
-      const result = await store.commitEconomic(current => planAbyssAction(current, { ...action, expectedToken }, now));
-      const claim = result.ok && (result.view.completionClaims?.length ?? 0) > (profile.abyss.completionClaims?.length ?? 0) ? result.view.completionClaims?.at(-1) : null;
+      const result = await store.commitEconomic(current => planAbyssAction(current, { ...action, expectedToken, operationId: store.nextOperationId() }, now));
+      const claim = result.ok && (result.view.completionClaims?.length ?? 0) > (currentProfile.abyss.completionClaims?.length ?? 0) ? result.view.completionClaims?.at(-1) : null;
       setNotice(result.ok ? claim ? `通关结算：金币+${claim.gold}，水晶+${claim.crystal}，五选三卡包已保存。` : '' : result.message);
       if (autoBattle && !result.ok) setStartingBattle(false);
-      if (result.ok && profile.abyss.run && !result.view.run) setPanel('run');
+      if (result.ok && currentProfile.abyss.run && !result.view.run) setPanel('run');
       return result.ok;
     } catch (error) {
       if (autoBattle) setStartingBattle(false);

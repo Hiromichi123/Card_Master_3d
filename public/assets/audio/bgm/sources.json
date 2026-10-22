@@ -1,11 +1,11 @@
 {
-  "note": "用户指定的本地背景音乐。仅记录来源，不代表已获得公开发行授权。原始文件不修改。MP3 容器时长包含编码填充。",
+  "note": "用户指定的本地背景音乐，用户已于2026-10-22确认拥有发布授权；非CC0，授权凭据由项目维护者保管。原始文件不修改。时长为历史处理记录。",
   "tracks": [
     {
       "title": "酔花",
       "source": "D:\\Github\\酔花.mp3",
       "file": "lobby.mp3",
-      "license": "用户提供本地音乐；外部版权授权未核实，非 CC0",
+      "license": "用户确认已获发布授权（2026-10-22）；非 CC0，授权凭据由项目维护者保管",
       "durationSeconds": 91.036735,
       "bytes": 2185552,
       "processing": {
@@ -24,7 +24,7 @@
       "title": "阿と花の札物语",
       "source": "D:\\Github\\阿と花の札物语.mp3",
       "file": "battle-1.mp3",
-      "license": "用户提供本地音乐；外部版权授权未核实，非 CC0",
+      "license": "用户确认已获发布授权（2026-10-22）；非 CC0，授权凭据由项目维护者保管",
       "durationSeconds": 175.673469,
       "bytes": 4216834,
       "processing": {
@@ -39,7 +39,7 @@
       "title": "茜色の丘",
       "source": "D:\\Github\\茜色の丘.mp3",
       "file": "battle-2.mp3",
-      "license": "用户提供本地音乐；外部版权授权未核实，非 CC0",
+      "license": "用户确认已获发布授权（2026-10-22）；非 CC0，授权凭据由项目维护者保管",
       "durationSeconds": 246.047347,
       "bytes": 5905807,
       "processing": {
@@ -54,9 +54,9 @@
       "title": "尾声",
       "source": "D:\\Github\\尾声.mp3",
       "file": "battle-3.mp3",
-      "license": "用户提供本地音乐；外部版权授权未核实，非 CC0",
+      "license": "用户确认已获发布授权（2026-10-22）；非 CC0，授权凭据由项目维护者保管",
       "durationSeconds": 185.80898,
-      "bytes": 4460086,
+      "bytes": 5185454,
       "processing": {
         "codec": "mp3",
         "bitrate": 192000,
@@ -65,5 +65,9 @@
         "removeCoverAndMetadata": true
       }
     }
-  ]
+  ],
+  "releaseAuthorization": {
+    "status": "owner-confirmed",
+    "confirmedOn": "2026-10-22"
+  }
 }

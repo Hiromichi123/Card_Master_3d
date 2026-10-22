@@ -193,6 +193,7 @@ export interface ShopShelf {
   readonly rarities: readonly string[];
   readonly count_range: readonly [number, number];
   readonly allow_repeat: boolean;
+  readonly per_rarity_count_range?: readonly [number, number];
 }
 
 /**
@@ -236,6 +237,7 @@ function toShopSpec(raw: {
           rarities: value.rarities,
           countRange: value.count_range,
           allowRepeat: value.allow_repeat,
+          ...(value.per_rarity_count_range ? { perRarityCountRange: value.per_rarity_count_range } : {}),
         },
       ]),
     ),

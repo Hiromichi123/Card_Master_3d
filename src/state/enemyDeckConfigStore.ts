@@ -16,7 +16,7 @@ interface ConfigState {
   reload: () => void;
 }
 function readConfig(): { config: EnemyDeckConfig; error: string } {
-  if (typeof window === 'undefined') return { config: cloneEnemyDeckConfig(defaultEnemyDeckConfig), error: '' };
+  if (!import.meta.env.DEV || typeof window === 'undefined') return { config: cloneEnemyDeckConfig(defaultEnemyDeckConfig), error: '' };
   try {
     const text = window.localStorage.getItem(ENEMY_DECK_CONFIG_KEY);
     if (!text) return { config: cloneEnemyDeckConfig(defaultEnemyDeckConfig), error: '' };
@@ -27,6 +27,7 @@ function readConfig(): { config: EnemyDeckConfig; error: string } {
 export const useEnemyDeckConfigStore = create<ConfigState>((set, get) => ({
   ...readConfig(), revision: 0,
   save: (draft, expectedRevision) => {
+    if (!import.meta.env.DEV) return { ok: false, message: '正式版本不开放开发敌阵编辑，请更新项目发布配置。' };
     if (get().revision !== expectedRevision) return { ok: false, message: '敌阵配置已在其他窗口变化，请先重载已保存配置。当前草稿仍保留。' };
     const result = decodeEnemyConfig(draft);
     if (!result.ok) return { ok: false, message: result.message };
@@ -38,7 +39,7 @@ export const useEnemyDeckConfigStore = create<ConfigState>((set, get) => ({
   },
   reload: () => set(state => ({ ...readConfig(), revision: state.revision + 1 })),
 }));
-if (typeof window !== 'undefined') {
+if (import.meta.env.DEV && typeof window !== 'undefined') {
   const sync = (event: StorageEvent) => { if (event.key === ENEMY_DECK_CONFIG_KEY || event.key === null) useEnemyDeckConfigStore.getState().reload(); };
   window.addEventListener('storage', sync);
   if (import.meta.hot) import.meta.hot.dispose(() => window.removeEventListener('storage', sync));

@@ -25,8 +25,9 @@ vi.mock('@react-three/drei', () => ({ Html: ({ children }: { children: ReactNode
 vi.mock('../../src/rendering/battle/BattleCanvas', () => ({ BattleCanvas: ({ children }: { children: ReactNode }) => createElement('div', null, children) }));
 vi.mock('../../src/rendering/battle/BattleBoard', () => ({ BattleBoard: (props: Record<string, unknown>) => { gpu.board = props; return null; } }));
 vi.mock('../../src/rendering/cards/CardMesh', () => ({ CardMesh: ({ card }: CardMeshProps) => createElement('span', { 'data-card-id': card.cardId }, card.name) }));
-vi.mock('../../src/ui/AbyssTraitCards', () => ({ AbyssTraitBody: ({ item }: { item: { name: string } }) => createElement('span', null, item.name) }));
+vi.mock('../../src/ui/AbyssTraitCards', () => ({ AbyssTraitCards: () => null, AbyssTraitBody: ({ item }: { item: { name: string } }) => createElement('span', null, item.name) }));
 vi.mock('../../src/scenes/WebGLGuard', () => ({ WebGLGuard: ({ children }: { children: ReactNode }) => children }));
+vi.mock('../../src/ui/AbyssHomeCrystals', () => ({ AbyssHomeCrystals: () => null }));
 vi.mock('../../src/scenes/AbyssChoiceDrag', () => ({ AbyssChoiceDragController: (props: DragProps) => { gpu.drag = props; return null; } }));
 vi.mock('../../src/ui/AbyssDialog', () => ({ AbyssDialog: ({ title, children, onClose }: { title: string; children: ReactNode; onClose: () => void }) =>
   createElement('div', { role: 'dialog' }, createElement('h2', null, title), children, createElement('button', { onClick: onClose }, '关闭')) }));
@@ -44,7 +45,7 @@ function advance(profile: ProfileState, action: Action): ProfileState {
 let host: HTMLDivElement, root: Root, profile: ProfileState, dispatch: ReturnType<typeof vi.fn<AbyssDispatch>>;
 let busy = false, settling = false;
 const home = vi.fn(), battle = vi.fn();
-const button = (label: string) => [...host.querySelectorAll<HTMLButtonElement>('button')].find(node => node.textContent === label)!;
+const button = (label: string) => [...host.querySelectorAll<HTMLButtonElement>('button')].find(node => node.textContent === label || node.querySelector('strong')?.textContent === label)!;
 const hit = (id: string) => [...host.querySelectorAll<HTMLElement>('mesh')].find(node => node.getAttribute('name') === `hit:${id}`)!;
 function draw() {
   root.render(createElement(AbyssPreparationScene, { run: profile.abyss.run!, busy, settling, dispatch, onBattle: battle, onHome: home, notice: '', memory: false,

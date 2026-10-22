@@ -1,0 +1,9 @@
+@layer hub {
+  /* Contain all moving tiles, projected labels and the player orb below screen UI.
+     Internal depth ordering stays inside the map stacking context. */
+  .maze-menu .menu__stage { isolation: isolate; }
+  .maze-menu .maze__view { z-index: 0; }
+  .maze-menu .menu__stage > :not(.maze__view) { z-index: 10; }
+  .maze-menu .menu__stage > .maze__sidebar { z-index: 20; }
+  .maze-menu .menu__stage > .maze__sidebar-toggle { z-index: 30; }
+}

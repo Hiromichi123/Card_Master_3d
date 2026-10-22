@@ -72,7 +72,7 @@ describe('四槽卡组与天梯存档', () => {
   it('原生往返保存真实积分与映射，坏槽位不偷偷重建', () => {
     const p = { ...fresh(), ladder: { ...fresh().ladder, points: 2700 } };
     const result = normalizeProfile(JSON.parse(JSON.stringify(p)), context);
-    expect(result.ok && result.profile).toEqual(p);
+    expect(result.ok && result.profile).toEqual({ ...p, activity: { ...p.activity, highestLadderPoints: 2700 } });
     for (const patch of [
       { ladder: { ...p.ladder, points: -1 } },
       { ladder: { ...p.ladder, points: Infinity } },

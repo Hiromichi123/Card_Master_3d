@@ -1,5 +1,7 @@
+import { ActivityCanvas as Canvas } from '../ActivityCanvas';
+import { RenderActivity } from '../RenderActivity';
 import { Component, useCallback, useEffect, useRef, useState, type CSSProperties, type MutableRefObject, type ReactNode } from 'react';
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { useFrame, useThree } from '@react-three/fiber';
 import { ShaderMaterial, SRGBColorSpace, TextureLoader, Vector2, type InstancedBufferGeometry, type Texture } from 'three';
 import { useSettingsStore } from '../../state/settingsStore';
 import { ABYSS_LOAD_TIMEOUT_MS } from '../../scenes/abyssPresentation';
@@ -227,9 +229,10 @@ function VortexLayers(props: AbyssVortexProps) {
     data-still={props.still} data-active={active} data-motion={!active ? 'hidden' : props.still ? 'still' : 'running'} style={style}>
     <BaseClouds backgroundUrl={props.backgroundUrl} softened={status === 'ready'} />
     {supported && status !== 'fallback' && <VortexBoundary onUnavailable={unavailable}>
-      <Canvas dpr={[1, budget.dpr]} frameloop={props.still || !active ? 'demand' : 'always'}
+      <Canvas activityFps={30} dpr={[1, budget.dpr]} frameloop={props.still || !active ? 'demand' : 'always'}
         camera={{ position: [0, 0, 5], fov: 45 }} gl={{ alpha: true, antialias: false, powerPreference: 'low-power' }}
         onCreated={({ gl }) => { gl.setClearColor(0x000000, 0); }} fallback={null}>
+        <RenderActivity mode={props.still || !active ? 'demand' : 'always'} fps={30} />
         <Smoke {...props} active={active} count={budget.count} onUnavailable={unavailable} onReady={ready} />
       </Canvas>
     </VortexBoundary>}

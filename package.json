@@ -19,7 +19,10 @@
     "ai:generate": "node scripts/ai/run.mjs generate",
     "ai:tune": "node scripts/ai/run.mjs tune",
     "ai:serve": "node scripts/ai/run.mjs serve",
-    "ai:train-small": "python scripts/ai/train_small.py"
+    "ai:train-small": "python scripts/ai/train_small.py",
+    "assets:bake-surfaces": "node scripts/bake-surfaces.mjs",
+    "check:dist": "node scripts/check-dist.mjs",
+    "release:check": "npm run typecheck && npm test && npm run build && npm run check:dist"
   },
   "dependencies": {
     "@react-three/drei": "10.7.9",

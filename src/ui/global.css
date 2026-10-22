@@ -8110,3 +8110,6 @@ code {
 }
 
 }
+
+/* Sized image grids may skip offscreen contents without affecting hover tips or scrolling. */
+.scroll .tile { content-visibility: auto; }

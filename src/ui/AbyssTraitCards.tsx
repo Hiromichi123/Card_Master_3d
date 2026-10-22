@@ -1,9 +1,11 @@
+import { ActivityCanvas as Canvas } from '../rendering/ActivityCanvas';
+import { RenderActivity } from '../rendering/RenderActivity';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type RefObject } from 'react';
 import type { CardDefinition } from '../domain/cards/types';
 import { CardMesh } from '../rendering/cards/CardMesh';
 import { rarityIndex } from '../state/useRarityIndex';
 import { hideCardTip, showCardTip, moveCardTip } from '../state/cardTipStore';
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { useFrame, useThree } from '@react-three/fiber';
 import { CanvasTexture, Color, SRGBColorSpace, type Group, type OrthographicCamera, type ShaderMaterial } from 'three';
 import { getCardBodyGeometry, getCardFaceGeometry, CARD_FACE_OFFSET } from '../rendering/cards/cardGeometry';
 import { useSettingsStore } from '../state/settingsStore';
@@ -40,9 +42,10 @@ export function AbyssTraitCards({ items, contract = false }: {
   return <div className="abyss-trait-deck" data-contract={contract} data-cards={items.some(item => !!item.card)}>
     <div className="abyss-trait-deck__models" aria-hidden="true">
       <WebGLGuard fallback={<span className="abyss-trait-deck__fallback">立体特性预览不可用，仍可查看和选择以下特性</span>}>
-        <Canvas orthographic camera={{ position: [0, 0, 1000], near: 1, far: 2500, zoom: 1 }}
+        <Canvas activityFps={active === null ? 30 : 60} orthographic camera={{ position: [0, 0, 1000], near: 1, far: 2500, zoom: 1 }}
           dpr={[1, 1.5]} frameloop={still ? 'demand' : 'always'} gl={{ alpha: true, antialias: true }}
           style={{ pointerEvents: 'none' }}>
+          <RenderActivity mode={still ? 'demand' : 'always'} fps={active === null ? 30 : 60} />
           <ambientLight intensity={1.6} />
           <directionalLight position={[250, 400, 600]} intensity={3} color="#fff0d0" />
           <directionalLight position={[-300, -50, 450]} intensity={1.3} color="#aacdf5" />

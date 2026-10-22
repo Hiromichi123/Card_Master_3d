@@ -1,5 +1,7 @@
+import { ActivityCanvas as Canvas } from '../rendering/ActivityCanvas';
+import { RenderActivity } from '../rendering/RenderActivity';
 import '../ui/localBattle.css';
-import { Canvas, useThree } from '@react-three/fiber';
+import { useThree } from '@react-three/fiber';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { OrthographicCamera } from 'three';
 
@@ -124,6 +126,7 @@ export function LocalBattleScene({ onReturn, store }: { readonly onReturn: () =>
         camera={{ position: [0, 0, 3000], near: 0.1, far: 6000 }}
         gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}>
         <DraftCamera />
+        <RenderActivity />
         <ambientLight intensity={1.2} />
         <directionalLight position={[600, 900, 1500]} intensity={1.8} />
         {draft.pool.map((cardId, index) => {

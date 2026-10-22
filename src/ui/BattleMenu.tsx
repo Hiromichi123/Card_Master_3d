@@ -1,6 +1,5 @@
 import type { DefinitionTable } from '../rendering/presentation/demoBattle';
 import { resolveBattleDefinition } from '../rendering/presentation/definitions';
-import { BattleSettings } from './BattleSettings';
 
 /**
  * 开局的菜单。
@@ -48,12 +47,6 @@ export function BattleMenu({
             ))}
           </ul>
         </section>
-
-        {/*
-          开局前正是配台面、视角、画质的时候，所以这里默认展开；
-          战斗中同一组件默认收成一行（见 `BattleSettings`）。
-        */}
-        <BattleSettings defaultOpen columns={2} />
 
         <label className="overlay__toggle">
           <input

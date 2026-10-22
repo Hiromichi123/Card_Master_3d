@@ -1,11 +1,11 @@
 {
-  "contentVersion": "7ab16932725e",
+  "contentVersion": "1a275bdef1ee",
   "source": "assets/outputs/*/cards.json",
   "definitions": [
     {
       "cardId": "SSS_001",
       "rarity": "SSS",
-      "name": "飞 霄·沐 浴",
+      "name": "青 狐·沐 浴",
       "level": 0,
       "atk": 4,
       "hp": 7,
@@ -22,7 +22,7 @@
           "matchKind": "full"
         }
       ],
-      "description": "和飞霄一起，体验最香艳的沐浴。",
+      "description": "和青狐一起，体验最香艳的沐浴。",
       "status": "complete",
       "art": {
         "artId": "card/sss/001",
@@ -371,7 +371,7 @@
     {
       "cardId": "SSS_012",
       "rarity": "SSS",
-      "name": "泡 狐 龙·妖 艳 之 舞",
+      "name": "妖 艳 之 舞",
       "level": 0,
       "atk": 2,
       "hp": 6,
@@ -934,7 +934,7 @@
     {
       "cardId": "SS_002",
       "rarity": "SS",
-      "name": "仿 无 限 剑 制",
+      "name": "仿 无 限 剑 阵",
       "level": 1,
       "atk": 0,
       "hp": 6,
@@ -969,7 +969,7 @@
     {
       "cardId": "SS_003",
       "rarity": "SS",
-      "name": "吟 霖·夜 光",
+      "name": "夜 光",
       "level": 1,
       "atk": 3,
       "hp": 5,
@@ -980,14 +980,14 @@
       "skills": [
         {
           "raw": "傀儡",
-          "resolution": "implemented",
-          "family": "puppet",
+          "resolution": "flavor",
+          "family": null,
           "param": null,
-          "matchKind": "exact",
-          "note": "在场对位操纵光环：攻击技能转向其它友军，普通攻击不变"
+          "evidence": "全项目 .py 无该字符串；游戏中不存在召唤系统",
+          "note": "卡面描述提到召唤傀儡，但没有任何召唤机制。判断成分：若后续要做召唤系统，此项应重新归类。"
         }
       ],
-      "description": "潜入调查员，成熟可靠、深藏不露。擅长召唤傀儡并用雷电丝线操控傀儡。",
+      "description": "深藏不露，擅长召唤傀儡并用雷电丝线操控傀儡。",
       "status": "complete",
       "art": {
         "artId": "card/ss/003",
@@ -1060,7 +1060,7 @@
     {
       "cardId": "SS_006",
       "rarity": "SS",
-      "name": "阿 米 娅·国 王",
+      "name": "王 车 易 位",
       "level": 1,
       "atk": 1,
       "hp": 11,
@@ -1461,7 +1461,7 @@
     {
       "cardId": "S+_006",
       "rarity": "S+",
-      "name": "阮 梅·可 摘",
+      "name": "寒 梅 可 摘",
       "level": 1.5,
       "atk": 2,
       "hp": 6,
@@ -8675,7 +8675,7 @@
     {
       "cardId": "A_026",
       "rarity": "A",
-      "name": "宝石龙",
+      "name": "宝 石 龙",
       "level": 3,
       "atk": 2,
       "hp": 7,
@@ -11160,6 +11160,474 @@
       "status": "complete",
       "art": {
         "artId": "card/b-plus/031",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "A_033",
+      "rarity": "A",
+      "name": "但 丁·新 魔 人 形 态",
+      "level": 3,
+      "atk": 3,
+      "hp": 4,
+      "cd": 3,
+      "rawTraits": [
+        "吸血1",
+        "加速1"
+      ],
+      "skills": [
+        {
+          "raw": "吸血1",
+          "resolution": "implemented",
+          "family": "vampire",
+          "param": 1,
+          "matchKind": "full"
+        },
+        {
+          "raw": "加速1",
+          "resolution": "implemented",
+          "family": "haste",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "",
+      "status": "complete",
+      "art": {
+        "artId": "card/a/033",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "A_032",
+      "rarity": "A",
+      "name": "幻 像",
+      "level": 3,
+      "atk": 5,
+      "hp": 6,
+      "cd": 10,
+      "rawTraits": [
+        "流血1",
+        "受伤1"
+      ],
+      "skills": [
+        {
+          "raw": "流血1",
+          "resolution": "ambiguous",
+          "family": null,
+          "param": null,
+          "note": "未在 trait-overlay.json 中登记"
+        },
+        {
+          "raw": "受伤1",
+          "resolution": "implemented",
+          "family": "injury",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "",
+      "status": "complete",
+      "art": {
+        "artId": "card/a/032",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "A+_023",
+      "rarity": "A+",
+      "name": "伟 大 之 路",
+      "level": 2.5,
+      "atk": 0,
+      "hp": 0,
+      "cd": 6,
+      "rawTraits": [
+        "振奋2",
+        "治愈3",
+        "自毁"
+      ],
+      "skills": [
+        {
+          "raw": "振奋2",
+          "resolution": "implemented",
+          "family": "inspire",
+          "param": 2,
+          "matchKind": "full"
+        },
+        {
+          "raw": "治愈3",
+          "resolution": "implemented",
+          "family": "healAlly",
+          "param": 3,
+          "matchKind": "full"
+        },
+        {
+          "raw": "自毁",
+          "resolution": "implemented",
+          "family": "selfDestruct",
+          "param": null,
+          "matchKind": "exact"
+        }
+      ],
+      "description": "",
+      "status": "complete",
+      "art": {
+        "artId": "card/a-plus/023",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "B_035",
+      "rarity": "B",
+      "name": "觉 醒 恶 魔",
+      "level": 4,
+      "atk": 4,
+      "hp": 1,
+      "cd": 1,
+      "rawTraits": [
+        "不屈"
+      ],
+      "skills": [
+        {
+          "raw": "不屈",
+          "resolution": "flavor",
+          "family": null,
+          "param": null,
+          "evidence": "全项目 .py 无该字符串；不存在任何「致命伤害后保留」机制",
+          "note": "无参数形容词，卡面描述为纯散文。判断成分：可能是未实现的机制，也可能是设定文字。"
+        }
+      ],
+      "description": "",
+      "status": "complete",
+      "art": {
+        "artId": "card/b/035",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "B_036",
+      "rarity": "B",
+      "name": "守 护 者",
+      "level": 4,
+      "atk": 2,
+      "hp": 4,
+      "cd": 4,
+      "rawTraits": [
+        "防御2"
+      ],
+      "skills": [
+        {
+          "raw": "防御2",
+          "resolution": "implemented",
+          "family": "defense",
+          "param": 2,
+          "matchKind": "full"
+        }
+      ],
+      "description": "",
+      "status": "complete",
+      "art": {
+        "artId": "card/b/036",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "B_037",
+      "rarity": "B",
+      "name": "异 界 门 扉",
+      "level": 4,
+      "atk": 0,
+      "hp": 0,
+      "cd": 3,
+      "rawTraits": [
+        "加速9",
+        "自毁"
+      ],
+      "skills": [
+        {
+          "raw": "加速9",
+          "resolution": "implemented",
+          "family": "haste",
+          "param": 9,
+          "matchKind": "full"
+        },
+        {
+          "raw": "自毁",
+          "resolution": "implemented",
+          "family": "selfDestruct",
+          "param": null,
+          "matchKind": "exact"
+        }
+      ],
+      "description": "",
+      "status": "complete",
+      "art": {
+        "artId": "card/b/037",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "B_038",
+      "rarity": "B",
+      "name": "元 素 师·雨 魂",
+      "level": 4,
+      "atk": 2,
+      "hp": 5,
+      "cd": 5,
+      "rawTraits": [
+        "冰封1",
+        "反击1"
+      ],
+      "skills": [
+        {
+          "raw": "冰封1",
+          "resolution": "implemented",
+          "family": "iceSeal",
+          "param": 1,
+          "matchKind": "full"
+        },
+        {
+          "raw": "反击1",
+          "resolution": "implemented",
+          "family": "counter",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "",
+      "status": "complete",
+      "art": {
+        "artId": "card/b/038",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "B_039",
+      "rarity": "B",
+      "name": "增 援 部 队",
+      "level": 4,
+      "atk": 0,
+      "hp": 0,
+      "cd": 6,
+      "rawTraits": [
+        "低级召唤2",
+        "自毁"
+      ],
+      "skills": [
+        {
+          "raw": "低级召唤2",
+          "resolution": "ambiguous",
+          "family": null,
+          "param": null,
+          "note": "未在 trait-overlay.json 中登记"
+        },
+        {
+          "raw": "自毁",
+          "resolution": "implemented",
+          "family": "selfDestruct",
+          "param": null,
+          "matchKind": "exact"
+        }
+      ],
+      "description": "",
+      "status": "complete",
+      "art": {
+        "artId": "card/b/039",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "B_040",
+      "rarity": "B",
+      "name": "战 争 米 迦 勒",
+      "level": 4,
+      "atk": 1,
+      "hp": 6,
+      "cd": 6,
+      "rawTraits": [
+        "防御1",
+        "还魂1"
+      ],
+      "skills": [
+        {
+          "raw": "防御1",
+          "resolution": "implemented",
+          "family": "defense",
+          "param": 1,
+          "matchKind": "full"
+        },
+        {
+          "raw": "还魂1",
+          "resolution": "implemented",
+          "family": "soulReturn",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "",
+      "status": "complete",
+      "art": {
+        "artId": "card/b/040",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "C+_031",
+      "rarity": "C+",
+      "name": "地 精 战 士",
+      "level": 4.5,
+      "atk": 2,
+      "hp": 5,
+      "cd": 6,
+      "rawTraits": [
+        "破甲1",
+        "反击1"
+      ],
+      "skills": [
+        {
+          "raw": "破甲1",
+          "resolution": "implemented",
+          "family": "armorBreak",
+          "param": 1,
+          "matchKind": "full"
+        },
+        {
+          "raw": "反击1",
+          "resolution": "implemented",
+          "family": "counter",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "",
+      "status": "complete",
+      "art": {
+        "artId": "card/c-plus/031",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "C_040",
+      "rarity": "C",
+      "name": "处 刑 人",
+      "level": 5,
+      "atk": 3,
+      "hp": 6,
+      "cd": 13,
+      "rawTraits": [
+        "群体爆破1"
+      ],
+      "skills": [
+        {
+          "raw": "群体爆破1",
+          "resolution": "implemented",
+          "family": "groupBombard",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "",
+      "status": "complete",
+      "art": {
+        "artId": "card/c/040",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "C_041",
+      "rarity": "C",
+      "name": "史 诗 一 战",
+      "level": 5,
+      "atk": 0,
+      "hp": 5,
+      "cd": 2,
+      "rawTraits": [
+        "防御2",
+        "攻城2"
+      ],
+      "skills": [
+        {
+          "raw": "防御2",
+          "resolution": "implemented",
+          "family": "defense",
+          "param": 2,
+          "matchKind": "full"
+        },
+        {
+          "raw": "攻城2",
+          "resolution": "ambiguous",
+          "family": null,
+          "param": null,
+          "note": "未在 trait-overlay.json 中登记"
+        }
+      ],
+      "description": "",
+      "status": "complete",
+      "art": {
+        "artId": "card/c/041",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "C_042",
+      "rarity": "C",
+      "name": "GX 017",
+      "level": 5,
+      "atk": 2,
+      "hp": 4,
+      "cd": 4,
+      "rawTraits": [
+        "远射",
+        "飞行"
+      ],
+      "skills": [
+        {
+          "raw": "远射",
+          "resolution": "unimplemented",
+          "family": null,
+          "param": null,
+          "evidence": "全项目 .py 无该字符串",
+          "note": "无实现。"
+        },
+        {
+          "raw": "飞行",
+          "resolution": "scene-rule",
+          "family": null,
+          "param": null,
+          "note": "战斗场景规则，非技能族"
+        }
+      ],
+      "description": "",
+      "status": "complete",
+      "art": {
+        "artId": "card/c/042",
+        "sourcePresent": true
+      }
+    },
+    {
+      "cardId": "C_043",
+      "rarity": "C",
+      "name": "XC级 巨 蟹 战 舰",
+      "level": 5,
+      "atk": 1,
+      "hp": 10,
+      "cd": 9,
+      "rawTraits": [
+        "炮击1"
+      ],
+      "skills": [
+        {
+          "raw": "炮击1",
+          "resolution": "implemented",
+          "family": "bombard",
+          "param": 1,
+          "matchKind": "full"
+        }
+      ],
+      "description": "",
+      "status": "complete",
+      "art": {
+        "artId": "card/c/043",
         "sourcePresent": true
       }
     }

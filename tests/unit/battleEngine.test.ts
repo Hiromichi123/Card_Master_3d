@@ -8,6 +8,7 @@ import {
   stateFingerprint,
   validateCommand,
 } from '../../src/domain/battle/engine';
+import { isCooldownCard } from '../../src/domain/battle/turnActions';
 import { createRng } from '../../src/domain/battle/rng';
 import type { BattleState } from '../../src/domain/battle/types';
 
@@ -80,6 +81,7 @@ const TEST_FAMILIES: Record<string, string> = {
   吸血: 'vampire',
   狂暴: 'berserk',
   加速: 'haste',
+  爆裂: 'explodeOnDeath',
   延迟: 'delay',
 };
 
@@ -88,7 +90,6 @@ const EXACT_FAMILIES: Record<string, string> = {
   沉默: 'silence',
   不死: 'undying',
   复活: 'rebirth',
-  爆裂: 'explodeOnDeath',
   飞行: 'flight',
 };
 
@@ -203,7 +204,7 @@ function simpleBattle(
   );
   return createBattle(
     {
-      seed: 12345,
+      seed: 7,
       playerDeck: overrides.playerDeck ?? Array.from({ length: 6 }, () => 'P'),
       enemyDeck: overrides.enemyDeck ?? Array.from({ length: 6 }, () => 'E'),
       rules: { turnLimit: overrides.turnLimit ?? 200 },
@@ -219,8 +220,11 @@ function simpleBattle(
 describe('建局', () => {
   it('开局各抽 3 张，其余在牌堆里', () => {
     const state = simpleBattle();
-    expect(state.zones.player.hand).toHaveLength(3);
-    expect(state.zones.enemy.hand).toHaveLength(3);
+    for (const side of ['player', 'enemy'] as const) {
+      const hand = state.zones[side].hand;
+      expect(hand.filter(id => !isCooldownCard(state.instances[id]!.definitionId))).toHaveLength(3);
+      expect(hand.filter(id => isCooldownCard(state.instances[id]!.definitionId))).toHaveLength(side === state.startingSide ? 0 : 1);
+    }
     expect(state.zones.player.deck).toHaveLength(3);
     expect(state.hp.player).toBe(20);
     expect(state.hp.enemy).toBe(20);
@@ -251,14 +255,16 @@ describe('建局', () => {
 describe('命令校验', () => {
   it('不是当前方就不能行动', () => {
     const state = simpleBattle();
-    const result = validateCommand(state, { kind: 'endTurn', side: 'enemy' });
+    const result = validateCommand(state, { kind: 'endTurn', side: state.currentSide === 'player' ? 'enemy' : 'player' });
     expect(result).toEqual({ ok: false, reason: 'notYourTurn' });
   });
 
-  it('没出牌不能结束回合（旧版同一条限制）', () => {
+  it('未出普通牌也可结束，并且获得一张冷却牌', () => {
     const state = simpleBattle();
-    const result = validateCommand(state, { kind: 'endTurn', side: 'player' });
-    expect(result.ok).toBe(false);
+    const side = state.currentSide;
+    const result = applyCommand(state, { kind: 'endTurn', side });
+    expect(result.accepted).toBe(true);
+    expect(result.events.filter(event => event.type === 'CooldownCardGranted' && event.side === side)).toHaveLength(1);
   });
 
   it('出牌会进入准备区并消耗本回合额度', () => {
@@ -327,7 +333,7 @@ describe('冷却与部署', () => {
     expect(after.instances[enemyPrepCard]?.cd).toBe(2);
   });
 
-  it('CD 归零的卡进入**第一个**空战斗槽', () => {
+  it('成熟卡留在等待区，逐张手动插入队列', () => {
     const definitions = table(
       { id: 'A', atk: 1, hp: 9, cd: 0 },
       { id: 'B', atk: 1, hp: 9, cd: 0 },
@@ -349,14 +355,16 @@ describe('冷却与部署', () => {
     const b = takeCard(state, 'player', 'B');
     state.zones.player.prep[4] = a;
     state.zones.player.prep[6] = b;
-    state.instances[a]!.cd = 0;
-    state.instances[b]!.cd = 0;
+    for (const id of [a, b]) { state.instances[id]!.cd = 0; state.instances[id]!.zone = 'prep'; }
+    state.currentSide = 'player';
 
     state.cardsPlayedThisTurn = state.rules.cardsPerTurn;
-    const deployed = applyCommand(state, { kind: 'endTurn', side: 'player' }).finalState;
-
-    expect(deployed.zones.player.battle[0]).toBe(a);
-    expect(deployed.zones.player.battle[1]).toBe(b);
+    expect(state.zones.player.battle.every(id => id === null)).toBe(true);
+    const first = applyCommand(state, { kind: 'deployCard', side: 'player', instanceId: a, battleSlot: 0 });
+    expect(first.accepted).toBe(true);
+    const second = applyCommand(first.finalState, { kind: 'deployCard', side: 'player', instanceId: b, battleSlot: 0 });
+    expect(second.accepted).toBe(true);
+    expect(second.finalState.zones.player.battle.slice(0, 2)).toEqual([b, a]);
   });
 });
 
@@ -379,7 +387,7 @@ describe('攻击', () => {
     );
     const state = createBattle(
       {
-        seed: 12345,
+        seed: 7,
         playerDeck: ['SLOW', 'SLOW', 'SLOW', 'SLOW'],
         enemyDeck: ['E', 'E', 'E', 'E'],
         rules: { turnLimit: 50 },
@@ -512,8 +520,9 @@ describe('技能规则', () => {
       definitions,
     );
 
-    const hasteId = state.zones.player.hand[0] as string;
-    const targetId = state.zones.player.hand[1] as string;
+    state.currentSide = 'player';
+    const hasteId = takeCard(state, 'player', 'H');
+    const targetId = takeCard(state, 'player', 'T');
     state.zones.player.hand = [];
     state.zones.player.deck = [];
     state.zones.player.battle[0] = hasteId;
@@ -528,9 +537,9 @@ describe('技能规则', () => {
     expect(ended.instances[targetId]!.cd).toBe(4);
   });
 
-  it('爆裂在死亡时对对位造成固定 2 点', () => {
+  it('爆裂n死亡离场时对对位造成n点技能伤害', () => {
     const definitions = table(
-      { id: 'R', atk: 1, hp: 9, cd: 0, traits: ['爆裂'] },
+      { id: 'R', atk: 1, hp: 9, cd: 0, traits: ['爆裂2'] },
       { id: 'K', atk: 9, hp: 2, cd: 0 },
     );
     const state = createBattle(
@@ -543,23 +552,27 @@ describe('技能规则', () => {
       definitions,
     );
 
+    state.currentSide = 'player';
     const killerId = takeCard(state, 'player', 'K');
     const bomberId = takeCard(state, 'enemy', 'R');
     state.zones.player.hand = [];
     state.zones.player.battle[0] = killerId;
     state.instances[killerId]!.zone = 'battle';
+    state.instances[killerId]!.slotIndex = 0;
     state.zones.enemy.hand = [];
     state.zones.enemy.battle[0] = bomberId;
     state.instances[bomberId]!.zone = 'battle';
+    state.instances[bomberId]!.slotIndex = 0;
     state.cardsPlayedThisTurn = 1;
 
     const killerHpBefore = state.groups[state.instances[killerId]!.stateGroupId]!.hp;
-    const ended = applyCommand(state, { kind: 'endTurn', side: 'player' }).finalState;
-
-    // 攻击力 9 → 爆裂卡 2 血被打死，然后爆裂反击 2 点打在攻击者身上
-    expect(ended.groups[state.instances[killerId]!.stateGroupId]!.hp).toBe(
-      killerHpBefore - 2,
-    );
+    const resolution = applyCommand(state, { kind: 'endTurn', side: 'player' });
+    const ended = resolution.finalState;
+    expect(resolution.events.filter(event => event.type === 'DamageApplied' && event.instanceId === killerId))
+      .toMatchObject([{ amount: 2, hpBefore: killerHpBefore, hpAfter: 0, source: 'skill' }]);
+    expect(ended.instances[killerId]!.zone).toBe('discard');
+    // Leaving combat resets base stats, so the stored discard HP is full rather than the lethal zero.
+    expect(ended.groups[ended.instances[killerId]!.stateGroupId]!.hp).toBe(killerHpBefore);
   });
 });
 
@@ -603,6 +616,7 @@ describe('分身共享与复制独立', () => {
       // 「分身」是上场触发，直接触发一次
       const { triggerOnDeployForTest } = loadTestHooks();
       triggerOnDeployForTest(state, sourceId);
+      if (expectedMode === 'independent') Object.assign(state, applyCommand(state, { kind: 'endTurn', side: 'player' }).finalState);
 
       const cloneSlot = state.zones.player.battle[1];
       expect(cloneSlot, `${id} 没有产生第二个实例`).toBeTruthy();
@@ -654,7 +668,7 @@ describe('分身共享与复制独立', () => {
 function loadTestHooks(): {
   triggerOnDeployForTest: (state: BattleState, instanceId: string) => void;
 } {
-  // 用一个 CD=0 的卡结束回合即可触发上场技能，但为了聚焦「分身本身」，
+  // 成熟卡手动部署触发上场技能，为了聚焦「分身本身」，
   // 这里直接复用引擎的公开路径：把卡放进准备区再走一次部署。
   return {
     triggerOnDeployForTest: (state, instanceId) => {
@@ -675,7 +689,10 @@ function loadTestHooks(): {
 
       // 借一次真实结算来触发部署（命令要合法：先补足出牌额度）
       state.cardsPlayedThisTurn = state.rules.cardsPerTurn;
-      const resolution = applyCommand(state, { kind: 'endTurn', side: state.currentSide });
+      state.currentSide = side;
+      state.phase = 'awaitingPlay';
+      const resolution = applyCommand(state, { kind: 'deployCard', side, instanceId, battleSlot: 0 });
+      expect(resolution.accepted).toBe(true);
       Object.assign(state, resolution.finalState);
     },
   };

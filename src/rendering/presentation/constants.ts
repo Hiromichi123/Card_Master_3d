@@ -19,7 +19,6 @@ export const EVENT_BEAT: Partial<Record<BattleEvent['type'], number>> = {
   CooldownCardGranted: 0.22,
   CooldownCardUsed: 0.18,
   FormationInserted: 0.12,
-  PriorityChosen: 0,
   DeploymentWindowOpened: 0,
   CardPlayed: 0.3,
   CardDeployed: 0.3,

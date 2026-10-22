@@ -4,7 +4,7 @@ import { RARITY_TO_LEVEL, STANDARD_RARITIES, type CardDefinition, type CardRarit
 import { SKILL_RULES } from '../skills/rules';
 import type { SkillSpec } from '../skills/types';
 import { describeTraitFunction } from '../skills/traitDescriptions';
-import { ABYSS_GRADE_INFO, abyssEffectGrade, abyssGrowthGrade, type AbyssGrade } from './abyssGrades';
+import { ABYSS_GRADE_INFO, ABYSS_GRADES, abyssEffectGrade, abyssGrowthGrade, type AbyssGrade } from './abyssGrades';
 import type { AbyssBoonPair, AbyssCard, AbyssDifficulty, AbyssEffect, AbyssEncounter, AbyssGrowthOffer, AbyssGrowthOption, AbyssRun, AbyssStarterChoice } from './abyssTypes';
 
 export const ABYSS_RULES_VERSION = 1 as const;
@@ -47,6 +47,12 @@ const immunity = trait('免疫', 'immunity', null);
 const effect = (id: string, name: string, description: string, polarity: 'positive' | 'negative', atk = 0, hp = 0, cd = 0, traits: readonly SkillSpec[] = []): AbyssEffect => ({
   id, name, description, polarity, strength: 1, modifier: { atk, hp, cd, traits },
 });
+export const ABYSS_FIRST_FLOOR_BETTER_BOON_WEIGHT = 4;
+export const ABYSS_NO_ENEMY_EFFECT = effect('none', '无全局特性', '第一大轮普通敌人不携带全局特性。', 'positive');
+export function abyssEnemyEffects(battle: Pick<AbyssEncounter, 'floor' | 'difficulty' | 'enemyEffect'>): readonly AbyssEffect[] {
+  // The gate also applies to ordinary encounters already present in an older save.
+  return battle.floor === 1 && battle.difficulty === 'normal' ? [] : [battle.enemyEffect];
+}
 export const ABYSS_EFFECTS: readonly AbyssEffect[] = [
   effect('might', '战意', '本战己方全部单位 ATK +1。', 'positive', 1),
   effect('vitality', '坚韧', '本战己方全部单位 HP +1。', 'positive', 0, 1),
@@ -76,13 +82,14 @@ export function abyssEffectDiscoveryIds(value: AbyssEffect): string[] {
   return [...new Set([value.id, ...same.map(item => item.id)])];
 }
 
-function weightedChoices<T>(items: readonly T[], count: number, rng: Rng, gradeOf: (item: T) => AbyssGrade, keyOf: (item: T) => string): T[] {
+function weightedChoices<T>(items: readonly T[], count: number, rng: Rng, gradeOf: (item: T) => AbyssGrade, keyOf: (item: T) => string, multiplier: (item: T) => number = () => 1): T[] {
   let pool = [...items];
   const choices: T[] = [];
+  const weight = (item: T) => ABYSS_GRADE_INFO[gradeOf(item)].weight * multiplier(item);
   while (pool.length && choices.length < count) {
-    let roll = rng.next() * pool.reduce((sum, item) => sum + ABYSS_GRADE_INFO[gradeOf(item)].weight, 0);
+    let roll = rng.next() * pool.reduce((sum, item) => sum + weight(item), 0);
     let chosen: T = pool[pool.length - 1]!;
-    for (const item of pool) { roll -= ABYSS_GRADE_INFO[gradeOf(item)].weight; if (roll < 0) { chosen = item; break; } }
+    for (const item of pool) { roll -= weight(item); if (roll < 0) { chosen = item; break; } }
     choices.push(chosen);
     const key = keyOf(chosen);
     pool = pool.filter(item => keyOf(item) !== key);
@@ -177,7 +184,9 @@ function boonPairs(run: AbyssRun): readonly AbyssBoonPair[] {
     if (!positive.modifier.traits.length && positive.modifier.atk + negative.modifier.atk === 0 && positive.modifier.hp + negative.modifier.hp === 0 && positive.modifier.cd + negative.modifier.cd === 0) continue;
     candidates.push({ id: `${positive.id}:${negative.id}`, positive, negative });
   }
-  return weightedChoices(candidates, 3, rng, pair => abyssEffectGrade(pair.positive), pair => effectKey(pair.positive));
+  return weightedChoices(candidates, 3, rng, pair => abyssEffectGrade(pair.positive), pair => effectKey(pair.positive),
+    pair => run.floor === 1 && ABYSS_GRADES.indexOf(abyssEffectGrade(pair.positive)) > ABYSS_GRADES.indexOf(abyssEffectGrade(pair.negative))
+      ? ABYSS_FIRST_FLOOR_BETTER_BOON_WEIGHT : 1);
 }
 
 export function makeAbyssEncounter(run: AbyssRun, definitions: readonly CardDefinition[]): AbyssEncounter {
@@ -196,7 +205,7 @@ export function makeAbyssEncounter(run: AbyssRun, definitions: readonly CardDefi
   const enemyPool = ABYSS_EFFECTS.filter(item => ['might', 'vitality', ...(difficulty === 'normal' ? [] : ['immunity'])].includes(item.id));
   return {
     battleId: `${run.id}/battle/${run.floor}/${run.encounter}`, seed, floor: run.floor, encounter: run.encounter, difficulty,
-    enemyCards, enemyEffect: scaleAbyssEffect(rng.pick(enemyPool), strength), boonChoices: boonPairs(run), selectedBoon: null,
+    enemyCards, enemyEffect: run.floor === 1 && difficulty === 'normal' ? ABYSS_NO_ENEMY_EFFECT : scaleAbyssEffect(rng.pick(enemyPool), strength), boonChoices: boonPairs(run), selectedBoon: null,
   };
 }
 

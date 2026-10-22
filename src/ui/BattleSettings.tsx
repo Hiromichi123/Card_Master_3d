@@ -1,4 +1,3 @@
-import { AiSettingsControls } from './AiSettingsControls';
 import { useState } from 'react';
 
 import { useBattleVisuals } from '../rendering/battle/battleVisuals';
@@ -7,20 +6,7 @@ import { QUALITY_LABELS, type QualityTier } from '../rendering/quality';
 import { TABLE_THEMES } from '../rendering/table/themes';
 import { useSettingsStore, type PresentationSpeed } from '../state/settingsStore';
 
-/**
- * 战斗设置：台面、视角、画质、演出、震动、静止。
- *
- * **放在战斗界面里，不放全局抬头**（2026-10-07 用户要求）。抬头是「去哪一屏」的导航，
- * 而这一组开关全都只对 3D 战桌的观感有意义；把它们和导航挤在一行，
- * 既不常改、又在每一屏占着位置。抬头里只留下「性能读数」这一个开发用开关。
- *
- * 两处调用、两种默认状态，理由都是「那一刻你想干什么」：
- * - **对局菜单**里默认展开（`defaultOpen`）——开局前正是配置台面与视角的时候；
- * - **战斗中**默认收起成一行「战斗设置」——战桌是主角，不该被一排控件挡住。
- *
- * 无论放在哪，读写的都是同一个 store：切场景不会「调了又变回去」。
- * `V-FX-5` / `V-WORLD-5`：画面设置只影响表现；人机设置控制 AI 选出的合法命令。
- */
+/** Player-facing visual and turn-assistance controls; AI tools live in the development admin panel. */
 
 const QUALITY_ORDER: QualityTier[] = ['low', 'medium', 'high'];
 
@@ -40,9 +26,10 @@ export interface BattleSettingsProps {
    * 战斗 HUD 里给 1（右下角是一条竖列，横向铺开会压到日志）。
    */
   readonly columns?: 1 | 2;
+  readonly embedded?: boolean;
 }
 
-export function BattleSettings({ defaultOpen = false, columns = 1 }: BattleSettingsProps) {
+export function BattleSettings({ defaultOpen = false, columns = 1, embedded = false }: BattleSettingsProps) {
   const [open, setOpen] = useState(defaultOpen);
 
   const skipTurnEnd = useSettingsStore(state => state.skipTurnEnd);
@@ -64,7 +51,7 @@ export function BattleSettings({ defaultOpen = false, columns = 1 }: BattleSetti
 
   return (
     <section className={open ? 'battle-settings battle-settings--open' : 'battle-settings'}>
-      <button
+      {!embedded && <button
         type="button"
         className="battle-settings__head"
         onClick={() => setOpen((current) => !current)}
@@ -74,9 +61,9 @@ export function BattleSettings({ defaultOpen = false, columns = 1 }: BattleSetti
         <span className="battle-settings__chevron" aria-hidden>
           {open ? '▾' : '▸'}
         </span>
-      </button>
+      </button>}
 
-      {open && (
+      {(embedded || open) && (
         <div className={`battle-settings__body battle-settings__body--cols-${columns}`}>
           <label className="battle-settings__group" title="战斗台面：材质、配色、背景与雾一起换">
             <span className="battle-settings__label">台面</span>
@@ -153,7 +140,6 @@ export function BattleSettings({ defaultOpen = false, columns = 1 }: BattleSetti
             <input type="checkbox" checked={skipTurnEnd} onChange={event => setSkipTurnEnd(event.target.checked)} />
             跳过回合结束
           </label>
-          <AiSettingsControls />
           <label className="battle-settings__group battle-settings__group--check" title="镜头震动（不影响战斗结果）">
             <input
               type="checkbox"

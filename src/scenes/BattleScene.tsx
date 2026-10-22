@@ -1,7 +1,7 @@
+import { battleAiSettings, battleAiModel } from '../state/adminAiStore';
 import { cardDatabase } from '../data';
 import { AiWorkerClient } from '../services/ai/AiWorkerClient';
 import { useAiModelStore } from '../state/aiModelStore';
-import { normalizeAiSettings } from '../domain/battle/ai/types';
 import type { ThreeEvent } from '@react-three/fiber';
 import { BattleActorExit } from '../rendering/battle/BattleActorExit';
 import { BattleCanvas } from '../rendering/battle/BattleCanvas';
@@ -9,6 +9,7 @@ import { BattleVisualContext, useBattleVisuals } from '../rendering/battle/battl
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 
 import type { CardDefinition, SideId } from '../domain/cards/types';
+import { BoardVitals } from '../rendering/battle/BoardVitals';
 import { BattleBoard } from '../rendering/battle/BattleBoard';
 import { DealAnimation } from '../rendering/battle/DealAnimation';
 import { DepartingCard } from '../rendering/battle/DepartingCard';
@@ -66,7 +67,7 @@ export interface BattleSceneProps {
   /** 这一关的奖励（战役才有）；结果面板上多显示一段结算明细。 */
   readonly settlement?: SettlementView | null;
   /** 首次进入结果态时回调一次——**结算的提交时机就在这一刻**。 */
-  readonly onFinished?: ((outcome: BattleOutcome) => void) | undefined;
+  readonly onFinished?: ((outcome: BattleOutcome) => void | Promise<void>) | undefined;
   /** 规则终局同步报告，不等待结果演出；独立模式在这里提交存档。 */
   readonly onOutcome?: ((outcome: BattleOutcome) => void) | undefined;
   readonly onReport?: ((report: ActivityBattleReport) => void) | undefined;
@@ -110,7 +111,7 @@ export function BattleScene({
   exitLabel,
   localMultiplayer = false,
   autoEnemy = true,
-  autoStart = false,
+  autoStart = true,
   onLeave,
 }: BattleSceneProps = {}) {
   const visuals = useBattleVisuals(tableThemeId);
@@ -134,8 +135,8 @@ export function BattleScene({
         sound: (cue) => audioEngine.play(cue),
       }, { localMultiplayer, autoEnemy, onReport: (report) => reportCallback.current?.(report), onOutcome: (outcome) => outcomeCallback.current?.(outcome),
         aiDriver:new AiWorkerClient(), aiCatalogue:cardDatabase.definitions,
-        readAiSettings:()=>{const s=useSettingsStore.getState();return normalizeAiSettings({difficulty:s.aiDifficulty,style:s.aiStyle,policy:s.aiPolicy});},
-        readAiModel:()=>useAiModelStore.getState().model,
+        readAiSettings:battleAiSettings,
+        readAiModel:battleAiModel,
         readSkipTurnEnd:()=>useSettingsStore.getState().skipTurnEnd,
       }),
   );
@@ -173,7 +174,7 @@ export function BattleScene({
     }
     if (snapshot.mode === 'result' && snapshot.outcome) {
       reportedRef.current = true;
-      onFinished(snapshot.outcome);
+      void Promise.resolve(onFinished(snapshot.outcome)).catch(() => { reportedRef.current = false; });
     }
   }, [snapshot.mode, snapshot.outcome, onFinished]);
 
@@ -209,6 +210,29 @@ export function BattleScene({
     else session.select(!cancel && !active.moved ? active.instanceId : null);
   }, [session]);
   const handleDragMove = useCallback((active: DeploymentDrag) => setDrag(active), []);
+  const setPaused = useCallback((paused: boolean) => session.setPaused(paused), [session]);
+  const settleInterrupted = async () => {
+    session.setPaused(false);
+    if (!session.authoritative.outcome) session.concede('player');
+    const outcome = session.authoritative.outcome;
+    session.setPaused(true); // Keep the menu mounted until durable settlement succeeds.
+    if (outcome && onFinished && !reportedRef.current) {
+      reportedRef.current = true;
+      try { await onFinished(outcome); } catch (error) { reportedRef.current = false; throw error; }
+    }
+    session.setPaused(false);
+    session.skipPerformance();
+  };
+  const quitBattle = async () => {
+    await settleInterrupted();
+    if (onExit) onExit(); else if (onLeave) onLeave(); else session.toMenu();
+  };
+  const retryBattle = async () => {
+    if (!allowRematch) { reportedRef.current = false; session.start(); return; }
+    await settleInterrupted();
+    if (onRematchRequested) onRematchRequested();
+    else { reportedRef.current = false; session.start(); }
+  };
   const canPlay = snapshot.inputOpen;
 
   const view = useMemo(
@@ -312,6 +336,11 @@ export function BattleScene({
             onCardPointerDown={handleDragStart}
           />
 
+          <BoardVitals themeId={visuals.theme.id}
+            playerHp={snapshot.display.playerHp.player} enemyHp={snapshot.display.playerHp.enemy}
+            playerMaxHp={snapshot.baseHpBySide?.player ?? snapshot.baseHp}
+            enemyMaxHp={snapshot.baseHpBySide?.enemy ?? snapshot.baseHp} />
+
           {snapshot.display.proxies.map((proxy) => (
             <DepartingCard key={proxy.instanceId} proxy={proxy} definitions={session.authoritative.definitions} />
           ))}
@@ -321,8 +350,12 @@ export function BattleScene({
 
         {snapshot.mode === 'battle' && (
           <BattleHud
+            hideSidePanels
             snapshot={snapshot}
             onEndTurn={() => session.endTurn()}
+            onPauseChange={setPaused}
+            onRetry={retryBattle}
+            onQuit={quitBattle}
             onConcede={(side) => session.concede(side)}
             onSkipPerformance={() => session.skipPerformance()}
             onAutoEnemyChange={(on) => session.setAutoEnemy(on)}

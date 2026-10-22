@@ -8,7 +8,7 @@ type IconId = 'mail' | 'friends' | 'notice' | ExternalId;
 const links: Readonly<Record<ExternalId, string | null>> = linkConfig;
 const INTERNAL = [
   { id: 'mail', label: '邮箱', hint: '邮箱暂不可用' },
-  { id: 'friends', label: '好友', hint: '好友功能暂未开放' },
+  { id: 'friends', label: '好友', hint: '搜索玩家 ID 并添加好友' },
   { id: 'notice', label: '公告', hint: '暂无已发布公告' },
 ] as const;
 const EXTERNAL: readonly { id: ExternalId; label: string }[] = [
@@ -32,11 +32,11 @@ function Icon({ id }: { readonly id: IconId }) {
 }
 
 /** Addresses are configured independently of layout; empty targets never send players to guessed pages. */
-export function HubSideRail({ onMail, mailCount = 0 }: { readonly onMail?: (() => void) | undefined; readonly mailCount?: number }) {
+export function HubSideRail({ onMail, onFriends, mailCount = 0 }: { readonly onMail?: (() => void) | undefined; readonly onFriends?: (() => void) | undefined; readonly mailCount?: number }) {
   return <nav className="hub-side" aria-label="社交与社区入口">
     <div className="hub-side__group">
       {INTERNAL.map((entry) => <button key={entry.id} type="button" className="hub-side__link ui-control"
-        title={entry.label} aria-label={entry.label} onClick={() => entry.id === 'mail' && onMail ? onMail() : pushToast(entry.hint, 'info')}>
+        title={entry.label} aria-label={entry.label} onClick={() => entry.id === 'mail' && onMail ? onMail() : entry.id === 'friends' && onFriends ? onFriends() : pushToast(entry.hint, 'info')}>
         <Icon id={entry.id} />{entry.id === 'mail' && mailCount > 0 && <span className="hub-side__badge">{mailCount}</span>}<span className="hub-side__caption">{entry.label}</span>
       </button>)}
     </div>

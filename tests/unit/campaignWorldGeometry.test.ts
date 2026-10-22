@@ -122,7 +122,7 @@ describe('碎片大陆、南端群岛与古海要塞布局',()=>{
     expect(sampleIslandExact(...DEMON_SITES['2-1'].flag).island?.id).toBe('toxic-main');
     expect(stagePoint('2-1')[1]).toBeGreaterThan(SEA_LEVEL+SEA_WAVE_HEIGHT);
     for(const [id,point] of Object.entries(STAGE_LANDMARKS)){
-      const region=id.startsWith('1-')?'human':id.startsWith('2-')?'demon':'sacred';
+      const region=id.startsWith('1-')||id.startsWith('5-')?'human':id.startsWith('2-')?'demon':id.startsWith('6-')?'central':'sacred';
       expect(sampleIslandExact(...point).island?.region,id).toBe(region);
       expect(coastDistance(...point),id).toBeGreaterThan(0);
     }
@@ -208,8 +208,9 @@ describe('碎片大陆、南端群岛与古海要塞布局',()=>{
     expect(TOWN_ANCHOR[1]).toBeLessThan(FORTRESS_ANCHOR[1]);
   });
 
-  it('24 栋房屋确定性生成，屋顶不越墙，街巷与建筑不重叠',()=>{
-    expect(TOWN_HOUSES).toHaveLength(24);
+  it('房屋数量受布局容量与碰撞限制，确定性生成，屋顶不越墙，街巷与建筑不重叠',()=>{
+    expect(TOWN_HOUSES.length).toBeGreaterThanOrEqual(20);
+    expect(TOWN_HOUSES.length).toBeLessThanOrEqual(24);
     expect(buildTownLayout()).toEqual(TOWN_HOUSES);
     expect(new Set(TOWN_HOUSES.map(h=>h.angle)).size).toBeGreaterThan(20);
     for(const [i,h] of TOWN_HOUSES.entries()){
@@ -223,8 +224,8 @@ describe('碎片大陆、南端群岛与古海要塞布局',()=>{
 
   it('房屋与门窗屋顶共享朝向，且按最终模型坐标贴地',()=>{
     const props=buildWorldProps(2);
-    expect(props.roofs).toHaveLength(24);
-    expect(props.doors).toHaveLength(24);
+    expect(props.roofs).toHaveLength(TOWN_HOUSES.length);
+    expect(props.doors).toHaveLength(TOWN_HOUSES.length);
     for(const [i,h] of TOWN_HOUSES.entries()){
       const roof=props.roofs[i]!,door=props.doors[i]!;
       const x=TOWN_ANCHOR[0]*WORLD_EXPANSION+h.x,z=TOWN_ANCHOR[1]*WORLD_EXPANSION+h.z;

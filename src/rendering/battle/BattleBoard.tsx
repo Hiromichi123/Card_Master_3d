@@ -149,7 +149,7 @@ export function BattleBoard({
       />}
       {showSlotMarkers && <SlotMarkers placeable={placeable} targeted={targeted} onSlotClick={onSlotClick} />}
 
-      {piles?.map((pile) => <Pile key={`${pile.side}-${pile.kind}`} pile={pile} mecha={theme.geometry === 'mecha'} />)}
+      {piles?.map((pile) => <Pile key={`${pile.side}-${pile.kind}`} pile={pile} mecha />)}
 
       {placements?.map((placement) => (
         <MovingCard

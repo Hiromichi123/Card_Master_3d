@@ -34,7 +34,7 @@ import { createRng, seedFrom } from '../domain/battle/rng';
 import type { Rng } from '../domain/battle/rng';
 import type { BattleOutcome } from '../domain/battle/types';
 import { reject, type Planned } from '../domain/progression/plan';
-import { mazeProgressToken, mazeResetRemaining, settleMazeGuarantees } from '../domain/progression/mazeProgress';
+import { mazeFailureProgress, mazeFailureRemaining, mazeProgressToken, mazeResetRemaining, settleMazeGuarantees } from '../domain/progression/mazeProgress';
 import { weekKeyOf } from '../domain/progression/clock';
 
 /**
@@ -104,28 +104,30 @@ function mazeUpdatePlan(
 }
 
 /** 首次进入和空池恢复后的待发奖励，也经过同一次持久化。 */
-export function planMazeEnter(args: { profile: ProfileState; operationId: string }): Planned<MazeProgressView> {
+export function planMazeEnter(args: { profile: ProfileState; operationId: string; dayKey?: string }): Planned<MazeProgressView> {
   const { profile, operationId } = args;
   let run = profile.mazeRun ?? newMazeRun(generateMaze(mazeRngFor(MAZE_FLOOR_1, 1)), MAZE_FLOOR_1, 1);
   const map = generateMaze(mazeRngFor(run.floorKey, run.version));
   if (map.nodes[run.playerNodeId]?.type === 'supply') run = withShopState(run, run.playerNodeId);
-  return mazeUpdatePlan(profile, run, profile.mazeProgress, operationId);
+  return mazeUpdatePlan(profile, run, args.dayKey ? mazeFailureProgress(profile.mazeProgress, args.dayKey) : profile.mazeProgress, operationId);
 }
 
 export function planMazeMove(args: {
-  profile: ProfileState; nodeId: number; expectedToken: string; operationId: string;
+  profile: ProfileState; nodeId: number; expectedToken: string; operationId: string; dayKey?: string;
 }): Planned<MazeProgressView> {
   const { profile, nodeId, expectedToken, operationId } = args;
   const run = profile.mazeRun;
   if (!run || mazeProgressToken(profile) !== expectedToken) return reject('迷宫状态已变化，请重新选择格点');
   const map = generateMaze(mazeRngFor(run.floorKey, run.version));
+  const progress = args.dayKey ? mazeFailureProgress(profile.mazeProgress, args.dayKey) : profile.mazeProgress;
+  if ((progress.failureChances ?? 1) <= 0) return reject('失败机会已耗尽，每天恢复1点，最多存储3点');
   if (!canMoveTo(map, run.playerNodeId, nodeId)) return reject('只能探索相邻格点');
   const firstVisit = nodeId !== map.entryId && !run.exploredNodeIds.includes(nodeId);
   let next = applyMove(map, run, nodeId);
   if (map.nodes[nodeId]?.type === 'supply') next = withShopState(next, nodeId);
   const explorationCount = profile.mazeProgress.explorationCount + (firstVisit ? 1 : 0);
   if (!Number.isSafeInteger(explorationCount)) return reject('探索累计超出可保存范围');
-  return mazeUpdatePlan(profile, next, { ...profile.mazeProgress, explorationCount }, operationId);
+  return mazeUpdatePlan(profile, next, { ...progress, explorationCount }, operationId);
 }
 
 export function planMazeReset(args: {
@@ -138,7 +140,7 @@ export function planMazeReset(args: {
   const version = run.version + 1;
   if (!Number.isSafeInteger(version)) return reject('迷宫轮次超出可保存范围');
   const next = newMazeRun(generateMaze(mazeRngFor(run.floorKey, version)), run.floorKey, version);
-  return mazeUpdatePlan(profile, next, { ...profile.mazeProgress, lastResetWeek: weekKeyOf(dayKey)! }, operationId);
+  return mazeUpdatePlan(profile, next, { ...mazeFailureProgress(profile.mazeProgress, dayKey), lastResetWeek: weekKeyOf(dayKey)! }, operationId);
 }
 
 /** 节点名（详情栏、战斗标题与结算分类都用它）。 */
@@ -182,6 +184,7 @@ export function isMazeLaunch(launch: StageLaunch): launch is MazeLaunch {
 }
 
 export interface MazeLaunchArgs {
+  readonly dayKey?: string;
   readonly profile: ProfileState;
   readonly run: MazeRunState;
   /** 走到这一步**之后**的探索度（强度按它算，旧版也是到场才掷强度）。 */
@@ -207,6 +210,7 @@ export interface MazeLaunchArgs {
  * 所以随机流改用每次挑战都不同的那条键（Boss 用失败 id，它本来就是「这一次」的 id）。
  */
 export function planMazeLaunch(args: MazeLaunchArgs): MazeLaunch | { readonly rejected: string } {
+  if ((args.dayKey ? mazeFailureRemaining(args.profile.mazeProgress, args.dayKey) : args.profile.mazeProgress.failureChances ?? 1) <= 0) return { rejected: '失败机会已耗尽，每天恢复1点，最多存储3点' };
   if (args.playerDeck.length === 0) {
     return { rejected: '还没有可用的出战卡组' };
   }
@@ -308,6 +312,8 @@ export function planMazeSettlement(
   launch: MazeLaunch,
   settlement: Settlement,
   operationId: string,
+  profile?: ProfileState,
+  dayKey?: string,
 ): Planned<SettlementView> {
   const inventoryDelta: Record<string, number> = {};
   if (settlement.cardId) {
@@ -326,6 +332,10 @@ export function planMazeSettlement(
     inventoryDelta,
     xpDelta: settlement.xp,
     settleBattleId,
+    ...(!settlement.victory && profile?.mazeRun && dayKey ? { mazeUpdate: {
+      expectedToken: mazeProgressToken(profile), run: profile.mazeRun,
+      progress: { ...mazeFailureProgress(profile.mazeProgress, dayKey), failureChances: Math.max(0, mazeFailureRemaining(profile.mazeProgress, dayKey) - 1) },
+    } } : {}),
   };
 
   return {

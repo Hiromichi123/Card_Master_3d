@@ -1,6 +1,8 @@
 import {
   BufferAttribute, BufferGeometry, CatmullRomCurve3, ExtrudeGeometry, Path, Shape, TubeGeometry, Vector3,
 } from 'three';
+import { ABYSS_VITALS } from './abyssVitalsLayout';
+import { abyssVitalsShape } from './abyssVitalsShape';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
 export type Vec3 = readonly [number, number, number];
@@ -42,7 +44,12 @@ export function makeAbyssDeck(): BufferGeometry {
     for (let i=1;i<=76;i++) {
       const x=7.75-i/76*15.5; points.push([x,fracture(x)*side]);
     }
-    parts.push(extrude(path(points),.7,0,.035));
+    const deck = path(points);
+    {
+      const v = ABYSS_VITALS;
+      deck.holes.push(abyssVitalsShape(v.width, v.length, v.x, -side * v.z));
+    }
+    parts.push(extrude(deck,.7,0,.006));
   }
   return combine(parts);
 }

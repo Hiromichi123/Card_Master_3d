@@ -123,7 +123,8 @@ describe('背景音乐', () => {
       const track = manifest.tracks[index]!;
       expect(url).toBe(`/assets/audio/bgm/${track.file}`);
       expect(readFileSync(`public${url}`).byteLength).toBe(track.bytes);
-      expect(track.license).toContain('未核实');
+      expect(track.license).toContain('用户确认已获发布授权');
+      expect(track.license).toContain('非 CC0');
     }
   });
 });

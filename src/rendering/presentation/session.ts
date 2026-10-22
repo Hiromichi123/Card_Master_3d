@@ -75,7 +75,6 @@ export interface BattleSnapshot {
   readonly currentSide: SideId;
   readonly inputSide: SideId;
   readonly startingSide: SideId;
-  readonly priority: 'first' | 'last' | null;
   readonly selectedKind: 'hand' | 'cooldown' | 'ready' | null;
   readonly deployableInstanceIds: readonly string[];
   readonly playableBattleSlots: readonly number[];
@@ -166,6 +165,8 @@ export class BattleSession {
   private readonly readSkipTurnEnd: (() => boolean) | undefined;
   private readonly readAiModel: (() => AiModel | null) | undefined;
   private aiEpoch = 0;
+  private paused = false;
+  setPaused(paused: boolean): void { this.paused = paused; }
   private aiBusy = false;
   private aiReady: AiDecision | null = null;
   private lastAiDecision: AiDecision | null = null;
@@ -263,9 +264,8 @@ export class BattleSession {
       currentSide: this.state.currentSide,
       inputSide: inputSideOf(this.state),
       startingSide: this.state.startingSide,
-      priority: this.state.priority,
       selectedKind: this.selectedKind(),
-      deployableInstanceIds: this.canAct() && this.state.phase !== 'awaitingPriority' ? readyCardIds(this.state, inputSideOf(this.state)) : [],
+      deployableInstanceIds: this.canAct() ? readyCardIds(this.state, inputSideOf(this.state)) : [],
       playableBattleSlots: this.canAct() && this.selectedKind() === 'ready' ? insertionSlots(this.state, inputSideOf(this.state)) : [],
       cardsPlayedThisTurn: this.state.cardsPlayedThisTurn,
       cardLimit: rules.cardsPerTurn,
@@ -325,6 +325,7 @@ export class BattleSession {
         this.display.spawns[instanceId] = pile;
       }
     }
+    this.paused = false;
     this.runId += 1;
     this.outcomeReported = false;
     this.enemyBaseDamage = 0; this.playerBaseDamage = 0;
@@ -407,7 +408,7 @@ export class BattleSession {
   }
 
   select(instanceId: string | null): void {
-    if (!this.canAct() || this.state.phase === 'awaitingPriority') return;
+    if (!this.canAct()) return;
     const side = inputSideOf(this.state);
     const card = instanceId ? this.state.instances[instanceId] : undefined;
     if (this.selectedKind() === 'cooldown' && card?.owner === side && card.zone === 'prep' && card.cd > 0) {
@@ -440,7 +441,7 @@ export class BattleSession {
   }
 
   canDragDeploy(instanceId: string): boolean {
-    return this.canAct() && this.state.phase !== 'awaitingPriority' &&
+    return this.canAct() &&
       readyCardIds(this.state, inputSideOf(this.state)).includes(instanceId) &&
       insertionSlots(this.state, inputSideOf(this.state)).length > 0;
   }
@@ -455,14 +456,8 @@ export class BattleSession {
     if (this.selectedKind() === 'ready' && this.selectedInstanceId) this.deployAt(this.selectedInstanceId, battleSlot);
   }
 
-  choosePriority(order: 'first' | 'last'): void {
-    if (!this.canAct() || this.state.phase !== 'awaitingPriority') return;
-    this.selectedInstanceId = null;
-    this.submit({ kind: 'choosePriority', side: inputSideOf(this.state), order });
-  }
-
   endTurn(): void {
-    if (!this.canAct() || this.state.phase === 'awaitingPriority') return;
+    if (!this.canAct()) return;
     this.selectedInstanceId = null;
     this.submit({ kind: 'endTurn', side: inputSideOf(this.state) });
   }
@@ -495,6 +490,7 @@ export class BattleSession {
   }
 
   private canAct(): boolean {
+    if (this.paused) return false;
     return this.mode === 'battle' && this.inputOpen && this.isHumanTurn();
   }
 
@@ -574,6 +570,7 @@ export class BattleSession {
 
   /** 由 Canvas 内的 `useFrame` 每帧调用。 */
   tick(delta: number): void {
+    if (this.paused) return;
     if (this.needsAdvance) {
       this.needsAdvance = false;
       this.advance();

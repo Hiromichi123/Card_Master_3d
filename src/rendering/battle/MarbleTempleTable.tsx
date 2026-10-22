@@ -64,7 +64,7 @@ function OpenRoof({geometry,material,parts}:{readonly geometry:BufferGeometry;re
 export function MarbleTempleTable({theme,quality,reduceMotion}:{readonly theme:TableTheme;readonly quality:QualityLevel;readonly reduceMotion:boolean}){
   const clock=useRef(0);
   const materials=useMemo(()=>({
-    white:buildMaterial(theme.mat.light,{quality}),
+    white:(()=>{const material=buildMaterial(theme.mat.light,{quality});material.color.multiplyScalar(.86);material.roughness=.52;material.clearcoat=.08;material.envMapIntensity=.28;return material;})(),
     architecture:buildMaterial({kind:'marble',base:0xdad7cc,vein:0xbabcb8,roughness:.5,clearcoat:.12,envMapIntensity:.45},{quality,textureScale:2}),
     edges:buildMaterial({kind:'marble',base:0xcac8bc,vein:0xa3a7a2,roughness:.46,clearcoat:.18,envMapIntensity:.45},{quality}),
     floor:buildMaterial({kind:'marble',base:0xd0d0c6,vein:0xa3aaa6,roughness:.24,clearcoat:.4,clearcoatRoughness:.2,envMapIntensity:.5},{quality,textureScale:5}),
@@ -151,7 +151,7 @@ export function MarbleTempleTable({theme,quality,reduceMotion}:{readonly theme:T
     <mesh rotation={[-Math.PI/2,0,0]} position={[0,FLOOR+.266,0]} receiveShadow raycast={noHit}>
       <planeGeometry args={[62.6,65.8]}/>
       {quality==='low'?<primitive object={materials.floor} attach="material" dispose={null}/>:<MeshReflectorMaterial
-        resolution={quality==='high'?512:256} blur={[140,60]} mixBlur={.8} mixStrength={.22} mirror={.24} mixContrast={.95}
+        resolution={quality==='high'?512:256} blur={[140,60]} mixBlur={.8} mixStrength={.12} mirror={.14} mixContrast={.95}
         roughness={.24} metalness={.02} map={materials.floor.map} roughnessMap={materials.floor.roughnessMap}
         normalMap={materials.floor.normalMap} normalScale={materials.floor.normalScale} color={materials.floor.color} envMapIntensity={.5}/>}</mesh>
     {[-32.9,32.54].map(z=><mesh key={z} geometry={geometry.gable} material={materials.architecture} dispose={null} position={[0,0,z]} receiveShadow raycast={noHit}/>)}

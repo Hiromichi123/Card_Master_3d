@@ -1,3 +1,6 @@
+import { useEffect, useState } from 'react';
+import { adminAiEnabled } from '../state/adminAiStore';
+import './battlePauseMenu.css';
 import { AiDebugPanel } from './AiDebugPanel';
 import type { SideId } from '../domain/cards/types';
 import type { BattleSnapshot } from '../rendering/presentation/session';
@@ -5,6 +8,10 @@ import { BattleSettings } from './BattleSettings';
 
 export interface BattleHudProps {
   readonly snapshot: BattleSnapshot;
+  readonly hideSidePanels?: boolean;
+  readonly onRetry?: (() => void | Promise<void>) | undefined;
+  readonly onPauseChange?: ((paused: boolean) => void) | undefined;
+  readonly onQuit?: (() => void | Promise<void>) | undefined;
   readonly onEndTurn: () => void;
   readonly onConcede?: ((side: SideId) => void) | undefined;
   readonly onSkipPerformance: () => void;
@@ -17,14 +24,36 @@ export interface BattleHudProps {
 const sideName = (snapshot: BattleSnapshot, side: SideId): string => snapshot.localMultiplayer
   ? (side === 'player' ? '下方' : '上方') : (side === 'player' ? '我方' : '敌方');
 
-export function BattleHud({ snapshot, onEndTurn, onConcede, onSkipPerformance, onAutoEnemyChange, onExit, onLeave,
-  leaveLabel = '返回对战菜单', exitDisabled = false }: BattleHudProps) {
+export function BattleHud({ snapshot, onEndTurn, onConcede, onAutoEnemyChange,
+   exitDisabled = false, hideSidePanels = false, onRetry, onPauseChange, onQuit }: BattleHudProps) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [working, setWorking] = useState(false), [error, setError] = useState('');
+  useEffect(() => { onPauseChange?.(menuOpen); return () => onPauseChange?.(false); }, [menuOpen, onPauseChange]);
+  useEffect(() => {
+    const key = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape' || event.defaultPrevented || working) return;
+      if (!menuOpen && document.querySelector('dialog[open], [role="dialog"]')) return;
+      event.preventDefault(); event.stopImmediatePropagation(); setMenuOpen(open => !open);
+    };
+    document.addEventListener('keydown', key, true);
+    return () => document.removeEventListener('keydown', key, true);
+  }, [menuOpen, working]);
+  const perform = async (action: (() => void | Promise<void>) | undefined) => {
+    if (!action || working || exitDisabled) return;
+    setWorking(true); setError(''); onPauseChange?.(false);
+    try { await action(); setMenuOpen(false); }
+    catch (cause) { setError(cause instanceof Error ? cause.message : '操作失败，请重试'); onPauseChange?.(true); }
+    finally { setWorking(false); }
+  };
   const response = snapshot.phase === 'awaitingResponse';
   const canAct = snapshot.inputOpen;
   return <div className="hud">
+    {/* Keep both flex children: the original HUD uses space-between to anchor actions at the bottom. */}
     <div className="hud__top">
-      <SidePanel side="enemy" snapshot={snapshot} />
-      <SidePanel side="player" snapshot={snapshot} />
+      {!hideSidePanels && <>
+        <SidePanel side="enemy" snapshot={snapshot} />
+        <SidePanel side="player" snapshot={snapshot} />
+      </>}
     </div>
     <div className="hud__turn">
       <span className="hud__turn-number">第 {snapshot.turnNumber} 轮</span>
@@ -41,22 +70,26 @@ export function BattleHud({ snapshot, onEndTurn, onConcede, onSkipPerformance, o
       */}
       <ol className="hud__log">{snapshot.log.map((line, index) => <li key={`${index}-${line}`}>{line}</li>)}</ol>
       <div className="hud__actions">
-        <BattleSettings />
-        <AiDebugPanel snapshot={snapshot} />
-        {onConcede && <button type="button" className="btn" disabled={exitDisabled || !!snapshot.outcome}
-          title="立即认输并按失败结算" onClick={() => onConcede('player')}>
-          {snapshot.localMultiplayer ? '下方认输' : '认输'}
-        </button>}
-        {onConcede && snapshot.localMultiplayer && !snapshot.autoEnemy && <button type="button" className="btn"
-          disabled={exitDisabled || !!snapshot.outcome} title="上方玩家立即认输" onClick={() => onConcede('enemy')}>上方认输</button>}
-        {snapshot.localMultiplayer && <button type="button" className="btn" aria-pressed={snapshot.autoEnemy}
-          onClick={() => onAutoEnemyChange?.(!snapshot.autoEnemy)}>上方 AI：{snapshot.autoEnemy ? '开' : '关'}</button>}
-        {onExit && <button type="button" className="btn" disabled={exitDisabled} onClick={onExit}>重新选卡</button>}
-        {onLeave && <button type="button" className="btn" disabled={exitDisabled} onClick={onLeave}>{leaveLabel}</button>}
-        <p className="hud__hint">{hintText(snapshot)}</p>
-        <button type="button" className="btn" onClick={onSkipPerformance} disabled={canAct}>跳过演出</button>
+        <button type="button" className="btn" aria-haspopup="dialog" onClick={() => setMenuOpen(true)}>Esc 呼出菜单</button>
       </div>
     </div>
+    {menuOpen && <div className="battle-pause-menu" role="dialog" aria-modal="true" aria-label="对局菜单">
+      <section className="battle-pause-menu__panel">
+        <h2>对局菜单</h2>
+        <BattleSettings embedded columns={2} />
+        {adminAiEnabled() && <AiDebugPanel snapshot={snapshot} />}
+        {snapshot.localMultiplayer && <label><input type="checkbox" checked={snapshot.autoEnemy}
+          onChange={event => onAutoEnemyChange?.(event.target.checked)} />上方由 AI 操作</label>}
+        <p className="hud__hint">{hintText(snapshot)}</p>
+        {error && <p role="alert">{error}</p>}
+        <div className="battle-pause-menu__actions">
+          <button type="button" className="btn btn--primary" disabled={working} autoFocus onClick={() => setMenuOpen(false)}>继续对战</button>
+          <button type="button" className="btn" disabled={working || exitDisabled || !onRetry} onClick={() => void perform(onRetry)}>再试一次</button>
+          <button type="button" className="btn battle-pause-menu__quit" disabled={working || exitDisabled}
+            title="退出本局并按失败结算" onClick={() => void perform(onQuit ?? (() => onConcede?.('player')))}>退出</button>
+        </div>
+      </section>
+    </div>}
     {/*
       回合推进按钮：底层中央，不和上面那列辅助操作混在一起。
       「第 N 轮」在顶层中央、推进键在底层中央——这两件每次都要用的东西
@@ -86,13 +119,8 @@ function hintText(snapshot: BattleSnapshot): string {
 
 function SidePanel({ side, snapshot }: { side: SideId; snapshot: BattleSnapshot }) {
   const zones = snapshot.display.zones[side];
-  const hp = snapshot.display.playerHp[side];
-  const baseHp = snapshot.baseHpBySide?.[side] ?? snapshot.baseHp;
-  const ratio = baseHp > 0 ? Math.max(0, Math.min(1, hp / baseHp)) : 0;
   return <section className={`hud__side hud__side--${side}`}>
     <header className="hud__side-name">{sideName(snapshot, side)}</header>
-    <div className="hud__hp"><span className="hud__hp-value">{hp} / {baseHp}</span>
-      <span className="hud__hp-track"><span className="hud__hp-fill" style={{ width: `${ratio * 100}%` }} /></span></div>
     <ul className="hud__counts"><li>牌堆 {zones.deck.length}</li><li>手牌 {zones.hand.length}</li><li>弃牌 {zones.discard.length}</li></ul>
   </section>;
 }

@@ -59,13 +59,18 @@ export function useLoginTextures(cards: readonly CardDefinition[], tier: Texture
   useEffect(() => {
     let live = true;
     setTextures(new Map());
+    const ready = new Map<string, Texture>();
+    let frame = 0;
     for (const url of urls) {
       void assetManager.acquire(url).then((texture) => {
-        if (live) setTextures((previous) => new Map(previous).set(url, texture));
+        if (!live) return;
+        ready.set(url, texture);
+        if (!frame) frame = requestAnimationFrame(() => { frame = 0; if (live) setTextures(new Map(ready)); });
       });
     }
     return () => {
       live = false;
+      cancelAnimationFrame(frame);
       for (const url of urls) assetManager.release(url);
     };
   }, [urls]);

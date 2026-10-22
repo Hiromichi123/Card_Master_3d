@@ -53,7 +53,7 @@ describe('深渊云间金黄色短电弧', () => {
   });
 
   it('CSS只受游戏still与active控制，后台同时暂停公转和亮灭，静止隐藏电弧', () => {
-    const css = readFileSync(new URL('../../src/ui/abyssVortex.css', import.meta.url), 'utf8');
+    const css = readFileSync('src/ui/abyssVortex.css', 'utf8');
     expect(css).not.toContain('prefers-reduced-motion');
     expect(css).toContain(`0%, ${ABYSS_SPARK_PULSE_FRACTION * 100}%, 100% { opacity: 0; }`);
     expect(ABYSS_SPARK_PULSE_FRACTION).toBe(0.18);

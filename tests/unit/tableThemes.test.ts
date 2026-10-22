@@ -13,8 +13,8 @@ import { hasWeather, TABLE_WEATHER } from '../../src/rendering/table/weather';
  */
 
 describe('战斗台面主题', () => {
-  it('八套可选台面，且 id 唯一', () => {
-    expect(TABLE_THEMES.length).toBe(8);
+  it('九套可选台面，且 id 唯一', () => {
+    expect(TABLE_THEMES.length).toBe(9);
     const ids = TABLE_THEMES.map((theme) => theme.id);
     expect(new Set(ids).size).toBe(ids.length);
   });

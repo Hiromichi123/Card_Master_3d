@@ -32,7 +32,7 @@ export function PlayerDialog({ title, onClose, children }: { readonly title: str
     <header><div><small>PLAYER RECORDS</small><h2>{title}</h2></div><button className="btn" type="button" onClick={onClose}>关闭</button></header>{children}
   </dialog>;
 }
-export function StatisticsPanel({ profile, onClose }: { readonly profile: ProfileState; readonly onClose: () => void }) {
+export function StatisticsPanel({ profile, playerId, onClose }: { readonly profile: ProfileState; readonly playerId?: string; readonly onClose: () => void }) {
   const activity = activityOf(profile), definitions = cardDatabase.definitions.filter(c => c.status === 'complete');
   const collected = definitions.filter(c => (profile.inventory[c.cardId] ?? 0) > 0).length;
   const ids = new Set(stages.chapters.flatMap(c => c.stages.map(s => s.id)));
@@ -50,7 +50,7 @@ export function StatisticsPanel({ profile, onClose }: { readonly profile: Profil
     { kind: 'abyss', name: '深渊最高通关', value: highest ? `${Math.ceil(highest / 10)}-${(highest - 1) % 10 + 1}` : '暂无', detail: '累计最高已通关位置', color: '#bd90e7' },
     { kind: 'settle', name: '深渊累计结算次数', value: `${settled} 次`, detail: '同一轮只计一次，含进入无尽结算', color: '#e399ac' },
   ];
-  return <PlayerDialog title="数据统计" onClose={onClose}><div className="player-stats">{tiles.map(tile => <article key={tile.kind} style={{ '--stat-color': tile.color } as CSSProperties}>
+  return <PlayerDialog title="数据统计" onClose={onClose}><div className="player-identity"><span>玩家 ID</span><strong>{playerId || '读取中…'}</strong></div><div className="player-stats">{tiles.map(tile => <article key={tile.kind} style={{ '--stat-color': tile.color } as CSSProperties}>
     <StatLogo kind={tile.kind} color={tile.color}/><div><small>{tile.name}</small><strong>{tile.value}</strong><p>{tile.detail}</p></div></article>)}</div>
     <section className="player-totals">{[['玩家对战场数（非深渊）', battleCountOf(profile)], ['总计抽卡次数', activity.draws], ['总计工坊融合次数', activity.fusions]].map(([name, value]) => <div key={name}><span>{name}</span><strong>{value}</strong></div>)}</section>
     <p className="player-panel__note">战役、世界树和本地选卡对战计入对战场数；演示、开发试玩和深渊不计入。十连计 10 次抽卡。旧档没有记录的抽卡、融合或历史最高积分无法追溯，从更新后累计；可恢复的历史记录已保留。</p>

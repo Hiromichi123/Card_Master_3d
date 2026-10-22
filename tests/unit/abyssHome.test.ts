@@ -60,7 +60,7 @@ describe('深渊大厅落稳后的第二阶段', () => {
     await render(false); expect(layout()).toBe('settled');
   });
   it('标题独立上移和深红光晕；倒计时左靠安全区，窄屏避免占同一行', () => {
-    const css = readFileSync(new URL('../../src/ui/abyssHome.css', import.meta.url), 'utf8');
+    const css = readFileSync('src/ui/abyssHome.css', 'utf8');
     expect(css).toContain('@keyframes abyss-home-title-shift');
     expect(css).toContain('@keyframes abyss-home-countdown-shift');
     expect(css).toContain('color: #8f1427');

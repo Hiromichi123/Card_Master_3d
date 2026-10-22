@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { applyCommand, createBattle, validateCommand } from '../../src/domain/battle/engine';
+import { applyCommand, createBattle } from '../../src/domain/battle/engine';
 import { hasUsableBattleAction, inputSideOf, isCooldownCard } from '../../src/domain/battle/turnActions';
 import { BattleSession } from '../../src/rendering/presentation/session';
 import type { BattleState } from '../../src/domain/battle/types';
@@ -30,8 +30,7 @@ describe('fixed guest deployment and actionless completion', () => {
     expect(state.phase).toBe('awaitingResponse'); expect(state.currentSide).toBe('enemy');
     expect(inputSideOf(state)).toBe('player');
     expect(change.events.some(event => event.type === 'DeploymentWindowOpened')).toBe(true);
-    expect(change.events.some(event => event.type === 'PriorityChosen')).toBe(false);
-    expect(validateCommand(state, { kind: 'choosePriority', side: 'enemy', order: 'first' }).ok).toBe(false);
+    expect(change.finalState.phase).not.toBe('resolving');
     const before = state.hp, turn = state.turnIndex;
     state = applyCommand(state, { kind: 'endTurn', side: 'player' }).finalState;
     expect(state.phase).toBe('awaitingPlay'); expect(state.turnIndex).toBe(turn); expect(state.hp).toEqual(before);

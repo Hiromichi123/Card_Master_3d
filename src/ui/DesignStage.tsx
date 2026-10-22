@@ -18,6 +18,8 @@ import { CrossfadeBackground } from './SceneBackground';
  */
 export interface DesignStageProps {
   readonly backgroundUrl: string | null;
+  /** Allow fixed-background scenes without changing other menus. */
+  readonly parallax?: boolean;
   readonly className?: string | undefined;
   readonly children: ReactNode;
   /**
@@ -34,9 +36,10 @@ export function DesignStage({
   backgroundUrl,
   children,
   className = '',
+  parallax = true,
   rootRef,
 }: DesignStageProps) {
-  const parallaxRef = useParallax();
+  const parallaxRef = useParallax(50, 5, parallax);
   /*
     视差与调用方的 ref 都挂在同一个节点上。用回调 ref 合并而不是嵌套一层
     包装元素：多一层会改掉 `.menu` 的定位上下文。

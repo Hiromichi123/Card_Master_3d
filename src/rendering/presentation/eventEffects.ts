@@ -364,7 +364,6 @@ export function logLineFor(event: BattleEvent, nameOf: (id: string) => string): 
   switch (event.type) {
     case 'CooldownCardGranted': return `${event.side === 'player' ? '我方' : '敌方'}${event.reason === 'skip' ? '跳过普通出牌，获得冷却牌' : '获得后手补偿冷却牌'}`;
     case 'CooldownCardUsed': return `冷却牌使 ${nameOf(event.targetInstanceId)} 冷却减少 1`;
-    case 'PriorityChosen': return `${event.side === 'player' ? '我方' : '敌方'}选择${event.order === 'first' ? '先行动' : '后行动'}`;
     case 'DeploymentWindowOpened': return `${event.side === 'player' ? '我方' : '敌方'}获得客场部署窗口`;
     case 'CardPlayed':
       return `${nameOf(event.instanceId)} 进入准备区`;

@@ -1,0 +1,5 @@
+@layer hub {
+  .collection .screen__head { flex-wrap: wrap; }
+  .collection .collection__stats { flex: 1 1 auto; }
+  .collection__return { flex: 0 0 auto; margin-left: auto; align-self: center; white-space: nowrap; }
+}

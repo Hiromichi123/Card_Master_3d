@@ -15,6 +15,8 @@ import { FailingSaveRepository } from '../../src/services/save/FailingSaveReposi
 import type { SaveRepository } from '../../src/services/save/SaveRepository';
 import type { FusionAltarProps } from '../../src/rendering/fusion/FusionAltarStage';
 
+vi.mock('../../src/rendering/RenderActivity', () => ({ RenderActivity: () => null }));
+vi.mock('../../src/ui/HubLogoLayer', () => ({ HubLogoLayer: () => null }));
 vi.mock('../../src/rendering/fusion/FusionAltarStage', () => ({ FusionAltarStage: (props: FusionAltarProps) =>
   createElement('div', { 'data-testid': 'altar', 'data-run': props.run?.operationId ?? '', 'data-slots': props.cards.filter(Boolean).length },
     createElement('button', { 'data-testid': 'finish', onClick: props.onFinished }, '完成演出'),

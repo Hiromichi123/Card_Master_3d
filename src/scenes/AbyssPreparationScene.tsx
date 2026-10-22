@@ -7,7 +7,7 @@ import type { AbyssGrowthOffer, AbyssGrowthOption, AbyssRun, AbyssEncounter } fr
 import { abyssEffectGrade, abyssEffectLevel, abyssGrowthAmount, abyssGrowthGrade } from '../domain/progression/abyssGrades';
 import { describeTraitFunction } from '../domain/skills/traitDescriptions';
 import { withAbyssRarity } from '../domain/progression/abyssRarity';
-import { abyssBaseHp, abyssPurchasePrice } from '../domain/progression/abyssRules';
+import { abyssBaseHp, abyssPurchasePrice, abyssEnemyEffects } from '../domain/progression/abyssRules';
 import { useRarityIndex } from '../state/useRarityIndex';
 import { useForegroundTimeout } from '../ui/useForegroundTimeout';
 import { AbyssCampCrystals } from '../ui/AbyssCampCrystals';
@@ -272,7 +272,7 @@ export function AbyssPreparationScene({ run: savedRun, busy, dispatch, onBattle,
             description: card.definition.rawTraits.join(' · '), icon: 'card', card: card.definition }}
             position={starterChoicePositions(index)[cardIndex]!} scale={1.15} selected={selected === index}
             onPick={() => { if (!locked) setSelected(index); }} />)}
-          <Html position={starterChoiceButton(index)} center zIndexRange={[21, 1]}><button className="abyss-choice-group" type="button"
+          <Html position={starterChoiceButton(index)} center zIndexRange={[21, 1]} style={{ width: 'max-content' }}><button className="abyss-choice-group abyss-choice-group--starter" type="button"
             disabled={locked} aria-pressed={selected === index} onClick={() => selectGroup(index)}>选择卡组 {index + 1}</button></Html>
         </group>)}
         {!upgrade && !transition && !ended && boon && stage.kind === 'boonChoice' && stage.battle.boonChoices.map((pair, index) => <group key={pair.id}>
@@ -297,7 +297,7 @@ export function AbyssPreparationScene({ run: savedRun, busy, dispatch, onBattle,
         })}
       </BattleCanvas>
     </WebGLGuard></div>
-    <header className="abyss-choice-header"><div><small>深渊 {run.floor}-{run.encounter}</small><h1>{title}</h1></div>
+    <header className="abyss-choice-header"><div><small>深渊 {run.floor}-{run.encounter}</small><h1>{title}</h1>{draft && <p className="abyss-starter-hint">{hint}</p>}</div>
       <div><span>{ended ? '本轮已结算' : '♥'.repeat(Math.max(0, run.lives))} · {run.coins} 币 · {run.crystals ?? 0} 结晶</span>
         {onRules && <button type="button" disabled={locked} onClick={onRules}>规则讲解</button>}
         {onRewards && pendingPacks > 0 && <button type="button" disabled={locked} onClick={onRewards}>奖励卡包（{pendingPacks}）</button>}
@@ -308,10 +308,10 @@ export function AbyssPreparationScene({ run: savedRun, busy, dispatch, onBattle,
       </div>
     </header>
     {rewardReceipt && !transition && <p className="abyss-reward-receipt" role="status">{rewardReceipt}</p>}
-    {!ended && !upgrade && !transition && boon && stage.kind === 'boonChoice' && <aside className="abyss-choice-enemy" title={stage.battle.enemyEffect.description}>
+    {!ended && !upgrade && !transition && boon && stage.kind === 'boonChoice' && abyssEnemyEffects(stage.battle).length > 0 && <aside className="abyss-choice-enemy" title={stage.battle.enemyEffect.description}>
       敌方本战增益：{stage.battle.enemyEffect.name} · {stage.battle.enemyEffect.description}
     </aside>}
-    {!ended && !upgrade && !settling && !ready && !transition && stage.kind !== 'bossDecision' && stage.kind !== 'battleReady' && stage.kind !== 'inBattle' && <footer className={boon ? 'abyss-choice-footer' : 'abyss-choice-footer abyss-choice-footer--top'}><p>{hint}</p>
+    {!ended && !upgrade && !settling && !ready && !transition && stage.kind !== 'bossDecision' && stage.kind !== 'battleReady' && stage.kind !== 'inBattle' && <footer className={boon ? 'abyss-choice-footer' : 'abyss-choice-footer abyss-choice-footer--top'}>{!draft && <p>{hint}</p>}
       {boon && stage.kind === 'boonChoice' && <div className="abyss-contract-actions" aria-label="接受本战契约">
         {stage.battle.boonChoices.map((pair, index) => <button key={pair.id} type="button" className="abyss-choice-group" disabled={locked}
           aria-pressed={selected === index} onClick={() => { void (async () => { if (await commit({ kind: 'chooseBoon', index })) onBattle(); })(); }}>接受契约 {index + 1}</button>)}
@@ -333,7 +333,7 @@ export function AbyssPreparationScene({ run: savedRun, busy, dispatch, onBattle,
       { title: '抽取特性', detail: `${abyssPurchasePrice(run, 'trait')}深渊币 · 选择加成`, disabled: locked || !ready || run.coins < abyssPurchasePrice(run, 'trait'), action: () => buy('trait') },
     ]} />}
     {ready && !upgrade && <details className="abyss-board-enemy"><summary>本局战果 · {stage.kind === 'camp' && encounterName(stage.battle)} · 查看敌方信息</summary>
-      {stage.kind === 'camp' && <><p>{stage.battle.enemyEffect.name}：{stage.battle.enemyEffect.description}</p>
+      {stage.kind === 'camp' && <><p>{abyssEnemyEffects(stage.battle).length ? `${stage.battle.enemyEffect.name}：${stage.battle.enemyEffect.description}` : '敌方无全局特性'}</p>
         <p>本体上限：我方 {abyssBaseHp(stage.battle).player} / 敌方 {abyssBaseHp(stage.battle).enemy}</p>
         <p>{stage.battle.enemyCards.map(card => `${card.definition.name}（攻${card.definition.atk} / 血${card.definition.hp}）`).join(' · ')}</p></>}
     </details>}
@@ -352,7 +352,7 @@ export function AbyssPreparationScene({ run: savedRun, busy, dispatch, onBattle,
         <span className="abyss-encounter-arrow">→</span><strong className="abyss-encounter-new">{encounterName(transition.to)}</strong></> : <strong>{encounterName(transition.from)}</strong>}
     </div>}
     {children}
-    {(message || notice) && <p className="abyss-choice-message" role="alert">{message || notice}</p>}
+    {(message || notice) && <p className="abyss-choice-message" role="alert">{notice || message}</p>}
     {memory && <p className="abyss-storage-warning" role="status">当前使用内存存档，刷新或关闭会丢失进度。</p>}
     {confirmation && <AbyssDialog title={confirmation.kind === 'replace' ? '覆盖培养特性' : '确认替换或移除卡牌'} className="abyss-dialog--traits abyss-choice-confirm" onClose={() => setConfirmation(null)}>
       <p>{confirmation.kind === 'replace' ? `是否花费1枚深渊水晶（结晶），擦除 ${run.cards.find(card => card.instanceId === confirmation.targetId)?.addedTraits.map(trait => trait.raw).join('、')} 并覆盖为 ${offer?.options[confirmation.index]?.label}？属性强化与原生技能保留。`

@@ -46,7 +46,7 @@ describe('Abyss balance and AI tempo', () => {
       expect(p.abyss.run!.coins - run.coins).toBe(ABYSS_WIN_COINS[stage.battle.difficulty]);
       expect(p.abyss.run!.stage).toMatchObject({ kind: 'camp', freeRemaining: ABYSS_REWARD_DRAWS[stage.battle.difficulty] });
       if (j === (won ? 10 : 2)) break;
-      p = move(move(p, { kind: 'skipFree' }), { kind: 'next' });
+      p = move(skipFreeRewards(p), { kind: 'next' });
       if (p.abyss.run!.stage.kind === 'bossDecision') p = move(p, { kind: 'next' });
       p = move(move(p, { kind: 'chooseBoon', index: 0 }), { kind: 'beginBattle' });
     }
@@ -55,7 +55,7 @@ describe('Abyss balance and AI tempo', () => {
     let p = started(); const stage = p.abyss.run!.stage;
     if (stage.kind !== 'inBattle') throw new Error('not battle');
     p = move(p, { kind: 'settle', battleId: stage.battle.battleId, outcome: { kind: 'win', winner: 'player', reason: 'hpDepleted' } });
-    p = move(p, { kind: 'skipFree' });
+    p = skipFreeRewards(p);
     p = { ...p, abyss: { ...p.abyss, run: { ...p.abyss.run!, coins: 1000, earnedCoins: 1000 } } };
     for (const purchase of ['trait', 'recruit'] as const) for (let i = 0; i < 12; i++) {
       const price = abyssPurchasePrice(p.abyss.run!, purchase), previous = p.abyss.run!.coins;
@@ -98,3 +98,10 @@ describe('Abyss balance and AI tempo', () => {
     expect(state).toEqual(before);
   });
 });
+
+/** Leaving camp in these fixtures intentionally declines each remaining independent reward. */
+function skipFreeRewards(profile: ProfileState): ProfileState {
+  while (profile.abyss.run?.stage.kind === 'camp' && profile.abyss.run.stage.freeRemaining > 0)
+    profile = move(profile, { kind: 'skipFree' });
+  return profile;
+}

@@ -1,4 +1,6 @@
-import { Canvas } from '@react-three/fiber';
+import { ActivityCanvas as Canvas } from '../ActivityCanvas';
+import { RenderActivity } from '../RenderActivity';
+
 import type { ReactNode } from 'react';
 import { PCFShadowMap } from 'three';
 import { BattleVisualContext, useBattleVisuals } from './battleVisuals';
@@ -21,6 +23,7 @@ export function BattleCanvas({ children, onPointerMissed, themeId, standalone = 
     dpr={[1, profile.dprCap]}
     camera={{ position: [0, 11, 9], fov: 45, near: .1, far: theme.geometry === 'cloud' ? 180 : theme.geometry === 'abyss' ? 360 : theme.geometry === 'solar' ? 320 : theme.geometry === 'mecha' ? 260 : 120 }}
     gl={{ antialias: true, powerPreference: 'high-performance' }} {...(onPointerMissed ? { onPointerMissed } : {})}>
+    <RenderActivity />
     <BattleVisualContext.Provider value={visuals}>
     {children}
     <color attach="background" args={[theme.background]} />

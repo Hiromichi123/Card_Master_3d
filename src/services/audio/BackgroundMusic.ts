@@ -1,8 +1,9 @@
-export const LOBBY_MUSIC = '/assets/audio/bgm/lobby.mp3';
+import { assetUrl } from '../assetUrl';
+export const LOBBY_MUSIC = assetUrl('/assets/audio/bgm/lobby.mp3');
 export const BATTLE_MUSIC = [
-  '/assets/audio/bgm/battle-1.mp3',
-  '/assets/audio/bgm/battle-2.mp3',
-  '/assets/audio/bgm/battle-3.mp3',
+  assetUrl('/assets/audio/bgm/battle-1.mp3'),
+  assetUrl('/assets/audio/bgm/battle-2.mp3'),
+  assetUrl('/assets/audio/bgm/battle-3.mp3'),
 ] as const;
 
 /** Long music streams through one media element, never through the short-cue cache. */

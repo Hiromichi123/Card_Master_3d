@@ -4,7 +4,7 @@ import { RARITY_TO_LEVEL } from '../../src/domain/cards/types';
 import { createInitialProfile } from '../../src/domain/progression/profile';
 import { applyEconomyTransaction } from '../../src/domain/progression/economy';
 import { abyssStateToken, planAbyssAction } from '../../src/domain/progression/abyssRun';
-import { abyssDifficulty, abyssGrowthTargets, makeAbyssCard, makeAbyssGrowthOffer } from '../../src/domain/progression/abyssRules';
+import { abyssDifficulty, abyssEnemyEffects, abyssGrowthTargets, makeAbyssCard, makeAbyssGrowthOffer } from '../../src/domain/progression/abyssRules';
 import { validateAbyssState } from '../../src/domain/progression/abyssValidation';
 import type { AbyssAction, AbyssRun } from '../../src/domain/progression/abyssTypes';
 import type { ProfileState } from '../../src/domain/progression/types';
@@ -62,7 +62,7 @@ describe('深渊独立run状态机', () => {
     expect(stage.battle.selectedBoon).toBe(0);
     expect(stage.battle.boonChoices).toHaveLength(3);
     const pair = stage.battle.boonChoices[0]!;
-    expect(started.abyss.knownEffectIds).toEqual(expect.arrayContaining([pair.positive.id, pair.negative.id, stage.battle.enemyEffect.id]));
+    expect(started.abyss.knownEffectIds).toEqual(expect.arrayContaining([pair.positive.id, pair.negative.id, ...abyssEnemyEffects(stage.battle).map(effect => effect.id)]));
     expect(JSON.parse(JSON.stringify(started)).abyss.run.stage.battle).toEqual(stage.battle);
     const rejected = planAbyssAction(started, { kind: 'chooseBoon', index: 1, expectedToken: abyssStateToken(started) }, now);
     expect('rejected' in rejected).toBe(true);
@@ -115,14 +115,15 @@ describe('深渊独立run状态机', () => {
     let current = startBattle();
     for (let encounter = 1; encounter <= 9; encounter += 1) {
       current = settle(current);
-      current = move(current, { kind: 'skipFree' });
+      while (current.abyss.run?.stage.kind === 'camp' && current.abyss.run.stage.freeRemaining > 0) current = move(current, { kind: 'skipFree' });
       current = startBattle(move(current, { kind: 'next' }));
     }
     expect(current.abyss.run!.encounter).toBe(10);
     const failed = settle(current, false);
     expect(failed.abyss.run).toBeNull();
     expect(failed.abyss.history[0]).toMatchObject({ reason: 'defeated', losses: 1, encounter: 10 });
-    current = move(settle(current), { kind: 'skipFree' });
+    current = settle(current);
+    while (current.abyss.run?.stage.kind === 'camp' && current.abyss.run.stage.freeRemaining > 0) current = move(current, { kind: 'skipFree' });
     current = move(current, { kind: 'next' });
     expect(current.abyss.run!.stage.kind).toBe('boonChoice');
     expect(planAbyssAction(current, { kind: 'finish', expectedToken: abyssStateToken(current) }, now)).toHaveProperty('rejected');

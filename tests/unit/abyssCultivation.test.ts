@@ -28,7 +28,7 @@ function camp() {
     const stage = profile.abyss.run!.stage;
     if (stage.kind !== 'inBattle') throw new Error('not in battle');
     profile = move(profile, { kind: 'settle', battleId: stage.battle.battleId, outcome: { kind: 'win', winner: 'player', reason: 'hpDepleted' } });
-    profile = move(profile, { kind: 'skipFree' });
+    profile = skipFreeRewards(profile);
     if (battle < 8) profile = move(profile, { kind: 'next' });
   }
   return profile;
@@ -107,3 +107,10 @@ it('each hand leans toward its owner and the face head is above its foot on both
     expect(Math.sign(head.z)).toBe(side === 'player' ? -1 : 1);
   }
 });
+
+/** Leaving camp in these fixtures intentionally declines each remaining independent reward. */
+function skipFreeRewards(profile: ProfileState): ProfileState {
+  while (profile.abyss.run?.stage.kind === 'camp' && profile.abyss.run.stage.freeRemaining > 0)
+    profile = move(profile, { kind: 'skipFree' });
+  return profile;
+}

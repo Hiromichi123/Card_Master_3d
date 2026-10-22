@@ -1,3 +1,4 @@
+import { TextureLoadQueue } from './TextureLoadQueue';
 import {
   DataTexture,
   RGBAFormat,
@@ -17,7 +18,7 @@ import {
  * - **URL 去重**：同一个 URL 的并发请求合并成同一个 Promise，只下载一次；
  * - **引用计数**：`acquire`/`release` 成对使用，计数不为 0 的纹理绝不被回收
  *   （不能销毁仍被其它场景或卡牌引用的贴图）；
- * - **预算 + LRU**：超过 `maxEntries` 时，从计数为 0 的纹理里淘汰最久未用的，
+ * - **预算 + LRU**：超过 `maxEntries` 或解码纹理字节预算时，从计数为 0 的纹理里淘汰最久未用的，
  *   并真正 `dispose()`，而不是只把 URL 从表里删掉却留下 GPU 资源；
  * - **失败占位**：加载失败的 URL 记下来，返回占位纹理，避免整场景崩掉，
  *   同时把失败列表暴露给调试页（P7 要给出可操作提示）。
@@ -50,6 +51,8 @@ export interface AssetManagerStats {
   readonly failures: readonly { url: string; reason: string }[];
   readonly evictions: number;
   readonly duplicateHits: number;
+  readonly residentBytes: number;
+  readonly queued: number;
 }
 
 const DEFAULT_MAX_ENTRIES = 320;
@@ -58,13 +61,18 @@ export class AssetManager {
   private readonly entries = new Map<string, Entry>();
   private readonly loader: TextureLoader;
   private readonly maxEntries: number;
+  private readonly maxBytes: number;
+  private readonly loads: TextureLoadQueue;
+  private residentBytes = 0;
   private evictions = 0;
   private duplicateHits = 0;
   private placeholder: Texture | null = null;
 
-  constructor(options?: { manager?: LoadingManager; maxEntries?: number }) {
+  constructor(options?: { manager?: LoadingManager; maxEntries?: number; maxBytes?: number; concurrency?: number }) {
     this.loader = new TextureLoader(options?.manager);
     this.maxEntries = options?.maxEntries ?? DEFAULT_MAX_ENTRIES;
+    this.maxBytes = options?.maxBytes ?? 128 * 1024 * 1024;
+    this.loads = new TextureLoadQueue(options?.concurrency ?? 4);
   }
 
   /**
@@ -99,9 +107,14 @@ export class AssetManager {
     };
     this.entries.set(url, entry);
 
-    entry.pending = this.loader
-      .loadAsync(url)
+    entry.pending = this.loads.run(() => this.entries.get(url) === entry
+      ? this.loader.loadAsync(url) : Promise.resolve(this.getPlaceholder()))
       .then((texture) => {
+        if (this.entries.get(url) !== entry) {
+          if (texture !== this.placeholder) texture.dispose();
+          return this.getPlaceholder();
+        }
+        this.residentBytes += this.textureBytes(texture);
         // 卡面是颜色贴图，必须按 sRGB 解释，否则整体偏暗
         texture.colorSpace = SRGBColorSpace;
         texture.anisotropy = 4;
@@ -124,7 +137,7 @@ export class AssetManager {
     return entry.pending;
   }
 
-  /** 释放一次引用。计数归零后允许被 LRU 淘汰（不立即 dispose）。 */
+  /** 释放一次引用。计数归零后允许被 LRU 淘汰（超预算时可能立即 dispose）。 */
   release(url: string): void {
     const entry = this.entries.get(url);
     if (!entry) {
@@ -132,6 +145,7 @@ export class AssetManager {
     }
     entry.refCount = Math.max(0, entry.refCount - 1);
     entry.lastUsedAt = performance.now();
+    this.evictIfNeeded();
   }
 
   /**
@@ -167,11 +181,18 @@ export class AssetManager {
    * 只回收 `refCount === 0` 的条目，并且**真正的 `dispose()`**——
    * 只删表项会让 GPU 上的纹理泄漏（这是旧版没有的问题，但很容易在新版写出来）。
    */
+  private textureBytes(texture: Texture): number {
+    if (texture === this.placeholder) return 0;
+    const image = texture.image as { width?: number; height?: number } | undefined;
+    return Math.ceil((image?.width ?? 0) * (image?.height ?? 0) * 4 * (texture.generateMipmaps ? 4 / 3 : 1));
+  }
+
   private evictIfNeeded(): void {
+    if (this.entries.size <= this.maxEntries && this.residentBytes <= this.maxBytes) return;
     const resident = [...this.entries.values()].filter(
       (entry) => entry.texture !== null,
     );
-    if (resident.length <= this.maxEntries) {
+    if (resident.length <= this.maxEntries && this.residentBytes <= this.maxBytes) {
       return;
     }
 
@@ -181,9 +202,10 @@ export class AssetManager {
 
     let over = resident.length - this.maxEntries;
     for (const entry of candidates) {
-      if (over <= 0) {
+      if (over <= 0 && this.residentBytes <= this.maxBytes) {
         break;
       }
+      if (entry.texture) this.residentBytes -= this.textureBytes(entry.texture);
       entry.texture?.dispose();
       this.entries.delete(entry.url);
       this.evictions += 1;
@@ -199,6 +221,7 @@ export class AssetManager {
       }
     }
     this.entries.clear();
+    this.residentBytes = 0;
     this.placeholder?.dispose();
     this.placeholder = null;
   }
@@ -230,6 +253,8 @@ export class AssetManager {
       failures,
       evictions: this.evictions,
       duplicateHits: this.duplicateHits,
+      residentBytes: this.residentBytes,
+      queued: this.loads.queued,
     };
   }
 }

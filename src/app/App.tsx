@@ -1,3 +1,4 @@
+import { mazeFailureRemaining } from '../domain/progression/mazeProgress';
 import { Suspense, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 import { BattleScene } from '../scenes/BattleScene';
@@ -15,6 +16,7 @@ import { FusionScene } from '../scenes/FusionScene';
 import { MazeScene } from '../scenes/MazeScene';
 import { LadderScene } from '../scenes/LadderScene';
 import { ShopScene } from '../scenes/ShopScene';
+import { MallScene } from '../scenes/MallScene';
 import { SettingsScene } from '../scenes/SettingsScene';
 import { HubScene } from '../scenes/HubScene';
 import { LoginScene } from '../scenes/LoginScene';
@@ -33,6 +35,8 @@ import { useAbyssDeparture } from '../ui/useAbyssDeparture';
 import { useProfileStore } from '../state/useProfileStore';
 import { PerfToggle } from '../ui/BattleSettings';
 import { AdminResources } from '../ui/AdminResources';
+import { AdminAiSettings } from '../ui/AdminAiSettings';
+import { useAdminAiStore } from '../state/adminAiStore';
 import { AdminEnemyDecks } from '../ui/AdminEnemyDecks';
 import { configFor, definitionsFor, settlementFor } from '../scenes/campaignFlow';
 import type { SettlementView, StageLaunch } from '../domain/progression/campaign';
@@ -68,6 +72,8 @@ export function App() {
   const [deckBattleReturn, setDeckBattleReturn] = useState<RouteId>('battlemenu');
   const [entered, setEntered] = useState(false);
   const [account, setAccount] = useState<LoginAccount | null>(null);
+  const isAdmin = import.meta.env.DEV && account?.id === 'admin';
+  useEffect(() => { useAdminAiStore.setState({ enabled: isAdmin }); return () => { useAdminAiStore.setState({ enabled: false }); }; }, [isAdmin]);
   const gameLayer = useRef<HTMLDivElement>(null);
   const detachSettings = useRef<(() => void) | null>(null);
   const mounted = useRef(true);
@@ -102,9 +108,9 @@ export function App() {
       }
       const maze = isMazeLaunch(launch);
       const computed = maze ? mazeSettlementFor(launch, outcome) : settlementFor(launch, outcome);
-      const result = await store.commitEconomic<SettlementView>(() =>
+      const result = await store.commitEconomic<SettlementView>(current =>
         maze
-          ? planMazeSettlement(launch, computed, store.nextOperationId())
+          ? planMazeSettlement(launch, computed, store.nextOperationId(), current, store.todayKey())
           : planSettlement(launch, computed, store.nextOperationId()),
       );
       if (result.ok) {
@@ -113,6 +119,7 @@ export function App() {
       }
       // 存档层已经 toast 过原因；这里只补一句「奖励没发出去」
       pushToast(`奖励没能发放：${result.message}`, 'error');
+      throw new Error(result.message);
     },
     [launch, store],
   );
@@ -124,6 +131,7 @@ export function App() {
   // 深渊保留源屏至全黑；其余路由沿用即时切换。
   const navigate = useCallback((next: RouteId) => {
     if (departure.busy) return;
+    if (!isAdmin && ROUTES.some(item => item.id === next && item.dev)) return;
     if (next === 'abyss' && route !== 'abyss') { departure.start(); return; }
     if (next === 'deck') {
       setDeckInitialId(undefined);
@@ -131,7 +139,7 @@ export function App() {
     }
     setAbyssPreDarkened(false);
     setRoute(next);
-  }, [departure.busy, departure.start, route]);
+  }, [departure.busy, departure.start, route, isAdmin]);
   const configureLadder = useCallback(() => {
     setDeckInitialId(store?.getSnapshot().profile?.ladder.deckId);
     setDeckBattleReturn('battlemenu');
@@ -162,6 +170,7 @@ export function App() {
     detachSettings.current?.();
     hydrateSettings(loaded.profile);
     detachSettings.current = attachSettingsPersistence(opened);
+    setNavCollapsed(true);
     setAccount(next);
     setStore(opened);
     setRoute('hub');
@@ -245,10 +254,10 @@ export function App() {
       {store && <>
       {/*
         抬头可手动收起（2026-10-07）：3D 屏（战桌、实验台、抽卡）最想要的是纵向空间，
-        而抬头在那些屏上只是「我现在不想切屏」。收起来只剩品牌与一个展开按钮，
-        再点就回来——状态不进存档，刷新即恢复展开。
+        只有admin账号挂载开发导航与工具，收起时移除面板边框。
+        状态不进存档，每次登录均默认收起。
       */}
-      {route !== 'abyss' && <nav className={navCollapsed ? 'app-nav app-nav--admin app-nav--collapsed' : 'app-nav app-nav--admin'} aria-label="admin 导航栏">
+      {isAdmin && route !== 'abyss' && <div className="admin-nav-layer"><nav className={navCollapsed ? 'app-nav app-nav--admin app-nav--collapsed' : 'app-nav app-nav--admin'} aria-label="admin 导航栏">
         <span className="app-nav__brand">admin 导航栏</span>
         {!navCollapsed &&
           ROUTES.filter((item) => !['maze', 'draft'].includes(item.id)).map((item) => (
@@ -268,6 +277,7 @@ export function App() {
         <span className="app-nav__spacer" />
         {!navCollapsed && account && <span className="app-nav__account" title="当前本地账号">{account.username}</span>}
         {!navCollapsed && <AdminResources store={store} busy={snapshot.busy} />}
+        {!navCollapsed && <AdminAiSettings />}
         {!navCollapsed && <AdminEnemyDecks store={store} busy={snapshot.busy} trialAllowed={['hub', 'campaign', 'ladder', 'battlemenu', 'activity'].includes(route)} />}
         {!navCollapsed && <PerfToggle />}
         <button
@@ -280,7 +290,7 @@ export function App() {
         >
           {navCollapsed ? '▾ 展开' : '▴ 收起'}
         </button>
-      </nav>}
+      </nav></div>}
 
       <main className="app-main">
         {/* 错误边界包住场景，避免一个渲染错误把整个应用变成白屏 */}
@@ -304,7 +314,19 @@ export function App() {
                 navigate('battle');
               }}
               onBattleFinished={(outcome) => {
-                void commitSettlement(outcome);
+                return commitSettlement(outcome);
+              }}
+              onBattleRetry={() => {
+                if (!launch || !store) return;
+                const id = store.nextOperationId();
+                if (isMazeLaunch(launch)) {
+                  if (mazeFailureRemaining(store.getSnapshot().profile!.mazeProgress, store.todayKey()) <= 0) {
+                    setLaunch(null); setSettlement(null); navigate('maze'); return;
+                  }
+                  setLaunch({ ...launch, battleId: launch.nodeType === 'boss' ? launch.battleId : `${launch.battleId}:retry:${id}`,
+                    lossBattleId: `${launch.lossBattleId}:retry:${id}`, attemptKey: `${launch.attemptKey}:retry:${id}` } as typeof launch);
+                } else setLaunch({ ...launch, battleId: `${launch.battleId}:retry:${id}` });
+                setSettlement(null);
               }}
               onBattleExit={() => {
                 // 打完回**来的地方**：迷宫回地图屏、战役回战役屏
@@ -354,7 +376,8 @@ interface ScreenProps {
   readonly launch: StageLaunch | null;
   readonly settlement: SettlementView | null;
   readonly onStageLaunch: (launch: StageLaunch) => void;
-  readonly onBattleFinished: (outcome: BattleOutcome) => void;
+  readonly onBattleFinished: (outcome: BattleOutcome) => void | Promise<void>;
+  readonly onBattleRetry: () => void;
   readonly onBattleExit: () => void;
   readonly onNavigate: (route: RouteId) => void;
   readonly onReset: () => void;
@@ -380,6 +403,7 @@ function Screen({
   settlement,
   onStageLaunch,
   onBattleFinished,
+  onBattleRetry,
   onBattleExit,
   onNavigate,
   onReset,
@@ -416,17 +440,18 @@ function Screen({
 
   switch (route) {
     case 'hub':
-      return <HubScene profile={profile} store={store} playerName={playerName} busy={snapshot.busy} onNavigate={onNavigate} onReset={onReset} />;
+      return <HubScene profile={profile} store={store} playerId={playerId} playerName={playerName} busy={snapshot.busy} onNavigate={onNavigate} onReset={onReset} />;
     case 'battle':
       return (
         <div className="scene-viewport">
-          <BattleScene
+          <BattleScene key={launch?.battleId + (launch && isMazeLaunch(launch) ? launch.attemptKey : '')} onExit={() => onNavigate('battlemenu')}
             {...(launch
               ? {
                   config: configFor(launch),
                   definitions: definitionsFor([...launch.playerDeck, ...launch.enemyDeck]),
                   settlement,
                   onFinished: onBattleFinished,
+                  onRematchRequested: onBattleRetry,
                   onExit: onBattleExit,
                   // 迷宫回地图屏、战役回战役屏——按钮文案得跟着变
                   exitLabel: isMazeLaunch(launch) ? '返回地图' : '返回战役',
@@ -453,13 +478,15 @@ function Screen({
     case 'fusion':
       return <FusionScene profile={profile} store={store} busy={snapshot.busy} onReturn={() => onNavigate('hub')} />;
     case 'collection':
-      return <CollectionScene profile={profile} />;
+      return <CollectionScene profile={profile} onReturn={() => onNavigate('hub')} />;
     case 'deck':
       return <DeckEditorScene profile={profile} store={store} onNavigate={onNavigate} battleReturnRoute={deckBattleReturn}
         {...(deckInitialId ? { initialDeckId: deckInitialId } : {})} />;
     case 'ladder':
       return <LadderScene profile={profile} store={store} playerName={playerName}
         onNavigate={next => next === 'deck' ? onConfigureLadder() : onNavigate(next)} />;
+    case 'mall':
+      return <MallScene profile={profile} store={store} busy={snapshot.busy} onNavigate={onNavigate} />;
     case 'shop':
       return (
         <ShopScene
@@ -494,6 +521,6 @@ function Screen({
     case 'settings':
       return <SettingsScene profile={profile} store={store} onNavigate={onNavigate} />;
     default:
-      return <HubScene profile={profile} store={store} playerName={playerName} busy={snapshot.busy} onNavigate={onNavigate} onReset={onReset} />;
+      return <HubScene profile={profile} store={store} playerId={playerId} playerName={playerName} busy={snapshot.busy} onNavigate={onNavigate} onReset={onReset} />;
   }
 }

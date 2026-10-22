@@ -42,7 +42,8 @@ export function slotKey(side: string, zone: string, index: number): string {
 export function SlotMarkers({ placeable, targeted, onSlotClick }: Props) {
   const slots = useMemo(() => buildSlots(), []);
   // 槽位的三种状态色来自当前台面主题，换主题时整张桌子的配色一起变
-  const {accent} = useBattleVisuals().theme;
+  const theme = useBattleVisuals().theme;
+  const {accent} = theme;
   const colors = useMemo(
     () => ({
       base: `#${accent.slot.toString(16).padStart(6, '0')}`,
@@ -76,6 +77,8 @@ export function SlotMarkers({ placeable, targeted, onSlotClick }: Props) {
         // 全都接的话，点桌面上任何一处都会命中一个槽位，`onPointerMissed`
         // 再也不触发，点空白取消选中就废了。
         const clickable = isPlaceable || isTarget;
+        // The standard mat already has accurately sized black inlays; retain only actionable highlights.
+        if (theme.id === 'tournament' && !clickable) return null;
 
         return (
           <group

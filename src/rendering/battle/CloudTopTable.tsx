@@ -1,10 +1,14 @@
+import { CLOUD_SURFACE_Y, CLOUD_BODY_TOP } from './cloudSurfaceLayout';
+import { cloudGuideGeometry } from './cloudGuideGeometry';
+import { applyCloudShadows } from './cloudShadowMaterial';
+import { CloudPalaces } from './CloudPalaces';
 import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
-import { BackSide, BufferGeometry, CanvasTexture, Color, Float32BufferAttribute, InstancedMesh, Matrix4, MeshStandardMaterial, ShaderMaterial, Shape, ShapeGeometry, SphereGeometry, SRGBColorSpace, UniformsLib, UniformsUtils, Vector2 } from 'three';
+import { BackSide, CanvasTexture, Color, InstancedMesh, Matrix4, MeshStandardMaterial, ShaderMaterial, Shape, ShapeGeometry, SphereGeometry, SRGBColorSpace, UniformsLib, UniformsUtils, Vector2 } from 'three';
 import type { TableTheme } from '../table/themes';
 import type { QualityLevel } from '../table/materials';
 import { ANIMATION_DURATION_SCALE } from '../anim/timing';
-import { LAYOUT, buildSlots } from './layout';
+import { LAYOUT } from './layout';
 
 const noHit = (): void => {};
 const random = (i: number, salt = 0): number => { const n = Math.sin(i * 127.1 + salt * 311.7) * 43758.5453; return n - Math.floor(n); };
@@ -24,22 +28,31 @@ void main(){
   gl_FragColor=vec4(color,1.);
   #include <colorspace_fragment>
 }`;
-const CLOUD_VERTEX = `uniform bool uFlat; varying vec3 vNormal;varying vec3 vView;
+const CLOUD_VERTEX = `uniform bool uFlat; varying vec3 vNormal;varying vec3 vView;varying vec3 vCloudWorld;
 #include <common>
 #include <fog_pars_vertex>
 void main(){vec4 local=vec4(position,1.);vec3 n=normal;
   #ifdef USE_INSTANCING
     local=instanceMatrix*local;n=mat3(instanceMatrix)*normal;
   #endif
-  if(uFlat)local.y=min(local.y,-.026);
+  if(uFlat)local.y=min(local.y,${CLOUD_BODY_TOP});
+  vCloudWorld=(modelMatrix*local).xyz;
   vec4 mvPosition=modelViewMatrix*local;vView=-mvPosition.xyz;vNormal=normalize(normalMatrix*n);
   gl_Position=projectionMatrix*mvPosition;
   #include <fog_vertex>
 }`;
-const CLOUD_FRAGMENT = `varying vec3 vNormal;varying vec3 vView;
+const CLOUD_FRAGMENT = `varying vec3 vNormal;varying vec3 vView;varying vec3 vCloudWorld;uniform vec2 uBoardCenter;
 #include <common>
 #include <fog_pars_fragment>
-void main(){vec3 n=normalize(vNormal);float facing=max(0.,dot(n,normalize(vView)));
+void main(){
+  // Cloud decoration may drift in front of the camera, but must not paint over the board.
+  vec3 ray=vCloudWorld-cameraPosition;
+  if(cameraPosition.y>0.0 && abs(ray.y)>.0001){
+    float t=(${CLOUD_SURFACE_Y}-cameraPosition.y)/ray.y;
+    vec2 board=((cameraPosition+ray*t).xz-uBoardCenter)/vec2(8.05,7.15);
+    if(t>1.0 && dot(board,board)<1.0)discard;
+  }
+  vec3 n=normalize(vNormal);float facing=max(0.,dot(n,normalize(vView)));
   float alpha=smoothstep(.015,.36,facing)*.9;
   vec3 color=mix(vec3(.79,.87,.94),vec3(1.),clamp(n.y*.35+.65,0.,1.));
   gl_FragColor=vec4(color,alpha);
@@ -65,33 +78,22 @@ function cloudTexture(): CanvasTexture {
   }
   const texture = new CanvasTexture(canvas); texture.colorSpace = SRGBColorSpace; return texture;
 }
-function guideGeometry(): BufferGeometry {
-  const vertices: number[] = [];
-  const rect = (x: number, z: number, width: number, depth: number) => {
-    const a = x - width / 2, b = x + width / 2, c = z - depth / 2, d = z + depth / 2;
-    vertices.push(a, -.008, c, a, -.008, d, b, -.008, d, a, -.008, c, b, -.008, d, b, -.008, c);
-  };
-  for (const slot of buildSlots().filter(s => s.zone === 'battle')) for (const xSign of [-1, 1]) for (const zSign of [-1, 1]) {
-    const x = slot.position[0] + xSign * .86, z = slot.position[2] - LAYOUT.tableCenterZ + zSign * 1.19;
-    rect(x - xSign * .13, z, .28, .02); rect(x, z - zSign * .13, .02, .28);
-  }
-  rect(-2.9, 0, 5.25, .022); rect(2.9, 0, 5.25, .022);
-  const geometry = new BufferGeometry(); geometry.setAttribute('position', new Float32BufferAttribute(vertices, 3)); geometry.computeVertexNormals(); return geometry;
-}
-
 /** The flat summit belongs to the cloud itself: no separate tabletop, rim or tiled board. */
 export function CloudTopTable({ theme, quality, reduceMotion }: { readonly theme: TableTheme; readonly quality: QualityLevel; readonly reduceMotion: boolean }) {
   const { gl, size } = useThree();
   const elapsed = useRef(0), base = useRef<InstancedMesh>(null), drift = useRef<InstancedMesh>(null);
   const count = quality === 'low' ? 12 : quality === 'high' ? 30 : 20;
   const built = useMemo(() => {
-    const texture = cloudTexture(), top = new ShapeGeometry(cloudOutline(), 8); top.rotateX(-Math.PI / 2); top.translate(0, -.024, 0);
+    const texture = cloudTexture(), top = new ShapeGeometry(cloudOutline(), 8); top.rotateX(-Math.PI / 2); top.translate(0, CLOUD_SURFACE_Y, 0);
     const p = top.getAttribute('position'), uv = top.getAttribute('uv');
     for (let i = 0; i < p.count; i++) uv.setXY(i, p.getX(i) / 17 + .5, p.getZ(i) / 15 + .5); uv.needsUpdate = true;
-    return { texture, top, guides: guideGeometry(), sphere: new SphereGeometry(1, quality === 'low' ? 12 : 20, quality === 'low' ? 8 : 14), dome: new SphereGeometry(88, 32, 20),
-      topMaterial: new MeshStandardMaterial({ color: 0xffffff, map: texture, roughness: .98, metalness: 0 }),
-      baseMaterial: new ShaderMaterial({ uniforms: UniformsUtils.merge([UniformsLib.fog, { uFlat: { value: true } }]), vertexShader: CLOUD_VERTEX, fragmentShader: CLOUD_FRAGMENT, transparent: true, depthWrite: false, fog: true }),
-      driftMaterial: new ShaderMaterial({ uniforms: UniformsUtils.merge([UniformsLib.fog, { uFlat: { value: false } }]), vertexShader: CLOUD_VERTEX, fragmentShader: CLOUD_FRAGMENT, transparent: true, depthWrite: false, fog: true }),
+    const topMaterial = new MeshStandardMaterial({ color: 0xffffff, map: texture, roughness: .98, metalness: 0 });
+    topMaterial.polygonOffset = true; topMaterial.polygonOffsetFactor = -2; topMaterial.polygonOffsetUnits = -2;
+    const shadowTime = applyCloudShadows(topMaterial);
+    return { texture, top, guides: cloudGuideGeometry(), shadowTime, sphere: new SphereGeometry(1, quality === 'low' ? 12 : 20, quality === 'low' ? 8 : 14), dome: new SphereGeometry(88, 32, 20),
+      topMaterial,
+      baseMaterial: new ShaderMaterial({ uniforms: UniformsUtils.merge([UniformsLib.fog, { uFlat: { value: true }, uBoardCenter: { value: new Vector2(0, LAYOUT.tableCenterZ) } }]), vertexShader: CLOUD_VERTEX, fragmentShader: CLOUD_FRAGMENT, transparent: true, depthWrite: false, fog: true }),
+      driftMaterial: new ShaderMaterial({ uniforms: UniformsUtils.merge([UniformsLib.fog, { uFlat: { value: false }, uBoardCenter: { value: new Vector2(0, LAYOUT.tableCenterZ) } }]), vertexShader: CLOUD_VERTEX, fragmentShader: CLOUD_FRAGMENT, transparent: true, depthWrite: false, fog: true }),
       skyMaterial: new ShaderMaterial({ uniforms: { uResolution: { value: new Vector2(1, 1) } }, vertexShader: SKY_VERTEX, fragmentShader: SKY_FRAGMENT, side: BackSide, depthWrite: false, toneMapped: false }) };
   }, [quality]);
   const matrix = useMemo(() => new Matrix4(), []);
@@ -105,6 +107,7 @@ export function CloudTopTable({ theme, quality, reduceMotion }: { readonly theme
     return { cluster, x: Math.cos(a) * radius + (i % 5 - 2) * 1.5, z: Math.sin(a) * radius, y: -4 + random(cluster, 12) * 7,
       sx: 2.3 + random(i, 15) * 2.5, sy: .7 + random(i, 20), sz: 1.7 + random(i, 14) * 1.9 };
   }), [count]);
+  const palaceIslands = useMemo(() => records.filter((_, i) => i % 5 === 2), [records]);
   useLayoutEffect(() => {
     baseRecords.forEach((p, i) => { matrix.makeScale(p.sx, p.sy, p.sz); matrix.setPosition(p.x, p.y, p.z); base.current?.setMatrixAt(i, matrix); });
     if (base.current) base.current.instanceMatrix.needsUpdate = true;
@@ -113,6 +116,7 @@ export function CloudTopTable({ theme, quality, reduceMotion }: { readonly theme
   useFrame((_, delta) => {
     if (!reduceMotion) elapsed.current += Math.min(delta, .05) / ANIMATION_DURATION_SCALE;
     const t = elapsed.current;
+    built.shadowTime.value = t;
     records.forEach((p, i) => { matrix.makeScale(p.sx, p.sy, p.sz); matrix.setPosition(p.x + Math.sin(t * .09 + p.cluster) * 2.1,
       p.y + Math.sin(t * .16 + p.cluster * 1.7) * .35, p.z + Math.cos(t * .07 + p.cluster) * 1.4); drift.current?.setMatrixAt(i, matrix); });
     if (drift.current) drift.current.instanceMatrix.needsUpdate = true;
@@ -124,11 +128,12 @@ export function CloudTopTable({ theme, quality, reduceMotion }: { readonly theme
     <hemisphereLight args={[0xf5fbff, 0xc4d6e9, .65]}/>
     <directionalLight color={0xffedc8} intensity={.6} position={[-25, 16, -45]}/>
     <group position={[0, 0, LAYOUT.tableCenterZ]}>
+      <CloudPalaces islands={palaceIslands} clock={elapsed} />
       <instancedMesh ref={base} args={[built.sphere, built.baseMaterial, baseRecords.length]} frustumCulled={false} raycast={noHit} dispose={null}/>
       <mesh geometry={built.top} material={built.topMaterial} receiveShadow raycast={noHit} dispose={null}/>
       <instancedMesh ref={drift} args={[built.sphere, built.driftMaterial, records.length]} frustumCulled={false} raycast={noHit} dispose={null}/>
-      <mesh geometry={built.guides} raycast={noHit} dispose={null}><meshStandardMaterial color={gold} metalness={.45} roughness={.5}/></mesh>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -.008, 0]} raycast={noHit}><ringGeometry args={[.27, .29, 48]}/><meshStandardMaterial color={gold} metalness={.45} roughness={.5}/></mesh>
+      <mesh geometry={built.guides} position={[0, .012, 0]} renderOrder={10} raycast={noHit} dispose={null}><meshBasicMaterial color={gold} toneMapped={false} transparent depthWrite={false} polygonOffset polygonOffsetFactor={-1} polygonOffsetUnits={-1}/></mesh>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, .004, 0]} renderOrder={10} raycast={noHit}><ringGeometry args={[.27, .29, 48]}/><meshBasicMaterial color={gold} toneMapped={false} transparent depthWrite={false}/></mesh>
     </group>
   </>;
 }

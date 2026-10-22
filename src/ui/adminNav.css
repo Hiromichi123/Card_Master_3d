@@ -6,3 +6,28 @@
   .admin-resources > span { color: #ab9875; font-size: 10px; white-space: nowrap; }
   .admin-resources .btn { padding: 4px 8px; font-size: 11px; white-space: nowrap; }
 }
+
+@layer hub {
+  /* Collapsed admin navigation is plain text/actions, not a full-width framed panel. */
+  .app-nav--admin.app-nav--collapsed {
+    border: 0; border-radius: 0; box-shadow: none; outline: none;
+    background: transparent; backdrop-filter: none; animation: none;
+  }
+  .app-nav--admin.app-nav--collapsed::before,
+  .app-nav--admin.app-nav--collapsed::after { content: none; display: none; }
+}
+
+@layer hub {
+  /* Out of the app-shell flex flow: opening/closing tools never resizes game canvases. */
+  .admin-nav-layer { position: fixed; inset: 0; z-index: 200; pointer-events: none; }
+  .admin-nav-layer > .app-nav--admin {
+    position: absolute; top: 8px; left: 12px; right: 12px; margin: 0;
+    pointer-events: auto; max-height: min(50dvh, 480px); overflow-y: auto;
+  }
+  .admin-nav-layer > .app-nav--admin.app-nav--collapsed {
+    left: auto; width: max-content; height: auto; min-height: 0; padding: 0;
+    max-height: none; overflow: visible;
+  }
+  .admin-nav-layer .app-nav--collapsed .app-nav__brand,
+  .admin-nav-layer .app-nav--collapsed .app-nav__spacer { display: none; }
+}

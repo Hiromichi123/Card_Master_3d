@@ -1,3 +1,4 @@
+import '../ui/mazeLayers.css';
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 
 import { cardById } from '../data';
@@ -43,7 +44,7 @@ import {
 } from './mazeLayout';
 import type { GridPoint } from './mazeLayout';
 import { mazeShopStock, mazeEventCards, planMazeEnter, planMazeMove, planMazeReset, planMazeLaunch, planMazePurchase, planMazeRefresh } from './mazeFlow';
-import { mazeProgressToken, mazeResetRemaining } from '../domain/progression/mazeProgress';
+import { mazeFailureRemaining, mazeProgressToken, mazeResetRemaining } from '../domain/progression/mazeProgress';
 import type { MazeLaunch, MazeShopSlot } from './mazeFlow';
 import type { RouteId } from '../app/routes';
 
@@ -146,6 +147,7 @@ export function MazeScene({ profile, store, onNavigate, onLaunch }: MazeScenePro
   const activeProfile = snapshot.profile ?? profile;
   const progress = activeProfile.mazeProgress;
   const resetRemaining = mazeResetRemaining(progress, today);
+  const failureRemaining = mazeFailureRemaining(progress, today);
 
   // `run.playerNodeId` 一定在图里（位置只由 `applyMove` 改，目标来自这张图）；
   // 落盘值被外部改坏时退回入口，别让整屏炸掉
@@ -169,7 +171,7 @@ export function MazeScene({ profile, store, onNavigate, onLaunch }: MazeScenePro
     setSaving(true);
     // StrictMode effect重放共用同一笔提交，不重复初始化或补发。
     initialization.current ??= store.commitEconomic(current => planMazeEnter({
-      profile: current, operationId: store.nextOperationId(),
+      profile: current, operationId: store.nextOperationId(), dayKey: store.todayKey(),
     }));
     const result = await initialization.current;
     if (!mounted.current || ticket !== initTicket.current) return;
@@ -225,7 +227,7 @@ export function MazeScene({ profile, store, onNavigate, onLaunch }: MazeScenePro
     setSaving(true);
     try {
       const result = await store.commitEconomic(current => planMazeMove({
-        profile: current, nodeId, expectedToken, operationId,
+        profile: current, dayKey: store.todayKey(), nodeId, expectedToken, operationId,
       }));
       if (!mounted.current) return;
       const currentProfile = store.getSnapshot().profile!;
@@ -253,7 +255,7 @@ export function MazeScene({ profile, store, onNavigate, onLaunch }: MazeScenePro
     }
     launchSeq.current += 1;
     const result = planMazeLaunch({
-      profile: currentProfile,
+      profile: currentProfile, dayKey: store.todayKey(),
       run: currentRun,
       explored: exploredRatio(map, currentRun),
       node,
@@ -272,6 +274,7 @@ export function MazeScene({ profile, store, onNavigate, onLaunch }: MazeScenePro
 
   const clickNode = (nodeId: number): void => {
     if (move || busy || economicLock.current || store.getSnapshot().busy) return;
+    if (failureRemaining <= 0) { pushToast('失败机会已耗尽，每天恢复1点，最多存储3点', 'info'); return; }
     if (nodeId === run.playerNodeId) {
       setSelected(null);
       if (playerNode.type === 'supply') setShopNode(nodeId);
@@ -374,7 +377,7 @@ export function MazeScene({ profile, store, onNavigate, onLaunch }: MazeScenePro
   const bounds = useMemo(() => mapBounds(map.nodes.map((node) => node.grid)), [map]);
 
   return (
-    <DesignStage backgroundUrl={backgroundUrl('bg/activity')}>
+    <DesignStage className="maze-menu" backgroundUrl={backgroundUrl('bg/activity')}>
       <div className="maze__left-rail">
         <div className="maze__status">
           <PlayerStatus level={activeProfile.level} currencies={activeProfile.currencies} />
@@ -458,8 +461,8 @@ export function MazeScene({ profile, store, onNavigate, onLaunch }: MazeScenePro
                 selected={selected === node.id}
                 hovered={hovered === node.id}
                 current={node.id === run.playerNodeId}
-                reachable={!move && !busy && canMoveTo(map, run.playerNodeId, node.id)}
-                disabled={!!move || busy}
+                reachable={failureRemaining > 0 && !move && !busy && canMoveTo(map, run.playerNodeId, node.id)}
+                disabled={failureRemaining <= 0 || !!move || busy}
                 done={node.type === 'boss' && bossCleared}
                 onHover={setHovered}
                 onClick={clickNode}
@@ -492,6 +495,7 @@ export function MazeScene({ profile, store, onNavigate, onLaunch }: MazeScenePro
         </div>
       </div>
 
+      <p className="maze__failure-chances" role="status">失败机会 {failureRemaining}/3 · 每天获得1点，最多存储3点 · 战败或中途退出扣1点{failureRemaining === 0 ? ' · 机会耗尽，暂不可移动' : ''}</p>
       <button type="button" className="btn maze__reset" disabled={!!move || busy || resetRemaining === 0}
         title="每周一恢复1次，清空不影响活动卡保底进度" onClick={() => void resetRun()}>
         清空探索记录 · 本周剩余 {resetRemaining}/1

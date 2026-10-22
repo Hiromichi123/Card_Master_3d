@@ -94,7 +94,7 @@ export function actionFeatures(state:BattleState,command:Command,side=command.si
     const cooling = z.prep.some(id => id !== null && (state.instances[id]?.cd ?? 0) > 0);
     x[15] = canInvest ? -1 : cooling ? .25 : 0;
   }
-  if(command.kind==='choosePriority')x[command.order==='first'?16:17]=1;
+  // Feature slots 16/17 stay zero to preserve the offline model schema; initiative is removed.
   return x;
 }
 export function dot(features:readonly number[],weights:readonly number[]):number {

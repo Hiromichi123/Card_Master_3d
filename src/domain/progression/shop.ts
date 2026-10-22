@@ -23,6 +23,8 @@ export interface ShelfSpec {
   /** `[最少, 最多]`。 */
   readonly countRange: readonly [number, number];
   readonly allowRepeat: boolean;
+  /** Optional per-rarity daily stock, capped by countRange[1]. */
+  readonly perRarityCountRange?: readonly [number, number];
 }
 
 export interface PackSpec {
@@ -139,6 +141,28 @@ export function buildShelf(args: BuildShelfArgs): readonly ShelfEntry[] {
     const rng = createRng((shopSeedFor(args.dayKey) ^ seedFrom(shelfKey)) >>> 0);
     const [min, max] = shelf.countRange;
     const count = rng.int(min, max);
+
+    if (shelf.perRarityCountRange) {
+      const [rarityMin, rarityMax] = shelf.perRarityCountRange;
+      const groups = [...new Set(shelf.rarities)].map(rarity => {
+        const candidates = args.cardsByRarity.get(rarity) ?? [];
+        const wanted = rng.int(rarityMin, rarityMax);
+        const cards = shelf.allowRepeat
+          ? candidates.length ? Array.from({ length: wanted }, () => rng.pick(candidates)) : []
+          : rng.shuffle([...candidates]).slice(0, wanted);
+        return { rarity, cards };
+      });
+      let index = 0;
+      // Give every available rarity its first card before filling optional second copies.
+      for (let round = 0; round < rarityMax && index < max; round += 1) {
+        for (const group of round === 0 ? groups : rng.shuffle(groups)) {
+          const cardId = group.cards[round];
+          if (!cardId || index >= max) continue;
+          entries.push(makeCardEntry(args, shelfKey, shelf, index++, cardId, group.rarity, soldOut));
+        }
+      }
+      continue;
+    }
 
     if (shelf.allowRepeat) {
       // 逐格独立抽：稀有度先均匀选一个，再在该稀有度内均匀选一张

@@ -1,7 +1,18 @@
 import { createRng, seedFrom } from '../battle/rng';
-import { weekKeyOf } from './clock';
+import { weekKeyOf, parseDayKey, calendarDaysBetween } from './clock';
 import { generateMaze, MAZE_FLOOR_1, mazeRngFor } from './maze';
 import type { MazeProgressState, MazeRunState, ProfileState } from './types';
+
+export function mazeFailureProgress(progress: MazeProgressState, dayKey: string): MazeProgressState {
+  const previous = progress.failureDay;
+  if (!parseDayKey(dayKey)) return progress;
+  if (previous && dayKey < previous) return progress; // Clock rollback cannot refill chances.
+  const failureChances = Math.min(3, (progress.failureChances ?? 1) + (previous ? calendarDaysBetween(previous, dayKey) : 0));
+  return { ...progress, failureChances, failureDay: dayKey };
+}
+export function mazeFailureRemaining(progress: MazeProgressState, dayKey: string): number {
+  return mazeFailureProgress(progress, dayKey).failureChances ?? 1;
+}
 
 export function emptyMazeProgress(): MazeProgressState {
   return { explorationCount: 0, awardedCount: 0, lastRewardCardId: null, lastResetWeek: null };
@@ -55,7 +66,10 @@ export function normalizeMazeProgress(value: unknown): MazeProgressState | null 
     || !(value.lastRewardCardId === null || (typeof value.lastRewardCardId === 'string' && value.lastRewardCardId.length > 0))
     || !(value.lastResetWeek === null || (typeof value.lastResetWeek === 'string' && weekKeyOf(value.lastResetWeek) === value.lastResetWeek))
     || (value.awardedCount === 0) !== (value.lastRewardCardId === null)) return null;
+  if ((value.failureChances !== undefined || value.failureDay !== undefined)
+    && (!natural(value.failureChances) || value.failureChances > 3 || typeof value.failureDay !== 'string' || !parseDayKey(value.failureDay))) return null;
   return {
+    ...(value.failureChances !== undefined ? { failureChances: value.failureChances as number, failureDay: value.failureDay as string } : {}),
     explorationCount: value.explorationCount, awardedCount: value.awardedCount,
     lastRewardCardId: value.lastRewardCardId, lastResetWeek: value.lastResetWeek,
   };

@@ -19,6 +19,12 @@ export function fixedClock(date: Date): Clock {
   return () => new Date(date.getTime());
 }
 
+export function calendarDaysBetween(from: string, to: string): number {
+  const a = parseDayKey(from), b = parseDayKey(to);
+  if (!a || !b) return 0;
+  return Math.max(0, Math.round((Date.UTC(b.getFullYear(), b.getMonth(), b.getDate()) - Date.UTC(a.getFullYear(), a.getMonth(), a.getDate())) / 86400000));
+}
+
 function pad2(value: number): string {
   return value < 10 ? `0${value}` : String(value);
 }

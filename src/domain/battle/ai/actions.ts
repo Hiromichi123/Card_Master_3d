@@ -7,7 +7,6 @@ export function commandKey(command:Command):string {
     case 'playCard': return `play:${command.instanceId}:${command.prepSlot??-1}`;
     case 'deployCard': return `deploy:${command.instanceId}:${command.battleSlot}`;
     case 'useCooldownCard': return `cool:${command.targetInstanceId}`;
-    case 'choosePriority': return `priority:${command.order}`;
     default: return command.kind;
   }
 }
@@ -16,10 +15,6 @@ export function commandKey(command:Command):string {
 export function legalActions(state:BattleState):Command[] {
   if(state.outcome||state.phase==='resolving'||state.phase==='ended')return [];
   const side=inputSideOf(state),zones=state.zones[side],result:Command[]=[];
-  if(state.phase==='awaitingPriority'){
-    result.push({kind:'choosePriority',side,order:'last'});
-    return result.filter(command=>validateCommand(state,command).ok);
-  }
   for(const instanceId of readyCardIds(state,side))for(const battleSlot of insertionSlots(state,side))
     result.push({kind:'deployCard',side,instanceId,battleSlot});
   if(state.phase==='awaitingPlay'){

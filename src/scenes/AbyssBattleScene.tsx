@@ -4,6 +4,7 @@ import type { AbyssEncounter, AbyssRun } from '../domain/progression/abyssTypes'
 import { abyssStateToken, planAbyssAction } from '../domain/progression/abyssRun';
 import type { ProfileStore } from '../state/createProfileStore';
 import { AbyssTraitCards } from '../ui/AbyssTraitCards';
+import { abyssEnemyEffects } from '../domain/progression/abyssRules';
 import { abyssEffectGrade, abyssEffectLevel } from '../domain/progression/abyssGrades';
 import { BattleScene } from './BattleScene';
 import { compileAbyssBattle } from './abyssBattle';
@@ -31,17 +32,10 @@ export function AbyssBattleScene({ run, battle, store: _store, onReturn, onRules
     if (result.current) return; // The completed animation owns the handoff.
     if (window.confirm('离开后保留深渊进度；继续时从同一敌人、同一契约的本战开场重新挑战。确定返回？')) onReturn();
   }, [onReturn]);
-  useEffect(() => {
-    const keyboard = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape' || event.defaultPrevented) return;
-      event.preventDefault(); leave();
-    };
-    document.addEventListener('keydown', keyboard);
-    return () => document.removeEventListener('keydown', keyboard);
-  }, [leave]);
   const pair = battle.boonChoices[battle.selectedBoon ?? -1];
   const [effectsOpen, setEffectsOpen] = useState(false);
   return <div className="abyss-battle" data-shared={!!sharedSurface} data-ending={!!departing}>
+    <header className="abyss-battle__heading"><small>THE ABYSS</small><h1>深渊 {battle.floor}-{battle.encounter}</h1></header>
     {onRules && <button className="abyss-battle__rules" type="button" onClick={onRules}>规则讲解</button>}
     <BattleScene clearing={!!departing} tableThemeId="abyss" config={compiled.config} definitions={compiled.definitions} autoStart allowRematch={false}
       onOutcome={finish} onFinished={returnForSettlement} onLeave={leave} onExit={leave}
@@ -53,10 +47,10 @@ export function AbyssBattleScene({ run, battle, store: _store, onReturn, onRules
     <details className="abyss-battle__effects" onToggle={event => setEffectsOpen(event.currentTarget.open)}>
       <summary>本战特性 · {battle.floor}-{battle.encounter}</summary>
       {effectsOpen && <AbyssTraitCards items={[
-        ...(pair ? [pair.positive, pair.negative] : []), battle.enemyEffect,
+        ...(pair ? [pair.positive, pair.negative] : []), ...abyssEnemyEffects(battle),
       ].map((effect, index) => ({ id: `${index}:${effect.id}`, name: effect.name,
         description: effect.description, tone: effect.polarity, icon: effect.modifier.traits[0]?.family ?? effect.id.split('-')[0]!, grade: abyssEffectGrade(effect), level: abyssEffectLevel(effect),
-        footer: index === 2 ? '敌方全体 · 本战有效' : '己方全体 · 本战有效' }))} />}
+        footer: index >= (pair ? 2 : 0) ? '敌方全体 · 本战有效' : '己方全体 · 本战有效' }))} />}
     </details>
   </div>;
 }

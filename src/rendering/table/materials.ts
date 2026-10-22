@@ -1,3 +1,4 @@
+import { cloneSurfaceTexture } from './bakedSurfaceTexture';
 import { Color, DoubleSide, MeshPhysicalMaterial, SRGBColorSpace } from 'three';
 
 import {
@@ -156,7 +157,15 @@ export function buildMaterial(
   }
 
   for (const map of [material.map, material.roughnessMap, material.normalMap]) {
-    map?.repeat.set(textureScale, textureScale);
+    // Cached sources are immutable: each material owns its UV transform and releases the clone.
+    if (!map) continue;
+    const local = cloneSurfaceTexture(map);
+    local.repeat.set(textureScale, textureScale);
+    local.needsUpdate = true;
+    if (material.map === map) material.map = local;
+    if (material.roughnessMap === map) material.roughnessMap = local;
+    if (material.normalMap === map) material.normalMap = local;
+    material.addEventListener('dispose', () => local.dispose());
   }
 
   if (material.map) {

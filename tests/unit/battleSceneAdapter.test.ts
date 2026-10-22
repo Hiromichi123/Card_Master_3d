@@ -2,6 +2,7 @@
 import { act, createElement, type ReactNode } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { BattleOutcome } from '../../src/domain/battle/types';
 import type { BattleSnapshot, SessionControl } from '../../src/rendering/presentation/session';
 import { createBattle } from '../../src/domain/battle/engine';
 import { displayFromState } from '../../src/rendering/presentation/displayState';
@@ -14,7 +15,10 @@ vi.mock('@react-three/fiber', () => ({ Canvas: () => null }));
 vi.mock('../../src/scenes/WebGLGuard', () => ({ WebGLGuard: ({ children }: { children: ReactNode }) => children }));
 vi.mock('../../src/rendering/presentation/useBattleSession', () => ({ useBattleSession: () => fixture.snapshot }));
 vi.mock('../../src/rendering/presentation/session', () => ({ BattleSession: class {
-  authoritative = { definitions: {} };
+  authoritative = { definitions: {}, outcome: null as BattleOutcome | null };
+  setPaused = () => {};
+  skipPerformance = () => {};
+  concede = () => { this.authoritative.outcome = { kind: 'win', winner: 'enemy', reason: 'conceded' }; };
   constructor(_config: unknown, _definitions: unknown, _speed: unknown, _effects: unknown, control: SessionControl) { fixture.control = control; }
   getSnapshot = () => fixture.snapshot;
   start = fixture.start;
@@ -46,7 +50,7 @@ beforeEach(() => {
   vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
   const state = createBattle(DEMO_CONFIG, demoDefinitions());
   fixture.snapshot = { mode: 'battle', display: displayFromState(state), inputOpen: false, phase: state.phase,
-    turnNumber: 1, currentSide: 'player', inputSide: 'player', startingSide: 'player', priority: null,
+    turnNumber: 1, currentSide: 'player', inputSide: 'player', startingSide: 'player',
     selectedKind: null, deployableInstanceIds: [], playableBattleSlots: [], cardsPlayedThisTurn: 0,
     cardLimit: 1, baseHp: state.rules.baseHp, playerHasLegalPlay: true, outcome: null,
     selectedInstanceId: null, playablePrepSlots: [], log: [], autoPlayer: false, autoEvolutionActive: false, autoEvolutionTurns: 0, autoEvolutionLimit: 10, runId: 1,
@@ -59,15 +63,29 @@ const render = async (props: BattleSceneProps = {}) => { await act(async () => r
 const button = (label: string) => [...host.querySelectorAll('button')].find(node => node.textContent === label);
 
 describe('独立战斗界面适配', () => {
-  it('非本地模式显示自定义退出，保存锁定时不调用返回', async () => {
+  it('菜单统一退出，保存锁定时不调用返回', async () => {
     const onLeave = vi.fn();
     await render({ onLeave, leaveLabel: '返回深渊', exitDisabled: true, allowRematch: false });
-    expect(button('返回深渊')?.disabled).toBe(true);
-    await act(async () => button('返回深渊')!.click());
+    expect(button('返回深渊')).toBeUndefined();
+    await act(async () => button('Esc 呼出菜单')!.click());
+    expect(button('退出')?.disabled).toBe(true);
+    await act(async () => button('退出')!.click());
     expect(onLeave).not.toHaveBeenCalled();
     await render({ onLeave, leaveLabel: '返回深渊', exitDisabled: false, allowRematch: false });
-    await act(async () => button('返回深渊')!.click());
+    await act(async () => button('退出')!.click());
     expect(onLeave).toHaveBeenCalledTimes(1);
+  });
+
+  it('退出先持久化失败；保存失败保留菜单且不返回', async () => {
+    const exit = vi.fn(), saved = vi.fn().mockRejectedValueOnce(new Error('写入失败')).mockResolvedValue(undefined);
+    await render({ onExit: exit, onFinished: saved });
+    await act(async () => button('Esc 呼出菜单')!.click());
+    await act(async () => button('退出')!.click());
+    expect(exit).not.toHaveBeenCalled();
+    expect(host.querySelector('[role="alert"]')!.textContent).toBe('写入失败');
+    expect(saved).toHaveBeenCalledWith({ kind: 'win', winner: 'enemy', reason: 'conceded' });
+    await act(async () => button('退出')!.click());
+    expect(exit).toHaveBeenCalledTimes(1); expect(saved).toHaveBeenCalledTimes(2);
   });
 
   it('同步权威回调使用最新props，旧onFinished仍只在演出结果态触发', async () => {

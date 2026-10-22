@@ -170,3 +170,17 @@
   @media (max-width: 760px) { .abyss-trait-deck[data-cards="true"] .abyss-trait-card__anchor { height: 250px; }.abyss-trait-deck[data-cards="true"] .abyss-trait-card__grade { font-size: 10px; } }
   @media (max-width: 460px) { .abyss-trait-deck[data-cards="true"] .abyss-trait-card__anchor { height: 190px; }.abyss-trait-deck[data-cards="true"] .abyss-trait-card > strong { font-size: 14px; } }
 }
+
+@layer controls {
+  .abyss-battle__heading { position: absolute; z-index: 13; top: 16px; left: 3%; color: #efdab4; text-shadow: 0 2px 12px #08030d; pointer-events: none; }
+  .abyss-battle__heading small { font-size: 10px; letter-spacing: .2em; color: #bca0c5; }
+  .abyss-battle__heading h1 { margin: 4px 0 0; font: bold 25px/1.3 'Game Numerals', SimSun, serif; }
+  .abyss-battle .abyss-battle__effects { top: 84px; left: 3%; right: auto; transform: none; width: max-content; max-width: min(680px, 52vw); max-height: calc(100dvh - 190px); padding: 0; }
+  .abyss-battle .abyss-battle__effects summary { width: fit-content; padding: 7px 0; color: #dfc69e; }
+  .abyss-battle[data-ending="true"] .abyss-battle__heading { opacity: 0; transition: opacity .45s ease; }
+  @media (max-width: 700px), (max-height: 560px) {
+    .abyss-battle__heading { top: 10px; left: 2%; }
+    .abyss-battle__heading h1 { font-size: 19px; }
+    .abyss-battle .abyss-battle__effects { top: 67px; left: 2%; max-width: 80vw; max-height: calc(100dvh - 150px); }
+  }
+}

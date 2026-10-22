@@ -1,5 +1,7 @@
+import { ActivityCanvas as Canvas } from '../ActivityCanvas';
+import { RenderActivity } from '../RenderActivity';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { useFrame, useThree } from '@react-three/fiber';
 import { BufferGeometry, Float32BufferAttribute, AdditiveBlending, type Group, type Mesh, type MeshBasicMaterial, type Points, Vector3, type PerspectiveCamera } from 'three';
 import type { CardDefinition } from '../../domain/cards/types';
 import { WebGLGuard } from '../../scenes/WebGLGuard';
@@ -38,6 +40,7 @@ export function FusionAltarStage(props: FusionAltarProps) {
   }, [props.run?.operationId, props.completed]);
   return <WebGLGuard><Canvas flat camera={camera} shadows={profile.shadows}
     dpr={[1, profile.dprCap]} gl={{ alpha: true, antialias: true }}>
+    <RenderActivity />
     <AltarContent {...props} />
   </Canvas></WebGLGuard>;
 }

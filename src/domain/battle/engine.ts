@@ -99,7 +99,6 @@ export function createBattle(
     currentSide: startingSide,
     startingSide,
     turnIndex: 1,
-    priority: null,
     hostAttacked: false,
     phase: 'awaitingPlay',
     hp: { player: rules.baseHpBySide?.player ?? rules.baseHp, enemy: rules.baseHpBySide?.enemy ?? rules.baseHp },
@@ -239,9 +238,7 @@ export function validateCommand(state: BattleState, command: Command): CommandVa
   if (command.kind === 'concede') return { ok: true };
   if (state.phase === 'resolving' || state.phase === 'ended') return { ok: false, reason: 'wrongPhase' };
   if (command.side !== inputSideOf(state)) return { ok: false, reason: 'notYourTurn' };
-  // Legacy command retained for old tooling; action order is now fixed.
-  if (command.kind === 'choosePriority') return { ok: false, reason: 'wrongPhase' };
-  if (state.phase === 'awaitingPriority') return { ok: false, reason: 'wrongPhase' };
+  if (!['playCard', 'deployCard', 'useCooldownCard', 'endTurn'].includes(command.kind)) return { ok: false, reason: 'wrongPhase' };
   if (command.kind === 'endTurn') return { ok: true };
   const zones = state.zones[command.side];
   const card = state.instances[command.instanceId];
@@ -1298,7 +1295,6 @@ function nextHostTurn(resolver: Resolver, state: BattleState): void {
   state.cardsPlayedThisTurn = 0;
   state.copyUsedThisTurn = { player: false, enemy: false };
   state.hostAttacked = false;
-  state.priority = null;
   for (const card of Object.values(state.instances)) card.hasAttackedThisTurn = false;
   resolver.emit({ type: 'TurnEnded', side: previous, nextSide: state.currentSide });
   tickCooldowns(resolver, state);
@@ -1401,9 +1397,7 @@ export function applyCommand(state: BattleState, command: Command): Resolution {
     working.outcome = outcome;
     working.phase = 'ended';
     resolver.emit({ type: 'BattleEnded', outcome });
-  } else if (command.kind === 'choosePriority') {
-    // Unreachable for new commands: validation rejects the removed priority choice.
-    openResponse(resolver, working);
+
   } else if (command.kind === 'deployCard') {
     deployCard(resolver, working, command.side, command.instanceId, command.battleSlot);
   } else if (command.kind === 'useCooldownCard') {
@@ -1463,7 +1457,7 @@ export function applyCommand(state: BattleState, command: Command): Resolution {
  */
 export function stateFingerprint(state: BattleState): string {
   return JSON.stringify({
-    currentSide: state.currentSide, phase: state.phase, priority: state.priority, hostAttacked: state.hostAttacked,
+    currentSide: state.currentSide, phase: state.phase, hostAttacked: state.hostAttacked,
     control:Object.values(state.instances).filter(card=>card.zone==='battle').map(card=>[card.instanceId,card.marks.charmed??false,card.marks.puppetedBy??null]),
     grantedTraits:Object.values(state.instances).filter(card=>card.zone==='battle').map(card=>[card.instanceId,card.marks.grantedConcealment??false,(card.marks.silenceUntil??state.turnIndex-1)-state.turnIndex]),
     concealment: Object.values(state.instances).filter((card) => card.zone === 'battle' && hasFamily(state, card, 'concealment'))

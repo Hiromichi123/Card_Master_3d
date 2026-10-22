@@ -29,7 +29,7 @@ function enter(profile: ProfileState): ProfileState {
 function win(profile: ProfileState): ProfileState {
   const stage = profile.abyss.run!.stage;
   if (stage.kind !== 'inBattle') throw new Error('not in battle');
-  return move(move(profile, { kind: 'settle', battleId: stage.battle.battleId, outcome: { kind: 'win', winner: 'player', reason: 'hpDepleted' } }), { kind: 'skipFree' });
+  return skipFreeRewards(move(profile, { kind: 'settle', battleId: stage.battle.battleId, outcome: { kind: 'win', winner: 'player', reason: 'hpDepleted' } }));
 }
 function campAt(ordinal: number, profile = start()): ProfileState {
   let current = profile;
@@ -130,3 +130,10 @@ describe('深渊永久奖励与独立周账本', () => {
     expect(validateAbyssState({ ...plan.view, completionClaims: [{ ...claim, selected: [1, 1, 2] }] })).toBe(false);
   });
 });
+
+/** Leaving camp in these fixtures intentionally declines each remaining independent reward. */
+function skipFreeRewards(profile: ProfileState): ProfileState {
+  while (profile.abyss.run?.stage.kind === 'camp' && profile.abyss.run.stage.freeRemaining > 0)
+    profile = move(profile, { kind: 'skipFree' });
+  return profile;
+}

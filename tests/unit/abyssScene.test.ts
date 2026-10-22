@@ -148,7 +148,7 @@ describe('深渊入场', () => {
     const buttons = [...host.querySelectorAll<HTMLButtonElement>('button')];
     await act(async () => buttons.find(button => button.textContent === '返回活动')!.click());
     expect(navigate).toHaveBeenCalledWith('activity');
-    await act(async () => root.render(null)); expect(vi.getTimerCount()).toBe(0);
+    await act(async () => root.render(null)); vi.advanceTimersByTime(0); expect(vi.getTimerCount()).toBe(0);
   });
   it('每15秒一轮同源闪电，后台恢复不补闪，减弱动态停闪停转', async () => {
     await render(); await reveal(); expect(phase()).toBe('active');

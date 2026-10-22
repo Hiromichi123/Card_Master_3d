@@ -125,6 +125,7 @@ describe('四套卡组配置', () => {
 
   it('页内导航保存失败留在配置、保留草稿，重试成功后可以进入天梯', async () => {
     await setup(true);
+    await repository.commit(store.getSnapshot().profile!);
     const ladderId = store.getSnapshot().profile!.ladder.deckId;
     await click('.deckedit__grid button');
     const commit = vi.spyOn(repository, 'commit').mockRejectedValue(new Error('磁盘不可写'));
@@ -144,6 +145,7 @@ describe('四套卡组配置', () => {
 
   it('全局离开后重新挂载仍显示未保存的天梯草稿', async () => {
     await setup(true);
+    await repository.commit(store.getSnapshot().profile!);
     const ladderId = store.getSnapshot().profile!.ladder.deckId;
     vi.spyOn(repository, 'commit').mockRejectedValue(new Error('磁盘不可写'));
     await click('.deckedit__grid button');

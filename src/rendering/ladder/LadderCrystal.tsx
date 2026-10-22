@@ -1,5 +1,7 @@
+import { ActivityCanvas as Canvas } from '../ActivityCanvas';
+import { RenderActivity } from '../RenderActivity';
 import { useRef } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
+import { useFrame } from '@react-three/fiber';
 import type { Group } from 'three';
 import { WebGLGuard } from '../../scenes/WebGLGuard';
 
@@ -59,8 +61,9 @@ export function LadderCrystal({ color, still, world }: { color: string; still: b
   return (
     <div className="ladder__crystal" data-color={color} data-still={still} aria-hidden="true">
       <WebGLGuard fallback={<div className="ladder__crystal-fallback" style={{ ['--crystal-color' as string]: color }} />}>
-        <Canvas camera={{ position: [0, 0.6, 6.6], fov: 44 }} dpr={[1, 1.5]}
+        <Canvas activityFps={30} camera={{ position: [0, 0.6, 6.6], fov: 44 }} dpr={[1, 1.5]}
           frameloop={still ? 'demand' : 'always'} gl={{ alpha: true, antialias: true }}>
+          <RenderActivity mode={still ? 'demand' : 'always'} fps={30} />
           <Crystal color={color} still={still} world={world} />
         </Canvas>
       </WebGLGuard>

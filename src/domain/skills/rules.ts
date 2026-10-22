@@ -173,7 +173,7 @@ export function traitsOf(state: BattleState, instance: CardInstance): readonly s
 export function isSilenced(state: BattleState, side: SideId, slot: number): boolean {
   const ownId=state.zones[side].battle[slot];
   const own=ownId?state.instances[ownId]:undefined;
-  if(own?.marks.silenced || (own?.marks.silenceUntil??-1)>=state.turnIndex)return true;
+  if((own?.marks.silenceUntil??-1)>=state.turnIndex)return true;
   const oppositeRow = state.zones[opponentOf(side)].battle;
   const oppositeId = oppositeRow[oppositeIndex(slot)] ?? null;
   if (!oppositeId) {

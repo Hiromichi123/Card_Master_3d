@@ -86,7 +86,6 @@ export type BattlePhase =
   /** 等待当前方出牌或结束回合。 */
   | 'awaitingPlay'
   /** Legacy phase; new battles go directly to the guest deployment window. */
-  | 'awaitingPriority'
   | 'awaitingResponse'
   /** 正在按顺序结算一次行动。 */
   | 'resolving'
@@ -135,7 +134,6 @@ export interface BattleState {
   readonly startingSide: SideId;
   /** 单调增加的主场行动编号；客场部署不增加。 */
   turnIndex: number;
-  priority: 'first' | 'last' | null;
   hostAttacked: boolean;
   phase: BattlePhase;
   /** 双方本体生命。 */
@@ -198,7 +196,6 @@ export type Command =
     }
   | { readonly kind: 'deployCard'; readonly side: SideId; readonly instanceId: string; readonly battleSlot: number }
   | { readonly kind: 'useCooldownCard'; readonly side: SideId; readonly instanceId: string; readonly targetInstanceId: string }
-  | { readonly kind: 'choosePriority'; readonly side: SideId; readonly order: 'first' | 'last' }
   | { readonly kind: 'endTurn'; readonly side: SideId }
   /** 主动认输；不受当前操作方与演出输入锁限制。 */
   | { readonly kind: 'concede'; readonly side: SideId };
@@ -246,7 +243,6 @@ export type BattleEvent = { readonly seq: number; readonly turn: number } & (
   | { readonly type: 'CooldownChanged'; readonly side: SideId; readonly instanceId: string; readonly from: number; readonly to: number; readonly cause: CooldownCause }
   | { readonly type: 'CooldownCardGranted'; readonly side: SideId; readonly instanceId: string; readonly reason: 'secondPlayer' | 'skip' }
   | { readonly type: 'CooldownCardUsed'; readonly side: SideId; readonly instanceId: string; readonly targetInstanceId: string }
-  | { readonly type: 'PriorityChosen'; readonly side: SideId; readonly order: 'first' | 'last' }
   | { readonly type: 'DeploymentWindowOpened'; readonly side: SideId; readonly hostSide: SideId }
   | { readonly type: 'FormationInserted'; readonly side: SideId; readonly order: readonly (string | null)[] }
   | { readonly type: 'CardReset'; readonly side: SideId; readonly instanceId: string; readonly groupId: string; readonly atk: number; readonly hp: number; readonly maxHp: number; readonly cd: number; readonly flying: boolean }

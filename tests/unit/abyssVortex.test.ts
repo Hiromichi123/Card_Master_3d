@@ -78,7 +78,7 @@ describe('深渊云雾预算与构图参数', () => {
   });
 
   it('常驻基础层只旋转原创渐变，ready减弱而不停转，still/后台暂停且中心透明', () => {
-    const css = readFileSync(new URL('../../src/ui/abyssVortex.css', import.meta.url), 'utf8');
+    const css = readFileSync('src/ui/abyssVortex.css', 'utf8');
     expect(css).toContain('radial-gradient(ellipse closest-side, transparent var(--abyss-core-mask)');
     expect(css).toMatch(/\[data-still="true"\][\s\S]*?\[data-active="false"\][\s\S]*?animation-play-state: paused/);
     expect(css).toMatch(/\.abyss-vortex__base\[data-softened="true"\]\s*\{\s*opacity: \.68;/);

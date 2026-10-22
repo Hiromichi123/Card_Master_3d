@@ -111,6 +111,7 @@ function shelfSpec() {
           rarities: value.rarities,
           countRange: value.count_range,
           allowRepeat: value.allow_repeat,
+          ...(value.per_rarity_count_range ? { perRarityCountRange: value.per_rarity_count_range } : {}),
         },
       ]),
     ),
@@ -375,10 +376,16 @@ describe('商店', () => {
     }
   });
 
-  it('探索货架恰好 5 格，且允许重复', () => {
+  it('探索货架按稀有度各提供1至2张，且不超过页面容量', () => {
     const shelf = buildShelf({ dayKey: '20260101', spec, cardsByRarity: byRarity, soldOut: [] });
     const bottom = shelf.filter((entry) => entry.shelfKey === 'bottom');
-    expect(bottom).toHaveLength(5);
+    const row = spec.shelves['bottom']!;
+    expect(bottom.length).toBeLessThanOrEqual(row.countRange[1]);
+    for (const rarity of row.rarities) {
+      if (!byRarity.get(rarity)?.length) continue;
+      const count = bottom.filter(entry => entry.rarity === rarity).length;
+      expect(count).toBeGreaterThanOrEqual(1); expect(count).toBeLessThanOrEqual(2);
+    }
     expect(bottom.every((entry) => entry.rarity.match(/^[BCD]/) !== null)).toBe(true);
   });
 

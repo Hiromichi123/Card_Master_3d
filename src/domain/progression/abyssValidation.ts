@@ -89,7 +89,13 @@ function validBattle(value: unknown, run: AbyssRun): value is AbyssEncounter {
     || !validCards(value.enemyCards) || !Array.isArray(value.boonChoices) || value.boonChoices.length !== 3
     || !(value.selectedBoon === null || integer(value.selectedBoon, 0, 2))) return false;
   const strength = Math.min(99, (value.difficulty === 'normal' ? 1 : value.difficulty === 'hard' ? 2 : 3) + Math.floor((run.floor - 1) / 3));
-  if (!validEffect(value.enemyEffect, true, strength) || !['might', 'vitality', ...(value.difficulty === 'normal' ? [] : ['immunity'])].includes(value.enemyEffect.id)) return false;
+  const enemy = value.enemyEffect;
+  const noEffect = run.floor === 1 && value.difficulty === 'normal' && record(enemy) && enemy.id === 'none'
+    && enemy.polarity === 'positive' && enemy.strength === 1 && text(enemy.name) && text(enemy.description, 2000)
+    && record(enemy.modifier) && enemy.modifier.atk === 0 && enemy.modifier.hp === 0 && enemy.modifier.cd === 0
+    && Array.isArray(enemy.modifier.traits) && enemy.modifier.traits.length === 0;
+  // Older first-floor encounters retain their saved structure, but the runtime gate disables the effect.
+  if (!noEffect && (!validEffect(enemy, true, strength) || !['might', 'vitality', ...(value.difficulty === 'normal' ? [] : ['immunity'])].includes(enemy.id))) return false;
   const pairs = value.boonChoices;
   if (!pairs.every(pair => record(pair) && validEffect(pair.positive, true, 1) && validEffect(pair.negative, false, 1)
     && pair.id === `${pair.positive.id}:${pair.negative.id}`)) return false;

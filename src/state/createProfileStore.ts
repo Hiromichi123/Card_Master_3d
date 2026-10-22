@@ -1,3 +1,4 @@
+import { canonicalJson } from '../services/save/canonicalJson';
 /**
  * 存档的状态机。
  *
@@ -577,7 +578,7 @@ export class ProfileStore {
     const saved = await this.flushDecks();
     if (!saved.ok) { this.deps.onNotice?.(saved.message, 'error'); return null; }
     const profile = this.profile;
-    return profile ? JSON.stringify(profile, null, 2) : null;
+    return profile ? canonicalJson(profile) : null;
   }
 
   /** 只解析、只校验，不写盘、不碰快照。给导入预览用。 */

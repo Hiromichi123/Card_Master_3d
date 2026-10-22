@@ -1,0 +1,19 @@
+.friend-self { display: flex; flex-wrap: wrap; align-items: baseline; gap: 18px; border: 1px solid #b89d62; padding: 16px 20px; border-radius: 8px; background: #1b232c; }
+.friend-self > span { color: #d9c49b; } .friend-self strong { color: #ffe0a0; font-size: 30px; letter-spacing: .12em; font-variant-numeric: tabular-nums; }
+.friend-self small { color: #aeb6b9; }
+.friend-search { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; padding: 22px 0 8px; }
+.friend-search label { color: #ddcba7; }
+.friend-search input { flex: 1; min-width: 150px; padding: 12px 16px; border: 1px solid #a98c59; border-radius: 6px; background: #101924; color: #ffe7b3; font: inherit; font-size: 20px; letter-spacing: .1em; }
+.friends-section h3 { color: #d7bc87; margin: 18px 0 12px; font-size: 16px; }
+.friend-row { display: flex; align-items: center; gap: 14px; padding: 14px 18px; margin: 9px 0; border: 1px solid #bba27155; background: linear-gradient(120deg, #29333d, #1e252d); border-radius: 8px; }
+.friend-avatar { display: grid; place-items: center; width: 46px; height: 46px; background: linear-gradient(140deg, #75644a, #29333e); border: 1px solid #bb9d64; border-radius: 10px; color: #ffe5aa; font-size: 24px; }
+.friend-copy { flex: 1; min-width: 0; } .friend-copy strong { display: block; color: #f4dfb9; overflow-wrap: anywhere; }
+.friend-copy small { display: block; color: #b4bfc7; font-size: 13px; margin-top: 5px; font-variant-numeric: tabular-nums; }
+.friend-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; color: #b9b49f; font-size: 13px; }
+.friend-message { color: #f0cd8b; min-height: 20px; font-size: 13px; }
+.player-identity { display: flex; align-items: baseline; gap: 18px; padding: 12px 16px; margin-bottom: 18px; border: 1px solid #c0a16970; background: #1c252f; border-radius: 8px; }
+.player-identity strong { color: #ffe2a2; font-size: 24px; letter-spacing: .1em; }
+@layer hub {
+  .hub-account-id { position: absolute; top: max(12px, calc(40 * var(--ui))); right: 3%; z-index: 5; margin: 0; padding: 0; border: 0; background: none; box-shadow: none; color: #fff; font-size: max(10px, calc(22 * var(--ui))); font-weight: 400; line-height: 1.4; letter-spacing: .035em; font-variant-numeric: tabular-nums; text-shadow: 0 1px 4px #0009; pointer-events: none; }
+}
+@media (max-width: 600px) { .friend-row { flex-wrap: wrap; } .friend-actions { flex-basis: 100%; justify-content: flex-end; } }

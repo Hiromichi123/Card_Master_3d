@@ -35,7 +35,7 @@ describe('深渊背景沿用普通鼠标阻尼', () => {
     expect(moving.querySelector('.mock-vortex')).not.toBeNull();
     expect(moving.querySelector('.abyss-scene__vignette')).toBeNull();
     expect(moving.parentElement!.querySelector(':scope > .abyss-scene__vignette')).not.toBeNull();
-    const css = readFileSync(new URL('../../src/ui/abyssHome.css', import.meta.url), 'utf8');
+    const css = readFileSync('src/ui/abyssHome.css', 'utf8');
     expect(css).toContain('inset: -56px');
     expect(css).toContain('translate3d(var(--parallax-x, 0px), var(--parallax-y, 0px), 0)');
   });
